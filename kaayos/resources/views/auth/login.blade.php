@@ -34,8 +34,8 @@ body::before{
     z-index:0;
 }
 .wrap{position:relative;z-index:1;width:100%;max-width:420px}
-.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px}
-.brand-icon{width:40px;height:40px;background:var(--b6);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px; text-decoration: none;}
+.brand-icon img{width:40px;height:40px;background:var(--b6);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px; object-fit: contain;}
 .brand-name{font-size:1.6rem;font-weight:700;color:#fff;letter-spacing:.02em}
 .card{background:#fff;border-radius:16px;padding:36px 36px 32px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35)}
 .card-eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--b6);margin-bottom:6px}
@@ -75,10 +75,12 @@ input::placeholder{color:var(--g4)}
 
 <div class="wrap">
 
-    <div class="brand">
-        <div class="brand-icon"><i class="fa-solid fa-house-chimney" aria-hidden="true"></i></div>
-        <span class="brand-name">KaAyos</span>
-    </div>
+    <a href="{{ route('home') }}" class="brand" >
+        <div class="brand">
+            <div class="brand-icon"><img src="../images/logo-gs-removebg-preview.png" alt="KaAyos Logo"></div>
+            <span class="brand-name">KaAyos</span>
+        </div>
+    </a>
 
     <div class="card">
 

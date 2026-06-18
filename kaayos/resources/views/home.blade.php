@@ -331,7 +331,7 @@ a{text-decoration:none;color:inherit}
       <ul class="f-links">
         <li><a href="/about"><i class="fa-solid fa-circle-info fa-fw" aria-hidden="true"></i> About KaAyos</a></li>
         <li><a href="#how-it-works"><i class="fa-solid fa-list-ol fa-fw" aria-hidden="true"></i> How It Works</a></li>
-        <li><a href="/register/worker"><i class="fa-solid fa-hammer fa-fw" aria-hidden="true"></i> Join as Worker</a></li>
+        <li><a href="/register"><i class="fa-solid fa-hammer fa-fw" aria-hidden="true"></i> Join as Worker</a></li>
         <li><a href="#faq"><i class="fa-solid fa-circle-question fa-fw" aria-hidden="true"></i> FAQ</a></li>
         <li><a href="/contact"><i class="fa-solid fa-envelope fa-fw" aria-hidden="true"></i> Contact</a></li>
         <li><a href="/privacy"><i class="fa-solid fa-shield fa-fw" aria-hidden="true"></i> Privacy Policy</a></li>
@@ -340,7 +340,7 @@ a{text-decoration:none;color:inherit}
     </div>
   </div>
   <div class="f-bottom">
-    <p>© 2025 KaAyos — Capstone project by Salanguit, Formentos &amp; Briones · Batangas State University ARASOF – Nasugbu Campus.</p>
+    <!-- <p>© 2025 KaAyos — Capstone project by Salanguit, Formentos &amp; Briones · Batangas State University ARASOF – Nasugbu Campus.</p> -->
     <div class="socials">
       <div class="soc" title="Facebook"><i class="fa-brands fa-facebook-f"></i></div>
       <div class="soc" title="Email"><i class="fa-solid fa-envelope"></i></div>
