@@ -7,6 +7,8 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
 use App\Http\Controllers\Worker\WorkerController;
+use App\Http\Controllers\Api\PasswordOtpController;
+use App\Http\Controllers\Api\ProfileController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -32,6 +34,14 @@ Route::middleware(['auth'])->prefix('client')->name('client.')->group(function (
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
     Route::get('/reviews', [ClientController::class, 'reviews'])->name('reviews');
     Route::get('/account/profile', [ClientController::class, 'profile'])->name('account.profile');
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/password-otp/send',   [PasswordOtpController::class, 'send']);
+    Route::post('/password-otp/verify', [PasswordOtpController::class, 'verify']);
+    Route::put('/api/profile',           [ProfileController::class, 'updateProfile']);
+    Route::put('/api/preferences',       [ProfileController::class, 'updatePreferences']);
+    Route::post('/api/profile/avatar',   [ProfileController::class, 'uploadAvatar']);
 });
 
 Route::middleware(['auth'])->prefix('worker')->name('worker.')->group(function () {
