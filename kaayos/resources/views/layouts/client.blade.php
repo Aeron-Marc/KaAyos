@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ auth()->check() && auth()->user()->language === 'Filipino' ? 'fil' : 'en' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -70,7 +70,11 @@
 
         <div class="sidebar-profile">
             <div class="profile-avatar">
-                {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
+                @if(auth()->user()->avatar)
+                    <img src="{{ \Illuminate\Support\Facades\Storage::url(auth()->user()->avatar) }}" alt="" class="sidebar-avatar-img" />
+                @else
+                    {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
+                @endif
             </div>
             <div class="profile-info">
                 <p class="profile-name">{{ auth()->user()->name ?? 'User' }}</p>
