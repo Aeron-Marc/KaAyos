@@ -53,3 +53,28 @@ Route::get('/contact', function () { return view('pages.contact'); })->name('con
 Route::get('/privacy', function () { return view('pages.privacy'); })->name('privacy');
 Route::get('/terms',   function () { return view('pages.terms'); })->name('terms');
 Route::get('/safety',  function () { return view('pages.safety'); })->name('safety');
+
+// Admin Routes
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function() {
+        return view('admin.dashboard');
+    })->name('dashboard');
+    
+    Route::get('/verification', function() {
+        return view('admin.verification.index');
+    })->name('verification.index');
+    
+    Route::get('/verification/{id}', function($id) {
+        return view('admin.verification.show');
+    })->name('verification.show');
+    
+    Route::post('/verification/{id}/approve', function($id) {
+        // Handle approve logic here
+        return redirect()->route('admin.verification.index')->with('success', 'Verification approved successfully');
+    })->name('verification.approve');
+    
+    Route::post('/verification/{id}/reject', function($id) {
+        // Handle reject logic here
+        return redirect()->route('admin.verification.index')->with('error', 'Verification rejected');
+    })->name('verification.reject');
+});
