@@ -44,8 +44,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/api/profile/avatar',   [ProfileController::class, 'uploadAvatar']);
 });
 
-Route::middleware(['auth'])->prefix('worker')->name('worker.')->group(function () {
+Route::middleware(['auth', 'worker'])->prefix('worker')->name('worker.')->group(function () {
     Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/notifications', [WorkerController::class, 'notifications'])->name('dashboard.notifications');
+    Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
+    Route::get('/schedule', [WorkerController::class, 'schedule'])->name('schedule');
+    Route::get('/messages', [WorkerController::class, 'messages'])->name('messages');
+    Route::get('/earnings', [WorkerController::class, 'earnings'])->name('earnings');
+    Route::get('/profile', [WorkerController::class, 'profile'])->name('profile');
+    Route::get('/documents', [WorkerController::class, 'documents'])->name('documents');
 });
 
 Route::get('/about',   function () { return view('pages.about'); })->name('about');

@@ -28,40 +28,46 @@
 
         <nav class="sidebar-nav">
 
-            <a href="{{ route('client.dashboard') }}"
-               class="nav-item {{ request()->routeIs('client.dashboard*') ? 'active' : '' }}">
+            <a href="{{ route('worker.dashboard') }}"
+               class="nav-item {{ request()->routeIs('worker.dashboard*') ? 'active' : '' }}">
                 <i class="fa-solid fa-gauge-high nav-icon" aria-hidden="true"></i>
                 Dashboard
             </a>
 
-            <a href="{{ route('client.workers') }}"
-               class="nav-item {{ request()->routeIs('client.workers*') ? 'active' : '' }}">
-                <i class="fa-solid fa-users nav-icon" aria-hidden="true"></i>
-                Find Workers
+            <a href="{{ route('worker.jobs') }}"
+               class="nav-item {{ request()->routeIs('worker.jobs*') ? 'active' : '' }}">
+                <i class="fa-solid fa-clipboard-list nav-icon" aria-hidden="true"></i>
+                Job Requests
             </a>
 
-            <a href="{{ route('client.bookings') }}"
-               class="nav-item {{ request()->routeIs('client.bookings*') ? 'active' : '' }}">
-                <i class="fa-solid fa-calendar-check nav-icon" aria-hidden="true"></i>
-                Bookings
+            <a href="{{ route('worker.schedule') }}"
+               class="nav-item {{ request()->routeIs('worker.schedule*') ? 'active' : '' }}">
+                <i class="fa-solid fa-calendar-days nav-icon" aria-hidden="true"></i>
+                My Schedule
             </a>
 
-            <a href="{{ route('client.messages') }}"
-               class="nav-item {{ request()->routeIs('client.messages*') ? 'active' : '' }}">
+            <a href="{{ route('worker.messages') }}"
+               class="nav-item {{ request()->routeIs('worker.messages*') ? 'active' : '' }}">
                 <i class="fa-solid fa-comment-dots nav-icon" aria-hidden="true"></i>
                 Messages
             </a>
 
-            <a href="{{ route('client.reviews') }}"
-               class="nav-item {{ request()->routeIs('client.reviews*') ? 'active' : '' }}">
-                <i class="fa-solid fa-star nav-icon" aria-hidden="true"></i>
-                Reviews
+            <a href="{{ route('worker.earnings') }}"
+               class="nav-item {{ request()->routeIs('worker.earnings*') ? 'active' : '' }}">
+                <i class="fa-solid fa-coins nav-icon" aria-hidden="true"></i>
+                Earnings
             </a>
 
-            <a href="{{ route('client.account.profile') }}"
-               class="nav-item {{ request()->routeIs('client.account*') ? 'active' : '' }}">
-                <i class="fa-solid fa-user nav-icon" aria-hidden="true"></i>
-                Account
+            <a href="{{ route('worker.profile') }}"
+               class="nav-item {{ request()->routeIs('worker.profile*') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-gear nav-icon" aria-hidden="true"></i>
+                My Profile
+            </a>
+
+            <a href="{{ route('worker.documents') }}"
+               class="nav-item {{ request()->routeIs('worker.documents*') ? 'active' : '' }}">
+                <i class="fa-solid fa-file-upload nav-icon" aria-hidden="true"></i>
+                Documents
             </a>
 
         </nav>
@@ -78,7 +84,7 @@
             </div>
             <div class="profile-info">
                 <p class="profile-name">{{ auth()->user()->name ?? 'User' }}</p>
-                <span class="profile-role">Homeowner</span>
+                <span class="profile-role">Trabahador</span>
             </div>
         </div>
 
@@ -98,7 +104,7 @@
             <h1 class="page-title">@yield('page_title', 'Dashboard')</h1>
 
             <div class="topbar-actions">
-                <a href="{{ route('client.dashboard.notifications') }}" class="icon-btn" aria-label="Notifications">
+                <a href="{{ route('worker.dashboard.notifications') }}" class="icon-btn" aria-label="Notifications">
                     <i class="fa-solid fa-bell" style="font-size:1rem;" aria-hidden="true"></i>
                     @if(collect($notifications ?? [])->where('unread', true)->count() > 0)
                         <span class="badge-dot"></span>

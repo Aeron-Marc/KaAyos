@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             '/api/*',
             '/password-otp/*',
         ]);
+
+        $middleware->alias([
+            'worker' => \App\Http\Middleware\CheckWorkerRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
