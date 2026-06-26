@@ -1,0 +1,18 @@
+{
+    "nav.dashboard": "Dashboard",
+    "nav.find_workers": "Find Workers",
+    "nav.bookings": "Bookings",
+    "nav.messages": "Messages",
+    "nav.reviews": "Reviews",
+    "nav.account": "Account",
+    "nav.job_requests": "Job Requests",
+    "nav.my_schedule": "My Schedule",
+    "nav.earnings": "Earnings",
+    "nav.my_profile": "My Profile",
+    "nav.documents": "Documents",
+    "role.homeowner": "Homeowner",
+    "role.trabahador": "Trabajador",
+    "action.logout": "Log out",
+    "action.notifications": "Notifications",
+    "page_title.default": "Dashboard"
+}
