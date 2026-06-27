@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard') — KaAyos</title>
+    <title>@yield('title', __('page_title.default')) — KaAyos</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,43 +31,43 @@
             <a href="{{ route('worker.dashboard') }}"
                class="nav-item {{ request()->routeIs('worker.dashboard*') ? 'active' : '' }}">
                 <i class="fa-solid fa-gauge-high nav-icon" aria-hidden="true"></i>
-                Dashboard
+                {{ __('nav.dashboard') }}
             </a>
 
             <a href="{{ route('worker.jobs') }}"
                class="nav-item {{ request()->routeIs('worker.jobs*') ? 'active' : '' }}">
                 <i class="fa-solid fa-clipboard-list nav-icon" aria-hidden="true"></i>
-                Job Requests
+                {{ __('nav.job_requests') }}
             </a>
 
             <a href="{{ route('worker.schedule') }}"
                class="nav-item {{ request()->routeIs('worker.schedule*') ? 'active' : '' }}">
                 <i class="fa-solid fa-calendar-days nav-icon" aria-hidden="true"></i>
-                My Schedule
+                {{ __('nav.my_schedule') }}
             </a>
 
             <a href="{{ route('worker.messages') }}"
                class="nav-item {{ request()->routeIs('worker.messages*') ? 'active' : '' }}">
                 <i class="fa-solid fa-comment-dots nav-icon" aria-hidden="true"></i>
-                Messages
+                {{ __('nav.messages') }}
             </a>
 
             <a href="{{ route('worker.earnings') }}"
                class="nav-item {{ request()->routeIs('worker.earnings*') ? 'active' : '' }}">
                 <i class="fa-solid fa-coins nav-icon" aria-hidden="true"></i>
-                Earnings
+                {{ __('nav.earnings') }}
             </a>
 
             <a href="{{ route('worker.profile') }}"
                class="nav-item {{ request()->routeIs('worker.profile*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-gear nav-icon" aria-hidden="true"></i>
-                My Profile
+                {{ __('nav.my_profile') }}
             </a>
 
             <a href="{{ route('worker.documents') }}"
                class="nav-item {{ request()->routeIs('worker.documents*') ? 'active' : '' }}">
                 <i class="fa-solid fa-file-upload nav-icon" aria-hidden="true"></i>
-                Documents
+                {{ __('nav.documents') }}
             </a>
 
         </nav>
@@ -84,7 +84,7 @@
             </div>
             <div class="profile-info">
                 <p class="profile-name">{{ auth()->user()->name ?? 'User' }}</p>
-                <span class="profile-role">Trabahador</span>
+                <span class="profile-role">{{ __('role.trabahador') }}</span>
             </div>
         </div>
 
@@ -92,7 +92,7 @@
             @csrf
             <button type="submit" class="sidebar-logout">
                 <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
-                Log out
+                {{ __('action.logout') }}
             </button>
         </form>
 
@@ -101,10 +101,10 @@
     <div class="main">
 
         <header class="topbar">
-            <h1 class="page-title">@yield('page_title', 'Dashboard')</h1>
+            <h1 class="page-title">@yield('page_title', __('page_title.default'))</h1>
 
             <div class="topbar-actions">
-                <a href="{{ route('worker.dashboard.notifications') }}" class="icon-btn" aria-label="Notifications">
+                <a href="{{ route('worker.dashboard.notifications') }}" class="icon-btn" aria-label="{{ __('action.notifications') }}">
                     <i class="fa-solid fa-bell" style="font-size:1rem;" aria-hidden="true"></i>
                     @if(collect($notifications ?? [])->where('unread', true)->count() > 0)
                         <span class="badge-dot"></span>

@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
@@ -9,6 +12,14 @@ use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
 use App\Http\Controllers\Worker\WorkerController;
 use App\Http\Controllers\Api\PasswordOtpController;
 use App\Http\Controllers\Api\ProfileController;
+
+RateLimiter::for('login', function (Request $request) {
+    return Limit::perMinute(5)->by($request->input('email') . '|' . $request->ip());
+});
+
+RateLimiter::for('register', function (Request $request) {
+    return Limit::perHour(3)->by($request->ip());
+});
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -21,12 +32,14 @@ Route::get('/services', function () {
 })->name('services.index');
 
 Route::get('/login',  [LoginController::class, 'create'])->name('login');
-Route::post('/login', [LoginController::class, 'store']);
+Route::post('/login', [LoginController::class, 'store'])
+    ->middleware('throttle:login');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 Route::get('/register', function () { return view('auth.register'); })->name('register');
-Route::post('/register', [RegisterController::class, 'store']);
+Route::post('/register', [RegisterController::class, 'store'])
+    ->middleware('throttle:register');
 
-Route::middleware(['auth'])->prefix('client')->name('client.')->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('client')->name('client.')->group(function () {
     Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [ClientController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/workers', [ClientWorkerController::class, 'index'])->name('workers');
@@ -44,7 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/api/profile/avatar',   [ProfileController::class, 'uploadAvatar']);
 });
 
-Route::middleware(['auth', 'worker'])->prefix('worker')->name('worker.')->group(function () {
+Route::middleware(['auth', 'verified', 'worker'])->prefix('worker')->name('worker.')->group(function () {
     Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [WorkerController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
@@ -52,8 +65,32 @@ Route::middleware(['auth', 'worker'])->prefix('worker')->name('worker.')->group(
     Route::get('/messages', [WorkerController::class, 'messages'])->name('messages');
     Route::get('/earnings', [WorkerController::class, 'earnings'])->name('earnings');
     Route::get('/profile', [WorkerController::class, 'profile'])->name('profile');
+    Route::put('/profile', [WorkerController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile/avatar', [WorkerController::class, 'uploadAvatar'])->name('profile.avatar');
+    Route::post('/profile/portfolio', [WorkerController::class, 'uploadPortfolio'])->name('profile.portfolio');
+    Route::delete('/profile/portfolio/{id}', [WorkerController::class, 'deletePortfolio'])->name('profile.portfolio.delete');
+    Route::post('/profile/document', [WorkerController::class, 'uploadDocument'])->name('profile.document');
     Route::get('/documents', [WorkerController::class, 'documents'])->name('documents');
 });
+
+Route::get('/email/verify', function () {
+    return view('auth.verify-email');
+})->middleware(['auth'])->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\EmailVerificationRequest $request) {
+    $request->fulfill();
+
+    $role = $request->user()->role;
+
+    return redirect($role === 'worker' ? route('worker.dashboard') : route('client.dashboard'))
+        ->with('success', 'Email verified successfully!');
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::post('/email/verification-notification', function (Request $request) {
+    $request->user()->sendEmailVerificationNotification();
+
+    return back()->with('message', 'Verification link sent!');
+})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
 Route::get('/about',   function () { return view('pages.about'); })->name('about');
 Route::get('/contact', function () { return view('pages.contact'); })->name('contact');
@@ -76,12 +113,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     })->name('verification.show');
     
     Route::post('/verification/{id}/approve', function($id) {
-        // Handle approve logic here
         return redirect()->route('admin.verification.index')->with('success', 'Verification approved successfully');
     })->name('verification.approve');
     
     Route::post('/verification/{id}/reject', function($id) {
-        // Handle reject logic here
         return redirect()->route('admin.verification.index')->with('error', 'Verification rejected');
     })->name('verification.reject');
 });
