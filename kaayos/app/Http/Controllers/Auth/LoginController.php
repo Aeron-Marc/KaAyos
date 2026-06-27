@@ -10,6 +10,10 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
+    protected int $maxAttempts = 5;
+
+    protected int $lockoutMinutes = 15;
+
     public function create(): View
     {
         return view('auth.login');
@@ -22,13 +26,30 @@ class LoginController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        $user = \App\Models\User::where('email', $request->input('email'))->first();
+
+        if ($user && $this->isLocked($user)) {
+            $minutes = now()->diffInMinutes($user->locked_until) + 1;
             return back()
-                ->withErrors(['email' => 'These credentials do not match our records.'])
+                ->with('error', "Account temporarily locked. Too many failed login attempts. Try again in {$minutes} minute(s).")
+                ->onlyInput('email');
+        }
+
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            if ($user) {
+                $this->incrementAttempts($user);
+            }
+            return back()
+                ->withErrors(['email' => 'The provided email or password is incorrect.'])
                 ->onlyInput('email');
         }
 
         $request->session()->regenerate();
+
+        $request->user()->update([
+            'failed_login_attempts' => 0,
+            'locked_until'         => null,
+        ]);
 
         return Auth::user()->role === 'worker'
             ? redirect()->intended(route('worker.dashboard'))
@@ -43,5 +64,22 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    protected function isLocked($user): bool
+    {
+        return $user->locked_until && now()->lessThan($user->locked_until);
+    }
+
+    protected function incrementAttempts($user): void
+    {
+        $attempts = $user->failed_login_attempts + 1;
+        $updates = ['failed_login_attempts' => $attempts];
+
+        if ($attempts >= $this->maxAttempts) {
+            $updates['locked_until'] = now()->addMinutes($this->lockoutMinutes);
+        }
+
+        $user->update($updates);
     }
 }

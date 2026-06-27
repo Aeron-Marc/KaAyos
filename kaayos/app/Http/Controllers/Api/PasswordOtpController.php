@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\Rules\Password;
 
 class PasswordOtpController extends Controller
 {
@@ -63,12 +64,26 @@ class PasswordOtpController extends Controller
         $request->validate([
             'otp'                      => 'required|string|size:6',
             'current_password'         => 'required|string',
-            'new_password'             => 'required|string|min:8|confirmed',
+            'new_password'             => ['required', 'string', 'confirmed', Password::min(8)
+                ->mixedCase()
+                ->numbers()
+                ->symbols()
+                ->letters()],
         ]);
 
         $user = $request->user();
 
+        $key = 'otp-verify:' . $user->id;
+
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            return response()->json([
+                'message' => "Too many attempts. Please try again in {$seconds} seconds.",
+            ], 429);
+        }
+
         if (!Hash::check($request->current_password, $user->password)) {
+            RateLimiter::hit($key, 600);
             return response()->json([
                 'message' => 'Current password is incorrect.',
             ], 422);
@@ -81,6 +96,7 @@ class PasswordOtpController extends Controller
             ->first();
 
         if (!$record || !Hash::check($request->otp, $record->token)) {
+            RateLimiter::hit($key, 600);
             return response()->json([
                 'message' => 'Invalid or expired OTP.',
             ], 422);

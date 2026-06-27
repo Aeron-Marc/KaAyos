@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -24,11 +25,13 @@ class RegisterController extends Controller
             'first_name' => ['required', 'string', 'max:100'],
             'last_name'  => ['required', 'string', 'max:100'],
             'email'      => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone'      => ['nullable', 'string', 'max:20'],
+            'phone'      => ['nullable', 'string', 'max:20', 'regex:/^(?:\+63|0)[0-9]{10}$/'],
             'role'       => ['required', 'in:client,worker'],
             'password'   => ['required', 'confirmed', Password::min(8)
                                 ->mixedCase()
-                                ->numbers()],
+                                ->numbers()
+                                ->symbols()
+                                ->letters()],
             'terms'      => ['accepted'],
         ];
 
@@ -55,6 +58,6 @@ class RegisterController extends Controller
 
         return redirect()
             ->route('login')
-            ->with('status', 'Registration successful! Please log in with your new account.');
+            ->with('status', 'Registration successful! Please check your email to verify your account before logging in.');
     }
 }

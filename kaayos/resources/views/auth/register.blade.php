@@ -530,10 +530,11 @@ function checkStrength(val){
   let score = 0;
   if(val.length>=8) score++;
   if(/[A-Z]/.test(val)) score++;
+  if(/[a-z]/.test(val)) score++;
   if(/[0-9]/.test(val)) score++;
   if(/[^A-Za-z0-9]/.test(val)) score++;
-  const widths = ['0%','25%','50%','75%','100%'];
-  const colors = ['transparent','#e57373','#ffb74d','#81c784','#43a047'];
+  const widths = ['0%','20%','40%','60%','80%','100%'];
+  const colors = ['transparent','#e57373','#e57373','#ffb74d','#81c784','#43a047'];
   fill.style.width = widths[score];
   fill.style.background = colors[score];
 }

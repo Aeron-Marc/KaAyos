@@ -88,6 +88,13 @@ input::placeholder{color:var(--g4)}
         <div class="card-title">Sign in to your account</div>
         <div class="card-sub">Find and book trusted workers near you</div>
 
+        @if(session('status'))
+        <div style="background:#d6f5e8;border:1px solid #a3e0c0;border-radius:8px;padding:11px 14px;font-size:.85rem;color:#1a6852;margin-bottom:20px;display:flex;align-items:center;gap:8px">
+            <i class="fa-solid fa-circle-check"></i>
+            {{ session('status') }}
+        </div>
+        @endif
+
         @if(session('error'))
         <div class="alert">
             <i class="fa-solid fa-circle-exclamation"></i>
