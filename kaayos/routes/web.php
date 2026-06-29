@@ -39,7 +39,7 @@ Route::get('/register', function () { return view('auth.register'); })->name('re
 Route::post('/register', [RegisterController::class, 'store'])
     ->middleware('throttle:register');
 
-Route::middleware(['auth', 'verified'])->prefix('client')->name('client.')->group(function () {
+Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('client.')->group(function () {
     Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [ClientController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/workers', [ClientWorkerController::class, 'index'])->name('workers');
@@ -57,7 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/api/profile/avatar',   [ProfileController::class, 'uploadAvatar']);
 });
 
-Route::middleware(['auth', 'verified', 'worker'])->prefix('worker')->name('worker.')->group(function () {
+Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')->name('worker.')->group(function () {
     Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [WorkerController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
@@ -75,7 +75,7 @@ Route::middleware(['auth', 'verified', 'worker'])->prefix('worker')->name('worke
 
 Route::get('/email/verify', function () {
     return view('auth.verify-email');
-})->middleware(['auth'])->name('verification.notice');
+})->middleware(['auth', 'no-cache'])->name('verification.notice');
 
 Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\EmailVerificationRequest $request) {
     $request->fulfill();
@@ -84,13 +84,13 @@ Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\Em
 
     return redirect($role === 'worker' ? route('worker.dashboard') : route('client.dashboard'))
         ->with('success', 'Email verified successfully!');
-})->middleware(['auth', 'signed'])->name('verification.verify');
+})->middleware(['auth', 'signed', 'no-cache'])->name('verification.verify');
 
 Route::post('/email/verification-notification', function (Request $request) {
     $request->user()->sendEmailVerificationNotification();
 
     return back()->with('message', 'Verification link sent!');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+})->middleware(['auth', 'throttle:6,1', 'no-cache'])->name('verification.send');
 
 Route::get('/about',   function () { return view('pages.about'); })->name('about');
 Route::get('/contact', function () { return view('pages.contact'); })->name('contact');

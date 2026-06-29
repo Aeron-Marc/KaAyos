@@ -18,7 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'worker' => \App\Http\Middleware\CheckWorkerRole::class,
+            'worker'   => \App\Http\Middleware\CheckWorkerRole::class,
+            'no-cache' => \App\Http\Middleware\PreventBackHistory::class,
         ]);
 
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
