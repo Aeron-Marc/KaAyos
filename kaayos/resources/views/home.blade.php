@@ -266,7 +266,7 @@ a{text-decoration:none;color:inherit}
   <div class="join-text">
     <h2>Are You a Skilled Trabahador?</h2>
     <p>KaAyos helps Filipino workers earn more, reach more clients, and build a professional reputation — without relying on referrals alone.</p>
-    <a href="/register" class="btn btn-solid btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Register as a Worker</a>
+    <a href="/register`" class="btn btn-solid btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Register as a Worker</a>
   </div>
   <div class="perks">
     <div class="perk"><div class="perk-ico"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></div><div><strong>More Job Visibility</strong><span>Get discovered by homeowners in your barangay and beyond</span></div></div>
