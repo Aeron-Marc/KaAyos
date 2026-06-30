@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Worker;
 use App\Http\Controllers\Controller;
 use App\Models\WorkerDocument;
 use App\Models\WorkerProfile;
+use App\Support\WorkerDocuments;
 use App\Support\WorkerSampleData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,23 +30,27 @@ class WorkerController extends Controller
 
     protected function getDocuments(): array
     {
-        $templates = WorkerSampleData::documents();
+        $types = WorkerDocuments::types();
 
         $userDocs = auth()->user()->workerDocuments->keyBy('document_type');
 
-        return array_map(function ($doc) use ($userDocs) {
-            $userDoc = $userDocs->get($doc['name']);
+        return array_map(function ($type) use ($userDocs) {
+            $userDoc = $userDocs->get($type['name']);
 
-            if ($userDoc) {
-                $doc['status'] = $userDoc->status === 'verified' ? 'Verified'
-                    : ($userDoc->status === 'pending' ? 'Pending' : 'Not Submitted');
-                $doc['file'] = $userDoc->file_path
+            return [
+                'name'        => $type['name'],
+                'description' => $type['description'],
+                'icon'        => $type['icon'],
+                'status'      => $userDoc
+                    ? ($userDoc->status === 'verified' ? 'Verified'
+                        : ($userDoc->status === 'pending' ? 'Pending' : 'Not Submitted'))
+                    : 'Not Submitted',
+                'file'        => $userDoc?->file_path
                     ? basename($userDoc->file_path)
-                    : null;
-            }
-
-            return $doc;
-        }, $templates);
+                    : null,
+                'id'          => $userDoc?->id,
+            ];
+        }, $types);
     }
 
     public function dashboard(): View

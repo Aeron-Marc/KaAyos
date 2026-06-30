@@ -50,10 +50,15 @@
                 </span>
                 @if($doc['status'] !== 'Verified')
                     <div>
-                        <button type="button" class="btn btn-outline" style="padding:5px 12px;font-size:.78rem;">
-                            <i class="fa-solid fa-upload" aria-hidden="true"></i>
-                            {{ $doc['file'] ? 'Replace' : 'Upload' }}
-                        </button>
+                        <form method="POST" action="{{ route('worker.profile.document') }}" enctype="multipart/form-data" style="display:inline;">
+                            @csrf
+                            <input type="hidden" name="document_type" value="{{ $doc['name'] }}">
+                            <input type="file" name="file" accept=".jpeg,.png,.jpg,.pdf" style="display:none;" class="doc-file-input" data-doc="{{ $doc['name'] }}">
+                            <button type="button" class="btn btn-outline doc-upload-btn" style="padding:5px 12px;font-size:.78rem;" onclick="this.closest('form').querySelector('.doc-file-input').click();">
+                                <i class="fa-solid fa-upload" aria-hidden="true"></i>
+                                {{ $doc['file'] ? 'Replace' : 'Upload' }}
+                            </button>
+                        </form>
                     </div>
                 @elseif($doc['file'])
                     <div style="font-size:.75rem;color:var(--g4);">
@@ -95,3 +100,15 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+document.querySelectorAll('.doc-file-input').forEach(input => {
+    input.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            this.closest('form').submit();
+        }
+    });
+});
+</script>
+@endpush
