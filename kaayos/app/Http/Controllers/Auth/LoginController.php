@@ -51,9 +51,11 @@ class LoginController extends Controller
             'locked_until'         => null,
         ]);
 
-        return Auth::user()->role === 'worker'
-            ? redirect()->intended(route('worker.dashboard'))
-            : redirect()->intended(route('client.dashboard'));
+        return match (Auth::user()->role) {
+            'admin'  => redirect()->intended(route('admin.dashboard')),
+            'worker' => redirect()->intended(route('worker.dashboard')),
+            default  => redirect()->intended(route('client.dashboard')),
+        };
     }
 
     public function destroy(Request $request): RedirectResponse

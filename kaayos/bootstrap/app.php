@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'worker'   => \App\Http\Middleware\CheckWorkerRole::class,
+            'admin'    => \App\Http\Middleware\CheckAdminRole::class,
             'no-cache' => \App\Http\Middleware\PreventBackHistory::class,
         ]);
 

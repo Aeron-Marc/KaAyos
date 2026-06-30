@@ -12,6 +12,15 @@ use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
 use App\Http\Controllers\Worker\WorkerController;
 use App\Http\Controllers\Api\PasswordOtpController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VerificationController;
+use App\Http\Controllers\Admin\ServiceCategoryController;
+use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\ProviderServiceController;
+use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\DisputeController;
+use App\Http\Controllers\Admin\ReportController;
 
 RateLimiter::for('login', function (Request $request) {
     return Limit::perMinute(5)->by($request->input('email') . '|' . $request->ip());
@@ -104,24 +113,50 @@ Route::get('/terms',   function () { return view('pages.terms'); })->name('terms
 Route::get('/safety',  function () { return view('pages.safety'); })->name('safety');
 
 // Admin Routes
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function() {
-        return view('admin.dashboard');
-    })->name('dashboard');
-    
-    Route::get('/verification', function() {
-        return view('admin.verification.index');
-    })->name('verification.index');
-    
-    Route::get('/verification/{id}', function($id) {
-        return view('admin.verification.show');
-    })->name('verification.show');
-    
-    Route::post('/verification/{id}/approve', function($id) {
-        return redirect()->route('admin.verification.index')->with('success', 'Verification approved successfully');
-    })->name('verification.approve');
-    
-    Route::post('/verification/{id}/reject', function($id) {
-        return redirect()->route('admin.verification.index')->with('error', 'Verification rejected');
-    })->name('verification.reject');
+Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Users
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+    Route::post('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
+    Route::post('/users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
+
+    // Verifications
+    Route::get('/verification', [VerificationController::class, 'index'])->name('verification.index');
+    Route::get('/verification/{verification}', [VerificationController::class, 'show'])->name('verification.show');
+    Route::post('/verification/{verification}/approve', [VerificationController::class, 'approve'])->name('verification.approve');
+    Route::post('/verification/{verification}/reject', [VerificationController::class, 'reject'])->name('verification.reject');
+
+    // Service Categories
+    Route::get('/service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
+    Route::get('/service-categories/create', [ServiceCategoryController::class, 'create'])->name('service-categories.create');
+    Route::post('/service-categories', [ServiceCategoryController::class, 'store'])->name('service-categories.store');
+    Route::get('/service-categories/{serviceCategory}/edit', [ServiceCategoryController::class, 'edit'])->name('service-categories.edit');
+    Route::put('/service-categories/{serviceCategory}', [ServiceCategoryController::class, 'update'])->name('service-categories.update');
+    Route::delete('/service-categories/{serviceCategory}', [ServiceCategoryController::class, 'destroy'])->name('service-categories.destroy');
+
+    // Services
+    Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
+    Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
+    Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
+    Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
+    Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
+    Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+
+    // Provider Services
+    Route::get('/provider-services', [ProviderServiceController::class, 'index'])->name('provider-services.index');
+
+    // Bookings
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+
+    // Disputes
+    Route::get('/disputes', [DisputeController::class, 'index'])->name('disputes.index');
+    Route::get('/disputes/{dispute}', [DisputeController::class, 'show'])->name('disputes.show');
+    Route::put('/disputes/{dispute}', [DisputeController::class, 'update'])->name('disputes.update');
+
+    // Reports
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 });
