@@ -20,5 +20,5 @@
 </template>
 
 <script setup>
-import { Map as MapIcon } from 'lucide-vue';
+import { Map as MapIcon } from '@lucide/vue';
 </script>

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('phone')->nullable()->after('email');
             $table->enum('role', ['client', 'worker'])->default('client')->after('phone');
             $table->string('service_category')->nullable()->after('role');
-            $table->string('city')->nullable()->after('service_category');
+            //$table->string('city')->nullable()->after('service_category');
         });
     }
 

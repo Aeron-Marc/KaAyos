@@ -21,11 +21,11 @@
                 <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $worker['distance'] }}</span>
                 <span class="price">₱{{ number_format($worker['price']) }}/hr</span>
             </div>
-            @if($worker['verified'])
+            {{-- @if($worker['verified'])
                 <span class="verified-badge">
                     <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified
                 </span>
-            @endif
+            @endif --}}
         </div>
     </div>
     @if(!empty($worker['skills']))

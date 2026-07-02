@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Worker;
 
 use App\Http\Controllers\Controller;
-use App\Models\WorkerDocument;
 use App\Models\WorkerProfile;
 use App\Support\WorkerDocuments;
-use App\Support\WorkerSampleData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -18,13 +16,160 @@ class WorkerController extends Controller
     protected function shared(): array
     {
         return [
-            'stats'         => WorkerSampleData::stats(),
-            'jobRequests'   => WorkerSampleData::jobRequests(),
-            'schedule'      => WorkerSampleData::schedule(),
-            'notifications' => WorkerSampleData::notifications(),
-            'conversations' => WorkerSampleData::conversations(),
-            'earnings'      => WorkerSampleData::earnings(),
+            'stats'         => $this->getStats(),
+            'jobRequests'   => $this->getJobRequests(),
+            'schedule'      => $this->getSchedule(),
+            'notifications' => $this->getNotifications(),
+            'conversations' => $this->getConversations(),
+            'earnings'      => $this->getEarnings(),
             'documents'     => $this->getDocuments(),
+        ];
+    }
+
+    protected function getStats(): array
+    {
+        $user = auth()->user();
+        $weekStart = now()->startOfWeek();
+
+        $weeklyEarnings = $user->bookingsAsWorker()->completed()
+            ->where('completed_at', '>=', $weekStart)
+            ->sum('price') ?? 0;
+
+        $activeJobs = $user->bookingsAsWorker()
+            ->whereIn('status', ['confirmed', 'in_progress'])
+            ->count();
+
+        $totalCompleted = $user->bookingsAsWorker()->completed()->count();
+
+        return [
+            ['label' => 'Earnings This Week', 'value' => '₱' . number_format($weeklyEarnings), 'icon' => 'fa-coins', 'accent' => true],
+            ['label' => 'Active Jobs',       'value' => $activeJobs,                         'icon' => 'fa-briefcase'],
+            ['label' => 'Rating',            'value' => '0.0 ★',                            'icon' => 'fa-star'],
+            ['label' => 'Completed Jobs',    'value' => $totalCompleted,                     'icon' => 'fa-circle-check'],
+        ];
+    }
+
+    protected function getJobRequests(): array
+    {
+        return auth()->user()->bookingsAsWorker()
+            ->with('client')
+            ->latest()
+            ->get()
+            ->map(function ($booking) {
+                $statusMap = [
+                    'pending'    => 'Pending',
+                    'confirmed'  => 'Accepted',
+                    'in_progress'=> 'Accepted',
+                    'completed'  => 'Completed',
+                    'cancelled'  => 'Cancelled',
+                ];
+
+                return [
+                    'id'       => $booking->id,
+                    'client'   => $booking->client->name ?? 'Unknown',
+                    'service'  => $booking->service_category,
+                    'date'     => $booking->scheduled_at->format('M d, Y · h:i A'),
+                    'location' => $booking->address,
+                    'status'   => $statusMap[$booking->status] ?? ucfirst($booking->status),
+                    'price'    => $booking->price ?? 0,
+                ];
+            })
+            ->toArray();
+    }
+
+    protected function getSchedule(): array
+    {
+        return auth()->user()->bookingsAsWorker()
+            ->whereIn('status', ['pending', 'confirmed', 'in_progress'])
+            ->with('client')
+            ->orderBy('scheduled_at')
+            ->get()
+            ->map(function ($booking) {
+                return [
+                    'id'       => $booking->id,
+                    'client'   => $booking->client->name ?? 'Unknown',
+                    'service'  => $booking->service_category,
+                    'date'     => $booking->scheduled_at->format('M d, Y'),
+                    'time'     => $booking->scheduled_at->format('g:i A'),
+                    'location' => $booking->address,
+                    'status'   => in_array($booking->status, ['confirmed', 'in_progress']) ? 'Confirmed' : 'Pending',
+                ];
+            })
+            ->toArray();
+    }
+
+    protected function getNotifications(): array
+    {
+        return auth()->user()->notifications
+            ->map(function ($notif) {
+                $data = $notif->data;
+
+                $typeMap = [
+                    'App\Notifications\NewBooking'         => 'booking',
+                    'App\Notifications\BookingConfirmed'   => 'booking',
+                    'App\Notifications\BookingCompleted'   => 'booking',
+                    'App\Notifications\NewMessage'         => 'message',
+                    'App\Notifications\NewReview'          => 'review',
+                    'App\Notifications\PayoutProcessed'    => 'earnings',
+                    'App\Notifications\DocumentVerified'   => 'system',
+                    'App\Notifications\DocumentRejected'   => 'system',
+                ];
+
+                return [
+                    'type'   => $typeMap[$notif->type] ?? 'system',
+                    'title'  => $data['title'] ?? 'Notification',
+                    'desc'   => $data['message'] ?? '',
+                    'time'   => $notif->created_at->diffForHumans(),
+                    'unread' => is_null($notif->read_at),
+                ];
+            })
+            ->toArray();
+    }
+
+    protected function getConversations(): array
+    {
+        return [];
+    }
+
+    protected function getEarnings(): array
+    {
+        $user = auth()->user();
+        $now = now();
+
+        $completed = $user->bookingsAsWorker()->completed()->get();
+
+        $total = (int) ($completed->sum('price') ?? 0);
+        $thisMonth = (int) ($completed->filter(function ($b) use ($now) {
+            return $b->completed_at
+                && $b->completed_at->month === $now->month
+                && $b->completed_at->year === $now->year;
+        })->sum('price') ?? 0);
+
+        $pendingPayout = (int) ($user->bookingsAsWorker()
+            ->whereIn('status', ['confirmed', 'in_progress'])
+            ->sum('price') ?? 0);
+
+        $count = $completed->count();
+        $avgPerJob = $count > 0 ? round($total / $count) : 0;
+
+        $payouts = $completed->sortByDesc('completed_at')->values()
+            ->map(function ($booking) {
+                return [
+                    'date'   => $booking->completed_at?->format('M d, Y') ?? 'N/A',
+                    'client' => $booking->client->name ?? 'Unknown',
+                    'job'    => $booking->service_category,
+                    'amount' => $booking->price ?? 0,
+                    'status' => 'Completed',
+                ];
+            })
+            ->toArray();
+
+        return [
+            'total'          => $total,
+            'this_month'     => $thisMonth,
+            'pending_payout' => $pendingPayout,
+            'avg_per_job'    => $avgPerJob,
+            'payouts'        => $payouts,
         ];
     }
 

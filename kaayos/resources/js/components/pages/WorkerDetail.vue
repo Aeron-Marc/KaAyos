@@ -74,7 +74,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { Star, MapPin, BadgeCheck } from 'lucide-vue';
+import { Star, MapPin, BadgeCheck } from '@lucide/vue';
 import { useAppData } from '../../composables/useAppData';
 import Badge from '../ui/Badge.vue';
 

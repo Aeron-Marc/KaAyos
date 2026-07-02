@@ -121,7 +121,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { Home, Search, MessageSquare, Map as MapIcon, Calendar, User, Settings, LogOut, Menu, X, Briefcase } from 'lucide-vue';
+import { Home, Search, MessageSquare, Map as MapIcon, Calendar, User, Settings, LogOut, Menu, X, Briefcase } from '@lucide/vue';
 
 const route = useRoute();
 const isMobileMenuOpen = ref(false);
