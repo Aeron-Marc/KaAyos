@@ -58,8 +58,13 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [ClientController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/workers', [ClientWorkerController::class, 'index'])->name('workers');
+    Route::get('/workers/{worker}', [ClientWorkerController::class, 'show'])->name('workers.show');
     Route::get('/bookings', [ClientController::class, 'bookings'])->name('bookings');
+    Route::post('/bookings', [ClientController::class, 'storeBooking'])->name('bookings.store');
+    Route::patch('/bookings/{booking}/cancel', [ClientController::class, 'cancelBooking'])->name('bookings.cancel');
+    Route::post('/bookings/{booking}/review', [ClientController::class, 'submitReview'])->name('bookings.review');
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
+    Route::post('/messages/send', [ClientController::class, 'sendMessage'])->name('messages.send');
     Route::get('/reviews', [ClientController::class, 'reviews'])->name('reviews');
     Route::get('/account/profile', [ClientController::class, 'profile'])->name('account.profile');
 });

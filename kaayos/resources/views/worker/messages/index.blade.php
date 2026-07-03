@@ -10,6 +10,9 @@
     padding: 1px 7px; font-size: .7rem; font-weight: 700;
 }
 .convo-item { cursor: pointer; }
+.bubble-text { line-height: 1.5; }
+.bubble-time { font-size: .65rem; opacity: .6; margin-top: 4px; }
+.chat-bubble.me .bubble-time { text-align: right; }
 </style>
 @endpush
 
@@ -53,13 +56,14 @@
             <div class="chat-body" id="chat-body">
                 @foreach($activeConvo['messages'] as $msg)
                     <div class="chat-bubble {{ $msg['from'] === 'me' ? 'me' : 'them' }}">
-                        {{ $msg['text'] }}
+                        <div class="bubble-text">{{ $msg['text'] }}</div>
+                        <div class="bubble-time">{{ $msg['time'] ?? '' }}</div>
                     </div>
                 @endforeach
             </div>
             <div class="chat-input-row" id="chat-input-row">
-                <input type="text" placeholder="Type your message…" aria-label="Type your message">
-                <button class="btn btn-solid" style="padding:10px 16px;">
+                <input type="text" class="msg-input" placeholder="Type your message…" aria-label="Type your message">
+                <button class="btn btn-solid send-btn" style="padding:10px 16px;">
                     <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
                 </button>
             </div>
@@ -80,6 +84,13 @@
 @push('scripts')
 <script>
 const conversations = @json($conversations);
+
+function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
 
 document.querySelectorAll('.convo-item').forEach(item => {
     item.addEventListener('click', function () {
@@ -106,12 +117,12 @@ document.querySelectorAll('.convo-item').forEach(item => {
         const body = document.createElement('div');
         body.className = 'chat-body';
         body.id = 'chat-body';
-        convo.messages.forEach(function (msg) {
-            const bubble = document.createElement('div');
-            bubble.className = 'chat-bubble ' + (msg.from === 'me' ? 'me' : 'them');
-            bubble.textContent = msg.text;
-            body.appendChild(bubble);
-        });
+            convo.messages.forEach(function (msg) {
+                const bubble = document.createElement('div');
+                bubble.className = 'chat-bubble ' + (msg.from === 'me' ? 'me' : 'them');
+                bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(msg.text) + '</div><div class="bubble-time">' + (msg.time || '') + '</div>';
+                body.appendChild(bubble);
+            });
         header.after(body);
 
         const inputRow = document.createElement('div');
@@ -150,7 +161,7 @@ function attachSendHandler(convo) {
             const body = document.getElementById('chat-body');
             const bubble = document.createElement('div');
             bubble.className = 'chat-bubble me';
-            bubble.textContent = data.message.text;
+            bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(data.message.text) + '</div><div class="bubble-time">' + (data.message.time || 'just now') + '</div>';
             body.appendChild(bubble);
             input.value = '';
             body.scrollTop = body.scrollHeight;
@@ -164,8 +175,23 @@ function attachSendHandler(convo) {
     });
 }
 
-// Attach handler to the initially active conversation
+function selectConvoByBookingId(bookingId) {
+    for (let i = 0; i < conversations.length; i++) {
+        if (String(conversations[i].booking_id) === String(bookingId)) {
+            const el = document.querySelector(`.convo-item[data-index="${i}"]`);
+            if (el) el.click();
+            return;
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingParam = urlParams.get('booking');
+    if (bookingParam) {
+        selectConvoByBookingId(bookingParam);
+    }
+
     const active = document.querySelector('.convo-item.active');
     if (active) {
         const convo = conversations[active.dataset.index];

@@ -255,7 +255,7 @@ function showConfirmModal(index) {
     if (!job) return;
 
     const step = {
-        'new':         { action: 'accept',    label: 'Accept',    verb: 'accepting' },
+        'new':         { action: 'accepted',    label: 'Accept',    verb: 'accepting' },
         'accepted':    { action: 'en_route',  label: 'Mark as En Route', verb: 'marking as en route' },
         'en_route':    { action: 'in_progress', label: 'Start',  verb: 'starting' },
         'in_progress': { action: 'completed', label: 'Complete', verb: 'completing' },

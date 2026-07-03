@@ -1,5 +1,5 @@
 @foreach($workers as $worker)
-<a href="{{ route('client.workers') }}" class="worker-card">
+<a href="{{ route('client.workers.show', $worker['id']) }}" class="worker-card">
     <div class="worker-top">
         @if(!empty($worker['avatar']))
             <img src="{{ $worker['avatar'] }}" alt="{{ $worker['name'] }}" class="worker-avatar">
@@ -21,14 +21,9 @@
                 <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $worker['distance'] }}</span>
                 <span class="price">₱{{ number_format($worker['price']) }}/hr</span>
             </div>
-            {{-- @if($worker['verified'])
-                <span class="verified-badge">
-                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified
-                </span>
-            @endif --}}
         </div>
     </div>
-    @if(!empty($worker['skills']))
+    @if(!empty($worker['skills']) && count($worker['skills']) > 0)
         <div class="skill-tags">
             @foreach(array_slice($worker['skills'], 0, 3) as $skill)
                 <span class="skill-tag">{{ $skill }}</span>

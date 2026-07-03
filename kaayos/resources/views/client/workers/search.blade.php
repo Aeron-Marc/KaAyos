@@ -18,7 +18,7 @@
     </div>
     <div class="search-field" style="max-width:220px;flex:none;">
         <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-        <input type="text" name="location" placeholder="Your barangay" aria-label="Location">
+        <input type="text" name="location" value="Tuy, Batangas" placeholder="Your barangay" aria-label="Location" disabled style="background:var(--g0);cursor:not-allowed;">
     </div>
     <button type="submit" class="btn btn-solid">Search</button>
 </form>
@@ -35,32 +35,25 @@
 
 <div class="section-header">
     <div>
-        <div class="eyebrow">Verified Trabahadors</div>
-        <h2 class="section-title">{{ count($workers) }} workers near you</h2>
+        <div class="eyebrow">Trabahadors</div>
+        <h2 class="section-title">{{ count($workers) }} worker(s) found</h2>
     </div>
     <span style="font-size:.84rem;color:var(--g4);">
         <i class="fa-solid fa-robot" aria-hidden="true"></i> AI-ranked by skill &amp; distance
     </span>
 </div>
 
-@php
-    $filtered = collect($workers);
-    if (request('category')) {
-        $filtered = $filtered->filter(fn ($w) => strtolower($w['category']) === request('category') || str_contains(strtolower($w['category']), request('category')));
-    }
-@endphp
-
-@if($filtered->isEmpty())
+@if(empty($workers))
     <div class="card-panel">
         <div class="empty-state">
             <i class="fa-solid fa-users" aria-hidden="true"></i>
             <h3>No workers found</h3>
-            <p>Try a different category or broaden your search area.</p>
+            <p>Try a different category or broaden your search.</p>
         </div>
     </div>
 @else
     <div class="workers-grid">
-        @include('client.partials.worker-cards', ['workers' => $filtered->values()->all()])
+        @include('client.partials.worker-cards', ['workers' => $workers])
     </div>
 @endif
 

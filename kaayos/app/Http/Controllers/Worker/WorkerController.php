@@ -192,17 +192,23 @@ class WorkerController extends Controller
             $client = $clientBookings->first()->client;
             $latestBooking = $clientBookings->first();
 
-            $messages = $latestBooking->messages
-                ->sortBy('created_at')
-                ->map(fn($msg) => [
-                    'from' => $msg->sender_id === $user->id ? 'me' : 'them',
-                    'text' => $msg->message,
-                ])
+            $allMessages = collect();
+            foreach ($clientBookings as $booking) {
+                $allMessages = $allMessages->merge($booking->messages);
+            }
+
+            $allMessages = $allMessages->sortBy('created_at');
+
+            $messages = $allMessages->map(fn($msg) => [
+                'from' => $msg->sender_id === $user->id ? 'me' : 'them',
+                'text' => $msg->message,
+                'time' => $msg->created_at->diffForHumans(),
+            ])
                 ->values()
                 ->toArray();
 
-            $lastMsg = $latestBooking->messages->sortByDesc('created_at')->first();
-            $unreadCount = $latestBooking->messages->where('receiver_id', $user->id)->whereNull('read_at')->count();
+            $lastMsg = $allMessages->last();
+            $unreadCount = $allMessages->where('receiver_id', $user->id)->whereNull('read_at')->count();
 
             $initials = strtoupper(
                 ($client->first_name ? $client->first_name[0] : '') .

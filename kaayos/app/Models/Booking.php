@@ -75,6 +75,11 @@ class Booking extends Model
         return $this->hasMany(Message::class);
     }
 
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class);
+    }
+
     // ── Scopes ─────────────────────────────────────────────────
 
     public function scopeNew($query)

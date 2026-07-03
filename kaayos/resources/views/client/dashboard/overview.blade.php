@@ -56,7 +56,6 @@
 
 <div class="section-header">
     <h2 class="section-title">Browse by Category</h2>
-    <a href="{{ route('services.index') }}" class="link-action">See all services</a>
 </div>
 
 <div class="category-scroll">
@@ -96,25 +95,39 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($bookings as $booking)
+            @forelse($bookings as $booking)
                 <tr>
                     <td><span class="booking-worker">{{ $booking['worker'] }}</span></td>
                     <td>{{ $booking['service'] }}</td>
                     <td>{{ $booking['date'] }}</td>
                     <td>
                         @php
-                            $statusClass = match($booking['status']) {
-                                'Active' => 'status-active',
-                                'Pending' => 'status-pending',
-                                'Done' => 'status-done',
-                                default => 'status-cancelled',
+                            $cls = match($booking['raw_status']) {
+                                'new'         => 'status-pending',
+                                'accepted'    => 'status-active',
+                                'en_route'    => 'status-active',
+                                'in_progress' => 'status-active',
+                                'completed'   => 'status-done',
+                                default       => 'status-cancelled',
                             };
+                            $label = [
+                                'new' => 'Pending', 'accepted' => 'Active', 'en_route' => 'En Route',
+                                'in_progress' => 'In Progress', 'completed' => 'Completed', 'cancelled' => 'Cancelled',
+                            ][$booking['raw_status']] ?? ucfirst($booking['raw_status']);
                         @endphp
-                        <span class="status-badge {{ $statusClass }}">{{ $booking['status'] }}</span>
+                        <span class="status-badge {{ $cls }}">{{ $label }}</span>
                     </td>
                     <td>₱{{ number_format($booking['price']) }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="5">
+                        <div style="text-align:center;padding:24px;color:var(--g4);font-size:.85rem;">
+                            No bookings yet. <a href="{{ route('client.workers') }}" style="color:var(--b6);">Find a worker</a>
+                        </div>
+                    </td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
 </div>
