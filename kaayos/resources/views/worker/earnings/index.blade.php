@@ -34,9 +34,9 @@
             <div class="eyebrow">Transaction History</div>
             <h2 class="section-title">Payouts</h2>
         </div>
-        <button type="button" class="btn btn-ghost" style="font-size:.82rem;">
+        <a href="{{ route('worker.earnings.export') }}" class="btn btn-ghost" style="font-size:.82rem;">
             <i class="fa-solid fa-download" aria-hidden="true"></i> Export
-        </button>
+        </a>
     </div>
 
     <table class="bookings-table">

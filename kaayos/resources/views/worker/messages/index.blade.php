@@ -3,17 +3,32 @@
 @section('title', 'Messages')
 @section('page_title', 'Messages')
 
+@push('styles')
+<style>
+.unread-badge {
+    background: var(--b6); color: #fff; border-radius: 100px;
+    padding: 1px 7px; font-size: .7rem; font-weight: 700;
+}
+.convo-item { cursor: pointer; }
+</style>
+@endpush
+
 @section('content')
 
 <div class="messages-layout">
     <div class="convo-list">
-        @forelse($conversations as $convo)
-            <div class="convo-item {{ $convo['active'] ? 'active' : '' }}">
+        @forelse($conversations as $i => $convo)
+            <div class="convo-item {{ $convo['active'] ? 'active' : '' }}" data-index="{{ $i }}">
                 <div class="convo-avatar">{{ $convo['initials'] }}</div>
                 <div style="flex:1;min-width:0;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <span class="convo-name">{{ $convo['name'] }}</span>
-                        <span class="convo-time">{{ $convo['time'] }}</span>
+                        <span style="display:flex;align-items:center;gap:6px;">
+                            @if(($convo['unread_count'] ?? 0) > 0)
+                                <span class="unread-badge">{{ $convo['unread_count'] }}</span>
+                            @endif
+                            <span class="convo-time">{{ $convo['time'] }}</span>
+                        </span>
                     </div>
                     <div class="convo-preview">{{ $convo['preview'] }}</div>
                 </div>
@@ -27,29 +42,29 @@
         @endforelse
     </div>
 
-    <div class="chat-pane">
+    <div class="chat-pane" id="chat-pane">
         @php $activeConvo = collect($conversations)->firstWhere('active', true); @endphp
         @if($activeConvo)
-            <div class="chat-header">
+            <div class="chat-header" id="chat-header">
                 <i class="fa-regular fa-user" aria-hidden="true"></i>
-                {{ $activeConvo['name'] }}
+                <span id="chat-name">{{ $activeConvo['name'] }}</span>
                 <span style="font-weight:400;color:var(--g4);font-size:.82rem;margin-left:4px;">(Client)</span>
             </div>
-            <div class="chat-body">
+            <div class="chat-body" id="chat-body">
                 @foreach($activeConvo['messages'] as $msg)
                     <div class="chat-bubble {{ $msg['from'] === 'me' ? 'me' : 'them' }}">
                         {{ $msg['text'] }}
                     </div>
                 @endforeach
             </div>
-            <div class="chat-input-row">
+            <div class="chat-input-row" id="chat-input-row">
                 <input type="text" placeholder="Type your message…" aria-label="Type your message">
                 <button class="btn btn-solid" style="padding:10px 16px;">
                     <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
                 </button>
             </div>
         @else
-            <div style="display:flex;align-items:center;justify-content:center;flex:1;padding:40px;">
+            <div id="chat-empty" style="display:flex;align-items:center;justify-content:center;flex:1;padding:40px;">
                 <div class="empty-state">
                     <i class="fa-regular fa-comment-dots" aria-hidden="true"></i>
                     <h3>Select a conversation</h3>
@@ -61,3 +76,101 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+const conversations = @json($conversations);
+
+document.querySelectorAll('.convo-item').forEach(item => {
+    item.addEventListener('click', function () {
+        document.querySelectorAll('.convo-item').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+
+        const convo = conversations[this.dataset.index];
+        if (!convo) return;
+
+        const pane = document.getElementById('chat-pane');
+
+        document.getElementById('chat-empty')?.remove();
+
+        document.getElementById('chat-header')?.remove();
+        document.getElementById('chat-body')?.remove();
+        document.getElementById('chat-input-row')?.remove();
+
+        const header = document.createElement('div');
+        header.className = 'chat-header';
+        header.id = 'chat-header';
+        header.innerHTML = '<i class="fa-regular fa-user" aria-hidden="true"></i> <span id="chat-name">' + convo.name + '</span><span style="font-weight:400;color:var(--g4);font-size:.82rem;margin-left:4px;">(Client)</span>';
+        pane.prepend(header);
+
+        const body = document.createElement('div');
+        body.className = 'chat-body';
+        body.id = 'chat-body';
+        convo.messages.forEach(function (msg) {
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble ' + (msg.from === 'me' ? 'me' : 'them');
+            bubble.textContent = msg.text;
+            body.appendChild(bubble);
+        });
+        header.after(body);
+
+        const inputRow = document.createElement('div');
+        inputRow.className = 'chat-input-row';
+        inputRow.id = 'chat-input-row';
+        inputRow.innerHTML = '<input type="text" class="msg-input" placeholder="Type your message…" aria-label="Type your message"><button class="btn btn-solid send-btn" style="padding:10px 16px;"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></button>';
+        pane.appendChild(inputRow);
+
+        attachSendHandler(convo);
+
+        body.scrollTop = body.scrollHeight;
+    });
+});
+
+function attachSendHandler(convo) {
+    const btn = document.querySelector('.send-btn');
+    const input = document.querySelector('.msg-input');
+    if (!btn || !input) return;
+
+    function send() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        fetch('{{ route('worker.messages.send') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ booking_id: convo.booking_id, message: text }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            const body = document.getElementById('chat-body');
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble me';
+            bubble.textContent = data.message.text;
+            body.appendChild(bubble);
+            input.value = '';
+            body.scrollTop = body.scrollHeight;
+        })
+        .catch(() => {});
+    }
+
+    btn.addEventListener('click', send);
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') send();
+    });
+}
+
+// Attach handler to the initially active conversation
+document.addEventListener('DOMContentLoaded', function () {
+    const active = document.querySelector('.convo-item.active');
+    if (active) {
+        const convo = conversations[active.dataset.index];
+        if (convo) attachSendHandler(convo);
+    }
+});
+</script>
+@endpush

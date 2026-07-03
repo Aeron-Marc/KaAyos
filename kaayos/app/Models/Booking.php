@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Booking extends Model
 {
@@ -19,6 +21,27 @@ class Booking extends Model
         'completed_at',
         'cancelled_at',
         'cancellation_reason',
+    ];
+
+    const STATUS_NEW        = 'new';
+    const STATUS_ACCEPTED    = 'accepted';
+    const STATUS_EN_ROUTE    = 'en_route';
+    const STATUS_IN_PROGRESS = 'in_progress';
+    const STATUS_COMPLETED   = 'completed';
+
+    const STATUSES = [
+        self::STATUS_NEW,
+        self::STATUS_ACCEPTED,
+        self::STATUS_EN_ROUTE,
+        self::STATUS_IN_PROGRESS,
+        self::STATUS_COMPLETED,
+    ];
+
+    const STATUS_FLOW = [
+        self::STATUS_NEW        => self::STATUS_ACCEPTED,
+        self::STATUS_ACCEPTED   => self::STATUS_EN_ROUTE,
+        self::STATUS_EN_ROUTE   => self::STATUS_IN_PROGRESS,
+        self::STATUS_IN_PROGRESS => self::STATUS_COMPLETED,
     ];
 
     protected $casts = [
@@ -42,31 +65,41 @@ class Booking extends Model
         return $this->belongsTo(User::class, 'worker_id');
     }
 
-    // ── Scopes ─────────────────────────────────────────────────
-
-    public function scopePending($query)
+    public function earning(): HasOne
     {
-        return $query->where('status', 'pending');
+        return $this->hasOne(Earning::class);
     }
 
-    public function scopeConfirmed($query)
+    public function messages(): HasMany
     {
-        return $query->where('status', 'confirmed');
+        return $this->hasMany(Message::class);
+    }
+
+    // ── Scopes ─────────────────────────────────────────────────
+
+    public function scopeNew($query)
+    {
+        return $query->where('status', self::STATUS_NEW);
+    }
+
+    public function scopeAccepted($query)
+    {
+        return $query->where('status', self::STATUS_ACCEPTED);
+    }
+
+    public function scopeEnRoute($query)
+    {
+        return $query->where('status', self::STATUS_EN_ROUTE);
     }
 
     public function scopeInProgress($query)
     {
-        return $query->where('status', 'in_progress');
+        return $query->where('status', self::STATUS_IN_PROGRESS);
     }
 
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'completed');
-    }
-
-    public function scopeCancelled($query)
-    {
-        return $query->where('status', 'cancelled');
+        return $query->where('status', self::STATUS_COMPLETED);
     }
 
     public function scopeForClient($query, $clientId)
@@ -81,14 +114,41 @@ class Booking extends Model
 
     // ── Helpers ────────────────────────────────────────────────
 
-    public function isPending(): bool    { return $this->status === 'pending'; }
-    public function isConfirmed(): bool  { return $this->status === 'confirmed'; }
-    public function isInProgress(): bool { return $this->status === 'in_progress'; }
-    public function isCompleted(): bool  { return $this->status === 'completed'; }
-    public function isCancelled(): bool  { return $this->status === 'cancelled'; }
+    public function isNew(): bool         { return $this->status === self::STATUS_NEW; }
+    public function isAccepted(): bool    { return $this->status === self::STATUS_ACCEPTED; }
+    public function isEnRoute(): bool     { return $this->status === self::STATUS_EN_ROUTE; }
+    public function isInProgress(): bool  { return $this->status === self::STATUS_IN_PROGRESS; }
+    public function isCompleted(): bool   { return $this->status === self::STATUS_COMPLETED; }
 
-    public function isCancellable(): bool
+    public function isActive(): bool
     {
-        return in_array($this->status, ['pending', 'confirmed']);
+        return in_array($this->status, [
+            self::STATUS_ACCEPTED,
+            self::STATUS_EN_ROUTE,
+            self::STATUS_IN_PROGRESS,
+        ]);
+    }
+
+    public function canTransitionTo(string $nextStatus): bool
+    {
+        return isset(self::STATUS_FLOW[$this->status])
+            && self::STATUS_FLOW[$this->status] === $nextStatus;
+    }
+
+    public function transitionTo(string $nextStatus): void
+    {
+        if (!$this->canTransitionTo($nextStatus)) {
+            throw new \InvalidArgumentException(
+                "Cannot transition from '{$this->status}' to '{$nextStatus}'."
+            );
+        }
+
+        $this->status = $nextStatus;
+
+        if ($nextStatus === self::STATUS_COMPLETED) {
+            $this->completed_at = now();
+        }
+
+        $this->save();
     }
 }

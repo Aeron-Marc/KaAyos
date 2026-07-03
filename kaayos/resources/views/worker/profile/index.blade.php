@@ -62,6 +62,21 @@
     background: #d6f5e8; color: #1a6852; padding: 12px 16px; border-radius: var(--radius-sm);
     font-size: .875rem; font-weight: 500; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
 }
+.barangay-grid {
+    display: flex; flex-wrap: wrap; gap: 8px;
+}
+.barangay-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border: 1.5px solid var(--g1); border-radius: 100px;
+    background: var(--white); cursor: pointer; transition: all .15s;
+    font-size: .85rem; font-weight: 500; color: var(--g6); user-select: none;
+}
+.barangay-chip:hover { border-color: var(--b3); background: var(--b0); color: var(--b7); }
+.barangay-chip.selected { border-color: var(--b5); background: var(--b1); color: var(--b8); font-weight: 600; }
+.barangay-chip.selected::before {
+    content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+    font-size: .7rem; color: var(--b6);
+}
 </style>
 @endpush
 
@@ -245,21 +260,31 @@
 
             <div class="form-section">
                 <h3>Service Coverage</h3>
-                <div class="form-group">
-                    <label for="service_areas">Service Areas (comma-separated)</label>
-                    <input type="text" id="service_areas" name="service_areas" placeholder="e.g. Tuy, Batangas, Nasugbu, Batangas, Balayan, Batangas"
-                           value="{{ old('service_areas', $workerProfile->service_areas ? implode(', ', $workerProfile->service_areas) : '') }}">
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                        @if($workerProfile->service_areas)
-                            @foreach($workerProfile->service_areas as $area)
-                                <span class="skill-tag" style="font-size:.82rem;padding:6px 14px;background:var(--b0);border-color:var(--b1);color:var(--b6);">
-                                    <i class="fa-solid fa-check" aria-hidden="true" style="margin-right:4px;"></i> {{ $area }}
-                                </span>
-                            @endforeach
-                        @endif
-                    </div>
+                <p style="font-size:.82rem;color:var(--g4);margin-bottom:12px;">Select the barangays in <strong>Tuy, Batangas</strong> where you offer services:</p>
+
+                <input type="hidden" name="service_areas" id="service_areas_input"
+                       value="{{ old('service_areas', $workerProfile->service_areas ? implode(',', $workerProfile->service_areas) : '') }}">
+
+                @php
+                    $selectedAreas = old('service_areas', $workerProfile->service_areas)
+                        ? (is_array($workerProfile->service_areas) ? $workerProfile->service_areas : explode(',', $workerProfile->service_areas))
+                        : [];
+                    $selectedAreas = array_map('trim', $selectedAreas);
+                    $tuyBarangays = ['Acle','Bayudbud','Bolbok','Burgos','Dalima','Dao','Guinhawa','Lumbangan','Luna','Luntal','Magahis','Malibu','Mataywanac','Palincaro','Putol','Rillo','Rizal','Sabang','San Jose','Talon','Toong','Tuyon-Tuyon'];
+                @endphp
+
+                <div class="barangay-grid">
+                    @foreach($tuyBarangays as $barangay)
+                        <label class="barangay-chip {{ in_array($barangay, $selectedAreas) ? 'selected' : '' }}">
+                            <input type="checkbox" value="{{ $barangay }}"
+                                   {{ in_array($barangay, $selectedAreas) ? 'checked' : '' }}
+                                   class="barangay-checkbox" style="display:none;">
+                            <span>{{ $barangay }}</span>
+                        </label>
+                    @endforeach
                 </div>
-                <div class="form-row" style="margin-top:12px;">
+
+                <div class="form-row" style="margin-top:16px;">
                     <div class="form-group">
                         <label for="service_radius">Service Radius (km)</label>
                         <input type="number" id="service_radius" name="service_radius" min="0" max="500"
@@ -408,5 +433,22 @@ document.querySelectorAll('.doc-file-input').forEach(input => {
         }
     });
 });
+
+// Barangay coverage chips
+const hiddenInput = document.getElementById('service_areas_input');
+
+document.querySelectorAll('.barangay-chip').forEach(chip => {
+    chip.addEventListener('click', function(e) {
+        const cb = this.querySelector('.barangay-checkbox');
+        cb.checked = !cb.checked;
+        this.classList.toggle('selected', cb.checked);
+        updateBarangayInput();
+    });
+});
+
+function updateBarangayInput() {
+    const checked = document.querySelectorAll('.barangay-checkbox:checked');
+    hiddenInput.value = Array.from(checked).map(cb => cb.value).join(',');
+}
 </script>
 @endpush

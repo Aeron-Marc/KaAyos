@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
 use App\Http\Controllers\Worker\WorkerController;
+use App\Http\Controllers\Worker\WorkerDashboardController;
 use App\Http\Controllers\Api\PasswordOtpController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -77,7 +78,9 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
     Route::get('/schedule', [WorkerController::class, 'schedule'])->name('schedule');
     Route::get('/messages', [WorkerController::class, 'messages'])->name('messages');
+    Route::post('/messages/send', [WorkerController::class, 'sendMessage'])->name('messages.send');
     Route::get('/earnings', [WorkerController::class, 'earnings'])->name('earnings');
+    Route::get('/earnings/export', [WorkerController::class, 'exportEarnings'])->name('earnings.export');
     Route::get('/profile', [WorkerController::class, 'profile'])->name('profile');
     Route::put('/profile', [WorkerController::class, 'updateProfile'])->name('profile.update');
     Route::post('/profile/avatar', [WorkerController::class, 'uploadAvatar'])->name('profile.avatar');
@@ -85,6 +88,11 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::delete('/profile/portfolio/{id}', [WorkerController::class, 'deletePortfolio'])->name('profile.portfolio.delete');
     Route::post('/profile/document', [WorkerController::class, 'uploadDocument'])->name('profile.document');
     Route::get('/documents', [WorkerController::class, 'documents'])->name('documents');
+
+    // Dashboard API endpoints
+    Route::get('/dashboard/data', [WorkerDashboardController::class, 'dashboard'])->name('dashboard.data');
+    Route::patch('/jobs/{booking}/status', [WorkerDashboardController::class, 'updateJobStatus'])->name('jobs.status');
+    Route::put('/location', [WorkerDashboardController::class, 'updateLocation'])->name('location.update');
 });
 
 Route::get('/email/verify', function () {

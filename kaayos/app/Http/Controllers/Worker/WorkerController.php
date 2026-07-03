@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Worker;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use App\Models\WorkerProfile;
 use App\Support\WorkerDocuments;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -19,6 +21,7 @@ class WorkerController extends Controller
             'stats'         => $this->getStats(),
             'jobRequests'   => $this->getJobRequests(),
             'schedule'      => $this->getSchedule(),
+            'pastSchedule'  => $this->getPastSchedule(),
             'notifications' => $this->getNotifications(),
             'conversations' => $this->getConversations(),
             'earnings'      => $this->getEarnings(),
@@ -36,7 +39,7 @@ class WorkerController extends Controller
             ->sum('price') ?? 0;
 
         $activeJobs = $user->bookingsAsWorker()
-            ->whereIn('status', ['confirmed', 'in_progress'])
+            ->whereIn('status', [Booking::STATUS_ACCEPTED, Booking::STATUS_EN_ROUTE, Booking::STATUS_IN_PROGRESS])
             ->count();
 
         $totalCompleted = $user->bookingsAsWorker()->completed()->count();
@@ -49,29 +52,39 @@ class WorkerController extends Controller
         ];
     }
 
-    protected function getJobRequests(): array
+    protected function getJobRequests(?string $filter = null): array
     {
-        return auth()->user()->bookingsAsWorker()
-            ->with('client')
-            ->latest()
+        $query = auth()->user()->bookingsAsWorker()->with('client');
+
+        if ($filter && in_array($filter, Booking::STATUSES)) {
+            $query->where('status', $filter);
+        }
+
+        return $query->latest()
             ->get()
             ->map(function ($booking) {
-                $statusMap = [
-                    'pending'    => 'Pending',
-                    'confirmed'  => 'Accepted',
-                    'in_progress'=> 'Accepted',
-                    'completed'  => 'Completed',
-                    'cancelled'  => 'Cancelled',
+                $labelMap = [
+                    Booking::STATUS_NEW        => 'New',
+                    Booking::STATUS_ACCEPTED   => 'Accepted',
+                    Booking::STATUS_EN_ROUTE   => 'En Route',
+                    Booking::STATUS_IN_PROGRESS => 'In Progress',
+                    Booking::STATUS_COMPLETED  => 'Completed',
                 ];
 
                 return [
-                    'id'       => $booking->id,
-                    'client'   => $booking->client->name ?? 'Unknown',
-                    'service'  => $booking->service_category,
-                    'date'     => $booking->scheduled_at->format('M d, Y · h:i A'),
-                    'location' => $booking->address,
-                    'status'   => $statusMap[$booking->status] ?? ucfirst($booking->status),
-                    'price'    => $booking->price ?? 0,
+                    'id'           => $booking->id,
+                    'client'       => $booking->client->name ?? 'Unknown',
+                    'client_phone' => $booking->client->phone ?? 'N/A',
+                    'client_email' => $booking->client->email ?? 'N/A',
+                    'service'      => $booking->service_category,
+                    'description'  => $booking->description ?? 'No details provided.',
+                    'date'         => $booking->scheduled_at->format('M d, Y · h:i A'),
+                    'location'     => $booking->address,
+                    'status'       => $labelMap[$booking->status] ?? ucfirst($booking->status),
+                    'raw_status'   => $booking->status,
+                    'price'        => $booking->price ?? 0,
+                    'created'      => $booking->created_at->format('M d, Y · h:i A'),
+                    'booking_ref'  => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
                 ];
             })
             ->toArray();
@@ -80,11 +93,23 @@ class WorkerController extends Controller
     protected function getSchedule(): array
     {
         return auth()->user()->bookingsAsWorker()
-            ->whereIn('status', ['pending', 'confirmed', 'in_progress'])
+            ->whereIn('status', [
+                Booking::STATUS_NEW,
+                Booking::STATUS_ACCEPTED,
+                Booking::STATUS_EN_ROUTE,
+                Booking::STATUS_IN_PROGRESS,
+            ])
             ->with('client')
             ->orderBy('scheduled_at')
             ->get()
             ->map(function ($booking) {
+                $labelMap = [
+                    Booking::STATUS_NEW        => 'Pending',
+                    Booking::STATUS_ACCEPTED   => 'Confirmed',
+                    Booking::STATUS_EN_ROUTE   => 'En Route',
+                    Booking::STATUS_IN_PROGRESS => 'In Progress',
+                ];
+
                 return [
                     'id'       => $booking->id,
                     'client'   => $booking->client->name ?? 'Unknown',
@@ -92,7 +117,30 @@ class WorkerController extends Controller
                     'date'     => $booking->scheduled_at->format('M d, Y'),
                     'time'     => $booking->scheduled_at->format('g:i A'),
                     'location' => $booking->address,
-                    'status'   => in_array($booking->status, ['confirmed', 'in_progress']) ? 'Confirmed' : 'Pending',
+                    'status'   => $labelMap[$booking->status] ?? ucfirst($booking->status),
+                    'raw_status' => $booking->status,
+                ];
+            })
+            ->toArray();
+    }
+
+    protected function getPastSchedule(): array
+    {
+        return auth()->user()->bookingsAsWorker()
+            ->where('status', Booking::STATUS_COMPLETED)
+            ->with('client')
+            ->latest('completed_at')
+            ->get()
+            ->map(function ($booking) {
+                return [
+                    'id'         => $booking->id,
+                    'client'     => $booking->client->name ?? 'Unknown',
+                    'service'    => $booking->service_category,
+                    'date'       => $booking->completed_at?->format('M d, Y') ?? $booking->scheduled_at->format('M d, Y'),
+                    'time'       => $booking->completed_at?->format('g:i A') ?? '',
+                    'location'   => $booking->address,
+                    'status'     => 'Completed',
+                    'raw_status' => Booking::STATUS_COMPLETED,
                 ];
             })
             ->toArray();
@@ -128,7 +176,55 @@ class WorkerController extends Controller
 
     protected function getConversations(): array
     {
-        return [];
+        $user = auth()->user();
+
+        $conversations = [];
+        $isFirst = true;
+
+        $bookings = $user->bookingsAsWorker()
+            ->with('client', 'messages.sender')
+            ->latest()
+            ->get();
+
+        $grouped = $bookings->groupBy('client_id');
+
+        foreach ($grouped as $clientId => $clientBookings) {
+            $client = $clientBookings->first()->client;
+            $latestBooking = $clientBookings->first();
+
+            $messages = $latestBooking->messages
+                ->sortBy('created_at')
+                ->map(fn($msg) => [
+                    'from' => $msg->sender_id === $user->id ? 'me' : 'them',
+                    'text' => $msg->message,
+                ])
+                ->values()
+                ->toArray();
+
+            $lastMsg = $latestBooking->messages->sortByDesc('created_at')->first();
+            $unreadCount = $latestBooking->messages->where('receiver_id', $user->id)->whereNull('read_at')->count();
+
+            $initials = strtoupper(
+                ($client->first_name ? $client->first_name[0] : '') .
+                ($client->last_name ? $client->last_name[0] : '')
+            );
+
+            $conversations[] = [
+                'active'       => $isFirst,
+                'booking_id'   => $latestBooking->id,
+                'client_id'    => $client->id,
+                'initials'     => $initials ?: '?',
+                'name'         => $client->name ?? 'Unknown',
+                'time'         => $lastMsg?->created_at->diffForHumans() ?? $latestBooking->scheduled_at->diffForHumans(),
+                'preview'      => $lastMsg?->message ?? '',
+                'unread_count' => $unreadCount,
+                'messages'     => $messages,
+            ];
+
+            $isFirst = false;
+        }
+
+        return $conversations;
     }
 
     protected function getEarnings(): array
@@ -146,7 +242,7 @@ class WorkerController extends Controller
         })->sum('price') ?? 0);
 
         $pendingPayout = (int) ($user->bookingsAsWorker()
-            ->whereIn('status', ['confirmed', 'in_progress'])
+            ->whereIn('status', [Booking::STATUS_ACCEPTED, Booking::STATUS_EN_ROUTE, Booking::STATUS_IN_PROGRESS])
             ->sum('price') ?? 0);
 
         $count = $completed->count();
@@ -208,9 +304,14 @@ class WorkerController extends Controller
         return view('worker.dashboard.notifications', $this->shared());
     }
 
-    public function jobs(): View
+    public function jobs(Request $request): View
     {
-        return view('worker.jobs.index', $this->shared());
+        $filter = $request->query('filter');
+        $data = $this->shared();
+        $data['jobRequests'] = $this->getJobRequests($filter);
+        $data['activeFilter'] = $filter;
+
+        return view('worker.jobs.index', $data);
     }
 
     public function schedule(): View
@@ -223,9 +324,69 @@ class WorkerController extends Controller
         return view('worker.messages.index', $this->shared());
     }
 
+    public function sendMessage(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'booking_id' => ['required', 'exists:bookings,id'],
+            'message'    => ['required', 'string', 'max:2000'],
+        ]);
+
+        $booking = Booking::findOrFail($validated['booking_id']);
+
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $msg = Message::create([
+            'booking_id'  => $booking->id,
+            'sender_id'   => auth()->id(),
+            'receiver_id' => $booking->client_id,
+            'message'     => $validated['message'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'from' => 'me',
+                'text' => $msg->message,
+                'time' => $msg->created_at->diffForHumans(),
+            ],
+        ]);
+    }
+
     public function earnings(): View
     {
         return view('worker.earnings.index', $this->shared());
+    }
+
+    public function exportEarnings()
+    {
+        $payouts = $this->getEarnings()['payouts'];
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="earnings-export.csv"',
+        ];
+
+        $callback = function () use ($payouts) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['Date', 'Client', 'Job', 'Amount (₱)', 'Status']);
+
+            foreach ($payouts as $row) {
+                fputcsv($handle, [
+                    $row['date'],
+                    $row['client'],
+                    $row['job'],
+                    number_format($row['amount'], 2),
+                    $row['status'],
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function profile(): View
