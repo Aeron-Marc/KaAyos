@@ -33,7 +33,7 @@ class EmailOtpController extends Controller
         }
 
         if ($user->email_updated_at && $user->email_updated_at->diffInDays(now()) < 30) {
-            $daysLeft = 30 - $user->email_updated_at->diffInDays(now());
+            $daysLeft = (int) ceil(30 - $user->email_updated_at->diffInDays(now()));
             return response()->json(['message' => "You can change your email again in {$daysLeft} day(s)."], 429);
         }
 
