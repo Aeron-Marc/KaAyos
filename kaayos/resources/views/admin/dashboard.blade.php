@@ -15,10 +15,6 @@
         <div class="stat-item-value">Just now</div>
     </div>
     <div class="stat-item">
-        <div class="stat-item-label">Platform Status</div>
-        <div class="stat-item-value" style="color: var(--s10);"><i class="fa-solid fa-check-circle" style="margin-right: 6px;"></i>Healthy</div>
-    </div>
-    <div class="stat-item">
         <div class="stat-item-label">Active Users</div>
         <div class="stat-item-value">{{ $activeUsers }}</div>
     </div>
@@ -52,14 +48,6 @@
         </div>
     </div>
 
-    <div class="metric-card accent-red">
-        <div class="metric-label"><i class="fa-solid fa-chart-line" style="margin-right: 6px;"></i>Platform Revenue</div>
-        <div class="metric-value">₱{{ number_format($totalRevenue, 0) }}</div>
-        <div class="metric-change">
-            <i class="fa-solid fa-circle"></i>
-            <span>From {{ $completedBookings }} completed bookings</span>
-        </div>
-    </div>
 
     <div class="metric-card accent-purple">
         <div class="metric-label"><i class="fa-solid fa-scale-balanced" style="margin-right: 6px;"></i>Disputes</div>

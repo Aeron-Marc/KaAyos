@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VerificationController;
 use App\Http\Controllers\Admin\ServiceCategoryController;
+use App\Http\Controllers\Admin\WorkerController as AdminWorkerController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\ProviderServiceController;
 use App\Http\Controllers\Admin\BookingController;
@@ -134,6 +135,9 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
     Route::post('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
     Route::post('/users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
+
+    // Workers
+    Route::get('/workers', [AdminWorkerController::class, 'index'])->name('workers.index');
 
     // Verifications
     Route::get('/verification', [VerificationController::class, 'index'])->name('verification.index');

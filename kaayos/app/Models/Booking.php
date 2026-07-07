@@ -28,6 +28,7 @@ class Booking extends Model
     const STATUS_EN_ROUTE    = 'en_route';
     const STATUS_IN_PROGRESS = 'in_progress';
     const STATUS_COMPLETED   = 'completed';
+    const STATUS_CANCELLED   = 'cancelled';
 
     const STATUSES = [
         self::STATUS_NEW,
@@ -35,6 +36,7 @@ class Booking extends Model
         self::STATUS_EN_ROUTE,
         self::STATUS_IN_PROGRESS,
         self::STATUS_COMPLETED,
+        self::STATUS_CANCELLED,
     ];
 
     const STATUS_FLOW = [
@@ -105,6 +107,11 @@ class Booking extends Model
     public function scopeCompleted($query)
     {
         return $query->where('status', self::STATUS_COMPLETED);
+    }
+
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', self::STATUS_CANCELLED);
     }
 
     public function scopeForClient($query, $clientId)

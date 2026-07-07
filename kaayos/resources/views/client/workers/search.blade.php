@@ -38,9 +38,6 @@
         <div class="eyebrow">Trabahadors</div>
         <h2 class="section-title">{{ count($workers) }} worker(s) found</h2>
     </div>
-    <span style="font-size:.84rem;color:var(--g4);">
-        <i class="fa-solid fa-robot" aria-hidden="true"></i> AI-ranked by skill &amp; distance
-    </span>
 </div>
 
 @if(empty($workers))
