@@ -23,7 +23,6 @@ export default function PersonalInfoSection({
 }) {
     const hasUnsaved =
         draft.fullName !== saved.fullName ||
-        draft.email !== saved.email ||
         draft.phone !== saved.phone ||
         draft.barangay !== saved.barangay ||
         draft.avatarUrl !== saved.avatarUrl;
@@ -51,19 +50,6 @@ export default function PersonalInfoSection({
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="email">Email Address</label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={draft.email}
-                        onChange={(e) => onChange('email', e.target.value)}
-                        disabled={saving}
-                    />
-                </div>
-            </div>
-
-            <div className="form-row">
-                <div className="form-group">
                     <label htmlFor="phone">Phone Number</label>
                     <input
                         id="phone"
@@ -78,6 +64,9 @@ export default function PersonalInfoSection({
                         <p className="field-error">Enter a valid PH mobile number (09XXXXXXXXX).</p>
                     )}
                 </div>
+            </div>
+
+            <div className="form-row">
                 <div className="form-group">
                     <label htmlFor="barangay">Barangay</label>
                     <input

@@ -155,15 +155,24 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email"
-                               value="{{ old('email', auth()->user()->email) }}" required>
+                        <label>Email</label>
+                        <p class="form-value">{{ auth()->user()->email }}</p>
                     </div>
                     <div class="form-group">
                         <label for="phone">Phone</label>
                         <input type="text" id="phone" name="phone"
                                value="{{ old('phone', auth()->user()->phone) }}">
                     </div>
+                </div>
+
+                <div class="form-section" style="margin-top:12px;padding-top:16px;border-top:1px solid var(--g1);">
+                    <h3 style="font-size:.95rem;font-weight:600;margin-bottom:10px;">Change Email</h3>
+                    <p style="font-size:.82rem;color:var(--g4);margin-bottom:12px;">
+                        You can change your email once every 30 days. A verification code will be sent to confirm.
+                    </p>
+                    <button type="button" class="btn btn-outline" id="email-change-btn">
+                        <i class="fa-solid fa-pen" aria-hidden="true"></i> Change Email
+                    </button>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -404,8 +413,266 @@
 
 @endsection
 
+{{-- Email Change Modal --}}
+<div id="email-change-modal" class="modal-overlay" style="display:none;" role="presentation">
+    <div class="otp-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="otp-modal-header">
+            <div class="otp-modal-icon">
+                <i class="fa-solid fa-envelope" id="ec-icon" aria-hidden="true"></i>
+            </div>
+            <h2 id="ec-title">Change Email Address</h2>
+            <p id="ec-subtitle">Current: <strong>{{ auth()->user()->email }}</strong></p>
+        </div>
+
+        {{-- Step 1: Form --}}
+        <div id="ec-step-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="ec-new-email">New Email</label>
+                    <input type="email" id="ec-new-email">
+                </div>
+                <div class="form-group">
+                    <label for="ec-confirm-email">Confirm New Email</label>
+                    <input type="email" id="ec-confirm-email">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="ec-password">Current Password</label>
+                <input type="password" id="ec-password" placeholder="Enter your current password">
+            </div>
+            <div id="ec-error-form" class="field-error otp-error" style="display:none;"></div>
+            <div class="otp-actions">
+                <button type="button" class="btn btn-solid" id="ec-send-btn">Send verification code</button>
+                <button type="button" class="btn btn-ghost" id="ec-cancel-btn">Cancel</button>
+            </div>
+        </div>
+
+        {{-- Step 2: OTP --}}
+        <div id="ec-step-otp" style="display:none;">
+            <p id="ec-otp-sent-to" style="text-align:center;color:var(--g5);margin-bottom:16px;font-size:.9rem;"></p>
+            <div class="otp-inputs" id="ec-otp-inputs">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="0">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="1">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="2">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="3">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="4">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="5">
+            </div>
+            <div id="ec-error-otp" class="field-error otp-error" style="display:none;"></div>
+            <div class="otp-actions">
+                <button type="button" class="btn btn-solid" id="ec-verify-btn">Verify & change email</button>
+                <button type="button" class="btn btn-ghost" id="ec-back-btn">Back</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
+window.authToken = "{{ auth()->user()->createToken('worker-profile-page')->plainTextToken }}";
+
+// Email Change Modal
+(function() {
+    const modal = document.getElementById('email-change-modal');
+    const openBtn = document.getElementById('email-change-btn');
+    const cancelBtn = document.getElementById('ec-cancel-btn');
+    const backBtn = document.getElementById('ec-back-btn');
+    const sendBtn = document.getElementById('ec-send-btn');
+    const verifyBtn = document.getElementById('ec-verify-btn');
+
+    const stepForm = document.getElementById('ec-step-form');
+    const stepOtp  = document.getElementById('ec-step-otp');
+    const ecIcon   = document.getElementById('ec-icon');
+    const ecTitle  = document.getElementById('ec-title');
+    const ecSubtitle = document.getElementById('ec-subtitle');
+    const ecOtpSentTo = document.getElementById('ec-otp-sent-to');
+
+    const errForm = document.getElementById('ec-error-form');
+    const errOtp  = document.getElementById('ec-error-otp');
+
+    const newEmailInput = document.getElementById('ec-new-email');
+    const confirmEmailInput = document.getElementById('ec-confirm-email');
+    const passwordInput = document.getElementById('ec-password');
+    const otpInputs = document.querySelectorAll('.ec-otp-digit');
+
+    let currentNewEmail = '';
+    let loading = false;
+
+    function showError(container, msg) {
+        container.textContent = msg;
+        container.style.display = 'block';
+    }
+
+    function hideError(container) {
+        container.textContent = '';
+        container.style.display = 'none';
+    }
+
+    function resetModal() {
+        stepForm.style.display = 'block';
+        stepOtp.style.display = 'none';
+        ecIcon.className = 'fa-solid fa-envelope';
+        ecTitle.textContent = 'Change Email Address';
+        ecSubtitle.innerHTML = 'Current: <strong>{{ auth()->user()->email }}</strong>';
+        newEmailInput.value = '';
+        confirmEmailInput.value = '';
+        passwordInput.value = '';
+        otpInputs.forEach(inp => inp.value = '');
+        hideError(errForm);
+        hideError(errOtp);
+        loading = false;
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send verification code';
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify & change email';
+    }
+
+    function openModal() {
+        resetModal();
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    openBtn?.addEventListener('click', openModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', closeModal);
+
+    backBtn?.addEventListener('click', function() {
+        stepForm.style.display = 'block';
+        stepOtp.style.display = 'none';
+        ecIcon.className = 'fa-solid fa-envelope';
+        ecTitle.textContent = 'Change Email Address';
+        ecSubtitle.innerHTML = 'Current: <strong>{{ auth()->user()->email }}</strong>';
+        hideError(errOtp);
+    });
+
+    // OTP digit handling
+    otpInputs.forEach((input, idx) => {
+        input.addEventListener('input', function(e) {
+            const val = e.target.value;
+            if (val && !/^\d$/.test(val)) { this.value = ''; return; }
+            if (val && idx < 5) otpInputs[idx + 1].focus();
+            hideError(errOtp);
+        });
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && !this.value && idx > 0) {
+                otpInputs[idx - 1].focus();
+            }
+        });
+    });
+
+    // Paste support for OTP
+    document.getElementById('ec-otp-inputs')?.addEventListener('paste', function(e) {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (!pasted) return;
+        otpInputs.forEach((inp, i) => { inp.value = pasted[i] || ''; });
+        const focusIdx = Math.min(pasted.length, 5);
+        otpInputs[focusIdx]?.focus();
+    });
+
+    function getAuthHeaders() {
+        return {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + window.authToken,
+        };
+    }
+
+    // Send OTP
+    sendBtn?.addEventListener('click', async function() {
+        const newEmail = newEmailInput.value.trim();
+        const confirmEmail = confirmEmailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!newEmail || !confirmEmail || !password) {
+            showError(errForm, 'Please fill in all fields.');
+            return;
+        }
+        if (newEmail !== confirmEmail) {
+            showError(errForm, 'Emails do not match.');
+            return;
+        }
+
+        loading = true;
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending…';
+        hideError(errForm);
+
+        try {
+            const res = await fetch('/email-otp/send', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    new_email: newEmail,
+                    new_email_confirmation: confirmEmail,
+                    current_password: password,
+                }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to send code.');
+
+            currentNewEmail = newEmail;
+            stepForm.style.display = 'none';
+            stepOtp.style.display = 'block';
+            ecIcon.className = 'fa-solid fa-shield-check';
+            ecTitle.textContent = 'Verify the code';
+            ecOtpSentTo.textContent = 'Enter the code sent to ' + newEmail + '. It expires in 10 minutes.';
+            setTimeout(() => otpInputs[0]?.focus(), 50);
+        } catch (err) {
+            showError(errForm, err.message);
+        } finally {
+            loading = false;
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send verification code';
+        }
+    });
+
+    // Verify OTP
+    verifyBtn?.addEventListener('click', async function() {
+        const otp = Array.from(otpInputs).map(inp => inp.value).join('');
+        if (otp.length !== 6) {
+            showError(errOtp, 'Enter the 6-digit code.');
+            return;
+        }
+
+        loading = true;
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verifying…';
+        hideError(errOtp);
+
+        try {
+            const res = await fetch('/email-otp/verify', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ otp }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Verification failed.');
+
+            // Update the displayed email in the profile
+            const emailDisplay = document.querySelector('.form-value');
+            if (emailDisplay) emailDisplay.textContent = currentNewEmail;
+
+            closeModal();
+            alert('Email changed successfully.');
+        } catch (err) {
+            showError(errOtp, err.message);
+            otpInputs.forEach(inp => inp.value = '');
+            setTimeout(() => otpInputs[0]?.focus(), 50);
+        } finally {
+            loading = false;
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify & change email';
+        }
+    });
+})();
+
 document.getElementById('avatar-input')?.addEventListener('change', function() {
     if (this.files && this.files[0]) {
         document.getElementById('avatar-form').submit();

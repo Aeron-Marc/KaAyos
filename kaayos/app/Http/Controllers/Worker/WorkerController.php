@@ -424,7 +424,6 @@ class WorkerController extends Controller
         $data = $request->validate([
             'first_name'         => ['required', 'string', 'max:100'],
             'last_name'          => ['required', 'string', 'max:100'],
-            'email'              => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'phone'              => ['nullable', 'string', 'max:20', 'regex:/^(?:\+63|0)[0-9]{10}$/'],
             'city'               => ['nullable', 'string', 'max:255'],
             'language'           => ['required', 'string', Rule::in(['English', 'Filipino'])],
@@ -445,26 +444,25 @@ class WorkerController extends Controller
             'first_name'       => $data['first_name'],
             'last_name'        => $data['last_name'],
             'name'             => $data['first_name'] . ' ' . $data['last_name'],
-            'email'            => $data['email'],
-            'phone'            => $data['phone'] ?: null,
-            'city'             => $data['city'] ?: null,
+            'phone'            => $data['phone'] ?? null,
+            'city'             => $data['city'] ?? null,
             'language'         => $data['language'],
-            'service_category' => $data['service_category'] ?: null,
+            'service_category' => $data['service_category'] ?? null,
         ]);
 
         $profile = $user->workerProfile ?? new WorkerProfile(['user_id' => $user->id]);
 
         $profile->fill([
-            'bio'                => $data['bio'] ?: null,
-            'skills'             => $data['skills'] ? array_map('trim', explode(',', $data['skills'])) : null,
-            'spoken_languages'   => $data['spoken_languages'] ? array_map('trim', explode(',', $data['spoken_languages'])) : null,
-            'hourly_rate'        => $data['hourly_rate'] ?: null,
-            'available_days'     => $data['available_days'] ?: null,
-            'preferred_hours'    => $data['preferred_hours'] ?: null,
-            'service_areas'      => $data['service_areas'] ? array_map('trim', explode(',', $data['service_areas'])) : null,
-            'years_of_experience'=> $data['years_of_experience'] ?: null,
-            'service_radius'     => $data['service_radius'] ?: null,
-            'service_zone'       => $data['service_zone'] ? array_map('trim', explode(',', $data['service_zone'])) : null,
+            'bio'                => $data['bio'] ?? null,
+            'skills'             => isset($data['skills']) ? array_map('trim', explode(',', $data['skills'])) : null,
+            'spoken_languages'   => isset($data['spoken_languages']) ? array_map('trim', explode(',', $data['spoken_languages'])) : null,
+            'hourly_rate'        => $data['hourly_rate'] ?? null,
+            'available_days'     => $data['available_days'] ?? null,
+            'preferred_hours'    => $data['preferred_hours'] ?? null,
+            'service_areas'      => isset($data['service_areas']) ? array_map('trim', explode(',', $data['service_areas'])) : null,
+            'years_of_experience'=> $data['years_of_experience'] ?? null,
+            'service_radius'     => $data['service_radius'] ?? null,
+            'service_zone'       => isset($data['service_zone']) ? array_map('trim', explode(',', $data['service_zone'])) : null,
         ]);
 
         $profile->save();

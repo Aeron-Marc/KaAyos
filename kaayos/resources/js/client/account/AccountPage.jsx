@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import DangerZone from './DangerZone';
+import EmailChangeSection from './EmailChangeSection';
 import OtpModal from './OtpModal';
 import PersonalInfoSection from './PersonalInfoSection';
 import PreferencesSection from './PreferencesSection';
@@ -51,7 +52,6 @@ export default function AccountPage({ initial }) {
 
     const profileDirty =
         draftProfile.fullName !== savedProfile.fullName ||
-        draftProfile.email !== savedProfile.email ||
         draftProfile.phone !== savedProfile.phone ||
         draftProfile.barangay !== savedProfile.barangay ||
         draftProfile.avatarUrl !== savedProfile.avatarUrl;
@@ -92,7 +92,6 @@ export default function AccountPage({ initial }) {
         try {
             const result = await updateProfileRequest({
                 fullName: draftProfile.fullName,
-                email: draftProfile.email,
                 phone: draftProfile.phone,
                 barangay: draftProfile.barangay,
             });
@@ -160,6 +159,12 @@ export default function AccountPage({ initial }) {
         addToast('success', 'Password changed successfully.');
     };
 
+    const handleEmailChanged = (newEmail) => {
+        setSavedProfile((prev) => ({ ...prev, email: newEmail }));
+        setDisplayProfile((prev) => ({ ...prev, email: newEmail }));
+        addToast('success', 'Email changed successfully.');
+    };
+
     const handleDeleteAccount = () => {
         addToast('success', 'Please contact support at support@kaayos.ph to delete your account.');
     };
@@ -182,6 +187,11 @@ export default function AccountPage({ initial }) {
                         onChange={handleProfileChange}
                         onSave={handleProfileSave}
                         onDiscard={handleProfileDiscard}
+                    />
+
+                    <EmailChangeSection
+                        email={displayProfile.email}
+                        onEmailChanged={handleEmailChanged}
                     />
 
                     <PreferencesSection
