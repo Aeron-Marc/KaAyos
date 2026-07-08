@@ -48,7 +48,7 @@ class WorkerController extends Controller
             'reviews'  => $u->reviewsReceived()->count(),
             'distance' => 'Tuy, Batangas',
             'price'    => $u->workerProfile?->hourly_rate ?? 0,
-            'verified' => $u->workerProfile?->govt_id_verified ?? false,
+            'verified' => $u->workerProfile?->government_id_verified ?? false,
             'skills'   => $u->workerProfile?->skills ?? [],
         ])->toArray();
 

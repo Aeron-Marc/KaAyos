@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkerProfile extends Model
@@ -56,9 +55,4 @@ class WorkerProfile extends Model
         return $this->hasMany(WorkPortfolio::class);
     }
 
-    public function skillTags(): BelongsToMany
-    {
-        return $this->belongsToMany(SkillTag::class, 'worker_skill_tag')
-            ->withTimestamps();
-    }
 }
