@@ -77,6 +77,68 @@
     content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
     font-size: .7rem; color: var(--b6);
 }
+
+.tag-input-wrap {
+    border: 1.5px solid var(--g1); border-radius: var(--radius-sm);
+    padding: 6px 10px; background: var(--white); transition: border-color .15s;
+    min-height: 42px;
+}
+.tag-input-wrap:focus-within { border-color: var(--b4); }
+.tag-list {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+}
+.tag-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--b0); color: var(--b8); font-size: .82rem;
+    padding: 4px 8px; border-radius: 100px; font-weight: 500;
+    line-height: 1.3;
+}
+.tag-remove {
+    cursor: pointer; font-size: 1rem; color: var(--b5); line-height: 1;
+    margin-left: 2px;
+}
+.tag-remove:hover { color: #c62828; }
+.tag-field {
+    border: none; outline: none; font-size: .85rem; padding: 4px 2px;
+    min-width: 180px; flex: 1; background: transparent; color: var(--b9);
+}
+.tag-field::placeholder { color: var(--g3); }
+
+.avail-grid {
+    display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+}
+.avail-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px; border-radius: var(--radius-sm);
+    background: var(--off); transition: background .15s;
+}
+.avail-row:has(.avail-checkbox:checked) {
+    background: var(--b0);
+}
+.avail-day-label {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    min-width: 110px; user-select: none;
+}
+.avail-checkbox {
+    width: 18px; height: 18px; accent-color: var(--b5); cursor: pointer;
+}
+.avail-day-name {
+    font-size: .88rem; font-weight: 500; color: var(--b9);
+}
+.avail-times {
+    display: flex; align-items: center; gap: 8px;
+}
+.avail-times input[type="time"] {
+    border: 1px solid var(--g1); border-radius: var(--radius-sm);
+    padding: 5px 10px; font-size: .85rem; background: var(--white);
+    color: var(--b9); outline: none; width: 110px;
+}
+.avail-times input[type="time"]:focus {
+    border-color: var(--b4);
+}
+.avail-sep {
+    color: var(--g4); font-weight: 500;
+}
 </style>
 @endpush
 
@@ -197,28 +259,34 @@
                     <textarea id="bio" name="bio" class="review-textarea" placeholder="Tell clients about yourself, your experience, and the services you offer…">{{ old('bio', $workerProfile->bio) }}</textarea>
                 </div>
                 <div class="form-group">
-                    <label for="skills">Skills (comma-separated)</label>
-                    <input type="text" id="skills" name="skills" placeholder="e.g. Plumbing, Electrical, Carpentry"
-                           value="{{ old('skills', $workerProfile->skills ? implode(', ', $workerProfile->skills) : '') }}">
-                    <div class="skill-tags" style="margin-top:8px;">
-                        @if($workerProfile->skills)
-                            @foreach($workerProfile->skills as $skill)
-                                <span class="skill-tag" style="font-size:.82rem;padding:6px 14px;">{{ $skill }}</span>
-                            @endforeach
-                        @endif
+                    <label>Skills</label>
+                    <div class="tag-input-wrap">
+                        <div class="tag-list" id="skills-tag-list">
+                            @if($workerProfile->skills)
+                                @foreach($workerProfile->skills as $skill)
+                                    <span class="tag-chip" data-value="{{ $skill }}">{{ $skill }}<span class="tag-remove" data-value="{{ $skill }}">&times;</span></span>
+                                @endforeach
+                            @endif
+                            <input type="text" class="tag-field" placeholder="Type and press Enter to add">
+                        </div>
                     </div>
+                    <input type="hidden" name="skills" id="skills"
+                           value="{{ old('skills', $workerProfile->skills ? implode(',', $workerProfile->skills) : '') }}">
                 </div>
                 <div class="form-group" style="margin-top:12px;">
-                    <label for="spoken_languages">Spoken Languages (comma-separated)</label>
-                    <input type="text" id="spoken_languages" name="spoken_languages" placeholder="e.g. Filipino, English, Cebuano"
-                           value="{{ old('spoken_languages', $workerProfile->spoken_languages ? implode(', ', $workerProfile->spoken_languages) : '') }}">
-                    <div class="skill-tags" style="margin-top:8px;">
-                        @if($workerProfile->spoken_languages)
-                            @foreach($workerProfile->spoken_languages as $lang)
-                                <span class="skill-tag" style="font-size:.82rem;padding:6px 14px;">{{ $lang }}</span>
-                            @endforeach
-                        @endif
+                    <label>Spoken Languages</label>
+                    <div class="tag-input-wrap">
+                        <div class="tag-list" id="languages-tag-list">
+                            @if($workerProfile->spoken_languages)
+                                @foreach($workerProfile->spoken_languages as $lang)
+                                    <span class="tag-chip" data-value="{{ $lang }}">{{ $lang }}<span class="tag-remove" data-value="{{ $lang }}">&times;</span></span>
+                                @endforeach
+                            @endif
+                            <input type="text" class="tag-field" placeholder="Type and press Enter to add">
+                        </div>
                     </div>
+                    <input type="hidden" name="spoken_languages" id="spoken_languages"
+                           value="{{ old('spoken_languages', $workerProfile->spoken_languages ? implode(',', $workerProfile->spoken_languages) : '') }}">
                 </div>
                 <div class="form-row" style="margin-top:12px;">
                     <div class="form-group">
@@ -245,26 +313,37 @@
 
             <div class="form-section">
                 <h3>Availability</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="available_days">Available Days</label>
-                        <select id="available_days" name="available_days">
-                            <option value="">Select schedule</option>
-                            @foreach(['Monday — Friday', 'Monday — Saturday', 'All Week', 'Weekends Only'] as $days)
-                                <option value="{{ $days }}" {{ old('available_days', $workerProfile->available_days) === $days ? 'selected' : '' }}>{{ $days }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="preferred_hours">Preferred Hours</label>
-                        <select id="preferred_hours" name="preferred_hours">
-                            <option value="">Select hours</option>
-                            @foreach(['Morning (8 AM — 12 PM)', 'Full Day (8 AM — 5 PM)', 'Afternoon (1 PM — 5 PM)', 'Flexible'] as $hours)
-                                <option value="{{ $hours }}" {{ old('preferred_hours', $workerProfile->preferred_hours) === $hours ? 'selected' : '' }}>{{ $hours }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                @php
+                    $daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    $availability = old('availability')
+                        ? json_decode(old('availability'), true)
+                        : ($workerProfile->availability ?? []);
+                    $availMap = [];
+                    foreach ($availability as $a) {
+                        $availMap[$a['day']] = $a;
+                    }
+                @endphp
+                <div class="avail-grid" id="avail-grid">
+                    @foreach($daysOfWeek as $day)
+                        @php $a = $availMap[$day] ?? ['active' => false, 'start' => '08:00', 'end' => '17:00']; @endphp
+                        <div class="avail-row" data-day="{{ $day }}">
+                            <label class="avail-day-label">
+                                <input type="checkbox" class="avail-checkbox" {{ $a['active'] ? 'checked' : '' }}>
+                                <span class="avail-day-name">{{ $day }}</span>
+                            </label>
+                            <div class="avail-times" style="{{ $a['active'] ? '' : 'display:none;' }}">
+                                <input type="time" class="avail-start" value="{{ $a['start'] ?? '08:00' }}">
+                                <span class="avail-sep">—</span>
+                                <input type="time" class="avail-end" value="{{ $a['end'] ?? '17:00' }}">
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
+                <input type="hidden" name="availability" id="availability-input"
+                       value="{{ old('availability', $workerProfile->availability ? json_encode($workerProfile->availability) : '') }}">
+                <button type="button" class="btn btn-ghost" id="apply-all-times" style="margin-top:8px;font-size:.82rem;">
+                    <i class="fa-solid fa-copy" aria-hidden="true"></i> Apply same time to all active days
+                </button>
             </div>
 
             <div class="form-section">
@@ -717,5 +796,115 @@ function updateBarangayInput() {
     const checked = document.querySelectorAll('.barangay-checkbox:checked');
     hiddenInput.value = Array.from(checked).map(cb => cb.value).join(',');
 }
+
+// Tag Input Component
+function initTagInput(wrapEl) {
+    const list = wrapEl.querySelector('.tag-list');
+    const field = list.querySelector('.tag-field');
+    const hidden = wrapEl.parentElement.querySelector('input[type="hidden"]');
+
+    function syncHidden() {
+        const chips = list.querySelectorAll('.tag-chip');
+        hidden.value = Array.from(chips).map(c => c.dataset.value).join(',');
+    }
+
+    function addTag(text) {
+        text = text.trim();
+        if (!text) return;
+        const existing = list.querySelectorAll('.tag-chip');
+        for (const chip of existing) {
+            if (chip.dataset.value.toLowerCase() === text.toLowerCase()) return;
+        }
+        const chip = document.createElement('span');
+        chip.className = 'tag-chip';
+        chip.dataset.value = text;
+        chip.innerHTML = text + '<span class="tag-remove">&times;</span>';
+        chip.querySelector('.tag-remove').addEventListener('click', function () {
+            chip.remove();
+            syncHidden();
+        });
+        list.insertBefore(chip, field);
+        field.value = '';
+        syncHidden();
+    }
+
+    field.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addTag(this.value);
+        }
+    });
+    field.addEventListener('paste', function (e) {
+        const pasted = (e.clipboardData || window.clipboardData).getData('text');
+        if (pasted.includes(',')) {
+            e.preventDefault();
+            pasted.split(',').forEach(function (s) { addTag(s); });
+        }
+    });
+    // Initialize existing chips
+    list.querySelectorAll('.tag-chip').forEach(function (chip) {
+        chip.querySelector('.tag-remove').addEventListener('click', function () {
+            chip.remove();
+            syncHidden();
+        });
+    });
+}
+
+document.querySelectorAll('.tag-input-wrap').forEach(initTagInput);
+
+// Availability component
+(function () {
+    const grid = document.getElementById('avail-grid');
+    const hiddenInput = document.getElementById('availability-input');
+    if (!grid) return;
+
+    function serializeAvailability() {
+        const rows = grid.querySelectorAll('.avail-row');
+        const data = [];
+        rows.forEach(function (row) {
+            const cb = row.querySelector('.avail-checkbox');
+            const start = row.querySelector('.avail-start');
+            const end = row.querySelector('.avail-end');
+            data.push({
+                day: row.dataset.day,
+                active: cb.checked,
+                start: cb.checked ? start.value : null,
+                end: cb.checked ? end.value : null,
+            });
+        });
+        hiddenInput.value = JSON.stringify(data);
+    }
+
+    grid.addEventListener('change', function (e) {
+        if (e.target.classList.contains('avail-checkbox')) {
+            const row = e.target.closest('.avail-row');
+            const times = row.querySelector('.avail-times');
+            const start = row.querySelector('.avail-start');
+            const end = row.querySelector('.avail-end');
+            times.style.display = e.target.checked ? '' : 'none';
+            if (!e.target.checked) {
+                start.value = '08:00';
+                end.value = '17:00';
+            }
+            serializeAvailability();
+        }
+        if (e.target.classList.contains('avail-start') || e.target.classList.contains('avail-end')) {
+            serializeAvailability();
+        }
+    });
+
+    // Apply same time to all active days
+    document.getElementById('apply-all-times')?.addEventListener('click', function () {
+        const firstActive = grid.querySelector('.avail-row:has(.avail-checkbox:checked)');
+        if (!firstActive) return;
+        const refStart = firstActive.querySelector('.avail-start').value;
+        const refEnd = firstActive.querySelector('.avail-end').value;
+        grid.querySelectorAll('.avail-row:has(.avail-checkbox:checked)').forEach(function (row) {
+            row.querySelector('.avail-start').value = refStart;
+            row.querySelector('.avail-end').value = refEnd;
+        });
+        serializeAvailability();
+    });
+})();
 </script>
 @endpush

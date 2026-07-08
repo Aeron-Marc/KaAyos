@@ -55,10 +55,49 @@
                         <span>{{ $workerProfile->years_of_experience }} years</span>
                     </div>
                 @endif
-                @if($workerProfile && $workerProfile->available_days)
+                @php
+                    $availStr = '';
+                    if ($workerProfile && $workerProfile->availability) {
+                        $active = array_filter($workerProfile->availability, fn($a) => $a['active']);
+                        if (!empty($active)) {
+                            $dayShort = ['Monday'=>'Mon','Tuesday'=>'Tue','Wednesday'=>'Wed','Thursday'=>'Thu','Friday'=>'Fri','Saturday'=>'Sat','Sunday'=>'Sun'];
+                            $groups = [];
+                            $prevHours = null;
+                            $groupStart = null;
+                            $groupEnd = null;
+                            foreach ($active as $a) {
+                                $hours = ($a['start'] ?? '') . '-' . ($a['end'] ?? '');
+                                if ($hours !== $prevHours || $groupEnd === null) {
+                                    if ($groupStart !== null) {
+                                        $groups[] = ['start' => $groupStart, 'end' => $groupEnd, 'hours' => $prevHours];
+                                    }
+                                    $groupStart = $a['day'];
+                                    $groupEnd = $a['day'];
+                                    $prevHours = $hours;
+                                } else {
+                                    $groupEnd = $a['day'];
+                                }
+                            }
+                            if ($groupStart !== null) {
+                                $groups[] = ['start' => $groupStart, 'end' => $groupEnd, 'hours' => $prevHours];
+                            }
+                            $parts = [];
+                            foreach ($groups as $g) {
+                                $range = $g['start'] === $g['end']
+                                    ? ($dayShort[$g['start']] ?? $g['start'])
+                                    : ($dayShort[$g['start']] ?? $g['start']) . '–' . ($dayShort[$g['end']] ?? $g['end']);
+                                $startTime = \Carbon\Carbon::createFromFormat('H:i', explode('-', $g['hours'])[0])->format('g:i A');
+                                $endTime = \Carbon\Carbon::createFromFormat('H:i', explode('-', $g['hours'])[1])->format('g:i A');
+                                $parts[] = $range . ' ' . $startTime . ' – ' . $endTime;
+                            }
+                            $availStr = implode(', ', $parts);
+                        }
+                    }
+                @endphp
+                @if($availStr)
                     <div style="display:flex;justify-content:space-between;font-size:.88rem;">
                         <span style="color:var(--g5);">Availability</span>
-                        <span>{{ $workerProfile->available_days }}</span>
+                        <span>{{ $availStr }}</span>
                     </div>
                 @endif
                 @if($worker->phone)
