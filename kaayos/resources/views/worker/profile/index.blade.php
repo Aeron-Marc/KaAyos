@@ -235,6 +235,9 @@
                     <button type="button" class="btn btn-outline" id="email-change-btn">
                         <i class="fa-solid fa-pen" aria-hidden="true"></i> Change Email
                     </button>
+                    <button type="button" class="btn btn-outline" id="pw-change-btn" style="margin-top:8px;">
+                        <i class="fa-solid fa-key" aria-hidden="true"></i> Change Password
+                    </button>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -546,6 +549,58 @@
     </div>
 </div>
 
+{{-- Password Change Modal --}}
+<div id="pw-change-modal" class="modal-overlay" style="display:none;" role="presentation">
+    <div class="otp-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="otp-modal-header">
+            <div class="otp-modal-icon">
+                <i class="fa-solid fa-key" id="pw-icon" aria-hidden="true"></i>
+            </div>
+            <h2 id="pw-title">Change Password</h2>
+            <p id="pw-subtitle">An OTP will be sent to your email for verification.</p>
+        </div>
+
+        {{-- Step 1: Current Password --}}
+        <div id="pw-step-form">
+            <div class="form-group">
+                <label for="pw-current">Current Password</label>
+                <input type="password" id="pw-current" placeholder="Enter your current password">
+            </div>
+            <div id="pw-error-form" class="field-error otp-error" style="display:none;"></div>
+            <div class="otp-actions">
+                <button type="button" class="btn btn-solid" id="pw-send-btn">Send verification code</button>
+                <button type="button" class="btn btn-ghost" id="pw-cancel-btn">Cancel</button>
+            </div>
+        </div>
+
+        {{-- Step 2: OTP + New Password --}}
+        <div id="pw-step-otp" style="display:none;">
+            <p id="pw-otp-sent-to" style="text-align:center;color:var(--g5);margin-bottom:16px;font-size:.9rem;"></p>
+            <div class="otp-inputs" id="pw-otp-inputs">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="0">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="1">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="2">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="3">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="4">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="5">
+            </div>
+            <div class="form-group" style="margin-top:14px;">
+                <label for="pw-new">New Password</label>
+                <input type="password" id="pw-new" placeholder="At least 8 characters">
+            </div>
+            <div class="form-group" style="margin-top:10px;">
+                <label for="pw-confirm">Confirm New Password</label>
+                <input type="password" id="pw-confirm" placeholder="Re-enter new password">
+            </div>
+            <div id="pw-error-otp" class="field-error otp-error" style="display:none;"></div>
+            <div class="otp-actions">
+                <button type="button" class="btn btn-solid" id="pw-verify-btn">Verify & change password</button>
+                <button type="button" class="btn btn-ghost" id="pw-back-btn">Back</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 window.authToken = "{{ auth()->user()->createToken('worker-profile-page')->plainTextToken }}";
@@ -748,6 +803,209 @@ window.authToken = "{{ auth()->user()->createToken('worker-profile-page')->plain
             loading = false;
             verifyBtn.disabled = false;
             verifyBtn.textContent = 'Verify & change email';
+        }
+    });
+})();
+
+// Password Change Modal
+(function() {
+    const modal = document.getElementById('pw-change-modal');
+    const openBtn = document.getElementById('pw-change-btn');
+    const cancelBtn = document.getElementById('pw-cancel-btn');
+    const backBtn = document.getElementById('pw-back-btn');
+    const sendBtn = document.getElementById('pw-send-btn');
+    const verifyBtn = document.getElementById('pw-verify-btn');
+
+    const stepForm = document.getElementById('pw-step-form');
+    const stepOtp  = document.getElementById('pw-step-otp');
+    const pwIcon   = document.getElementById('pw-icon');
+    const pwTitle  = document.getElementById('pw-title');
+    const pwSubtitle = document.getElementById('pw-subtitle');
+    const pwOtpSentTo = document.getElementById('pw-otp-sent-to');
+
+    const errForm = document.getElementById('pw-error-form');
+    const errOtp  = document.getElementById('pw-error-otp');
+
+    const currentPwInput = document.getElementById('pw-current');
+    const newPwInput = document.getElementById('pw-new');
+    const confirmPwInput = document.getElementById('pw-confirm');
+    const otpInputs = document.querySelectorAll('.pw-otp-digit');
+
+    let loading = false;
+
+    function showError(container, msg) {
+        container.textContent = msg;
+        container.style.display = 'block';
+    }
+
+    function hideError(container) {
+        container.textContent = '';
+        container.style.display = 'none';
+    }
+
+    function resetModal() {
+        stepForm.style.display = 'block';
+        stepOtp.style.display = 'none';
+        pwIcon.className = 'fa-solid fa-key';
+        pwTitle.textContent = 'Change Password';
+        pwSubtitle.textContent = 'An OTP will be sent to your email for verification.';
+        currentPwInput.value = '';
+        newPwInput.value = '';
+        confirmPwInput.value = '';
+        otpInputs.forEach(inp => inp.value = '');
+        hideError(errForm);
+        hideError(errOtp);
+        loading = false;
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send verification code';
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify & change password';
+    }
+
+    function openModal() {
+        resetModal();
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    openBtn?.addEventListener('click', openModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', closeModal);
+
+    backBtn?.addEventListener('click', function() {
+        stepForm.style.display = 'block';
+        stepOtp.style.display = 'none';
+        pwIcon.className = 'fa-solid fa-key';
+        pwTitle.textContent = 'Change Password';
+        pwSubtitle.textContent = 'An OTP will be sent to your email for verification.';
+        hideError(errOtp);
+    });
+
+    // OTP digit handling
+    otpInputs.forEach((input, idx) => {
+        input.addEventListener('input', function(e) {
+            const val = e.target.value;
+            if (val && !/^\d$/.test(val)) { this.value = ''; return; }
+            if (val && idx < 5) otpInputs[idx + 1].focus();
+            hideError(errOtp);
+        });
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && !this.value && idx > 0) {
+                otpInputs[idx - 1].focus();
+            }
+        });
+    });
+
+    // Paste support for OTP
+    document.getElementById('pw-otp-inputs')?.addEventListener('paste', function(e) {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (!pasted) return;
+        otpInputs.forEach((inp, i) => { inp.value = pasted[i] || ''; });
+        const focusIdx = Math.min(pasted.length, 5);
+        otpInputs[focusIdx]?.focus();
+    });
+
+    // Send OTP
+    sendBtn?.addEventListener('click', async function() {
+        const currentPassword = currentPwInput.value;
+
+        if (!currentPassword) {
+            showError(errForm, 'Please enter your current password.');
+            return;
+        }
+
+        loading = true;
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending…';
+        hideError(errForm);
+
+        try {
+            const res = await fetch('/password-otp/send', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + window.authToken,
+                },
+                body: JSON.stringify({ current_password: currentPassword }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to send code.');
+
+            stepForm.style.display = 'none';
+            stepOtp.style.display = 'block';
+            pwIcon.className = 'fa-solid fa-shield-check';
+            pwTitle.textContent = 'Verify the code';
+            pwOtpSentTo.textContent = 'Enter the code sent to your email. It expires in 10 minutes.';
+            setTimeout(() => otpInputs[0]?.focus(), 50);
+        } catch (err) {
+            showError(errForm, err.message);
+        } finally {
+            loading = false;
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send verification code';
+        }
+    });
+
+    // Verify OTP & change password
+    verifyBtn?.addEventListener('click', async function() {
+        const otp = Array.from(otpInputs).map(inp => inp.value).join('');
+        const newPassword = newPwInput.value;
+        const confirmPassword = confirmPwInput.value;
+        const currentPassword = currentPwInput.value;
+
+        if (otp.length !== 6) {
+            showError(errOtp, 'Enter the 6-digit code.');
+            return;
+        }
+        if (!newPassword || newPassword.length < 8) {
+            showError(errOtp, 'New password must be at least 8 characters.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            showError(errOtp, 'Passwords do not match.');
+            return;
+        }
+
+        loading = true;
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verifying…';
+        hideError(errOtp);
+
+        try {
+            const res = await fetch('/password-otp/verify', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + window.authToken,
+                },
+                body: JSON.stringify({
+                    otp,
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                    new_password_confirmation: confirmPassword,
+                }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Verification failed.');
+
+            closeModal();
+            alert('Password changed successfully.');
+        } catch (err) {
+            showError(errOtp, err.message);
+            otpInputs.forEach(inp => inp.value = '');
+            setTimeout(() => otpInputs[0]?.focus(), 50);
+        } finally {
+            loading = false;
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify & change password';
         }
     });
 })();
