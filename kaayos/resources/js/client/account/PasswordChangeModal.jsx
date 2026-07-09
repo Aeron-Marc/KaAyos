@@ -9,6 +9,7 @@ export default function PasswordChangeModal({ email, open, onClose, onSuccess })
     const [digits, setDigits] = useState(['', '', '', '', '', '']);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [countdown, setCountdown] = useState(60);
     const inputsRef = useRef([]);
 
     useEffect(() => {
@@ -20,7 +21,16 @@ export default function PasswordChangeModal({ email, open, onClose, onSuccess })
         setDigits(['', '', '', '', '', '']);
         setError('');
         setLoading(false);
+        setCountdown(60);
     }, [open]);
+
+    useEffect(() => {
+        if (step !== 'otp' || countdown <= 0) return;
+        const timer = setInterval(() => {
+            setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [step, countdown]);
 
     const resetOtp = () => {
         setDigits(['', '', '', '', '', '']);
@@ -38,6 +48,21 @@ export default function PasswordChangeModal({ email, open, onClose, onSuccess })
         try {
             await sendOtpRequest(currentPassword);
             setStep('otp');
+            setCountdown(60);
+            resetOtp();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResend = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            await sendOtpRequest(currentPassword);
+            setCountdown(60);
             resetOtp();
         } catch (err) {
             setError(err.message);
@@ -163,6 +188,20 @@ export default function PasswordChangeModal({ email, open, onClose, onSuccess })
                                     disabled={loading}
                                 />
                             ))}
+                        </div>
+
+                        <div className="otp-timer-row" style={{ marginTop: '12px', textAlign: 'center' }}>
+                            {countdown > 0 ? (
+                                <span className="otp-countdown" style={{ fontSize: '.8rem', color: 'var(--g5)' }}>
+                                    Resend available in {countdown}s
+                                </span>
+                            ) : (
+                                <button type="button" className="btn-link otp-resend"
+                                    onClick={handleResend} disabled={loading}
+                                    style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '.85rem' }}>
+                                    Resend code
+                                </button>
+                            )}
                         </div>
 
                         <div className="form-group" style={{ marginTop: '14px' }}>

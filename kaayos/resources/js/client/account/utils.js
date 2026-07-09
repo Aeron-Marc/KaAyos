@@ -1,5 +1,3 @@
-export const MOCK_OTP = '482931';
-
 export const EMAIL_NOTIFICATION_OPTIONS = [
     'All updates',
     'Bookings only',
@@ -14,32 +12,6 @@ export const PHONE_REGEX = /^09\d{9}$/;
 export function getInitials(name) {
     const trimmed = (name || 'U').trim();
     return trimmed.substring(0, 2).toUpperCase();
-}
-
-export function getPasswordStrength(password) {
-    if (!password) return null;
-
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-
-    if (score === 1) return 'Weak';
-    if (score === 2) return 'Fair';
-    if (score === 3) return 'Good';
-    if (score === 4) return 'Strong';
-    return null;
-}
-
-export function strengthClass(strength) {
-    const map = {
-        Weak: 'strength-weak',
-        Fair: 'strength-fair',
-        Good: 'strength-good',
-        Strong: 'strength-strong',
-    };
-    return map[strength] ?? '';
 }
 
 // Reads the Bearer token injected by Blade into window.authToken
