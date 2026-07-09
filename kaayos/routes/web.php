@@ -148,6 +148,9 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::post('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
     Route::post('/users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
 
+    // Workers
+    Route::get('/workers', [App\Http\Controllers\Admin\WorkerController::class, 'index'])->name('workers.index');
+
     // Verifications
     Route::get('/verification', [VerificationController::class, 'index'])->name('verification.index');
     Route::get('/verification/{verification}', [VerificationController::class, 'show'])->name('verification.show');

@@ -201,6 +201,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('admin.workers.index') }}" class="{{ request()->routeIs('admin.workers.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <span>Workers</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('admin.verification.index') }}" class="{{ request()->routeIs('admin.verification.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-clipboard-check"></i>
                     <span>Verifications</span>
