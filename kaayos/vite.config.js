@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/client.css',
                 'resources/js/app.js',
+                'resources/js/echo.js',
                 'resources/js/client/account.jsx',
             ],
             refresh: true,

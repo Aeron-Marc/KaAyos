@@ -50,7 +50,7 @@
         </thead>
         <tbody>
             @forelse($bookings as $i => $booking)
-                <tr class="booking-row" data-status="{{ $booking['raw_status'] }}" data-index="{{ $i }}">
+                <tr class="booking-row" data-status="{{ $booking['raw_status'] }}" data-index="{{ $i }}" data-booking-id="{{ $booking['id'] }}">
                     <td><span class="booking-worker">{{ $booking['worker'] }}</span></td>
                     <td>{{ $booking['service'] }}</td>
                     <td>{{ $booking['date'] }}</td>
@@ -193,8 +193,58 @@
 </style>
 @endpush
 
+@push('styles')
+<style>
+.toast-notification {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #1e293b; color: #fff; padding: 14px 20px;
+    border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.25);
+    z-index: 9999; font-size: .85rem; max-width: 340px;
+    animation: slideUp .3s ease;
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+@endpush
+
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+    var checkEcho = setInterval(function () {
+        if (window.Echo) {
+            clearInterval(checkEcho);
+            var userId = {{ auth()->id() }};
+            window.Echo.private('user.' + userId)
+                .listen('BookingStatusUpdated', function (e) {
+                    var rows = document.querySelectorAll('.booking-row');
+                    rows.forEach(function (row) {
+                        if (String(row.dataset.bookingId) === String(e.id)) {
+                            var badge = row.querySelector('.status-badge');
+                            var labelMap = {
+                                'accepted': 'Active',
+                                'en_route': 'En Route',
+                                'in_progress': 'In Progress',
+                                'completed': 'Completed',
+                                'cancelled': 'Cancelled',
+                            };
+                            var clsMap = {
+                                'accepted': 'status-active',
+                                'en_route': 'status-active',
+                                'in_progress': 'status-active',
+                                'completed': 'status-done',
+                                'cancelled': 'status-cancelled',
+                            };
+                            badge.textContent = labelMap[e.new_status] || e.new_status;
+                            badge.className = 'status-badge ' + (clsMap[e.new_status] || '');
+                            row.dataset.status = e.new_status;
+                        }
+                    });
+                });
+        }
+    }, 200);
+});
 const bookings = @json($bookings);
 let cancelIndex = null;
 

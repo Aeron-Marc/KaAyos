@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use App\Exceptions\BookingStateException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
 
 class Booking extends Model
 {
     protected $fillable = [
+        'booking_ref',
         'client_id',
         'worker_id',
         'service_category',
@@ -21,7 +24,23 @@ class Booking extends Model
         'completed_at',
         'cancelled_at',
         'cancellation_reason',
+        'reschedule_requested_by',
+        'reschedule_proposed_at',
+        'reschedule_reason',
+        'reschedule_status',
+        'reschedule_responded_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $booking) {
+            if (empty($booking->booking_ref)) {
+                $date = now()->format('Ymd');
+                $last = self::whereDate('created_at', today())->count();
+                $booking->booking_ref = 'BK-' . $date . '-' . str_pad($last + 1, 5, '0', STR_PAD_LEFT);
+            }
+        });
+    }
 
     const STATUS_NEW        = 'new';
     const STATUS_ACCEPTED    = 'accepted';
@@ -47,12 +66,14 @@ class Booking extends Model
     ];
 
     protected $casts = [
-        'client_id'     => 'integer',
-        'worker_id'     => 'integer',
-        'scheduled_at'  => 'datetime',
-        'completed_at'  => 'datetime',
-        'cancelled_at'  => 'datetime',
-        'price'         => 'decimal:2',
+        'client_id'             => 'integer',
+        'worker_id'             => 'integer',
+        'scheduled_at'          => 'datetime',
+        'completed_at'          => 'datetime',
+        'cancelled_at'          => 'datetime',
+        'price'                 => 'decimal:2',
+        'reschedule_proposed_at' => 'datetime',
+        'reschedule_responded_at' => 'datetime',
     ];
 
     // ── Relationships ──────────────────────────────────────────
@@ -80,6 +101,16 @@ class Booking extends Model
     public function review(): HasOne
     {
         return $this->hasOne(Review::class);
+    }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(BookingPhoto::class);
+    }
+
+    public function rescheduleRequestedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reschedule_requested_by');
     }
 
     // ── Scopes ─────────────────────────────────────────────────
@@ -155,12 +186,25 @@ class Booking extends Model
             );
         }
 
-        $this->status = $nextStatus;
+        DB::transaction(function () use ($nextStatus) {
+            $fresh = self::lockForUpdate()->findOrFail($this->id);
 
-        if ($nextStatus === self::STATUS_COMPLETED) {
-            $this->completed_at = now();
-        }
+            if ($fresh->status !== $this->getOriginal('status')) {
+                throw new BookingStateException(
+                    "This booking was already updated to '{$fresh->status}' by another action. Please refresh and try again."
+                );
+            }
 
-        $this->save();
+            $fresh->status = $nextStatus;
+
+            if ($nextStatus === self::STATUS_COMPLETED) {
+                $fresh->completed_at = now();
+            }
+
+            $fresh->save();
+
+            $this->status = $fresh->status;
+            $this->completed_at = $fresh->completed_at;
+        });
     }
 }

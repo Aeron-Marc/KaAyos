@@ -99,6 +99,10 @@
 @push('scripts')
 <script>
 const conversations = @json($conversations);
+let activeBookingId = null;
+let activeConvo = null;
+let _pollInterval = null;
+let _echoChannel = null;
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -107,32 +111,82 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+function subscribeToBooking(bookingId) {
+    if (_echoChannel) _echoChannel.stopListening('MessageSent');
+    if (!bookingId || !window.Echo) return;
+    _echoChannel = window.Echo.private('booking.' + bookingId);
+    _echoChannel.listen('MessageSent', function (e) {
+        if (activeBookingId && String(e.booking_id) === String(activeBookingId)) {
+            var body = document.getElementById('chat-body');
+            if (!body) return;
+            var bubble = document.createElement('div');
+            bubble.className = 'chat-bubble them';
+            bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(e.text) + '</div><div class="bubble-time">' + (e.time || 'just now') + '</div>';
+            body.appendChild(bubble);
+            body.scrollTop = body.scrollHeight;
+        }
+    });
+}
+
+function startPolling(bookingId) {
+    if (_pollInterval) clearInterval(_pollInterval);
+    _pollInterval = setInterval(function () {
+        if (!bookingId) return;
+        fetch('/client/messages/poll/' + bookingId, {
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.messages || !activeConvo) return;
+            var body = document.getElementById('chat-body');
+            if (!body) return;
+            var existing = body.querySelectorAll('.bubble-text');
+            var existingTexts = Array.from(existing).map(function (el) { return el.textContent; });
+            data.messages.forEach(function (msg) {
+                if (msg.from === 'them' && !existingTexts.includes(msg.text)) {
+                    var bubble = document.createElement('div');
+                    bubble.className = 'chat-bubble them';
+                    bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(msg.text) + '</div><div class="bubble-time">' + (msg.time || '') + '</div>';
+                    body.appendChild(bubble);
+                }
+            });
+            body.scrollTop = body.scrollHeight;
+        })
+        .catch(function () {});
+    }, 5000);
+}
+
 function switchConversation(index) {
-    const convo = conversations[index];
+    var convo = conversations[index];
     if (!convo) return;
 
-    document.querySelectorAll('.convo-item').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.convo-item[data-index="${index}"]`)?.classList.add('active');
+    activeBookingId = convo.booking_id;
+    activeConvo = convo;
+    subscribeToBooking(convo.booking_id);
 
-    const pane = document.getElementById('chat-pane');
+    document.querySelectorAll('.convo-item').forEach(function (el) { el.classList.remove('active'); });
+    var target = document.querySelector('.convo-item[data-index="' + index + '"]');
+    if (target) target.classList.add('active');
 
-    const header = document.createElement('div');
+    var pane = document.getElementById('chat-pane');
+    var workerUrl = '/client/workers/' + (convo.worker_id || '');
+
+    var header = document.createElement('div');
     header.className = 'chat-header';
     header.id = 'chat-header';
-    var workerUrl = '/client/workers/' + (convo.worker_id || '');
     header.innerHTML = '<i class="fa-solid fa-circle" style="color:#22c55e;font-size:.5rem;margin-right:6px;" aria-hidden="true"></i> <span id="chat-worker-name">' + convo.name + '</span> <a href="' + workerUrl + '" class="chat-header-book" title="Book this worker"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> Book</a>';
 
-    const body = document.createElement('div');
+    var body = document.createElement('div');
     body.className = 'chat-body';
     body.id = 'chat-body';
     convo.messages.forEach(function (msg) {
-        const bubble = document.createElement('div');
+        var bubble = document.createElement('div');
         bubble.className = 'chat-bubble ' + (msg.from === 'me' ? 'me' : 'them');
         bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(msg.text) + '</div><div class="bubble-time">' + (msg.time || '') + '</div>';
         body.appendChild(bubble);
     });
 
-    const inputRow = document.createElement('div');
+    var inputRow = document.createElement('div');
     inputRow.className = 'chat-input-row';
     inputRow.id = 'chat-input-row';
     inputRow.innerHTML = '<input type="text" class="msg-input" placeholder="Type a message…" aria-label="Message"><button type="button" class="btn btn-solid send-btn"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></button>';
@@ -143,16 +197,17 @@ function switchConversation(index) {
     pane.appendChild(inputRow);
 
     attachSendHandler(convo);
+    startPolling(convo.booking_id);
     body.scrollTop = body.scrollHeight;
 }
 
 function attachSendHandler(convo) {
-    const btn = document.querySelector('.send-btn');
-    const input = document.querySelector('.msg-input');
+    var btn = document.querySelector('.send-btn');
+    var input = document.querySelector('.msg-input');
     if (!btn || !input) return;
 
     function send() {
-        const text = input.value.trim();
+        var text = input.value.trim();
         if (!text) return;
 
         fetch('{{ route('client.messages.send') }}', {
@@ -164,18 +219,18 @@ function attachSendHandler(convo) {
             },
             body: JSON.stringify({ booking_id: convo.booking_id, message: text }),
         })
-        .then(r => r.json())
-        .then(data => {
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
             if (!data.success) return;
-            const body = document.getElementById('chat-body');
-            const bubble = document.createElement('div');
+            var body = document.getElementById('chat-body');
+            var bubble = document.createElement('div');
             bubble.className = 'chat-bubble me';
             bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(data.message.text) + '</div><div class="bubble-time">' + (data.message.time || 'just now') + '</div>';
             body.appendChild(bubble);
             input.value = '';
             body.scrollTop = body.scrollHeight;
         })
-        .catch(() => {});
+        .catch(function () {});
     }
 
     btn.addEventListener('click', send);
@@ -185,7 +240,7 @@ function attachSendHandler(convo) {
 }
 
 function selectConvoByBookingId(bookingId) {
-    for (let i = 0; i < conversations.length; i++) {
+    for (var i = 0; i < conversations.length; i++) {
         if (String(conversations[i].booking_id) === String(bookingId)) {
             switchConversation(i);
             return;
@@ -194,17 +249,27 @@ function selectConvoByBookingId(bookingId) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    const bookingParam = urlParams.get('booking');
-    if (bookingParam) {
-        selectConvoByBookingId(bookingParam);
-    }
+    var checkEcho = setInterval(function () {
+        if (window.Echo) {
+            clearInterval(checkEcho);
 
-    const active = document.querySelector('.convo-item.active');
-    if (active) {
-        const convo = conversations[active.dataset.index];
-        if (convo) attachSendHandler(convo);
-    }
+            var urlParams = new URLSearchParams(window.location.search);
+            var bookingParam = urlParams.get('booking');
+            if (bookingParam) selectConvoByBookingId(bookingParam);
+
+            var active = document.querySelector('.convo-item.active');
+            if (active) {
+                var convo = conversations[active.dataset.index];
+                if (convo) {
+                    activeBookingId = convo.booking_id;
+                    activeConvo = convo;
+                    subscribeToBooking(convo.booking_id);
+                    startPolling(convo.booking_id);
+                    attachSendHandler(convo);
+                }
+            }
+        }
+    }, 200);
 });
 </script>
 @endpush

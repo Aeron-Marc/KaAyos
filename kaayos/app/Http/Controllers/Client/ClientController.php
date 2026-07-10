@@ -8,8 +8,17 @@ use App\Models\Message;
 use App\Models\Review;
 use App\Models\ServiceCategory;
 use App\Models\User;
+use App\Events\BookingCreated;
+use App\Events\BookingStatusUpdated;
+use App\Events\MessageSent;
+use App\Notifications\BookingCancelled;
+use App\Notifications\NewBooking;
+use App\Notifications\NewMessage;
+use App\Notifications\NewReview;
+use App\Notifications\RescheduleRequested;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
 class ClientController extends Controller
@@ -260,6 +269,79 @@ class ClientController extends Controller
         return view('client.account.profile', $this->shared());
     }
 
+    public function rescheduleRequest(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) abort(403);
+        if (!$booking->isActive()) {
+            return response()->json(['success' => false, 'message' => 'Can only reschedule active bookings.'], 422);
+        }
+
+        $validated = $request->validate([
+            'proposed_at' => ['required', 'date', 'after:now'],
+            'reason'      => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $booking->update([
+            'reschedule_requested_by'  => auth()->id(),
+            'reschedule_proposed_at'   => $validated['proposed_at'],
+            'reschedule_reason'        => $validated['reason'] ?? null,
+            'reschedule_status'        => 'pending',
+        ]);
+
+        $booking->load('rescheduleRequestedBy');
+        Notification::send($booking->worker, new RescheduleRequested($booking));
+
+        return response()->json(['success' => true, 'message' => 'Reschedule request sent to worker.']);
+    }
+
+    public function respondReschedule(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->worker_id !== auth()->id()) abort(403);
+        if ($booking->reschedule_status !== 'pending') {
+            return response()->json(['success' => false, 'message' => 'No pending reschedule request.'], 422);
+        }
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:approve,decline'],
+        ]);
+
+        if ($validated['action'] === 'approve') {
+            $booking->update([
+                'scheduled_at'           => $booking->reschedule_proposed_at,
+                'reschedule_status'      => 'approved',
+                'reschedule_responded_at' => now(),
+            ]);
+        } else {
+            $booking->update([
+                'reschedule_status'       => 'declined',
+                'reschedule_responded_at' => now(),
+            ]);
+        }
+
+        $booking->load('worker');
+        Notification::send($booking->client, new \App\Notifications\BookingStatusChanged($booking, $booking->status));
+
+        return response()->json(['success' => true, 'message' => 'Reschedule request ' . $validated['action'] . 'd.']);
+    }
+
+    public function pollMessages(Booking $booking): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $messages = $booking->messages()
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn ($m) => [
+                'from' => $m->sender_id === auth()->id() ? 'me' : 'them',
+                'text' => $m->message,
+                'time' => $m->created_at->diffForHumans(),
+            ]);
+
+        return response()->json(['messages' => $messages]);
+    }
+
     // ── API / Mutation Methods ────────────────────────────────────
 
     public function sendMessage(Request $request): JsonResponse
@@ -281,6 +363,11 @@ class ClientController extends Controller
             'receiver_id' => $booking->worker_id,
             'message'     => $validated['message'],
         ]);
+
+        $msg->load('sender');
+
+        Notification::send($booking->worker, new NewMessage($msg));
+        broadcast(new MessageSent($msg))->toOthers();
 
         return response()->json([
             'success' => true,
@@ -305,11 +392,18 @@ class ClientController extends Controller
             ], 422);
         }
 
+        $oldStatus = $booking->status;
+
         $booking->update([
-            'status'             => 'cancelled',
+            'status'              => 'cancelled',
             'cancelled_at'       => now(),
             'cancellation_reason' => $request->input('reason', 'Cancelled by client'),
         ]);
+
+        $booking->load('worker');
+
+        Notification::send($booking->worker, new BookingCancelled($booking));
+        broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
 
         return response()->json(['success' => true]);
     }
@@ -344,6 +438,11 @@ class ClientController extends Controller
             'status'          => Booking::STATUS_NEW,
         ]);
 
+        $booking->load('client', 'worker');
+
+        Notification::send($booking->worker, new NewBooking($booking));
+        broadcast(new BookingCreated($booking))->toOthers();
+
         return response()->json([
             'success' => true,
             'booking' => $booking,
@@ -375,6 +474,10 @@ class ClientController extends Controller
                 'comment'   => $validated['comment'] ?? null,
             ]
         );
+
+        $review->load('client');
+
+        Notification::send($booking->worker, new NewReview($review));
 
         return response()->json(['success' => true, 'review' => $review]);
     }

@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Worker;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Message;
 use App\Models\WorkerProfile;
+use App\Events\MessageSent;
+use App\Notifications\NewMessage;
 use App\Support\WorkerDocuments;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -350,6 +354,11 @@ class WorkerController extends Controller
             'message'     => $validated['message'],
         ]);
 
+        $msg->load('sender');
+
+        Notification::send($booking->client, new NewMessage($msg));
+        broadcast(new MessageSent($msg))->toOthers();
+
         return response()->json([
             'success' => true,
             'message' => [
@@ -565,5 +574,23 @@ class WorkerController extends Controller
     public function documents(): View
     {
         return view('worker.documents.index', $this->shared());
+    }
+
+    public function pollMessages(Booking $booking): JsonResponse
+    {
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $messages = $booking->messages()
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn ($m) => [
+                'from' => $m->sender_id === auth()->id() ? 'me' : 'them',
+                'text' => $m->message,
+                'time' => $m->created_at->diffForHumans(),
+            ]);
+
+        return response()->json(['messages' => $messages]);
     }
 }

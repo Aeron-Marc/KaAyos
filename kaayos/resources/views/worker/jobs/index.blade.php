@@ -193,9 +193,46 @@
 </style>
 @endpush
 
+@push('styles')
+<style>
+.toast-notification {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #1e293b; color: #fff; padding: 14px 20px;
+    border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.25);
+    z-index: 9999; font-size: .85rem; max-width: 340px;
+    animation: slideUp .3s ease;
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+@endpush
+
 @push('scripts')
 <script>
 const jobs = @json($jobRequests);
+
+document.addEventListener('DOMContentLoaded', function () {
+    var checkEcho = setInterval(function () {
+        if (window.Echo) {
+            clearInterval(checkEcho);
+
+            var userId = {{ auth()->id() }};
+            window.Echo.private('user.' + userId)
+                .listen('BookingCreated', function (e) {
+                    var toast = document.createElement('div');
+                    toast.className = 'toast-notification';
+                    toast.innerHTML = '<strong>New Booking Request!</strong><br>' + e.client_name + ' — ' + e.service + '<br><small>' + e.scheduled_at + '</small>';
+                    document.body.appendChild(toast);
+                    setTimeout(function () { toast.remove(); }, 6000);
+
+                    var badge = document.querySelector('.badge-dot');
+                    if (badge) badge.style.display = '';
+                });
+        }
+    }, 200);
+});
 
 function closeModals(e) {
     if (e && e.target && !e.target.closest) return;
@@ -212,8 +249,8 @@ function showInfoModal(index) {
     document.getElementById('infoModalTitle').textContent = 'Job Details';
     document.getElementById('infoModalBody').innerHTML = `
         <div class="detail-grid">
-            <span class="detail-label">Reference</span>
-            <span class="detail-value">${job.booking_ref}</span>
+                    <span class="detail-label">Reference</span>
+                    <span class="detail-value">${job.booking_ref || 'BK-' + String(job.id).padStart(5, '0')}</span>
 
             <span class="detail-label">Client</span>
             <span class="detail-value">${job.client}</span>

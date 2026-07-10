@@ -6,7 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SuspendUserRequest;
 use App\Models\Booking;
 use App\Models\User;
+use App\Notifications\BookingCancelled;
+use App\Notifications\BookingStatusChanged;
+use App\Events\BookingStatusUpdated;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class UserController extends Controller
 {
@@ -60,7 +64,31 @@ class UserController extends Controller
             'suspended_reason' => $request->input('reason'),
         ]);
 
-        return redirect()->route('admin.users.index')->with('success', "User {$user->name} has been suspended.");
+        $activeBookings = Booking::whereIn('status', [
+            Booking::STATUS_NEW,
+            Booking::STATUS_ACCEPTED,
+            Booking::STATUS_EN_ROUTE,
+            Booking::STATUS_IN_PROGRESS,
+        ])->where(function ($q) use ($user) {
+            $q->where('client_id', $user->id)
+              ->orWhere('worker_id', $user->id);
+        })->get();
+
+        foreach ($activeBookings as $booking) {
+            $booking->update([
+                'status'              => Booking::STATUS_CANCELLED,
+                'cancelled_at'        => now(),
+                'cancellation_reason' => 'User account suspended.',
+            ]);
+
+            if ($booking->client_id === $user->id) {
+                Notification::send($booking->worker, new BookingCancelled($booking));
+            } else {
+                Notification::send($booking->client, new BookingCancelled($booking));
+            }
+        }
+
+        return redirect()->route('admin.users.index')->with('success', "User {$user->name} has been suspended. " . $activeBookings->count() . " active booking(s) cancelled.");
     }
 
     public function reactivate(User $user)

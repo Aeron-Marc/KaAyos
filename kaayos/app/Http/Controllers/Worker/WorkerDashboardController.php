@@ -2,12 +2,19 @@
 
 namespace App\Http\Controllers\Worker;
 
+use App\Exceptions\BookingStateException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\BookingPhoto;
 use App\Models\Earning;
+use App\Events\BookingStatusUpdated;
+use App\Notifications\BookingStatusChanged;
+use App\Notifications\RescheduleRequested;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class WorkerDashboardController extends Controller
@@ -50,7 +57,27 @@ class WorkerDashboardController extends Controller
             'status' => ['required', 'string', 'in:' . implode(',', Booking::STATUSES)],
         ]);
 
-        $booking->transitionTo($validated['status']);
+        if ($validated['status'] === Booking::STATUS_ACCEPTED) {
+            $activeCount = $user->bookingsAsWorker()
+                ->whereIn('status', [Booking::STATUS_ACCEPTED, Booking::STATUS_EN_ROUTE, Booking::STATUS_IN_PROGRESS])
+                ->count();
+            if ($activeCount >= config('kaayos.max_concurrent_jobs', 3)) {
+                $msg = 'You have reached the maximum of ' . config('kaayos.max_concurrent_jobs', 3) . ' concurrent jobs. Complete an existing job first.';
+                if ($request->expectsJson()) return response()->json(['message' => $msg], 422);
+                return redirect()->back()->with('error', $msg);
+            }
+        }
+
+        $oldStatus = $booking->status;
+
+        try {
+            $booking->transitionTo($validated['status']);
+        } catch (BookingStateException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 409);
+            }
+            return redirect()->back()->with('error', $e->getMessage());
+        }
 
         if ($validated['status'] === Booking::STATUS_COMPLETED) {
             $platformFeePercent = config('kaayos.platform_fee_percent', 10);
@@ -68,6 +95,10 @@ class WorkerDashboardController extends Controller
                 ]
             );
         }
+
+        $booking->load('client');
+        Notification::send($booking->client, new BookingStatusChanged($booking, $oldStatus));
+        broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -106,5 +137,100 @@ class WorkerDashboardController extends Controller
         }
 
         return redirect()->back()->with('success', 'Location updated successfully.');
+    }
+
+    public function uploadPhoto(Request $request, Booking $booking): JsonResponse|RedirectResponse
+    {
+        if ($booking->worker_id !== auth()->id()) abort(403);
+
+        $validated = $request->validate([
+            'photo'   => ['required', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'caption' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $existingCount = $booking->photos()->count();
+        if ($existingCount >= 5) {
+            $msg = 'Maximum of 5 photos per booking.';
+            if ($request->expectsJson()) return response()->json(['message' => $msg], 422);
+            return redirect()->back()->with('error', $msg);
+        }
+
+        $path = $request->file('photo')->store('booking-photos', 'public');
+
+        $photo = $booking->photos()->create([
+            'photo_path' => $path,
+            'caption'    => $validated['caption'] ?? null,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'photo' => $photo]);
+        }
+
+        return redirect()->back()->with('success', 'Photo uploaded.');
+    }
+
+    public function rescheduleRequest(Request $request, Booking $booking): JsonResponse|RedirectResponse
+    {
+        if ($booking->worker_id !== auth()->id()) abort(403);
+        if (!$booking->isActive()) {
+            $msg = 'Can only reschedule active bookings.';
+            if ($request->expectsJson()) return response()->json(['message' => $msg], 422);
+            return redirect()->back()->with('error', $msg);
+        }
+
+        $validated = $request->validate([
+            'proposed_at' => ['required', 'date', 'after:now'],
+            'reason'      => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $booking->update([
+            'reschedule_requested_by'  => auth()->id(),
+            'reschedule_proposed_at'   => $validated['proposed_at'],
+            'reschedule_reason'        => $validated['reason'] ?? null,
+            'reschedule_status'        => 'pending',
+        ]);
+
+        $booking->load('rescheduleRequestedBy');
+        Notification::send($booking->client, new RescheduleRequested($booking));
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Reschedule request sent to client.']);
+        }
+        return redirect()->back()->with('success', 'Reschedule request sent.');
+    }
+
+    public function respondReschedule(Request $request, Booking $booking): JsonResponse|RedirectResponse
+    {
+        if ($booking->client_id !== auth()->id()) abort(403);
+        if ($booking->reschedule_status !== 'pending') {
+            $msg = 'No pending reschedule request.';
+            if ($request->expectsJson()) return response()->json(['message' => $msg], 422);
+            return redirect()->back()->with('error', $msg);
+        }
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:approve,decline'],
+        ]);
+
+        if ($validated['action'] === 'approve') {
+            $booking->update([
+                'scheduled_at'            => $booking->reschedule_proposed_at,
+                'reschedule_status'       => 'approved',
+                'reschedule_responded_at' => now(),
+            ]);
+        } else {
+            $booking->update([
+                'reschedule_status'       => 'declined',
+                'reschedule_responded_at' => now(),
+            ]);
+        }
+
+        $booking->load('worker');
+        Notification::send($booking->worker, new BookingStatusChanged($booking, $booking->status));
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Reschedule ' . $validated['action'] . 'd.']);
+        }
+        return redirect()->back()->with('success', 'Reschedule ' . $validated['action'] . 'd.');
     }
 }
