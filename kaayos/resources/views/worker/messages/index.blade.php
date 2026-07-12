@@ -33,7 +33,7 @@
                             <span class="convo-time">{{ $convo['time'] }}</span>
                         </span>
                     </div>
-                    <div class="convo-preview">{{ $convo['preview'] }}</div>
+                    <div class="convo-preview">{{ $convo['service'] ?? '' }} - {{ $convo['preview'] }}</div>
                 </div>
             </div>
         @empty
@@ -51,11 +51,11 @@
             <div class="chat-header" id="chat-header">
                 <i class="fa-regular fa-user" aria-hidden="true"></i>
                 <span id="chat-name">{{ $activeConvo['name'] }}</span>
-                <span style="font-weight:400;color:var(--g4);font-size:.82rem;margin-left:4px;">(Client)</span>
+                <span style="font-weight:400;color:var(--g4);font-size:.82rem;margin-left:4px;">({{ $activeConvo['service'] ?? 'Client' }})</span>
             </div>
             <div class="chat-body" id="chat-body">
                 @foreach($activeConvo['messages'] as $msg)
-                    <div class="chat-bubble {{ $msg['from'] === 'me' ? 'me' : 'them' }}">
+                    <div class="chat-bubble {{ $msg['from'] === 'me' ? 'me' : 'them' }}" data-id="{{ $msg['id'] ?? '' }}">
                         <div class="bubble-text">{{ $msg['text'] }}</div>
                         <div class="bubble-time">{{ $msg['time'] ?? '' }}</div>
                     </div>
@@ -104,8 +104,10 @@ function subscribeToBooking(bookingId) {
         if (activeBookingId && String(e.booking_id) === String(activeBookingId)) {
             var body = document.getElementById('chat-body');
             if (!body) return;
+            if (body.querySelector('[data-id="' + e.id + '"]')) return;
             var bubble = document.createElement('div');
             bubble.className = 'chat-bubble them';
+            bubble.setAttribute('data-id', e.id);
             bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(e.text) + '</div><div class="bubble-time">' + (e.time || 'just now') + '</div>';
             body.appendChild(bubble);
             body.scrollTop = body.scrollHeight;
@@ -117,7 +119,9 @@ function startPolling(bookingId) {
     if (_pollInterval) clearInterval(_pollInterval);
     _pollInterval = setInterval(function () {
         if (!bookingId) return;
-        fetch('/worker/messages/poll/' + bookingId, {
+        var lastMsg = document.querySelector('#chat-body .chat-bubble:last-child');
+        var afterParam = lastMsg ? '?after=' + lastMsg.getAttribute('data-id') : '';
+        fetch('/worker/messages/poll/' + bookingId + afterParam, {
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
         })
         .then(function (r) { return r.json(); })
@@ -125,12 +129,12 @@ function startPolling(bookingId) {
             if (!data.messages || !activeConvo) return;
             var body = document.getElementById('chat-body');
             if (!body) return;
-            var existing = body.querySelectorAll('.bubble-text');
-            var existingTexts = Array.from(existing).map(function (el) { return el.textContent; });
+            var existingIds = Array.from(body.querySelectorAll('[data-id]')).map(function (el) { return el.getAttribute('data-id'); });
             data.messages.forEach(function (msg) {
-                if (msg.from === 'them' && !existingTexts.includes(msg.text)) {
+                if (msg.from === 'them' && !existingIds.includes(String(msg.id))) {
                     var bubble = document.createElement('div');
                     bubble.className = 'chat-bubble them';
+                    bubble.setAttribute('data-id', msg.id);
                     bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(msg.text) + '</div><div class="bubble-time">' + (msg.time || '') + '</div>';
                     body.appendChild(bubble);
                 }
@@ -139,6 +143,13 @@ function startPolling(bookingId) {
         })
         .catch(function () {});
     }, 5000);
+}
+
+function markConversationRead(bookingId) {
+    fetch('/worker/messages/' + bookingId + '/read', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+    }).catch(function () {});
 }
 
 document.querySelectorAll('.convo-item').forEach(function (item) {
@@ -152,6 +163,7 @@ document.querySelectorAll('.convo-item').forEach(function (item) {
         activeBookingId = convo.booking_id;
         activeConvo = convo;
         subscribeToBooking(convo.booking_id);
+        markConversationRead(convo.booking_id);
 
         var pane = document.getElementById('chat-pane');
 
@@ -168,7 +180,7 @@ document.querySelectorAll('.convo-item').forEach(function (item) {
         var header = document.createElement('div');
         header.className = 'chat-header';
         header.id = 'chat-header';
-        header.innerHTML = '<i class="fa-regular fa-user" aria-hidden="true"></i> <span id="chat-name">' + convo.name + '</span><span style="font-weight:400;color:var(--g4);font-size:.82rem;margin-left:4px;">(Client)</span>';
+        header.innerHTML = '<i class="fa-regular fa-user" aria-hidden="true"></i> <span id="chat-name">' + convo.name + '</span><span style="font-weight:400;color:var(--g4);font-size:.82rem;margin-left:4px;">(' + (convo.service || 'Client') + ')</span>';
         pane.prepend(header);
 
         var body = document.createElement('div');
@@ -177,6 +189,7 @@ document.querySelectorAll('.convo-item').forEach(function (item) {
         convo.messages.forEach(function (msg) {
             var bubble = document.createElement('div');
             bubble.className = 'chat-bubble ' + (msg.from === 'me' ? 'me' : 'them');
+            bubble.setAttribute('data-id', msg.id);
             bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(msg.text) + '</div><div class="bubble-time">' + (msg.time || '') + '</div>';
             body.appendChild(bubble);
         });
@@ -209,6 +222,7 @@ function attachSendHandler(convo) {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json',
+                'X-Socket-ID': window.Echo ? window.Echo.socketId() : '',
             },
             body: JSON.stringify({ booking_id: convo.booking_id, message: text }),
         })
@@ -216,8 +230,10 @@ function attachSendHandler(convo) {
         .then(function (data) {
             if (!data.success) return;
             var body = document.getElementById('chat-body');
+            if (body.querySelector('[data-id="' + data.message.id + '"]')) return;
             var bubble = document.createElement('div');
             bubble.className = 'chat-bubble me';
+            bubble.setAttribute('data-id', data.message.id || '');
             bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(data.message.text) + '</div><div class="bubble-time">' + (data.message.time || 'just now') + '</div>';
             body.appendChild(bubble);
             input.value = '';
@@ -249,7 +265,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var urlParams = new URLSearchParams(window.location.search);
             var bookingParam = urlParams.get('booking');
-            if (bookingParam) selectConvoByBookingId(bookingParam);
+            if (bookingParam) {
+                selectConvoByBookingId(bookingParam);
+                return;
+            }
 
             var active = document.querySelector('.convo-item.active');
             if (active) {
