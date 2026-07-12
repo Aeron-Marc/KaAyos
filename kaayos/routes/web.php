@@ -69,7 +69,7 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::get('/workers', [ClientWorkerController::class, 'index'])->name('workers');
     Route::get('/workers/{worker}', [ClientWorkerController::class, 'show'])->name('workers.show');
     Route::get('/bookings', [ClientController::class, 'bookings'])->name('bookings');
-    Route::post('/bookings', [ClientController::class, 'storeBooking'])->name('bookings.store');
+    Route::post('/bookings', [ClientController::class, 'storeBooking'])->middleware('throttle:10,1')->name('bookings.store');
     Route::post('/bookings/{booking}/cancel', [ClientController::class, 'cancelBooking'])->name('bookings.cancel');
     Route::post('/bookings/{booking}/review', [ClientController::class, 'submitReview'])->name('bookings.review');
     Route::post('/bookings/{booking}/reschedule', [ClientController::class, 'rescheduleRequest'])->name('bookings.reschedule');

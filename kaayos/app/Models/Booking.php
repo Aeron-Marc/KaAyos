@@ -193,7 +193,7 @@ class Booking extends Model
             && self::STATUS_FLOW[$this->status] === $nextStatus;
     }
 
-    public function transitionTo(string $nextStatus, ?int $userId = null): void
+    public function transitionTo(string $nextStatus, ?int $userId = null, ?\Closure $afterSave = null): void
     {
         if (!$this->canTransitionTo($nextStatus)) {
             throw new \InvalidArgumentException(
@@ -201,7 +201,7 @@ class Booking extends Model
             );
         }
 
-        DB::transaction(function () use ($nextStatus, $userId) {
+        DB::transaction(function () use ($nextStatus, $userId, $afterSave) {
             $fresh = self::lockForUpdate()->findOrFail($this->id);
 
             if ($fresh->status !== $this->getOriginal('status')) {
@@ -225,8 +225,13 @@ class Booking extends Model
                 'new_status' => $nextStatus,
             ]);
 
+            if ($afterSave) {
+                $afterSave($fresh);
+            }
+
             $this->status = $fresh->status;
             $this->completed_at = $fresh->completed_at;
+            $this->syncOriginalAttribute('status');
         });
     }
 
@@ -265,6 +270,7 @@ class Booking extends Model
             $this->status = $fresh->status;
             $this->cancelled_at = $fresh->cancelled_at;
             $this->cancellation_reason = $fresh->cancellation_reason;
+            $this->syncOriginalAttribute('status');
         });
     }
 

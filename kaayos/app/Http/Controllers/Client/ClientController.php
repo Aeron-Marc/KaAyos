@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Message;
 use App\Models\Review;
+use App\Models\BookingHistory;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Events\BookingCreated;
@@ -19,6 +20,7 @@ use App\Notifications\NewReview;
 use App\Notifications\RescheduleRequested;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
@@ -328,7 +330,7 @@ class ClientController extends Controller
         }
 
         $booking->load('worker');
-        Notification::send($booking->client, new \App\Notifications\BookingStatusChanged($booking, $booking->status));
+        Notification::send($booking->worker, new \App\Notifications\BookingStatusChanged($booking, $booking->status));
 
         return response()->json(['success' => true, 'message' => 'Reschedule request ' . $validated['action'] . 'd.']);
     }
@@ -445,20 +447,43 @@ class ClientController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid worker.'], 422);
         }
 
+        if ($worker->suspended_at) {
+            return response()->json(['success' => false, 'message' => 'This worker is currently unavailable.'], 422);
+        }
+
+        $overlap = Booking::where('worker_id', $worker->id)
+            ->whereNotIn('status', [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED])
+            ->where('scheduled_at', $validated['scheduled_at'])
+            ->exists();
+
+        if ($overlap) {
+            return response()->json(['success' => false, 'message' => 'This worker already has a booking at the selected time.'], 422);
+        }
+
         $address = $validated['house_no'] . ', ' . $validated['barangay'] . ', ' . config('kaayos.default_location');
 
-        $booking = Booking::create([
-            'client_id'       => auth()->id(),
-            'worker_id'       => $validated['worker_id'],
-            'service_category' => $validated['service_category'],
-            'scheduled_at'    => $validated['scheduled_at'],
-            'address'         => $address,
-            'house_no'        => $validated['house_no'],
-            'barangay'        => $validated['barangay'],
-            'notes'           => $validated['notes'] ?? null,
-            'price'           => $validated['price'] ?? 0,
-            'status'          => Booking::STATUS_NEW,
-        ]);
+        $booking = DB::transaction(function () use ($validated, $address, $worker) {
+            $booking = Booking::create([
+                'client_id'        => auth()->id(),
+                'worker_id'        => $validated['worker_id'],
+                'service_category' => $validated['service_category'],
+                'scheduled_at'     => $validated['scheduled_at'],
+                'address'          => $address,
+                'house_no'         => $validated['house_no'],
+                'barangay'         => $validated['barangay'],
+                'notes'            => $validated['notes'] ?? null,
+                'price'            => $validated['price'] ?? 0,
+                'status'           => Booking::STATUS_NEW,
+            ]);
+
+            $booking->history()->create([
+                'old_status' => null,
+                'new_status' => Booking::STATUS_NEW,
+                'user_id'    => auth()->id(),
+            ]);
+
+            return $booking;
+        });
 
         $booking->load('client', 'worker');
 

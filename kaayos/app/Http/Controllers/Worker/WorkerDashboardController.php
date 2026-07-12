@@ -54,8 +54,13 @@ class WorkerDashboardController extends Controller
             abort(403, 'This job is not assigned to you.');
         }
 
+        $allowed = array_filter([
+            Booking::STATUS_FLOW[$booking->status] ?? null,
+            Booking::STATUS_CANCELLED,
+        ]);
+
         $validated = $request->validate([
-            'status' => ['required', 'string', 'in:' . implode(',', Booking::STATUSES)],
+            'status' => ['required', 'string', 'in:' . implode(',', $allowed)],
         ]);
 
         if ($validated['status'] === Booking::STATUS_ACCEPTED) {
@@ -72,29 +77,32 @@ class WorkerDashboardController extends Controller
         $oldStatus = $booking->status;
 
         try {
-            $booking->transitionTo($validated['status'], auth()->id());
+            $afterSave = null;
+            if ($validated['status'] === Booking::STATUS_COMPLETED) {
+                $platformFeePercent = config('kaayos.platform_fee_percent', 10);
+                $gross = $booking->price ?? 0;
+                $fee = round($gross * ($platformFeePercent / 100), 2);
+                $net = $gross - $fee;
+
+                $afterSave = function (Booking $fresh) use ($user, $gross, $fee, $net) {
+                    Earning::updateOrCreate(
+                        ['booking_id' => $fresh->id],
+                        [
+                            'worker_id'    => $user->id,
+                            'gross_amount' => $gross,
+                            'platform_fee' => $fee,
+                            'net_amount'   => $net,
+                        ]
+                    );
+                };
+            }
+
+            $booking->transitionTo($validated['status'], auth()->id(), $afterSave);
         } catch (BookingStateException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => $e->getMessage()], 409);
             }
             return redirect()->back()->with('error', $e->getMessage());
-        }
-
-        if ($validated['status'] === Booking::STATUS_COMPLETED) {
-            $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-            $gross = $booking->price ?? 0;
-            $fee = round($gross * ($platformFeePercent / 100), 2);
-            $net = $gross - $fee;
-
-            Earning::updateOrCreate(
-                ['booking_id' => $booking->id],
-                [
-                    'worker_id'    => $user->id,
-                    'gross_amount' => $gross,
-                    'platform_fee' => $fee,
-                    'net_amount'   => $net,
-                ]
-            );
         }
 
         $booking->load('client');
@@ -257,8 +265,8 @@ class WorkerDashboardController extends Controller
             ]);
         }
 
-        $booking->load('worker');
-        Notification::send($booking->worker, new BookingStatusChanged($booking, $booking->status));
+        $booking->load('client');
+        Notification::send($booking->client, new BookingStatusChanged($booking, $booking->status));
 
         if ($request->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Reschedule ' . $validated['action'] . 'd.']);
