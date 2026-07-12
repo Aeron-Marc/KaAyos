@@ -25,6 +25,18 @@
 .bubble-text { line-height: 1.5; }
 .bubble-time { font-size: .65rem; opacity: .6; margin-top: 4px; }
 .chat-bubble.me .bubble-time { text-align: right; }
+
+/* ── Chat viewport fix (desktop) ── */
+@media (min-width: 769px) {
+    .content { overflow: hidden; padding: 0; }
+    .messages-layout {
+        height: calc(100vh - 64px);
+        min-height: 0;
+        border-radius: 0;
+        grid-template-rows: minmax(0, 1fr);
+    }
+    .messages-layout > * { min-height: 0; }
+}
 </style>
 @endpush
 
@@ -157,7 +169,7 @@ function startPolling(bookingId) {
             body.scrollTop = body.scrollHeight;
         })
         .catch(function () {});
-    }, 5000);
+    }, 2000);
 }
 
 function markConversationRead(bookingId) {

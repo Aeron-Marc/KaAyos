@@ -203,7 +203,8 @@ a { text-decoration: none; color: inherit; }
     margin-left: var(--sidebar-w);
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .topbar {
@@ -293,6 +294,7 @@ a { text-decoration: none; color: inherit; }
 .content {
     flex: 1;
     padding: 28px;
+    overflow-y: auto;
 }
 
 /* ── Typography helpers ── */
@@ -843,7 +845,7 @@ a { text-decoration: none; color: inherit; }
     border: 1.5px solid var(--g1);
     border-radius: var(--radius);
     overflow: hidden;
-    min-height: 520px;
+    min-height: 0;
 }
 
 .convo-list {
