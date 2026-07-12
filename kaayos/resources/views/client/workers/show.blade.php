@@ -56,48 +56,34 @@
                     </div>
                 @endif
                 @php
-                    $availStr = '';
+                    $availDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+                    $dayShort = ['Monday'=>'Mon','Tuesday'=>'Tue','Wednesday'=>'Wed','Thursday'=>'Thu','Friday'=>'Fri','Saturday'=>'Sat','Sunday'=>'Sun'];
+                    $availMap = [];
                     if ($workerProfile && $workerProfile->availability) {
-                        $active = array_filter($workerProfile->availability, fn($a) => $a['active']);
-                        if (!empty($active)) {
-                            $dayShort = ['Monday'=>'Mon','Tuesday'=>'Tue','Wednesday'=>'Wed','Thursday'=>'Thu','Friday'=>'Fri','Saturday'=>'Sat','Sunday'=>'Sun'];
-                            $groups = [];
-                            $prevHours = null;
-                            $groupStart = null;
-                            $groupEnd = null;
-                            foreach ($active as $a) {
-                                $hours = ($a['start'] ?? '') . '-' . ($a['end'] ?? '');
-                                if ($hours !== $prevHours || $groupEnd === null) {
-                                    if ($groupStart !== null) {
-                                        $groups[] = ['start' => $groupStart, 'end' => $groupEnd, 'hours' => $prevHours];
-                                    }
-                                    $groupStart = $a['day'];
-                                    $groupEnd = $a['day'];
-                                    $prevHours = $hours;
-                                } else {
-                                    $groupEnd = $a['day'];
-                                }
-                            }
-                            if ($groupStart !== null) {
-                                $groups[] = ['start' => $groupStart, 'end' => $groupEnd, 'hours' => $prevHours];
-                            }
-                            $parts = [];
-                            foreach ($groups as $g) {
-                                $range = $g['start'] === $g['end']
-                                    ? ($dayShort[$g['start']] ?? $g['start'])
-                                    : ($dayShort[$g['start']] ?? $g['start']) . '–' . ($dayShort[$g['end']] ?? $g['end']);
-                                $startTime = \Carbon\Carbon::createFromFormat('H:i', explode('-', $g['hours'])[0])->format('g:i A');
-                                $endTime = \Carbon\Carbon::createFromFormat('H:i', explode('-', $g['hours'])[1])->format('g:i A');
-                                $parts[] = $range . ' ' . $startTime . ' – ' . $endTime;
-                            }
-                            $availStr = implode(', ', $parts);
+                        foreach ($workerProfile->availability as $a) {
+                            $availMap[$a['day']] = $a;
                         }
                     }
                 @endphp
-                @if($availStr)
-                    <div style="display:flex;justify-content:space-between;font-size:.88rem;">
-                        <span style="color:var(--g5);">Availability</span>
-                        <span>{{ $availStr }}</span>
+                @if($workerProfile && $workerProfile->availability)
+                    <div style="font-size:.82rem;">
+                        <div style="color:var(--g5);font-weight:500;margin-bottom:6px;">Availability</div>
+                        @foreach($availDays as $day)
+                            @php
+                                $a = $availMap[$day] ?? null;
+                                $active = $a && ($a['active'] ?? false);
+                            @endphp
+                            <div style="display:flex;justify-content:space-between;padding:3px 0;{{ !$active ? 'opacity:.5;' : '' }}">
+                                <span>{{ $dayShort[$day] ?? $day }}</span>
+                                <span>
+                                    @if($active)
+                                        {{ \Carbon\Carbon::createFromFormat('H:i', $a['start'])->format('g:i A') }} – {{ \Carbon\Carbon::createFromFormat('H:i', $a['end'])->format('g:i A') }}
+                                    @else
+                                        <span style="color:var(--g4);">Unavailable</span>
+                                    @endif
+                                </span>
+                            </div>
+                        @endforeach
                     </div>
                 @endif
                 @if($worker->phone)
@@ -111,111 +97,132 @@
     </div>
 
     {{-- Right: Details --}}
+    @php
+        $profileHasContent = $workerProfile && (
+            $workerProfile->bio
+            || !empty($workerProfile->skills)
+            || !empty($workerProfile->spoken_languages)
+            || ($workerProfile->portfolios && $workerProfile->portfolios->count() > 0)
+        );
+        $profileHasContent = $profileHasContent || ($documents && $documents->count() > 0);
+    @endphp
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;">
-        {{-- Bio --}}
-        @if($workerProfile && $workerProfile->bio)
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">About</h3>
-                </div>
-                <p style="font-size:.9rem;color:var(--g7);line-height:1.7;">{{ $workerProfile->bio }}</p>
-            </div>
-        @endif
-
-        {{-- Skills --}}
-        @if($workerProfile && !empty($workerProfile->skills))
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Skills</h3>
-                </div>
-                <div class="skill-tags" style="margin-top:4px;">
-                    @foreach($workerProfile->skills as $skill)
-                        <span class="skill-tag">{{ $skill }}</span>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        {{-- Languages --}}
-        @if($workerProfile && !empty($workerProfile->spoken_languages))
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Languages</h3>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
-                    @foreach($workerProfile->spoken_languages as $lang)
-                        <span style="background:var(--g0);padding:4px 12px;border-radius:20px;font-size:.82rem;color:var(--g7);">{{ $lang }}</span>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        {{-- Documents --}}
-        @if($documents && $documents->count() > 0)
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Documents</h3>
-                </div>
-                <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
-                    @foreach($documents as $doc)
-                        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--g0);border-radius:8px;font-size:.85rem;">
-                            <i class="fa-solid fa-file-lines" style="color:var(--b5);" aria-hidden="true"></i>
-                            <span style="flex:1;">{{ $doc->document_type }}</span>
-                            @if($doc->status === 'verified')
-                                <span style="color:#166534;font-size:.78rem;"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified</span>
-                            @else
-                                <span style="color:var(--g4);font-size:.78rem;">{{ ucfirst($doc->status) }}</span>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        {{-- Portfolio --}}
-        @if($workerProfile && $workerProfile->portfolios && $workerProfile->portfolios->count() > 0)
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Portfolio</h3>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:8px;">
-                    @foreach($workerProfile->portfolios as $item)
-                        <div style="border-radius:8px;overflow:hidden;background:var(--g0);">
-                            @if($item->photo_path)
-                                <img src="{{ Storage::url($item->photo_path) }}" alt="{{ $item->caption ?? '' }}"
-                                     style="width:100%;height:130px;object-fit:cover;display:block;">
-                            @endif
-                            @if($item->caption)
-                                <p style="padding:8px 10px;font-size:.78rem;color:var(--g6);">{{ $item->caption }}</p>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        {{-- Reviews --}}
-        @if($reviews->count() > 0)
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Reviews ({{ $reviews->count() }})</h3>
-                </div>
-                @foreach($reviews as $review)
-                    <div style="padding:14px 0;border-bottom:1px solid var(--g1);">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <span style="font-weight:500;font-size:.88rem;">{{ $review->client?->name ?? 'Anonymous' }}</span>
-                            <div style="display:flex;gap:2px;">
-                                @for($s = 1; $s <= 5; $s++)
-                                    <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" style="color:#f59e0b;font-size:.75rem;" aria-hidden="true"></i>
-                                @endfor
-                            </div>
-                        </div>
-                        @if($review->comment)
-                            <p style="font-size:.85rem;color:var(--g7);margin-top:6px;line-height:1.5;">{{ $review->comment }}</p>
-                        @endif
-                        <p style="font-size:.75rem;color:var(--g4);margin-top:4px;">{{ $review->created_at->diffForHumans() }}</p>
+        @if($profileHasContent)
+            {{-- Bio --}}
+            @if($workerProfile && $workerProfile->bio)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">About</h3>
                     </div>
-                @endforeach
+                    <p style="font-size:.9rem;color:var(--g7);line-height:1.7;">{{ $workerProfile->bio }}</p>
+                </div>
+            @endif
+
+            {{-- Skills --}}
+            @if($workerProfile && !empty($workerProfile->skills))
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Skills</h3>
+                    </div>
+                    <div class="skill-tags" style="margin-top:4px;">
+                        @foreach($workerProfile->skills as $skill)
+                            <span class="skill-tag">{{ $skill }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Languages --}}
+            @if($workerProfile && !empty($workerProfile->spoken_languages))
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Languages</h3>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+                        @foreach($workerProfile->spoken_languages as $lang)
+                            <span style="background:var(--g0);padding:4px 12px;border-radius:20px;font-size:.82rem;color:var(--g7);">{{ $lang }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Documents --}}
+            @if($documents && $documents->count() > 0)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Documents</h3>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+                        @foreach($documents as $doc)
+                            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--g0);border-radius:8px;font-size:.85rem;">
+                                <i class="fa-solid fa-file-lines" style="color:var(--b5);" aria-hidden="true"></i>
+                                <span style="flex:1;">{{ $doc->document_type }}</span>
+                                @if($doc->status === 'verified')
+                                    <span style="color:#166534;font-size:.78rem;"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified</span>
+                                @else
+                                    <span style="color:var(--g4);font-size:.78rem;">{{ ucfirst($doc->status) }}</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Portfolio --}}
+            @if($workerProfile && $workerProfile->portfolios && $workerProfile->portfolios->count() > 0)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Portfolio</h3>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:8px;">
+                        @foreach($workerProfile->portfolios as $item)
+                            <div style="border-radius:8px;overflow:hidden;background:var(--g0);">
+                                @if($item->photo_path)
+                                    <img src="{{ Storage::url($item->photo_path) }}" alt="{{ $item->caption ?? '' }}"
+                                         style="width:100%;height:130px;object-fit:cover;display:block;">
+                                @endif
+                                @if($item->caption)
+                                    <p style="padding:8px 10px;font-size:.78rem;color:var(--g6);">{{ $item->caption }}</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Reviews --}}
+            @if($reviews->count() > 0)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Reviews ({{ $reviews->count() }})</h3>
+                    </div>
+                    @foreach($reviews as $review)
+                        <div style="padding:14px 0;border-bottom:1px solid var(--g1);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-weight:500;font-size:.88rem;">{{ $review->client?->name ?? 'Anonymous' }}</span>
+                                <div style="display:flex;gap:2px;">
+                                    @for($s = 1; $s <= 5; $s++)
+                                        <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" style="color:#f59e0b;font-size:.75rem;" aria-hidden="true"></i>
+                                    @endfor
+                                </div>
+                            </div>
+                            @if($review->comment)
+                                <p style="font-size:.85rem;color:var(--g7);margin-top:6px;line-height:1.5;">{{ $review->comment }}</p>
+                            @endif
+                            <p style="font-size:.75rem;color:var(--g4);margin-top:4px;">{{ $review->created_at->diffForHumans() }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        @else
+            <div class="card-panel" style="text-align:center;padding:40px 22px;">
+                <div style="font-size:2.5rem;color:var(--g2);margin-bottom:14px;">
+                    <i class="fa-regular fa-user" aria-hidden="true"></i>
+                </div>
+                <h3 style="font-size:1.05rem;color:var(--g6);margin-bottom:6px;">Profile not yet set up</h3>
+                <p style="font-size:.85rem;color:var(--g4);max-width:360px;margin:0 auto;">
+                    {{ $worker->name }} hasn't added their profile details yet. Check back later for updates.
+                </p>
             </div>
         @endif
 
@@ -247,15 +254,28 @@
 
                 <div class="form-group">
                     <label for="service_category">Service</label>
-                    <input type="text" id="service_category" name="service_category"
-                           class="form-control" value="{{ $worker->service_category ?? '' }}"
-                           placeholder="e.g. Plumbing, Electrical" required>
+                    <select id="service_category" name="service_category" class="form-control" required>
+                        <option value="">Select service…</option>
+                        @forelse($workerServices as $ps)
+                            <option value="{{ $ps->service->name }}" {{ $loop->first ? 'selected' : '' }}>
+                                {{ $ps->service->name }}
+                            </option>
+                        @empty
+                            <option value="{{ $worker->service_category }}" selected>
+                                {{ $worker->service_category ?? 'General' }}
+                            </option>
+                        @endforelse
+                    </select>
                 </div>
 
                 <div class="form-group">
                     <label for="scheduled_at">Schedule</label>
                     <input type="datetime-local" id="scheduled_at" name="scheduled_at"
                            class="form-control" min="{{ now()->addHour()->format('Y-m-d\TH:i') }}" required>
+                    <div id="schedule-warning" style="display:none;margin-top:8px;padding:8px 12px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;font-size:.8rem;color:#856404;align-items:flex-start;gap:6px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="margin-top:1px;" aria-hidden="true"></i>
+                        <span id="schedule-warning-text"></span>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -264,32 +284,21 @@
                            placeholder="e.g. 123 Mabini St" required>
                 </div>
 
+                @php
+                    $allBarangays = ['Acle','Bayudbud','Bolbok','Burgos','Dalima','Dao','Guinhawa','Lumbangan','Luna','Luntal','Magahis','Malibu','Mataywanac','Palincaro','Putol','Rillo','Rizal','Sabang','San Jose','Talon','Toong','Tuyon-Tuyon'];
+                    $coveredBarangays = $workerProfile ? ($workerProfile->service_zone ?? $workerProfile->service_areas ?? []) : [];
+                @endphp
                 <div class="form-group">
                     <label for="barangay">Barangay</label>
                     <select id="barangay" name="barangay" class="form-control" required>
                         <option value="">Select barangay…</option>
-                        <option value="Acle">Acle</option>
-                        <option value="Bayudbud">Bayudbud</option>
-                        <option value="Bolbok">Bolbok</option>
-                        <option value="Burgos">Burgos</option>
-                        <option value="Dalima">Dalima</option>
-                        <option value="Dao">Dao</option>
-                        <option value="Guinhawa">Guinhawa</option>
-                        <option value="Lumbangan">Lumbangan</option>
-                        <option value="Luna">Luna</option>
-                        <option value="Luntal">Luntal</option>
-                        <option value="Magahis">Magahis</option>
-                        <option value="Malibu">Malibu</option>
-                        <option value="Mataywanac">Mataywanac</option>
-                        <option value="Palincaro">Palincaro</option>
-                        <option value="Putol">Putol</option>
-                        <option value="Rillo">Rillo</option>
-                        <option value="Rizal">Rizal</option>
-                        <option value="Sabang">Sabang</option>
-                        <option value="San Jose">San Jose</option>
-                        <option value="Talon">Talon</option>
-                        <option value="Toong">Toong</option>
-                        <option value="Tuyon-Tuyon">Tuyon-Tuyon</option>
+                        @forelse($coveredBarangays as $barangay)
+                            <option value="{{ $barangay }}">{{ $barangay }}</option>
+                        @empty
+                            @foreach($allBarangays as $barangay)
+                                <option value="{{ $barangay }}">{{ $barangay }}</option>
+                            @endforeach
+                        @endforelse
                     </select>
                 </div>
 
@@ -319,13 +328,56 @@
 
 @push('scripts')
 <script>
+const WORKER_AVAILABILITY = @json($workerProfile && $workerProfile->availability ? $workerProfile->availability : []);
+const DAY_MAP = {0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
+
 function openBookModal() {
     document.getElementById('book-modal').style.display = 'flex';
     document.getElementById('book-msg').style.display = 'none';
+    document.getElementById('schedule-warning').style.display = 'none';
+    document.getElementById('book-submit-btn').disabled = false;
 }
 
 function closeBookModal() {
     document.getElementById('book-modal').style.display = 'none';
+}
+
+function validateSchedule() {
+    const input = document.getElementById('scheduled_at');
+    const warning = document.getElementById('schedule-warning');
+    const btn = document.getElementById('book-submit-btn');
+    const warningText = document.getElementById('schedule-warning-text');
+
+    if (!input.value || WORKER_AVAILABILITY.length === 0) {
+        warning.style.display = 'none';
+        btn.disabled = false;
+        return;
+    }
+
+    const date = new Date(input.value);
+    const dayName = DAY_MAP[date.getDay()];
+    const timeStr = String(date.getHours()).padStart(2,'0') + ':' + String(date.getMinutes()).padStart(2,'0');
+
+    const slot = WORKER_AVAILABILITY.find(function(a) {
+        return a.day === dayName && a.active;
+    });
+
+    if (!slot) {
+        warningText.textContent = dayName + ' is not in this worker\u2019s available days. The worker may not accept this schedule.';
+        warning.style.display = 'flex';
+        btn.disabled = true;
+        return;
+    }
+
+    if (timeStr < slot.start || timeStr >= slot.end) {
+        warningText.textContent = 'The selected time (' + timeStr.slice(0,5) + ') is outside the worker\u2019s available hours (' + slot.start.slice(0,5) + '\u2013' + slot.end.slice(0,5) + '). The worker may not accept this schedule.';
+        warning.style.display = 'flex';
+        btn.disabled = true;
+        return;
+    }
+
+    warning.style.display = 'none';
+    btn.disabled = false;
 }
 
 function submitBooking(e) {
@@ -373,6 +425,11 @@ function submitBooking(e) {
         btn.textContent = 'Send Request';
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('scheduled_at').addEventListener('change', validateSchedule);
+    document.getElementById('scheduled_at').addEventListener('input', validateSchedule);
+});
 </script>
 @endpush
 

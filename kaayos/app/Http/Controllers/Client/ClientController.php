@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Exceptions\BookingStateException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Message;
@@ -51,21 +52,27 @@ class ClientController extends Controller
     protected function getWorkers(): array
     {
         return User::where('role', 'worker')
-            ->with('workerProfile')
+            ->with('workerProfile.portfolios')
             ->active()
             ->get()
             ->map(fn ($u) => [
-                'id'       => $u->id,
-                'name'     => $u->name,
-                'category' => $u->service_category ?? 'General',
-                'avatar'   => $u->avatar ? \Storage::url($u->avatar) : null,
-                'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
-                'rating'   => $u->workerProfile?->average_rating ?? 0,
-                'reviews'  => $u->reviewsReceived()->count(),
-                'distance' => $u->workerProfile?->service_areas ? 'Tuy, Batangas' : 'Tuy, Batangas',
-                'price'    => $u->workerProfile?->hourly_rate ?? 0,
-                'verified' => $u->workerProfile?->government_id_verified ?? false,
-                'skills'   => $u->workerProfile?->skills ?? [],
+                'id'               => $u->id,
+                'name'             => $u->name,
+                'category'         => $u->service_category ?? 'General',
+                'avatar'           => $u->avatar ? \Storage::url($u->avatar) : null,
+                'initials'         => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
+                'rating'           => $u->workerProfile?->average_rating ?? 0,
+                'reviews'          => $u->reviewsReceived()->count(),
+                'distance'         => config('kaayos.default_location'),
+                'price'            => $u->workerProfile?->hourly_rate ?? 0,
+                'verified'         => $u->workerProfile?->government_id_verified ?? false,
+                'skills'           => $u->workerProfile?->skills ?? [],
+                'profile_complete' => $u->workerProfile && (
+                    $u->workerProfile->bio
+                    || !empty($u->workerProfile->skills)
+                    || !empty($u->workerProfile->spoken_languages)
+                    || ($u->workerProfile->portfolios && $u->workerProfile->portfolios->count() > 0)
+                ),
             ])->toArray();
     }
 
@@ -84,6 +91,9 @@ class ClientController extends Controller
                 'status'     => ucfirst($b->status),
                 'raw_status' => $b->status,
                 'price'      => $b->price ?? 0,
+                'location'   => $b->address,
+                'notes'      => $b->notes,
+                'created'    => $b->created_at->format('M d, Y · h:i A'),
             ])->toArray();
     }
 
@@ -137,16 +147,14 @@ class ClientController extends Controller
         $userId = auth()->id();
 
         $allBookings = auth()->user()->bookingsAsClient()
-            ->with('worker')
+            ->with('worker', 'messages')
             ->latest()
             ->get();
 
         $conversations = [];
 
         foreach ($allBookings as $booking) {
-            $messages = Message::where('booking_id', $booking->id)
-                ->orderBy('created_at')
-                ->get();
+            $messages = $booking->messages->sortBy('created_at');
 
             $lastMsg = $messages->last();
             $other = $booking->worker;
@@ -165,6 +173,7 @@ class ClientController extends Controller
                                ?? $booking->scheduled_at->diffForHumans(),
                 'active'     => false,
                 'messages'   => $messages->map(fn ($m) => [
+                    'id'   => $m->id,
                     'from' => $m->sender_id === $userId ? 'me' : 'them',
                     'text' => $m->message,
                     'time' => $m->created_at->diffForHumans(),
@@ -296,7 +305,7 @@ class ClientController extends Controller
 
     public function respondReschedule(Request $request, Booking $booking): JsonResponse
     {
-        if ($booking->worker_id !== auth()->id()) abort(403);
+        if ($booking->client_id !== auth()->id()) abort(403);
         if ($booking->reschedule_status !== 'pending') {
             return response()->json(['success' => false, 'message' => 'No pending reschedule request.'], 422);
         }
@@ -324,22 +333,37 @@ class ClientController extends Controller
         return response()->json(['success' => true, 'message' => 'Reschedule request ' . $validated['action'] . 'd.']);
     }
 
-    public function pollMessages(Booking $booking): JsonResponse
+    public function pollMessages(Request $request, Booking $booking): JsonResponse
     {
         if ($booking->client_id !== auth()->id()) {
             abort(403);
         }
 
-        $messages = $booking->messages()
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn ($m) => [
-                'from' => $m->sender_id === auth()->id() ? 'me' : 'them',
-                'text' => $m->message,
-                'time' => $m->created_at->diffForHumans(),
-            ]);
+        $query = $booking->messages()->orderBy('created_at');
+
+        if ($afterId = $request->integer('after')) {
+            $query->where('id', '>', $afterId);
+        }
+
+        $messages = $query->get()->map(fn ($m) => [
+            'id'   => $m->id,
+            'from' => $m->sender_id === auth()->id() ? 'me' : 'them',
+            'text' => $m->message,
+            'time' => $m->created_at->diffForHumans(),
+        ]);
 
         return response()->json(['messages' => $messages]);
+    }
+
+    public function markMessagesRead(Booking $booking): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $count = Message::markAllAsReadForBooking($booking->id, auth()->id());
+
+        return response()->json(['success' => true, 'marked_read' => $count]);
     }
 
     // ── API / Mutation Methods ────────────────────────────────────
@@ -372,6 +396,7 @@ class ClientController extends Controller
         return response()->json([
             'success' => true,
             'message' => [
+                'id'   => $msg->id,
                 'from' => 'me',
                 'text' => $msg->message,
                 'time' => $msg->created_at->diffForHumans(),
@@ -385,24 +410,19 @@ class ClientController extends Controller
             abort(403);
         }
 
-        if (!in_array($booking->status, [Booking::STATUS_NEW, Booking::STATUS_ACCEPTED])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This booking can no longer be cancelled.',
-            ], 422);
-        }
-
         $oldStatus = $booking->status;
 
-        $booking->update([
-            'status'              => 'cancelled',
-            'cancelled_at'       => now(),
-            'cancellation_reason' => $request->input('reason', 'Cancelled by client'),
-        ]);
+        try {
+            $booking->cancel($request->input('reason', 'Cancelled by client'), auth()->id());
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (BookingStateException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 409);
+        }
 
         $booking->load('worker');
 
-        Notification::send($booking->worker, new BookingCancelled($booking));
+        Notification::send($booking->worker, new BookingCancelled($booking, $booking->worker->name));
         broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
 
         return response()->json(['success' => true]);
@@ -425,7 +445,7 @@ class ClientController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid worker.'], 422);
         }
 
-        $address = $validated['house_no'] . ', ' . $validated['barangay'] . ', Tuy, Batangas';
+        $address = $validated['house_no'] . ', ' . $validated['barangay'] . ', ' . config('kaayos.default_location');
 
         $booking = Booking::create([
             'client_id'       => auth()->id(),
@@ -433,6 +453,8 @@ class ClientController extends Controller
             'service_category' => $validated['service_category'],
             'scheduled_at'    => $validated['scheduled_at'],
             'address'         => $address,
+            'house_no'        => $validated['house_no'],
+            'barangay'        => $validated['barangay'],
             'notes'           => $validated['notes'] ?? null,
             'price'           => $validated['price'] ?? 0,
             'status'          => Booking::STATUS_NEW,

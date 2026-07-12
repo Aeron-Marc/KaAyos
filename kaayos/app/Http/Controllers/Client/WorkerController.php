@@ -24,7 +24,7 @@ class WorkerController extends Controller
     public function index(Request $request): View
     {
         $query = User::where('role', 'worker')
-            ->with('workerProfile')
+            ->with('workerProfile.portfolios')
             ->active();
 
         if ($category = $request->query('category')) {
@@ -39,17 +39,23 @@ class WorkerController extends Controller
         }
 
         $workers = $query->get()->map(fn ($u) => [
-            'id'       => $u->id,
-            'name'     => $u->name,
-            'category' => $u->service_category ?? 'General',
-            'avatar'   => $u->avatar ? \Storage::url($u->avatar) : null,
-            'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
-            'rating'   => $u->workerProfile?->average_rating ?? 0,
-            'reviews'  => $u->reviewsReceived()->count(),
-            'distance' => 'Tuy, Batangas',
-            'price'    => $u->workerProfile?->hourly_rate ?? 0,
-            'verified' => $u->workerProfile?->government_id_verified ?? false,
-            'skills'   => $u->workerProfile?->skills ?? [],
+            'id'               => $u->id,
+            'name'             => $u->name,
+            'category'         => $u->service_category ?? 'General',
+            'avatar'           => $u->avatar ? \Storage::url($u->avatar) : null,
+            'initials'         => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
+            'rating'           => $u->workerProfile?->average_rating ?? 0,
+            'reviews'          => $u->reviewsReceived()->count(),
+            'distance'         => 'Tuy, Batangas',
+            'price'            => $u->workerProfile?->hourly_rate ?? 0,
+            'verified'         => $u->workerProfile?->government_id_verified ?? false,
+            'skills'           => $u->workerProfile?->skills ?? [],
+            'profile_complete' => $u->workerProfile && (
+                $u->workerProfile->bio
+                || !empty($u->workerProfile->skills)
+                || !empty($u->workerProfile->spoken_languages)
+                || ($u->workerProfile->portfolios && $u->workerProfile->portfolios->count() > 0)
+            ),
         ])->toArray();
 
         return view('client.workers.search', [
@@ -65,7 +71,11 @@ class WorkerController extends Controller
             abort(404);
         }
 
-        $worker->load('workerProfile', 'workerDocuments');
+        $worker->load([
+            'workerProfile.portfolios',
+            'workerDocuments',
+            'providerServices.service',
+        ]);
 
         $reviews = $worker->reviewsReceived()->with('client')->latest()->get();
 
@@ -85,12 +95,17 @@ class WorkerController extends Controller
             $bookingIdForMessage = $msgBookingId ?? $existingBooking->id;
         }
 
+        $workerServices = $worker->providerServices
+            ->filter(fn ($ps) => $ps->service && $ps->is_available)
+            ->values();
+
         return view('client.workers.show', [
             'worker'              => $worker,
             'workerProfile'       => $worker->workerProfile,
             'documents'           => $worker->workerDocuments,
             'reviews'             => $reviews,
             'bookingIdForMessage' => $bookingIdForMessage,
+            'workerServices'      => $workerServices,
         ]);
     }
 }
