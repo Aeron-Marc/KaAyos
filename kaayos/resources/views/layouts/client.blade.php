@@ -78,7 +78,7 @@
             </div>
             <div class="profile-info">
                 <p class="profile-name">{{ auth()->user()->name ?? 'User' }}</p>
-                <span class="profile-role">{{ __('role.homeowner') }}</span>
+                <span class="profile-role">{{ __('role.client') }}</span>
             </div>
         </div>
 
