@@ -81,7 +81,7 @@ class WorkerController extends Controller
                     'client_phone' => $booking->client->phone ?? 'N/A',
                     'client_email' => $booking->client->email ?? 'N/A',
                     'service'      => $booking->service_category,
-                    'description'  => $booking->description ?? 'No details provided.',
+                    'description'  => $booking->notes ?? 'No details provided.',
                     'date'         => $booking->scheduled_at->format('M d, Y · h:i A'),
                     'location'     => $booking->address,
                     'status'       => $labelMap[$booking->status] ?? ucfirst($booking->status),
@@ -182,56 +182,47 @@ class WorkerController extends Controller
     {
         $user = auth()->user();
 
-        $conversations = [];
-        $isFirst = true;
-
         $bookings = $user->bookingsAsWorker()
             ->with('client', 'messages.sender')
             ->latest()
             ->get();
 
-        $grouped = $bookings->groupBy('client_id');
+        $conversations = [];
 
-        foreach ($grouped as $clientId => $clientBookings) {
-            $client = $clientBookings->first()->client;
-            $latestBooking = $clientBookings->first();
+        foreach ($bookings as $booking) {
+            $client = $booking->client;
 
-            $allMessages = collect();
-            foreach ($clientBookings as $booking) {
-                $allMessages = $allMessages->merge($booking->messages);
-            }
+            $messages = $booking->messages->sortBy('created_at');
 
-            $allMessages = $allMessages->sortBy('created_at');
-
-            $messages = $allMessages->map(fn($msg) => [
-                'from' => $msg->sender_id === $user->id ? 'me' : 'them',
-                'text' => $msg->message,
-                'time' => $msg->created_at->diffForHumans(),
-            ])
-                ->values()
-                ->toArray();
-
-            $lastMsg = $allMessages->last();
-            $unreadCount = $allMessages->where('receiver_id', $user->id)->whereNull('read_at')->count();
+            $lastMsg = $messages->last();
+            $unreadCount = $messages->where('receiver_id', $user->id)->whereNull('read_at')->count();
 
             $initials = strtoupper(
-                ($client->first_name ? $client->first_name[0] : '') .
-                ($client->last_name ? $client->last_name[0] : '')
+                ($client?->first_name ? $client->first_name[0] : '') .
+                ($client?->last_name ? $client->last_name[0] : '')
             );
 
             $conversations[] = [
-                'active'       => $isFirst,
-                'booking_id'   => $latestBooking->id,
-                'client_id'    => $client->id,
+                'active'       => false,
+                'booking_id'   => $booking->id,
+                'client_id'    => $client?->id,
+                'service'      => $booking->service_category,
                 'initials'     => $initials ?: '?',
-                'name'         => $client->name ?? 'Unknown',
-                'time'         => $lastMsg?->created_at->diffForHumans() ?? $latestBooking->scheduled_at->diffForHumans(),
+                'name'         => $client?->name ?? 'Unknown',
+                'time'         => $lastMsg?->created_at->diffForHumans() ?? $booking->scheduled_at->diffForHumans(),
                 'preview'      => $lastMsg?->message ?? '',
                 'unread_count' => $unreadCount,
-                'messages'     => $messages,
+                'messages'     => $messages->map(fn($msg) => [
+                    'id'   => $msg->id,
+                    'from' => $msg->sender_id === $user->id ? 'me' : 'them',
+                    'text' => $msg->message,
+                    'time' => $msg->created_at->diffForHumans(),
+                ])->values()->toArray(),
             ];
+        }
 
-            $isFirst = false;
+        if (!empty($conversations)) {
+            $conversations[0]['active'] = true;
         }
 
         return $conversations;
@@ -362,6 +353,7 @@ class WorkerController extends Controller
         return response()->json([
             'success' => true,
             'message' => [
+                'id'   => $msg->id,
                 'from' => 'me',
                 'text' => $msg->message,
                 'time' => $msg->created_at->diffForHumans(),
@@ -576,21 +568,36 @@ class WorkerController extends Controller
         return view('worker.documents.index', $this->shared());
     }
 
-    public function pollMessages(Booking $booking): JsonResponse
+    public function pollMessages(Request $request, Booking $booking): JsonResponse
     {
         if ($booking->worker_id !== auth()->id()) {
             abort(403);
         }
 
-        $messages = $booking->messages()
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn ($m) => [
-                'from' => $m->sender_id === auth()->id() ? 'me' : 'them',
-                'text' => $m->message,
-                'time' => $m->created_at->diffForHumans(),
-            ]);
+        $query = $booking->messages()->orderBy('created_at');
+
+        if ($afterId = $request->integer('after')) {
+            $query->where('id', '>', $afterId);
+        }
+
+        $messages = $query->get()->map(fn ($m) => [
+            'id'   => $m->id,
+            'from' => $m->sender_id === auth()->id() ? 'me' : 'them',
+            'text' => $m->message,
+            'time' => $m->created_at->diffForHumans(),
+        ]);
 
         return response()->json(['messages' => $messages]);
+    }
+
+    public function markMessagesRead(Booking $booking): JsonResponse
+    {
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $count = Message::markAllAsReadForBooking($booking->id, auth()->id());
+
+        return response()->json(['success' => true, 'marked_read' => $count]);
     }
 }

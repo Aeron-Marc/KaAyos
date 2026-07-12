@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\BookingPhoto;
 use App\Models\Earning;
 use App\Events\BookingStatusUpdated;
+use App\Notifications\BookingCancelled;
 use App\Notifications\BookingStatusChanged;
 use App\Notifications\RescheduleRequested;
 use Illuminate\Http\JsonResponse;
@@ -71,7 +72,7 @@ class WorkerDashboardController extends Controller
         $oldStatus = $booking->status;
 
         try {
-            $booking->transitionTo($validated['status']);
+            $booking->transitionTo($validated['status'], auth()->id());
         } catch (BookingStateException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => $e->getMessage()], 409);
@@ -108,6 +109,37 @@ class WorkerDashboardController extends Controller
         }
 
         return redirect()->back()->with('success', 'Job status updated successfully.');
+    }
+
+    public function cancelJob(Booking $booking): JsonResponse|RedirectResponse
+    {
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $oldStatus = $booking->status;
+
+        try {
+            $booking->cancel(request()->input('reason', 'Cancelled by worker'), auth()->id());
+        } catch (\InvalidArgumentException $e) {
+            $msg = $e->getMessage();
+            if (request()->expectsJson()) return response()->json(['success' => false, 'message' => $msg], 422);
+            return redirect()->back()->with('error', $msg);
+        } catch (BookingStateException $e) {
+            $msg = $e->getMessage();
+            if (request()->expectsJson()) return response()->json(['success' => false, 'message' => $msg], 409);
+            return redirect()->back()->with('error', $msg);
+        }
+
+        $booking->load('client');
+        Notification::send($booking->client, new BookingCancelled($booking, $booking->worker->name));
+        broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
+
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Job cancelled.']);
+        }
+
+        return redirect()->back()->with('success', 'Job cancelled.');
     }
 
     public function updateLocation(Request $request): JsonResponse|RedirectResponse
@@ -201,7 +233,7 @@ class WorkerDashboardController extends Controller
 
     public function respondReschedule(Request $request, Booking $booking): JsonResponse|RedirectResponse
     {
-        if ($booking->client_id !== auth()->id()) abort(403);
+        if ($booking->worker_id !== auth()->id()) abort(403);
         if ($booking->reschedule_status !== 'pending') {
             $msg = 'No pending reschedule request.';
             if ($request->expectsJson()) return response()->json(['message' => $msg], 422);

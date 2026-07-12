@@ -90,13 +90,20 @@
                                 <i class="fa-solid fa-eye" aria-hidden="true"></i>
                             </button>
                             @if(in_array($job['raw_status'], ['new', 'accepted', 'en_route', 'in_progress']))
-                                <button type="button"
-                                        class="btn btn-solid"
-                                        style="padding:6px 12px;font-size:.78rem;"
-                                        onclick="showConfirmModal({{ $i }})">
-                                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                                    {{ $job['raw_status'] === 'new' ? 'Accept' : 'Next' }}
-                                </button>
+                            <button type="button"
+                                    class="btn btn-solid"
+                                    style="background:#dc2626;padding:6px 12px;font-size:.78rem;"
+                                    onclick="showCancelModal({{ $i }})"
+                                    title="Cancel job">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel
+                            </button>
+                            <button type="button"
+                                    class="btn btn-solid"
+                                    style="padding:6px 12px;font-size:.78rem;"
+                                    onclick="showConfirmModal({{ $i }})">
+                                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                                {{ $job['raw_status'] === 'new' ? 'Accept' : 'Next' }}
+                            </button>
                             @else
                                 <span style="font-size:.82rem;color:var(--g4);">Done</span>
                             @endif
@@ -150,6 +157,34 @@
                 <input type="hidden" name="status" id="confirmStatus" value="">
                 <button type="submit" class="btn btn-solid" id="confirmSubmit">Confirm</button>
             </form>
+        </div>
+    </div>
+</div>
+
+{{-- Cancel Modal --}}
+<div id="cancelModal" class="modal-overlay" style="display:none;" onclick="closeModals(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Cancel Job</h3>
+            <button type="button" class="modal-close" onclick="closeModals()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin:0 0 12px;color:var(--g6);">
+                Are you sure you want to cancel this job?
+            </p>
+            <div id="cancelSummary"></div>
+            <div style="margin-top:14px;">
+                <label style="font-size:.85rem;font-weight:500;color:var(--g6);display:block;margin-bottom:4px;">
+                    Reason (optional)
+                </label>
+                <textarea id="cancelReason" class="review-textarea" placeholder="Tell the client why…" style="min-height:70px;"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeModals()">Keep Job</button>
+            <button type="button" class="btn btn-solid" style="background:#dc2626;" id="confirmCancelBtn" onclick="confirmCancel()">
+                Yes, Cancel
+            </button>
         </div>
     </div>
 </div>
@@ -212,6 +247,7 @@
 @push('scripts')
 <script>
 const jobs = @json($jobRequests);
+let cancelIndex = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     var checkEcho = setInterval(function () {
@@ -238,6 +274,8 @@ function closeModals(e) {
     if (e && e.target && !e.target.closest) return;
     document.getElementById('infoModal').style.display = 'none';
     document.getElementById('confirmModal').style.display = 'none';
+    document.getElementById('cancelModal').style.display = 'none';
+    cancelIndex = null;
 }
 
 function showInfoModal(index) {
@@ -330,6 +368,59 @@ function showConfirmModal(index) {
     document.getElementById('confirmSubmit').textContent = step.label;
 
     document.getElementById('confirmModal').style.display = 'flex';
+}
+
+function showCancelModal(index) {
+    const job = jobs[index];
+    if (!job) return;
+    cancelIndex = index;
+
+    document.getElementById('cancelSummary').innerHTML = `
+        <div class="detail-grid">
+            <span class="detail-label">Client</span>
+            <span class="detail-value">${job.client}</span>
+            <span class="detail-label">Service</span>
+            <span class="detail-value">${job.service}</span>
+            <span class="detail-label">Schedule</span>
+            <span class="detail-value">${job.date}</span>
+            <span class="detail-label">Amount</span>
+            <span class="detail-value">₱${Number(job.price).toLocaleString()}</span>
+        </div>
+    `;
+    document.getElementById('cancelReason').value = '';
+    document.getElementById('cancelModal').style.display = 'flex';
+}
+
+function confirmCancel() {
+    if (cancelIndex === null) return;
+    const job = jobs[cancelIndex];
+    const reason = document.getElementById('cancelReason').value.trim();
+
+    document.getElementById('confirmCancelBtn').disabled = true;
+    document.getElementById('confirmCancelBtn').textContent = 'Cancelling…';
+
+    fetch('/worker/jobs/' + job.id + '/cancel', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({ reason: reason || 'Cancelled by worker' }),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Failed to cancel job.');
+        }
+    })
+    .catch(() => alert('Something went wrong.'))
+    .finally(() => {
+        document.getElementById('confirmCancelBtn').disabled = false;
+        document.getElementById('confirmCancelBtn').textContent = 'Yes, Cancel';
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
