@@ -77,13 +77,13 @@
                                     title="View details">
                                 <i class="fa-solid fa-eye" aria-hidden="true"></i>
                             </button>
-                            @if(in_array($booking['raw_status'], ['new', 'accepted']))
+                            @if(in_array($booking['raw_status'], ['new', 'accepted', 'en_route', 'in_progress']))
                                 <button type="button"
-                                        class="btn btn-outline"
-                                        style="padding:6px 10px;font-size:.78rem;color:var(--r7);border-color:var(--r4);"
+                                        class="btn btn-solid"
+                                        style="background:#dc2626;padding:6px 12px;font-size:.78rem;"
                                         onclick="showCancelModal({{ $i }})"
                                         title="Cancel booking">
-                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel
                                 </button>
                             @endif
                             <a href="{{ route('client.messages') }}?booking={{ $booking['id'] }}"
@@ -122,6 +122,9 @@
         <div class="modal-body" id="infoModalBody"></div>
         <div class="modal-footer">
             <button type="button" class="btn btn-outline" onclick="closeModals()">Close</button>
+            <button type="button" class="btn btn-solid" style="background:#dc2626;display:none;" id="infoCancelBtn" onclick="infoCancelBooking()">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel Booking
+            </button>
         </div>
     </div>
 </div>
@@ -147,7 +150,7 @@
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-outline" onclick="closeModals()">Keep Booking</button>
-            <button type="button" class="btn btn-solid" style="background:var(--r6);" id="confirmCancelBtn" onclick="confirmCancel()">
+            <button type="button" class="btn btn-solid" style="background:#dc2626;" id="confirmCancelBtn" onclick="confirmCancel()">
                 Yes, Cancel
             </button>
         </div>
@@ -247,17 +250,20 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 const bookings = @json($bookings);
 let cancelIndex = null;
+let infoIndex = null;
 
 function closeModals(e) {
     if (e && e.target && !e.target.closest) return;
     document.getElementById('infoModal').style.display = 'none';
     document.getElementById('cancelModal').style.display = 'none';
     cancelIndex = null;
+    infoIndex = null;
 }
 
 function showBookingInfo(index) {
     const b = bookings[index];
     if (!b) return;
+    infoIndex = index;
 
     document.getElementById('infoModalTitle').textContent = 'Booking Details';
     document.getElementById('infoModalBody').innerHTML = `
@@ -274,7 +280,18 @@ function showBookingInfo(index) {
             <span class="detail-value">${b.status}</span>
         </div>
     `;
+
+    const cancelBtn = document.getElementById('infoCancelBtn');
+    const cancellableStatuses = ['new', 'accepted', 'en_route', 'in_progress'];
+    cancelBtn.style.display = cancellableStatuses.includes(b.raw_status) ? '' : 'none';
+
     document.getElementById('infoModal').style.display = 'flex';
+}
+
+function infoCancelBooking() {
+    if (infoIndex === null) return;
+    closeModals();
+    showCancelModal(infoIndex);
 }
 
 function showCancelModal(index) {
