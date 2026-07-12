@@ -18,7 +18,7 @@ Three user roles, each with a dedicated dashboard:
 
 | Role   | Dashboard Tech | Description                                                  |
 | ------ | -------------- | ------------------------------------------------------------ |
-| Admin  | Blade          | Manage users, verifications, service categories, services, bookings, disputes, and reports |
+| Admin  | Blade          | Manage users, workers, verifications, service categories, services, bookings, disputes, and reports |
 | Client | React SPA      | Browse/search workers, book services, message workers, leave reviews, manage account |
 | Worker | Blade          | View/update job status, manage schedule, track earnings, upload documents & portfolio, manage profile |
 
@@ -214,6 +214,7 @@ All seeded data is scoped to barangays in **Tuy, Batangas**.
 | GET    | `/admin/users/{user}`                            | User detail                   |
 | POST   | `/admin/users/{user}/suspend`                    | Suspend a user                |
 | POST   | `/admin/users/{user}/reactivate`                 | Reactivate a user             |
+| GET    | `/admin/workers`                                 | Worker management with filters |
 | GET    | `/admin/verification`                            | Worker document verifications |
 | GET    | `/admin/verification/{verification}`             | Verification detail           |
 | POST   | `/admin/verification/{verification}/approve`     | Approve verification          |
