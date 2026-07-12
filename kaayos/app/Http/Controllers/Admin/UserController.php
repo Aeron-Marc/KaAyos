@@ -75,11 +75,11 @@ class UserController extends Controller
         })->get();
 
         foreach ($activeBookings as $booking) {
-            $booking->update([
-                'status'              => Booking::STATUS_CANCELLED,
-                'cancelled_at'        => now(),
-                'cancellation_reason' => 'User account suspended.',
-            ]);
+            try {
+                $booking->cancel('User account suspended.', auth()->id());
+            } catch (\Exception $e) {
+                continue;
+            }
 
             if ($booking->client_id === $user->id) {
                 Notification::send($booking->worker, new BookingCancelled($booking));

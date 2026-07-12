@@ -53,17 +53,13 @@ class BookingController extends Controller
 
     public function cancel(Request $request, Booking $booking)
     {
-        if (in_array($booking->status, [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED])) {
-            return redirect()->back()->with('error', 'This booking is already ' . $booking->status . '.');
-        }
-
         $oldStatus = $booking->status;
 
-        $booking->update([
-            'status'              => Booking::STATUS_CANCELLED,
-            'cancelled_at'        => now(),
-            'cancellation_reason' => $request->input('reason', 'Cancelled by admin.'),
-        ]);
+        try {
+            $booking->cancel($request->input('reason', 'Cancelled by admin.'), auth()->id());
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
 
         $booking->load(['client', 'worker']);
 

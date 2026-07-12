@@ -81,7 +81,7 @@
     </div>
 </div>
 <div style="margin-top:24px;border-top:1px solid var(--b2);padding-top:20px;display:flex;gap:10px;">
-    @if(!in_array($booking->status, ['completed', 'cancelled']))
+    @if(!in_array($booking->status, [\App\Models\Booking::STATUS_COMPLETED, \App\Models\Booking::STATUS_CANCELLED]))
         <form action="{{ route('admin.bookings.cancel', $booking) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
             @csrf
             <input type="hidden" name="reason" value="Cancelled by administrator.">
