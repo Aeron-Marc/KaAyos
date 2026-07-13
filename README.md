@@ -119,19 +119,8 @@ After seeding, you can log in with any of the following:
 | Admin  | admin@kaayos.com       | password   |
 | Client | maria@example.com      | password   |
 | Client | john@example.com       | password   |
-| Client | ana@example.com        | password   |
-| Client | carlos@example.com     | password   |
-| Client | rosa@example.com       | password   |
 | Worker | juan@example.com       | password   |
 | Worker | elena@example.com      | password   |
-| Worker | marco@example.com      | password   |
-| Worker | sofia@example.com      | password   |
-| Worker | pedro@example.com      | password   |
-| Worker | liza@example.com       | password   |
-| Worker | ramon@example.com      | password   |
-| Worker | bella@example.com      | password   |
-| Worker | dante@example.com      | password   |
-| Worker | carmen@example.com     | password   |
 
 All seeded data is scoped to barangays in **Tuy, Batangas**.
 
@@ -236,12 +225,6 @@ All seeded data is scoped to barangays in **Tuy, Batangas**.
 | GET    | `/admin/reports`                                 | Reports & analytics           |
 | GET    | `/admin/reports/export`                          | Export reports                |
 
-## Testing
-
-```bash
-composer run test
-```
-
 ## Running with a Queue Worker
 
 Background jobs (e.g., sending emails) require the queue worker:
@@ -251,6 +234,20 @@ php artisan queue:listen --tries=1 --timeout=0
 ```
 
 This is included automatically in `composer run dev`.
+
+## Realtime Notifications & Chats (Laravel Reverb)
+
+Start the WebSocket server for realtime features:
+
+```bash
+php artisan reverb:start
+```
+
+For production or external access:
+
+```bash
+php artisan reverb:start --port=8080 --host=0.0.0.0
+```
 
 ## Platform Fee
 
