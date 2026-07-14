@@ -69,14 +69,22 @@ export default function PersonalInfoSection({
             <div className="form-row">
                 <div className="form-group">
                     <label htmlFor="barangay">Barangay</label>
-                    <input
+                    <select
                         id="barangay"
-                        type="text"
-                        placeholder="e.g. Acle, Tuy"
                         value={draft.barangay}
                         onChange={(e) => onChange('barangay', e.target.value)}
                         disabled={saving}
-                    />
+                    >
+                        <option value="">Select barangay...</option>
+                        {[
+                            'Acle','Bayudbud','Bolbok','Burgos','Dalima','Dao',
+                            'Guinhawa','Lumbangan','Luna','Luntal','Magahis','Malibu',
+                            'Mataywanac','Palincaro','Putol','Rillo','Rizal','Sabang',
+                            'San Jose','Talon','Toong','Tuyon-Tuyon'
+                        ].map((b) => (
+                            <option key={b} value={b}>{b}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 

@@ -16,7 +16,7 @@
         >
           <div class="flex items-center gap-2">
             <component :is="role === 'homeowner' ? Home : Briefcase" :size="16" />
-            <span>{{ role === 'homeowner' ? 'Homeowner View' : 'Worker View' }}</span>
+            <span>{{ role === 'homeowner' ? 'Client View' : 'Worker View' }}</span>
           </div>
         </button>
       </div>
@@ -62,7 +62,7 @@
         
         <div class="flex items-center gap-3">
           <button @click="toggleRole" class="text-xs font-medium px-2 py-1 bg-[#e8f0f5] rounded-md text-[#2b516f]">
-            {{ role === 'homeowner' ? 'Homeowner' : 'Worker' }}
+            {{ role === 'homeowner' ? 'Client' : 'Worker' }}
           </button>
           <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="p-2 -mr-2 text-[#112331]">
             <component :is="isMobileMenuOpen ? X : Menu" :size="24" />

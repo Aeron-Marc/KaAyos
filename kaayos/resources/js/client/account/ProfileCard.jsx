@@ -23,7 +23,7 @@ export default function ProfileCard({ fullName, email, avatarUrl, onPhotoSelect 
             </div>
             <h3>{fullName || 'User'}</h3>
             <p>{email}</p>
-            <span className="profile-role-tag">Homeowner</span>
+            <span className="profile-role-tag">Client</span>
             <button
                 type="button"
                 className="btn btn-outline change-photo-btn"
