@@ -88,6 +88,24 @@ a{text-decoration:none;color:inherit}
 .svc-name{font-size:.95rem;font-weight:600;color:var(--b9)}
 .svc-sub{font-size:.76rem;color:var(--g4);margin-top:3px}
 
+/* WORKER GRID */
+.worker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.worker-card{background:var(--white);border:1.5px solid var(--g1);border-radius:14px;padding:18px 20px;cursor:pointer;transition:all .2s;display:block}
+.worker-card:hover{border-color:var(--b4);box-shadow:0 4px 20px rgba(0,0,0,.07);transform:translateY(-2px)}
+.w-card-top{display:flex;gap:14px;align-items:flex-start}
+.w-avatar{width:56px;height:56px;border-radius:12px;object-fit:cover;flex-shrink:0}
+.w-initials{background:var(--b0);color:var(--b6);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700}
+.w-meta{flex:1;min-width:0}
+.w-name-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.w-name{font-size:.95rem;font-weight:600;color:var(--b9)}
+.w-trade{font-size:.8rem;color:var(--b6);font-weight:500;margin-top:1px}
+.w-rating{display:flex;align-items:center;gap:3px;background:var(--b0);padding:3px 8px;border-radius:7px;font-size:.8rem;font-weight:600;color:var(--b8);white-space:nowrap;flex-shrink:0}
+.w-rating i{color:#f59e0b;font-size:.7rem}
+.w-details-row{display:flex;align-items:center;gap:14px;margin-top:6px;font-size:.8rem;color:var(--g4)}
+.w-details-row .w-price{font-weight:600;color:var(--b7);margin-left:auto}
+.w-skills{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.w-skill-tag{background:var(--b0);color:var(--b7);padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:500}
+
 /* TRUST */
 .trust{background:var(--b9);padding:24px 5%;display:flex;align-items:center;justify-content:space-around;gap:16px;flex-wrap:wrap}
 .trust-item{display:flex;align-items:center;gap:12px}
@@ -217,6 +235,55 @@ a{text-decoration:none;color:inherit}
     <a href="/services?category=hauling" class="service-card"><div class="svc-icon ic-r"><i class="fa-solid fa-truck"></i></div><div class="svc-name">Hauling</div><div class="svc-sub">Junk removal &amp; moving</div></a>
   </div>
 </section>
+
+@if(!empty($workers))
+<!-- WORKERS -->
+<section class="section" id="workers">
+  <div class="sec-header">
+    <div class="eyebrow">Featured Workers</div>
+    <h2 class="sec-title">Available Trabahadors Near You</h2>
+    <p class="sec-sub">Browse verified skilled workers in Tuy, Batangas. No sign-in needed.</p>
+  </div>
+  <div class="worker-grid">
+    @foreach($workers as $w)
+      <a href="{{ route('workers.public.show', $w['id']) }}" class="worker-card">
+        <div class="w-card-top">
+          @if($w['avatar'])
+            <img src="{{ $w['avatar'] }}" alt="{{ $w['name'] }}" class="w-avatar">
+          @else
+            <div class="w-avatar w-initials">{{ $w['initials'] }}</div>
+          @endif
+          <div class="w-meta">
+            <div class="w-name-row">
+              <div>
+                <div class="w-name">{{ $w['name'] }}</div>
+                <div class="w-trade">{{ $w['category'] }}</div>
+              </div>
+              <div class="w-rating">
+                <i class="fa-solid fa-star" aria-hidden="true"></i>
+                {{ number_format($w['rating'], 1) }}
+              </div>
+            </div>
+            <div class="w-details-row">
+              <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $w['distance'] }}</span>
+              @if($w['price'] > 0)
+                <span class="w-price">₱{{ number_format($w['price']) }}/hr</span>
+              @endif
+            </div>
+          </div>
+        </div>
+        @if(!empty($w['skills']) && count($w['skills']) > 0)
+          <div class="w-skills">
+            @foreach(array_slice($w['skills'], 0, 3) as $skill)
+              <span class="w-skill-tag">{{ $skill }}</span>
+            @endforeach
+          </div>
+        @endif
+      </a>
+    @endforeach
+  </div>
+</section>
+@endif
 
 <!-- TRUST -->
 <div class="trust">
