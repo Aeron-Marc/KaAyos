@@ -260,6 +260,11 @@ class ClientController extends Controller
         return view('client.account.profile', $this->shared());
     }
 
+    public function suggestions(): View
+    {
+        return view('client.suggestions.index', $this->shared());
+    }
+
     // ── API / Mutation Methods ────────────────────────────────────
 
     public function sendMessage(Request $request): JsonResponse

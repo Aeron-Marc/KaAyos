@@ -5,9 +5,16 @@ return [
 
     /*
     | Chatbot (AI Assistant) configuration
-    | Supported providers: 'openai' or 'gemini'
+    | Supported providers: 'openai', 'gemini', or 'openrouter'
     */
     'chatbot_provider' => env('CHATBOT_PROVIDER', 'openai'),
     'chatbot_api_key'  => env('CHATBOT_API_KEY', ''),
     'chatbot_model'    => env('CHATBOT_MODEL', 'gpt-4o-mini'),
+    'openrouter_site'  => env('OPENROUTER_SITE_URL', ''),
+    'openrouter_name'  => env('OPENROUTER_SITE_NAME', 'KaAyos'),
+
+    /*
+    | ML Service (Python microservice for worker matching)
+    */
+    'ml_service_url' => env('ML_SERVICE_URL', 'http://127.0.0.1:8000'),
 ];

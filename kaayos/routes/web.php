@@ -67,6 +67,7 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
     Route::post('/messages/send', [ClientController::class, 'sendMessage'])->name('messages.send');
     Route::get('/reviews', [ClientController::class, 'reviews'])->name('reviews');
+    Route::get('/suggestions', [ClientController::class, 'suggestions'])->name('suggestions');
     Route::get('/account/profile', [ClientController::class, 'profile'])->name('account.profile');
 });
 
@@ -80,6 +81,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Chatbot (authenticated)
 Route::middleware('auth')->post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke']);
+
+// Suggestions (authenticated) — uses ML + AI for worker recommendations
+Route::middleware('auth')->post('/api/chat/suggest', [App\Http\Controllers\Api\SuggestionController::class, '__invoke']);
 
 Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')->name('worker.')->group(function () {
     Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
