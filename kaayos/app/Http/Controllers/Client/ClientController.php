@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Exceptions\BookingStateException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Review;
 use App\Models\BookingHistory;
@@ -148,33 +149,33 @@ class ClientController extends Controller
     {
         $userId = auth()->id();
 
-        $allBookings = auth()->user()->bookingsAsClient()
+        $conversations = Conversation::where('client_id', $userId)
             ->with('worker', 'messages')
-            ->latest()
+            ->latest('last_message_at')
             ->get();
 
-        $conversations = [];
+        $result = [];
 
-        foreach ($allBookings as $booking) {
-            $messages = $booking->messages->sortBy('created_at');
-
+        foreach ($conversations as $convo) {
+            $messages = $convo->messages->sortBy('created_at');
             $lastMsg = $messages->last();
-            $other = $booking->worker;
+            $other = $convo->worker;
 
-            $conversations[$booking->id] = [
-                'id'         => $booking->id,
-                'booking_id' => $booking->id,
-                'name'       => $other?->name ?? 'Unknown',
-                'worker_id'  => $booking->worker_id,
-                'initials'   => strtoupper(
+            $result[] = [
+                'id'              => $convo->id,
+                'conversation_id' => $convo->id,
+                'name'            => $other?->name ?? 'Unknown',
+                'worker_id'       => $convo->worker_id,
+                'initials'        => strtoupper(
                     substr($other?->first_name ?? 'U', 0, 1) .
                     substr($other?->last_name ?? 'N', 0, 1)
                 ),
-                'preview'    => $lastMsg?->message ?? 'No messages yet',
-                'time'       => $lastMsg?->created_at?->diffForHumans()
-                               ?? $booking->scheduled_at->diffForHumans(),
-                'active'     => false,
-                'messages'   => $messages->map(fn ($m) => [
+                'preview'         => $lastMsg?->message ?? 'No messages yet',
+                'time'            => $lastMsg?->created_at?->diffForHumans()
+                                    ?? $convo->last_message_at?->diffForHumans()
+                                    ?? $convo->created_at->diffForHumans(),
+                'active'          => false,
+                'messages'        => $messages->map(fn ($m) => [
                     'id'   => $m->id,
                     'from' => $m->sender_id === $userId ? 'me' : 'them',
                     'text' => $m->message,
@@ -183,13 +184,11 @@ class ClientController extends Controller
             ];
         }
 
-        if (!empty($conversations)) {
-            $first = reset($conversations);
-            $first['active'] = true;
-            $conversations[array_key_first($conversations)] = $first;
+        if (!empty($result)) {
+            $result[0]['active'] = true;
         }
 
-        return array_values($conversations);
+        return $result;
     }
 
     protected function getReviews(): array
@@ -335,13 +334,13 @@ class ClientController extends Controller
         return response()->json(['success' => true, 'message' => 'Reschedule request ' . $validated['action'] . 'd.']);
     }
 
-    public function pollMessages(Request $request, Booking $booking): JsonResponse
+    public function pollMessages(Request $request, Conversation $conversation): JsonResponse
     {
-        if ($booking->client_id !== auth()->id()) {
+        if ($conversation->client_id !== auth()->id()) {
             abort(403);
         }
 
-        $query = $booking->messages()->orderBy('created_at');
+        $query = $conversation->messages()->orderBy('created_at');
 
         if ($afterId = $request->integer('after')) {
             $query->where('id', '>', $afterId);
@@ -357,13 +356,13 @@ class ClientController extends Controller
         return response()->json(['messages' => $messages]);
     }
 
-    public function markMessagesRead(Booking $booking): JsonResponse
+    public function markMessagesRead(Conversation $conversation): JsonResponse
     {
-        if ($booking->client_id !== auth()->id()) {
+        if ($conversation->client_id !== auth()->id()) {
             abort(403);
         }
 
-        $count = Message::markAllAsReadForBooking($booking->id, auth()->id());
+        $count = Message::markAllAsReadForConversation($conversation->id, auth()->id());
 
         return response()->json(['success' => true, 'marked_read' => $count]);
     }
@@ -373,26 +372,37 @@ class ClientController extends Controller
     public function sendMessage(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'booking_id' => ['required', 'exists:bookings,id'],
-            'message'    => ['required', 'string', 'max:2000'],
+            'conversation_id' => ['required', 'exists:conversations,id'],
+            'message'         => ['required', 'string', 'max:2000'],
         ]);
 
-        $booking = Booking::findOrFail($validated['booking_id']);
+        $conversation = Conversation::findOrFail($validated['conversation_id']);
 
-        if ($booking->client_id !== auth()->id()) {
+        if ($conversation->client_id !== auth()->id()) {
             abort(403);
         }
 
+        $latestBooking = Booking::where('client_id', $conversation->client_id)
+            ->where('worker_id', $conversation->worker_id)
+            ->latest('created_at')
+            ->first();
+
         $msg = Message::create([
-            'booking_id'  => $booking->id,
-            'sender_id'   => auth()->id(),
-            'receiver_id' => $booking->worker_id,
-            'message'     => $validated['message'],
+            'conversation_id' => $conversation->id,
+            'booking_id'      => $latestBooking?->id,
+            'sender_id'       => auth()->id(),
+            'receiver_id'     => $conversation->worker_id,
+            'message'         => $validated['message'],
         ]);
+
+        $conversation->update(['last_message_at' => now()]);
 
         $msg->load('sender');
 
-        Notification::send($booking->worker, new NewMessage($msg));
+        $recipient = $conversation->worker;
+        if ($recipient) {
+            Notification::send($recipient, new NewMessage($msg));
+        }
         broadcast(new MessageSent($msg))->toOthers();
 
         return response()->json([

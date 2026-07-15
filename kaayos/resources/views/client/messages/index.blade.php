@@ -111,7 +111,7 @@
 @push('scripts')
 <script>
 const conversations = @json($conversations);
-let activeBookingId = null;
+let activeConversationId = null;
 let activeConvo = null;
 let _pollInterval = null;
 let _echoChannel = null;
@@ -123,12 +123,12 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-function subscribeToBooking(bookingId) {
+function subscribeToConversation(conversationId) {
     if (_echoChannel) _echoChannel.stopListening('MessageSent');
-    if (!bookingId || !window.Echo) return;
-    _echoChannel = window.Echo.private('booking.' + bookingId);
+    if (!conversationId || !window.Echo) return;
+    _echoChannel = window.Echo.private('conversation.' + conversationId);
     _echoChannel.listen('MessageSent', function (e) {
-        if (activeBookingId && String(e.booking_id) === String(activeBookingId)) {
+        if (activeConversationId && String(e.conversation_id) === String(activeConversationId)) {
             var body = document.getElementById('chat-body');
             if (!body) return;
             if (body.querySelector('[data-id="' + e.id + '"]')) return;
@@ -142,13 +142,13 @@ function subscribeToBooking(bookingId) {
     });
 }
 
-function startPolling(bookingId) {
+function startPolling(conversationId) {
     if (_pollInterval) clearInterval(_pollInterval);
     _pollInterval = setInterval(function () {
-        if (!bookingId) return;
+        if (!conversationId) return;
         var lastMsg = document.querySelector('#chat-body .chat-bubble:last-child');
         var afterParam = lastMsg ? '?after=' + lastMsg.getAttribute('data-id') : '';
-        fetch('/client/messages/poll/' + bookingId + afterParam, {
+        fetch('/client/messages/poll/' + conversationId + afterParam, {
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
         })
         .then(function (r) { return r.json(); })
@@ -172,8 +172,8 @@ function startPolling(bookingId) {
     }, 2000);
 }
 
-function markConversationRead(bookingId) {
-    fetch('/client/messages/' + bookingId + '/read', {
+function markConversationRead(conversationId) {
+    fetch('/client/messages/' + conversationId + '/read', {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
     }).catch(function () {});
@@ -183,10 +183,10 @@ function switchConversation(index) {
     var convo = conversations[index];
     if (!convo) return;
 
-    activeBookingId = convo.booking_id;
+    activeConversationId = convo.conversation_id;
     activeConvo = convo;
-    subscribeToBooking(convo.booking_id);
-    markConversationRead(convo.booking_id);
+    subscribeToConversation(convo.conversation_id);
+    markConversationRead(convo.conversation_id);
 
     document.querySelectorAll('.convo-item').forEach(function (el) { el.classList.remove('active'); });
     var target = document.querySelector('.convo-item[data-index="' + index + '"]');
@@ -222,7 +222,7 @@ function switchConversation(index) {
     pane.appendChild(inputRow);
 
     attachSendHandler(convo);
-    startPolling(convo.booking_id);
+    startPolling(convo.conversation_id);
     body.scrollTop = body.scrollHeight;
 }
 
@@ -243,7 +243,7 @@ function attachSendHandler(convo) {
                 'Accept': 'application/json',
                 'X-Socket-ID': window.Echo ? window.Echo.socketId() : '',
             },
-            body: JSON.stringify({ booking_id: convo.booking_id, message: text }),
+            body: JSON.stringify({ conversation_id: convo.conversation_id, message: text }),
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -267,9 +267,9 @@ function attachSendHandler(convo) {
     });
 }
 
-function selectConvoByBookingId(bookingId) {
+function selectConvoByConversationId(conversationId) {
     for (var i = 0; i < conversations.length; i++) {
-        if (String(conversations[i].booking_id) === String(bookingId)) {
+        if (String(conversations[i].conversation_id) === String(conversationId)) {
             switchConversation(i);
             return;
         }
@@ -282,9 +282,9 @@ document.addEventListener('DOMContentLoaded', function () {
             clearInterval(checkEcho);
 
             var urlParams = new URLSearchParams(window.location.search);
-            var bookingParam = urlParams.get('booking');
-            if (bookingParam) {
-                selectConvoByBookingId(bookingParam);
+            var conversationParam = urlParams.get('conversation');
+            if (conversationParam) {
+                selectConvoByConversationId(conversationParam);
                 return;
             }
 
@@ -292,10 +292,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (active) {
                 var convo = conversations[active.dataset.index];
                 if (convo) {
-                    activeBookingId = convo.booking_id;
+                    activeConversationId = convo.conversation_id;
                     activeConvo = convo;
-                    subscribeToBooking(convo.booking_id);
-                    startPolling(convo.booking_id);
+                    subscribeToConversation(convo.conversation_id);
+                    startPolling(convo.conversation_id);
                     attachSendHandler(convo);
                 }
             }

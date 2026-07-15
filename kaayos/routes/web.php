@@ -75,9 +75,9 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::post('/bookings/{booking}/reschedule', [ClientController::class, 'rescheduleRequest'])->name('bookings.reschedule');
     Route::post('/bookings/{booking}/reschedule-respond', [ClientController::class, 'respondReschedule'])->name('bookings.reschedule-respond');
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
-    Route::get('/messages/poll/{booking}', [ClientController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
+    Route::get('/messages/poll/{conversation}', [ClientController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
     Route::post('/messages/send', [ClientController::class, 'sendMessage'])->middleware('throttle:30,1')->name('messages.send');
-    Route::post('/messages/{booking}/read', [ClientController::class, 'markMessagesRead'])->name('messages.read');
+    Route::post('/messages/{conversation}/read', [ClientController::class, 'markMessagesRead'])->name('messages.read');
     Route::get('/reviews', [ClientController::class, 'reviews'])->name('reviews');
     Route::get('/account/profile', [ClientController::class, 'profile'])->name('account.profile');
 });
@@ -100,9 +100,9 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
     Route::get('/schedule', [WorkerController::class, 'schedule'])->name('schedule');
     Route::get('/messages', [WorkerController::class, 'messages'])->name('messages');
-    Route::get('/messages/poll/{booking}', [WorkerController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
+    Route::get('/messages/poll/{conversation}', [WorkerController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
     Route::post('/messages/send', [WorkerController::class, 'sendMessage'])->middleware('throttle:30,1')->name('messages.send');
-    Route::post('/messages/{booking}/read', [WorkerController::class, 'markMessagesRead'])->name('messages.read');
+    Route::post('/messages/{conversation}/read', [WorkerController::class, 'markMessagesRead'])->name('messages.read');
     Route::get('/earnings', [WorkerController::class, 'earnings'])->name('earnings');
     Route::get('/earnings/export', [WorkerController::class, 'exportEarnings'])->name('earnings.export');
     Route::get('/profile', [WorkerController::class, 'profile'])->name('profile');

@@ -45,7 +45,7 @@
                             <span class="convo-time">{{ $convo['time'] }}</span>
                         </span>
                     </div>
-                    <div class="convo-preview">{{ $convo['service'] ?? '' }} - {{ $convo['preview'] }}</div>
+                    <div class="convo-preview">{{ $convo['preview'] }}</div>
                 </div>
             </div>
         @empty
@@ -63,7 +63,6 @@
             <div class="chat-header" id="chat-header">
                 <i class="fa-regular fa-user" aria-hidden="true"></i>
                 <span id="chat-name">{{ $activeConvo['name'] }}</span>
-                <span style="font-weight:400;color:var(--g4);font-size:.82rem;margin-left:4px;">({{ $activeConvo['service'] ?? 'Client' }})</span>
             </div>
             <div class="chat-body" id="chat-body">
                 @foreach($activeConvo['messages'] as $msg)
@@ -96,7 +95,7 @@
 @push('scripts')
 <script>
 const conversations = @json($conversations);
-let activeBookingId = null;
+let activeConversationId = null;
 let activeConvo = null;
 let _pollInterval = null;
 let _echoChannel = null;
@@ -108,12 +107,12 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-function subscribeToBooking(bookingId) {
+function subscribeToConversation(conversationId) {
     if (_echoChannel) _echoChannel.stopListening('MessageSent');
-    if (!bookingId || !window.Echo) return;
-    _echoChannel = window.Echo.private('booking.' + bookingId);
+    if (!conversationId || !window.Echo) return;
+    _echoChannel = window.Echo.private('conversation.' + conversationId);
     _echoChannel.listen('MessageSent', function (e) {
-        if (activeBookingId && String(e.booking_id) === String(activeBookingId)) {
+        if (activeConversationId && String(e.conversation_id) === String(activeConversationId)) {
             var body = document.getElementById('chat-body');
             if (!body) return;
             if (body.querySelector('[data-id="' + e.id + '"]')) return;
@@ -127,13 +126,13 @@ function subscribeToBooking(bookingId) {
     });
 }
 
-function startPolling(bookingId) {
+function startPolling(conversationId) {
     if (_pollInterval) clearInterval(_pollInterval);
     _pollInterval = setInterval(function () {
-        if (!bookingId) return;
+        if (!conversationId) return;
         var lastMsg = document.querySelector('#chat-body .chat-bubble:last-child');
         var afterParam = lastMsg ? '?after=' + lastMsg.getAttribute('data-id') : '';
-        fetch('/worker/messages/poll/' + bookingId + afterParam, {
+        fetch('/worker/messages/poll/' + conversationId + afterParam, {
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
         })
         .then(function (r) { return r.json(); })
@@ -157,8 +156,8 @@ function startPolling(bookingId) {
     }, 2000);
 }
 
-function markConversationRead(bookingId) {
-    fetch('/worker/messages/' + bookingId + '/read', {
+function markConversationRead(conversationId) {
+    fetch('/worker/messages/' + conversationId + '/read', {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
     }).catch(function () {});
@@ -172,10 +171,10 @@ document.querySelectorAll('.convo-item').forEach(function (item) {
         var convo = conversations[this.dataset.index];
         if (!convo) return;
 
-        activeBookingId = convo.booking_id;
+        activeConversationId = convo.conversation_id;
         activeConvo = convo;
-        subscribeToBooking(convo.booking_id);
-        markConversationRead(convo.booking_id);
+        subscribeToConversation(convo.conversation_id);
+        markConversationRead(convo.conversation_id);
 
         var pane = document.getElementById('chat-pane');
 
@@ -192,7 +191,7 @@ document.querySelectorAll('.convo-item').forEach(function (item) {
         var header = document.createElement('div');
         header.className = 'chat-header';
         header.id = 'chat-header';
-        header.innerHTML = '<i class="fa-regular fa-user" aria-hidden="true"></i> <span id="chat-name">' + convo.name + '</span><span style="font-weight:400;color:var(--g4);font-size:.82rem;margin-left:4px;">(' + (convo.service || 'Client') + ')</span>';
+        header.innerHTML = '<i class="fa-regular fa-user" aria-hidden="true"></i> <span id="chat-name">' + convo.name + '</span>';
         pane.prepend(header);
 
         var body = document.createElement('div');
@@ -214,7 +213,7 @@ document.querySelectorAll('.convo-item').forEach(function (item) {
         pane.appendChild(inputRow);
 
         attachSendHandler(convo);
-        startPolling(convo.booking_id);
+        startPolling(convo.conversation_id);
         body.scrollTop = body.scrollHeight;
     });
 });
@@ -236,7 +235,7 @@ function attachSendHandler(convo) {
                 'Accept': 'application/json',
                 'X-Socket-ID': window.Echo ? window.Echo.socketId() : '',
             },
-            body: JSON.stringify({ booking_id: convo.booking_id, message: text }),
+            body: JSON.stringify({ conversation_id: convo.conversation_id, message: text }),
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -260,9 +259,9 @@ function attachSendHandler(convo) {
     });
 }
 
-function selectConvoByBookingId(bookingId) {
+function selectConvoByConversationId(conversationId) {
     for (var i = 0; i < conversations.length; i++) {
-        if (String(conversations[i].booking_id) === String(bookingId)) {
+        if (String(conversations[i].conversation_id) === String(conversationId)) {
             var el = document.querySelector('.convo-item[data-index="' + i + '"]');
             if (el) el.click();
             return;
@@ -276,9 +275,9 @@ document.addEventListener('DOMContentLoaded', function () {
             clearInterval(checkEcho);
 
             var urlParams = new URLSearchParams(window.location.search);
-            var bookingParam = urlParams.get('booking');
-            if (bookingParam) {
-                selectConvoByBookingId(bookingParam);
+            var conversationParam = urlParams.get('conversation');
+            if (conversationParam) {
+                selectConvoByConversationId(conversationParam);
                 return;
             }
 
@@ -286,10 +285,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (active) {
                 var convo = conversations[active.dataset.index];
                 if (convo) {
-                    activeBookingId = convo.booking_id;
+                    activeConversationId = convo.conversation_id;
                     activeConvo = convo;
-                    subscribeToBooking(convo.booking_id);
-                    startPolling(convo.booking_id);
+                    subscribeToConversation(convo.conversation_id);
+                    startPolling(convo.conversation_id);
                     attachSendHandler(convo);
                 }
             }

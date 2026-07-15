@@ -17,20 +17,27 @@ class MessageSent implements ShouldBroadcast
 
     public function broadcastOn(): array
     {
-        return [
+        $channels = [
             new PrivateChannel('booking.' . $this->message->booking_id),
         ];
+
+        if ($this->message->conversation_id) {
+            $channels[] = new PrivateChannel('conversation.' . $this->message->conversation_id);
+        }
+
+        return $channels;
     }
 
     public function broadcastWith(): array
     {
         return [
-            'id'        => $this->message->id,
-            'booking_id'=> $this->message->booking_id,
-            'sender_id' => $this->message->sender_id,
-            'text'      => $this->message->message,
-            'time'      => $this->message->created_at->diffForHumans(),
-            'from'      => 'them',
+            'id'              => $this->message->id,
+            'booking_id'      => $this->message->booking_id,
+            'conversation_id' => $this->message->conversation_id,
+            'sender_id'       => $this->message->sender_id,
+            'text'            => $this->message->message,
+            'time'            => $this->message->created_at->diffForHumans(),
+            'from'            => 'them',
         ];
     }
 }

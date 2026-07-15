@@ -9,6 +9,7 @@ class Message extends Model
 {
     protected $fillable = [
         'booking_id',
+        'conversation_id',
         'sender_id',
         'receiver_id',
         'message',
@@ -19,11 +20,16 @@ class Message extends Model
         'read_at' => 'datetime',
     ];
 
-    protected $touches = ['booking'];
+    protected $touches = ['booking', 'conversation'];
 
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function conversation(): BelongsTo
+    {
+        return $this->belongsTo(Conversation::class);
     }
 
     public function sender(): BelongsTo
@@ -48,6 +54,11 @@ class Message extends Model
         });
     }
 
+    public function scopeForConversation($query, int $conversationId)
+    {
+        return $query->where('conversation_id', $conversationId);
+    }
+
     public function markAsRead(int $userId): void
     {
         if ($this->receiver_id === $userId && is_null($this->read_at)) {
@@ -58,6 +69,14 @@ class Message extends Model
     public static function markAllAsReadForBooking(int $bookingId, int $userId): int
     {
         return static::where('booking_id', $bookingId)
+            ->where('receiver_id', $userId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+    }
+
+    public static function markAllAsReadForConversation(int $conversationId, int $userId): int
+    {
+        return static::where('conversation_id', $conversationId)
             ->where('receiver_id', $userId)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Worker;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\WorkerProfile;
 use App\Events\MessageSent;
@@ -182,17 +183,17 @@ class WorkerController extends Controller
     {
         $user = auth()->user();
 
-        $bookings = $user->bookingsAsWorker()
+        $conversations = Conversation::where('worker_id', $user->id)
             ->with('client', 'messages.sender')
-            ->latest()
+            ->latest('last_message_at')
             ->get();
 
-        $conversations = [];
+        $result = [];
 
-        foreach ($bookings as $booking) {
-            $client = $booking->client;
+        foreach ($conversations as $convo) {
+            $client = $convo->client;
 
-            $messages = $booking->messages->sortBy('created_at');
+            $messages = $convo->messages->sortBy('created_at');
 
             $lastMsg = $messages->last();
             $unreadCount = $messages->where('receiver_id', $user->id)->whereNull('read_at')->count();
@@ -202,17 +203,18 @@ class WorkerController extends Controller
                 ($client?->last_name ? $client->last_name[0] : '')
             );
 
-            $conversations[] = [
-                'active'       => false,
-                'booking_id'   => $booking->id,
-                'client_id'    => $client?->id,
-                'service'      => $booking->service_category,
-                'initials'     => $initials ?: '?',
-                'name'         => $client?->name ?? 'Unknown',
-                'time'         => $lastMsg?->created_at->diffForHumans() ?? $booking->scheduled_at->diffForHumans(),
-                'preview'      => $lastMsg?->message ?? '',
-                'unread_count' => $unreadCount,
-                'messages'     => $messages->map(fn($msg) => [
+            $result[] = [
+                'active'          => false,
+                'conversation_id' => $convo->id,
+                'client_id'       => $client?->id,
+                'initials'        => $initials ?: '?',
+                'name'            => $client?->name ?? 'Unknown',
+                'time'            => $lastMsg?->created_at->diffForHumans()
+                                    ?? $convo->last_message_at?->diffForHumans()
+                                    ?? $convo->created_at->diffForHumans(),
+                'preview'         => $lastMsg?->message ?? '',
+                'unread_count'    => $unreadCount,
+                'messages'        => $messages->map(fn($msg) => [
                     'id'   => $msg->id,
                     'from' => $msg->sender_id === $user->id ? 'me' : 'them',
                     'text' => $msg->message,
@@ -221,11 +223,11 @@ class WorkerController extends Controller
             ];
         }
 
-        if (!empty($conversations)) {
-            $conversations[0]['active'] = true;
+        if (!empty($result)) {
+            $result[0]['active'] = true;
         }
 
-        return $conversations;
+        return $result;
     }
 
     protected function getEarnings(): array
@@ -328,26 +330,37 @@ class WorkerController extends Controller
     public function sendMessage(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'booking_id' => ['required', 'exists:bookings,id'],
-            'message'    => ['required', 'string', 'max:2000'],
+            'conversation_id' => ['required', 'exists:conversations,id'],
+            'message'         => ['required', 'string', 'max:2000'],
         ]);
 
-        $booking = Booking::findOrFail($validated['booking_id']);
+        $conversation = Conversation::findOrFail($validated['conversation_id']);
 
-        if ($booking->worker_id !== auth()->id()) {
+        if ($conversation->worker_id !== auth()->id()) {
             abort(403);
         }
 
+        $latestBooking = Booking::where('client_id', $conversation->client_id)
+            ->where('worker_id', $conversation->worker_id)
+            ->latest('created_at')
+            ->first();
+
         $msg = Message::create([
-            'booking_id'  => $booking->id,
-            'sender_id'   => auth()->id(),
-            'receiver_id' => $booking->client_id,
-            'message'     => $validated['message'],
+            'conversation_id' => $conversation->id,
+            'booking_id'      => $latestBooking?->id,
+            'sender_id'       => auth()->id(),
+            'receiver_id'     => $conversation->client_id,
+            'message'         => $validated['message'],
         ]);
+
+        $conversation->update(['last_message_at' => now()]);
 
         $msg->load('sender');
 
-        Notification::send($booking->client, new NewMessage($msg));
+        $recipient = $conversation->client;
+        if ($recipient) {
+            Notification::send($recipient, new NewMessage($msg));
+        }
         broadcast(new MessageSent($msg))->toOthers();
 
         return response()->json([
@@ -568,13 +581,13 @@ class WorkerController extends Controller
         return view('worker.documents.index', $this->shared());
     }
 
-    public function pollMessages(Request $request, Booking $booking): JsonResponse
+    public function pollMessages(Request $request, Conversation $conversation): JsonResponse
     {
-        if ($booking->worker_id !== auth()->id()) {
+        if ($conversation->worker_id !== auth()->id()) {
             abort(403);
         }
 
-        $query = $booking->messages()->orderBy('created_at');
+        $query = $conversation->messages()->orderBy('created_at');
 
         if ($afterId = $request->integer('after')) {
             $query->where('id', '>', $afterId);
@@ -590,13 +603,13 @@ class WorkerController extends Controller
         return response()->json(['messages' => $messages]);
     }
 
-    public function markMessagesRead(Booking $booking): JsonResponse
+    public function markMessagesRead(Conversation $conversation): JsonResponse
     {
-        if ($booking->worker_id !== auth()->id()) {
+        if ($conversation->worker_id !== auth()->id()) {
             abort(403);
         }
 
-        $count = Message::markAllAsReadForBooking($booking->id, auth()->id());
+        $count = Message::markAllAsReadForConversation($conversation->id, auth()->id());
 
         return response()->json(['success' => true, 'marked_read' => $count]);
     }
