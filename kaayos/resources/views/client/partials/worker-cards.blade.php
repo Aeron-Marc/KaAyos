@@ -9,7 +9,12 @@
         <div class="worker-meta">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
                 <div>
-                    <div class="worker-name">{{ $worker['name'] }}</div>
+                    <div class="worker-name">
+                        {{ $worker['name'] }}
+                        @if($worker['verified'])
+                            <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#16a34a;color:#fff;font-size:.55rem;margin-left:3px;vertical-align:middle;"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
+                        @endif
+                    </div>
                     <div class="worker-trade">{{ $worker['category'] }}</div>
                 </div>
                 <div class="worker-rating">

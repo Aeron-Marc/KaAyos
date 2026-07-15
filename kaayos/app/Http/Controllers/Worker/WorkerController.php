@@ -52,7 +52,7 @@ class WorkerController extends Controller
         return [
             ['label' => 'Earnings This Week', 'value' => '₱' . number_format($weeklyEarnings), 'icon' => 'fa-coins', 'accent' => true],
             ['label' => 'Active Jobs',       'value' => $activeJobs,                         'icon' => 'fa-briefcase'],
-            ['label' => 'Rating',            'value' => '0.0 ★',                            'icon' => 'fa-star'],
+            ['label' => 'Rating',            'value' => number_format($user->workerProfile?->average_rating ?? 0, 1) . ' ★', 'icon' => 'fa-star'],
             ['label' => 'Completed Jobs',    'value' => $totalCompleted,                     'icon' => 'fa-circle-check'],
         ];
     }
@@ -583,6 +583,10 @@ class WorkerController extends Controller
         $doc->status = 'pending';
         $doc->verified_at = null;
         $doc->save();
+
+        if ($user->workerProfile) {
+            $user->workerProfile->update(['government_id_verified' => false]);
+        }
 
         return redirect()
             ->route('worker.profile')
