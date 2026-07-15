@@ -82,22 +82,37 @@ class ClientController extends Controller
     protected function getBookings(): array
     {
         return auth()->user()->bookingsAsClient()
-            ->with('worker')
+            ->with('worker', 'history')
             ->latest()
             ->get()
-            ->map(fn ($b) => [
-                'id'         => $b->id,
-                'worker'     => $b->worker->name ?? 'Unknown',
-                'worker_id'  => $b->worker_id,
-                'service'    => $b->service_category,
-                'date'       => $b->scheduled_at->format('M d, Y · h:i A'),
-                'status'     => ucfirst($b->status),
-                'raw_status' => $b->status,
-                'price'      => $b->price ?? 0,
-                'location'   => $b->address,
-                'notes'      => $b->notes,
-                'created'    => $b->created_at->format('M d, Y · h:i A'),
-            ])->toArray();
+            ->map(function ($b) {
+                $statusHistory = [];
+                foreach ($b->history as $h) {
+                    $statusHistory[$h->new_status] = $h->created_at;
+                }
+                if (!isset($statusHistory['new'])) {
+                    $statusHistory['new'] = $b->created_at;
+                }
+
+                return [
+                    'id'            => $b->id,
+                    'worker'        => $b->worker->name ?? 'Unknown',
+                    'worker_id'     => $b->worker_id,
+                    'service'       => $b->service_category,
+                    'date'          => $b->scheduled_at->format('M d, Y · h:i A'),
+                    'month'         => $b->scheduled_at->format('M'),
+                    'day'           => $b->scheduled_at->format('d'),
+                    'time'          => $b->scheduled_at->format('g:i A'),
+                    'status'        => ucfirst($b->status),
+                    'raw_status'    => $b->status,
+                    'price'         => $b->price ?? 0,
+                    'location'      => $b->address,
+                    'notes'         => $b->notes,
+                    'created'       => $b->created_at->format('M d, Y · h:i A'),
+                    'booking_ref'   => $b->booking_ref ?? 'BK-' . str_pad($b->id, 5, '0', STR_PAD_LEFT),
+                    'status_history'=> $statusHistory,
+                ];
+            })->toArray();
     }
 
     protected function getNotifications(): array
