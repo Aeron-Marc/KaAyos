@@ -123,6 +123,8 @@
 
 </div>
 
+@include('client.partials.chat-widget')
+
 @stack('scripts')
 </body>
 </html>

@@ -44,10 +44,12 @@ class WorkerController extends Controller
 
         $totalCompleted = $user->bookingsAsWorker()->completed()->count();
 
+        $rating = $user->workerProfile?->average_rating ?? 0;
+
         return [
             ['label' => 'Earnings This Week', 'value' => '₱' . number_format($weeklyEarnings), 'icon' => 'fa-coins', 'accent' => true],
             ['label' => 'Active Jobs',       'value' => $activeJobs,                         'icon' => 'fa-briefcase'],
-            ['label' => 'Rating',            'value' => '0.0 ★',                            'icon' => 'fa-star'],
+            ['label' => 'Rating',            'value' => number_format($rating, 1) . ' ★',    'icon' => 'fa-star'],
             ['label' => 'Completed Jobs',    'value' => $totalCompleted,                     'icon' => 'fa-circle-check'],
         ];
     }

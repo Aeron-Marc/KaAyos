@@ -34,7 +34,7 @@
                 </div>
             @endif
 
-            @if($workerProfile && $workerProfile->govt_id_verified)
+            @if($workerProfile && $workerProfile->government_id_verified)
                 <div style="margin-top:10px;">
                     <span style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:500;">
                         <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified

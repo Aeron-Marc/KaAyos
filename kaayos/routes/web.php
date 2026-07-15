@@ -78,6 +78,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/api/profile/avatar',   [ProfileController::class, 'uploadAvatar']);
 });
 
+// Chatbot (authenticated)
+Route::middleware('auth')->post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke']);
+
 Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')->name('worker.')->group(function () {
     Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [WorkerController::class, 'notifications'])->name('dashboard.notifications');
