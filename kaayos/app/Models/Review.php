@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Review extends Model
 {
@@ -13,11 +14,19 @@ class Review extends Model
         'worker_id',
         'rating',
         'comment',
+        'photo_path',
     ];
 
     protected $casts = [
         'rating' => 'integer',
     ];
+
+    protected $appends = ['photo_url'];
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo_path ? Storage::url($this->photo_path) : null;
+    }
 
     public function booking(): BelongsTo
     {

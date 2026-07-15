@@ -209,11 +209,12 @@ class ClientController extends Controller
         return [
             'pending' => $pending,
             'past'    => $user->reviews()->with('worker')->latest()->get()->map(fn ($r) => [
-                'worker'  => $r->worker->name ?? 'Unknown',
-                'service' => $r->booking->service_category ?? '',
-                'date'    => $r->created_at->format('M d, Y'),
-                'rating'  => $r->rating,
-                'comment' => $r->comment,
+                'worker'    => $r->worker->name ?? 'Unknown',
+                'service'   => $r->booking->service_category ?? '',
+                'date'      => $r->created_at->format('M d, Y'),
+                'rating'    => $r->rating,
+                'comment'   => $r->comment,
+                'photo_url' => $r->photo_url,
             ])->toArray(),
         ];
     }
@@ -520,15 +521,21 @@ class ClientController extends Controller
         $validated = $request->validate([
             'rating'  => ['required', 'integer', 'min:1', 'max:5'],
             'comment' => ['nullable', 'string', 'max:2000'],
+            'photo'   => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ]);
+
+        $photoPath = $request->hasFile('photo')
+            ? $request->file('photo')->store('review-photos', 'public')
+            : null;
 
         $review = Review::updateOrCreate(
             ['booking_id' => $booking->id],
             [
-                'client_id' => auth()->id(),
-                'worker_id' => $booking->worker_id,
-                'rating'    => $validated['rating'],
-                'comment'   => $validated['comment'] ?? null,
+                'client_id'  => auth()->id(),
+                'worker_id'  => $booking->worker_id,
+                'rating'     => $validated['rating'],
+                'comment'    => $validated['comment'] ?? null,
+                'photo_path' => $photoPath,
             ]
         );
 

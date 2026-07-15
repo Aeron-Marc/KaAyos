@@ -206,6 +206,12 @@
                                     @endfor
                                 </div>
                             </div>
+                            @if($review->photo_url)
+                                <div class="review-photo-wrap" onclick="openLightbox('{{ $review->photo_url }}')">
+                                    <img src="{{ $review->photo_url }}" alt="Review photo">
+                                    <div class="review-photo-overlay"><i class="fa-solid fa-expand" aria-hidden="true"></i> View photo</div>
+                                </div>
+                            @endif
                             @if($review->comment)
                                 <p style="font-size:.85rem;color:var(--g7);margin-top:6px;line-height:1.5;">{{ $review->comment }}</p>
                             @endif
@@ -324,6 +330,12 @@
     </div>
 </div>
 
+{{-- Lightbox --}}
+<div id="lightbox" class="lightbox-overlay" style="display:none;" onclick="closeLightbox()">
+    <button type="button" class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <img id="lightboxImg" src="" alt="Photo">
+</div>
+
 @endsection
 
 @push('scripts')
@@ -426,6 +438,16 @@ function submitBooking(e) {
     });
 }
 
+function openLightbox(url) {
+    document.getElementById('lightboxImg').src = url;
+    document.getElementById('lightbox').style.display = 'flex';
+}
+function closeLightbox() {
+    document.getElementById('lightbox').style.display = 'none';
+}
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+});
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('scheduled_at').addEventListener('change', validateSchedule);
     document.getElementById('scheduled_at').addEventListener('input', validateSchedule);
@@ -477,6 +499,96 @@ document.addEventListener('DOMContentLoaded', function() {
 .modal-footer {
     display: flex; gap: 10px; justify-content: flex-end;
     padding: 0 22px 18px;
+}
+
+/* ── Review photo ── */
+.review-photo-wrap {
+    position: relative;
+    display: inline-block;
+    margin-top: 6px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    transition: box-shadow .2s, transform .2s;
+    cursor: pointer;
+}
+.review-photo-wrap:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    transform: scale(1.02);
+}
+.review-photo-wrap img {
+    display: block;
+    max-width: 200px;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+.review-photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: .78rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity .2s;
+    border-radius: 10px;
+    letter-spacing: .02em;
+}
+.review-photo-wrap:hover .review-photo-overlay {
+    opacity: 1;
+}
+
+/* ── Lightbox ── */
+.lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.8);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: lbFade .2s ease;
+}
+@keyframes lbFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.lightbox-overlay img {
+    max-width: 90vw;
+    max-height: 85vh;
+    border-radius: 8px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.5);
+    animation: lbZoom .25s ease;
+}
+@keyframes lbZoom {
+    from { transform: scale(.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.lightbox-close {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    background: rgba(255,255,255,.12);
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+}
+.lightbox-close:hover {
+    background: rgba(255,255,255,.25);
 }
 </style>
 @endpush
