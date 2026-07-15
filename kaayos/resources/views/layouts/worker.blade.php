@@ -34,12 +34,6 @@
                 {{ __('nav.dashboard') }}
             </a>
 
-            <a href="{{ route('worker.jobs') }}"
-               class="nav-item {{ request()->routeIs('worker.jobs*') ? 'active' : '' }}">
-                <i class="fa-solid fa-clipboard-list nav-icon" aria-hidden="true"></i>
-                {{ __('nav.job_requests') }}
-            </a>
-
             <a href="{{ route('worker.schedule') }}"
                class="nav-item {{ request()->routeIs('worker.schedule*') ? 'active' : '' }}">
                 <i class="fa-solid fa-calendar-days nav-icon" aria-hidden="true"></i>

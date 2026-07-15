@@ -59,7 +59,7 @@ class WorkerController extends Controller
 
     protected function getJobRequests(?string $filter = null): array
     {
-        $query = auth()->user()->bookingsAsWorker()->with('client');
+        $query = auth()->user()->bookingsAsWorker()->with('client', 'history');
 
         if ($filter && in_array($filter, Booking::STATUSES)) {
             $query->where('status', $filter);
@@ -76,20 +76,32 @@ class WorkerController extends Controller
                     Booking::STATUS_COMPLETED  => 'Completed',
                 ];
 
+                $statusHistory = [];
+                foreach ($booking->history as $h) {
+                    $statusHistory[$h->new_status] = $h->created_at;
+                }
+                if (!isset($statusHistory['new'])) {
+                    $statusHistory['new'] = $booking->created_at;
+                }
+
                 return [
-                    'id'           => $booking->id,
-                    'client'       => $booking->client->name ?? 'Unknown',
-                    'client_phone' => $booking->client->phone ?? 'N/A',
-                    'client_email' => $booking->client->email ?? 'N/A',
-                    'service'      => $booking->service_category,
-                    'description'  => $booking->notes ?? 'No details provided.',
-                    'date'         => $booking->scheduled_at->format('M d, Y · h:i A'),
-                    'location'     => $booking->address,
-                    'status'       => $labelMap[$booking->status] ?? ucfirst($booking->status),
-                    'raw_status'   => $booking->status,
-                    'price'        => $booking->price ?? 0,
-                    'created'      => $booking->created_at->format('M d, Y · h:i A'),
-                    'booking_ref'  => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
+                    'id'             => $booking->id,
+                    'client'         => $booking->client->name ?? 'Unknown',
+                    'client_phone'   => $booking->client->phone ?? 'N/A',
+                    'client_email'   => $booking->client->email ?? 'N/A',
+                    'service'        => $booking->service_category,
+                    'description'    => $booking->notes ?? 'No details provided.',
+                    'date'           => $booking->scheduled_at->format('M d, Y · h:i A'),
+                    'month'          => $booking->scheduled_at->format('M'),
+                    'day'            => $booking->scheduled_at->format('d'),
+                    'time'           => $booking->scheduled_at->format('g:i A'),
+                    'location'       => $booking->address,
+                    'status'         => $labelMap[$booking->status] ?? ucfirst($booking->status),
+                    'raw_status'     => $booking->status,
+                    'price'          => $booking->price ?? 0,
+                    'created'        => $booking->created_at->format('M d, Y · h:i A'),
+                    'booking_ref'    => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
+                    'status_history' => $statusHistory,
                 ];
             })
             ->toArray();
@@ -307,19 +319,20 @@ class WorkerController extends Controller
         return view('worker.dashboard.notifications', $this->shared());
     }
 
-    public function jobs(Request $request): View
+    public function jobs(Request $request): RedirectResponse
+    {
+        $query = $request->query('filter') ? ['filter' => $request->query('filter')] : [];
+        return redirect()->route('worker.schedule', $query);
+    }
+
+    public function schedule(Request $request): View
     {
         $filter = $request->query('filter');
         $data = $this->shared();
         $data['jobRequests'] = $this->getJobRequests($filter);
-        $data['activeFilter'] = $filter;
+        $data['activeFilter'] = $filter ?? '';
 
-        return view('worker.jobs.index', $data);
-    }
-
-    public function schedule(): View
-    {
-        return view('worker.schedule.index', $this->shared());
+        return view('worker.schedule.index', $data);
     }
 
     public function messages(): View
