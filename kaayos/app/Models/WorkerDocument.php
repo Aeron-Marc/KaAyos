@@ -13,6 +13,9 @@ class WorkerDocument extends Model
         'file_path',
         'status',
         'verified_at',
+        'admin_notes',
+        'reviewed_by',
+        'reviewed_at',
     ];
 
     protected $casts = [

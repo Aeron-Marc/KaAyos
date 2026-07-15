@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    @vite(['resources/css/client.css'])
+    @vite(['resources/css/client.css', 'resources/js/echo.js'])
     @stack('styles')
 </head>
 <body>
@@ -78,7 +78,7 @@
             </div>
             <div class="profile-info">
                 <p class="profile-name">{{ auth()->user()->name ?? 'User' }}</p>
-                <span class="profile-role">{{ __('role.homeowner') }}</span>
+                <span class="profile-role">{{ __('role.client') }}</span>
             </div>
         </div>
 
@@ -126,5 +126,20 @@
 @include('client.partials.chat-widget')
 
 @stack('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var checkEcho = setInterval(function () {
+        if (window.Echo) {
+            clearInterval(checkEcho);
+            var userId = {{ auth()->id() }};
+            window.Echo.private('user.' + userId)
+                .listen('BookingStatusUpdated', function (e) {
+                    var badge = document.querySelector('.badge-dot');
+                    if (badge) badge.style.display = '';
+                });
+        }
+    }, 200);
+});
+</script>
 </body>
 </html>

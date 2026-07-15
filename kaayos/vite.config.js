@@ -8,6 +8,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/client.css',
+                'resources/js/echo.js',
                 'resources/js/client/account.jsx',
             ],
             refresh: true,

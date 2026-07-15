@@ -70,11 +70,15 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::get('/workers', [ClientWorkerController::class, 'index'])->name('workers');
     Route::get('/workers/{worker}', [ClientWorkerController::class, 'show'])->name('workers.show');
     Route::get('/bookings', [ClientController::class, 'bookings'])->name('bookings');
-    Route::post('/bookings', [ClientController::class, 'storeBooking'])->name('bookings.store');
-    Route::patch('/bookings/{booking}/cancel', [ClientController::class, 'cancelBooking'])->name('bookings.cancel');
+    Route::post('/bookings', [ClientController::class, 'storeBooking'])->middleware('throttle:10,1')->name('bookings.store');
+    Route::post('/bookings/{booking}/cancel', [ClientController::class, 'cancelBooking'])->name('bookings.cancel');
     Route::post('/bookings/{booking}/review', [ClientController::class, 'submitReview'])->name('bookings.review');
+    Route::post('/bookings/{booking}/reschedule', [ClientController::class, 'rescheduleRequest'])->name('bookings.reschedule');
+    Route::post('/bookings/{booking}/reschedule-respond', [ClientController::class, 'respondReschedule'])->name('bookings.reschedule-respond');
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
-    Route::post('/messages/send', [ClientController::class, 'sendMessage'])->name('messages.send');
+    Route::get('/messages/poll/{conversation}', [ClientController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
+    Route::post('/messages/send', [ClientController::class, 'sendMessage'])->middleware('throttle:30,1')->name('messages.send');
+    Route::post('/messages/{conversation}/read', [ClientController::class, 'markMessagesRead'])->name('messages.read');
     Route::get('/reviews', [ClientController::class, 'reviews'])->name('reviews');
     Route::get('/account/profile', [ClientController::class, 'profile'])->name('account.profile');
 });
@@ -100,7 +104,9 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
     Route::get('/schedule', [WorkerController::class, 'schedule'])->name('schedule');
     Route::get('/messages', [WorkerController::class, 'messages'])->name('messages');
-    Route::post('/messages/send', [WorkerController::class, 'sendMessage'])->name('messages.send');
+    Route::get('/messages/poll/{conversation}', [WorkerController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
+    Route::post('/messages/send', [WorkerController::class, 'sendMessage'])->middleware('throttle:30,1')->name('messages.send');
+    Route::post('/messages/{conversation}/read', [WorkerController::class, 'markMessagesRead'])->name('messages.read');
     Route::get('/earnings', [WorkerController::class, 'earnings'])->name('earnings');
     Route::get('/earnings/export', [WorkerController::class, 'exportEarnings'])->name('earnings.export');
     Route::get('/profile', [WorkerController::class, 'profile'])->name('profile');
@@ -114,6 +120,10 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     // Dashboard API endpoints
     Route::get('/dashboard/data', [WorkerDashboardController::class, 'dashboard'])->name('dashboard.data');
     Route::patch('/jobs/{booking}/status', [WorkerDashboardController::class, 'updateJobStatus'])->name('jobs.status');
+    Route::post('/jobs/{booking}/photo', [WorkerDashboardController::class, 'uploadPhoto'])->name('jobs.photo');
+    Route::post('/jobs/{booking}/cancel', [WorkerDashboardController::class, 'cancelJob'])->name('jobs.cancel');
+    Route::post('/jobs/{booking}/reschedule', [WorkerDashboardController::class, 'rescheduleRequest'])->name('jobs.reschedule');
+    Route::post('/jobs/{booking}/reschedule-respond', [WorkerDashboardController::class, 'respondReschedule'])->name('jobs.reschedule-respond');
     Route::put('/location', [WorkerDashboardController::class, 'updateLocation'])->name('location.update');
 });
 
@@ -183,6 +193,7 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     // Bookings
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+    Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
 
     // Disputes
     Route::get('/disputes', [DisputeController::class, 'index'])->name('disputes.index');
