@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import DangerZone from './DangerZone';
-import OtpModal from './OtpModal';
+import EmailChangeSection from './EmailChangeSection';
+import PasswordChangeModal from './PasswordChangeModal';
 import PersonalInfoSection from './PersonalInfoSection';
 import PreferencesSection from './PreferencesSection';
 import ProfileCard from './ProfileCard';
 import SecuritySection from './SecuritySection';
 import ToastContainer from './Toast';
-import { sendOtpRequest, updateProfileRequest, updatePreferencesRequest, uploadAvatarRequest } from './utils';
+import { updateProfileRequest, updatePreferencesRequest, uploadAvatarRequest } from './utils';
 
 const DEFAULT_PREFS = {
     emailNotifications: 'All updates',
@@ -31,10 +32,7 @@ export default function AccountPage({ initial }) {
 
     const [displayProfile, setDisplayProfile] = useState(savedProfile);
 
-    const [otpOpen, setOtpOpen] = useState(false);
-    const [pwPayload, setPwPayload] = useState(null);
-    const [otpLoading, setOtpLoading] = useState(false);
-    const [securityResetKey, setSecurityResetKey] = useState(0);
+    const [pwModalOpen, setPwModalOpen] = useState(false);
 
     const [profileSaving, setProfileSaving] = useState(false);
     const [prefsSaving, setPrefsSaving] = useState(false);
@@ -51,7 +49,6 @@ export default function AccountPage({ initial }) {
 
     const profileDirty =
         draftProfile.fullName !== savedProfile.fullName ||
-        draftProfile.email !== savedProfile.email ||
         draftProfile.phone !== savedProfile.phone ||
         draftProfile.barangay !== savedProfile.barangay ||
         draftProfile.avatarUrl !== savedProfile.avatarUrl;
@@ -92,7 +89,6 @@ export default function AccountPage({ initial }) {
         try {
             const result = await updateProfileRequest({
                 fullName: draftProfile.fullName,
-                email: draftProfile.email,
                 phone: draftProfile.phone,
                 barangay: draftProfile.barangay,
             });
@@ -140,24 +136,15 @@ export default function AccountPage({ initial }) {
         }
     };
 
-    const handleSubmitOtp = async ({ currentPassword, newPassword }) => {
-        setOtpLoading(true);
-        try {
-            await sendOtpRequest(currentPassword);
-            setPwPayload({ currentPassword, newPassword });
-            setOtpOpen(true);
-        } catch (err) {
-            addToast('error', err.message);
-        } finally {
-            setOtpLoading(false);
-        }
+    const handlePasswordChanged = () => {
+        setPwModalOpen(false);
+        addToast('success', 'Password changed successfully.');
     };
 
-    const handleOtpSuccess = () => {
-        setOtpOpen(false);
-        setPwPayload(null);
-        setSecurityResetKey((k) => k + 1);
-        addToast('success', 'Password changed successfully.');
+    const handleEmailChanged = (newEmail) => {
+        setSavedProfile((prev) => ({ ...prev, email: newEmail }));
+        setDisplayProfile((prev) => ({ ...prev, email: newEmail }));
+        addToast('success', 'Email changed successfully.');
     };
 
     const handleDeleteAccount = () => {
@@ -184,6 +171,11 @@ export default function AccountPage({ initial }) {
                         onDiscard={handleProfileDiscard}
                     />
 
+                    <EmailChangeSection
+                        email={displayProfile.email}
+                        onEmailChanged={handleEmailChanged}
+                    />
+
                     <PreferencesSection
                         draft={draftPrefs}
                         saved={savedPrefs}
@@ -193,24 +185,18 @@ export default function AccountPage({ initial }) {
                     />
 
                     <SecuritySection
-                        email={displayProfile.email}
-                        resetKey={securityResetKey}
-                        loading={otpLoading}
-                        onSubmitOtp={handleSubmitOtp}
+                        onOpenPasswordChange={() => setPwModalOpen(true)}
                     />
 
                     <DangerZone onDeleteClick={handleDeleteAccount} />
                 </div>
             </div>
 
-            <OtpModal
+            <PasswordChangeModal
                 email={displayProfile.email}
-                open={otpOpen}
-                currentPassword={pwPayload?.currentPassword}
-                newPassword={pwPayload?.newPassword}
-                onClose={() => setOtpOpen(false)}
-                onSuccess={handleOtpSuccess}
-                onResend={() => addToast('success', 'Verification code resent.')}
+                open={pwModalOpen}
+                onClose={() => setPwModalOpen(false)}
+                onSuccess={handlePasswordChanged}
             />
 
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />

@@ -77,6 +77,68 @@
     content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
     font-size: .7rem; color: var(--b6);
 }
+
+.tag-input-wrap {
+    border: 1.5px solid var(--g1); border-radius: var(--radius-sm);
+    padding: 6px 10px; background: var(--white); transition: border-color .15s;
+    min-height: 42px;
+}
+.tag-input-wrap:focus-within { border-color: var(--b4); }
+.tag-list {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+}
+.tag-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--b0); color: var(--b8); font-size: .82rem;
+    padding: 4px 8px; border-radius: 100px; font-weight: 500;
+    line-height: 1.3;
+}
+.tag-remove {
+    cursor: pointer; font-size: 1rem; color: var(--b5); line-height: 1;
+    margin-left: 2px;
+}
+.tag-remove:hover { color: #c62828; }
+.tag-field {
+    border: none; outline: none; font-size: .85rem; padding: 4px 2px;
+    min-width: 180px; flex: 1; background: transparent; color: var(--b9);
+}
+.tag-field::placeholder { color: var(--g3); }
+
+.avail-grid {
+    display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+}
+.avail-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px; border-radius: var(--radius-sm);
+    background: var(--off); transition: background .15s;
+}
+.avail-row:has(.avail-checkbox:checked) {
+    background: var(--b0);
+}
+.avail-day-label {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    min-width: 110px; user-select: none;
+}
+.avail-checkbox {
+    width: 18px; height: 18px; accent-color: var(--b5); cursor: pointer;
+}
+.avail-day-name {
+    font-size: .88rem; font-weight: 500; color: var(--b9);
+}
+.avail-times {
+    display: flex; align-items: center; gap: 8px;
+}
+.avail-times input[type="time"] {
+    border: 1px solid var(--g1); border-radius: var(--radius-sm);
+    padding: 5px 10px; font-size: .85rem; background: var(--white);
+    color: var(--b9); outline: none; width: 110px;
+}
+.avail-times input[type="time"]:focus {
+    border-color: var(--b4);
+}
+.avail-sep {
+    color: var(--g4); font-weight: 500;
+}
 </style>
 @endpush
 
@@ -155,15 +217,27 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email"
-                               value="{{ old('email', auth()->user()->email) }}" required>
+                        <label>Email</label>
+                        <p class="form-value">{{ auth()->user()->email }}</p>
                     </div>
                     <div class="form-group">
                         <label for="phone">Phone</label>
                         <input type="text" id="phone" name="phone"
                                value="{{ old('phone', auth()->user()->phone) }}">
                     </div>
+                </div>
+
+                <div class="form-section" style="margin-top:12px;padding-top:16px;border-top:1px solid var(--g1);">
+                    <h3 style="font-size:.95rem;font-weight:600;margin-bottom:10px;">Change Email</h3>
+                    <p style="font-size:.82rem;color:var(--g4);margin-bottom:12px;">
+                        You can change your email once every 30 days. A verification code will be sent to confirm.
+                    </p>
+                    <button type="button" class="btn btn-outline" id="email-change-btn">
+                        <i class="fa-solid fa-pen" aria-hidden="true"></i> Change Email
+                    </button>
+                    <button type="button" class="btn btn-outline" id="pw-change-btn" style="margin-top:8px;">
+                        <i class="fa-solid fa-key" aria-hidden="true"></i> Change Password
+                    </button>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -188,28 +262,34 @@
                     <textarea id="bio" name="bio" class="review-textarea" placeholder="Tell clients about yourself, your experience, and the services you offer…">{{ old('bio', $workerProfile->bio) }}</textarea>
                 </div>
                 <div class="form-group">
-                    <label for="skills">Skills (comma-separated)</label>
-                    <input type="text" id="skills" name="skills" placeholder="e.g. Plumbing, Electrical, Carpentry"
-                           value="{{ old('skills', $workerProfile->skills ? implode(', ', $workerProfile->skills) : '') }}">
-                    <div class="skill-tags" style="margin-top:8px;">
-                        @if($workerProfile->skills)
-                            @foreach($workerProfile->skills as $skill)
-                                <span class="skill-tag" style="font-size:.82rem;padding:6px 14px;">{{ $skill }}</span>
-                            @endforeach
-                        @endif
+                    <label>Skills</label>
+                    <div class="tag-input-wrap">
+                        <div class="tag-list" id="skills-tag-list">
+                            @if($workerProfile->skills)
+                                @foreach($workerProfile->skills as $skill)
+                                    <span class="tag-chip" data-value="{{ $skill }}">{{ $skill }}<span class="tag-remove" data-value="{{ $skill }}">&times;</span></span>
+                                @endforeach
+                            @endif
+                            <input type="text" class="tag-field" placeholder="Type and press Enter to add">
+                        </div>
                     </div>
+                    <input type="hidden" name="skills" id="skills"
+                           value="{{ old('skills', $workerProfile->skills ? implode(',', $workerProfile->skills) : '') }}">
                 </div>
                 <div class="form-group" style="margin-top:12px;">
-                    <label for="spoken_languages">Spoken Languages (comma-separated)</label>
-                    <input type="text" id="spoken_languages" name="spoken_languages" placeholder="e.g. Filipino, English, Cebuano"
-                           value="{{ old('spoken_languages', $workerProfile->spoken_languages ? implode(', ', $workerProfile->spoken_languages) : '') }}">
-                    <div class="skill-tags" style="margin-top:8px;">
-                        @if($workerProfile->spoken_languages)
-                            @foreach($workerProfile->spoken_languages as $lang)
-                                <span class="skill-tag" style="font-size:.82rem;padding:6px 14px;">{{ $lang }}</span>
-                            @endforeach
-                        @endif
+                    <label>Spoken Languages</label>
+                    <div class="tag-input-wrap">
+                        <div class="tag-list" id="languages-tag-list">
+                            @if($workerProfile->spoken_languages)
+                                @foreach($workerProfile->spoken_languages as $lang)
+                                    <span class="tag-chip" data-value="{{ $lang }}">{{ $lang }}<span class="tag-remove" data-value="{{ $lang }}">&times;</span></span>
+                                @endforeach
+                            @endif
+                            <input type="text" class="tag-field" placeholder="Type and press Enter to add">
+                        </div>
                     </div>
+                    <input type="hidden" name="spoken_languages" id="spoken_languages"
+                           value="{{ old('spoken_languages', $workerProfile->spoken_languages ? implode(',', $workerProfile->spoken_languages) : '') }}">
                 </div>
                 <div class="form-row" style="margin-top:12px;">
                     <div class="form-group">
@@ -236,26 +316,37 @@
 
             <div class="form-section">
                 <h3>Availability</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="available_days">Available Days</label>
-                        <select id="available_days" name="available_days">
-                            <option value="">Select schedule</option>
-                            @foreach(['Monday — Friday', 'Monday — Saturday', 'All Week', 'Weekends Only'] as $days)
-                                <option value="{{ $days }}" {{ old('available_days', $workerProfile->available_days) === $days ? 'selected' : '' }}>{{ $days }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="preferred_hours">Preferred Hours</label>
-                        <select id="preferred_hours" name="preferred_hours">
-                            <option value="">Select hours</option>
-                            @foreach(['Morning (8 AM — 12 PM)', 'Full Day (8 AM — 5 PM)', 'Afternoon (1 PM — 5 PM)', 'Flexible'] as $hours)
-                                <option value="{{ $hours }}" {{ old('preferred_hours', $workerProfile->preferred_hours) === $hours ? 'selected' : '' }}>{{ $hours }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                @php
+                    $daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    $availability = old('availability')
+                        ? json_decode(old('availability'), true)
+                        : ($workerProfile->availability ?? []);
+                    $availMap = [];
+                    foreach ($availability as $a) {
+                        $availMap[$a['day']] = $a;
+                    }
+                @endphp
+                <div class="avail-grid" id="avail-grid">
+                    @foreach($daysOfWeek as $day)
+                        @php $a = $availMap[$day] ?? ['active' => false, 'start' => '08:00', 'end' => '17:00']; @endphp
+                        <div class="avail-row" data-day="{{ $day }}">
+                            <label class="avail-day-label">
+                                <input type="checkbox" class="avail-checkbox" {{ $a['active'] ? 'checked' : '' }}>
+                                <span class="avail-day-name">{{ $day }}</span>
+                            </label>
+                            <div class="avail-times" style="{{ $a['active'] ? '' : 'display:none;' }}">
+                                <input type="time" class="avail-start" value="{{ $a['start'] ?? '08:00' }}">
+                                <span class="avail-sep">—</span>
+                                <input type="time" class="avail-end" value="{{ $a['end'] ?? '17:00' }}">
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
+                <input type="hidden" name="availability" id="availability-input"
+                       value="{{ old('availability', $workerProfile->availability ? json_encode($workerProfile->availability) : '') }}">
+                <button type="button" class="btn btn-ghost" id="apply-all-times" style="margin-top:8px;font-size:.82rem;">
+                    <i class="fa-solid fa-copy" aria-hidden="true"></i> Apply same time to all active days
+                </button>
             </div>
 
             <div class="form-section">
@@ -404,8 +495,521 @@
 
 @endsection
 
+{{-- Email Change Modal --}}
+<div id="email-change-modal" class="modal-overlay" style="display:none;" role="presentation">
+    <div class="otp-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="otp-modal-header">
+            <div class="otp-modal-icon">
+                <i class="fa-solid fa-envelope" id="ec-icon" aria-hidden="true"></i>
+            </div>
+            <h2 id="ec-title">Change Email Address</h2>
+            <p id="ec-subtitle">Current: <strong>{{ auth()->user()->email }}</strong></p>
+        </div>
+
+        {{-- Step 1: Form --}}
+        <div id="ec-step-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="ec-new-email">New Email</label>
+                    <input type="email" id="ec-new-email">
+                </div>
+                <div class="form-group">
+                    <label for="ec-confirm-email">Confirm New Email</label>
+                    <input type="email" id="ec-confirm-email">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="ec-password">Current Password</label>
+                <input type="password" id="ec-password" placeholder="Enter your current password">
+            </div>
+            <div id="ec-error-form" class="field-error otp-error" style="display:none;"></div>
+            <div class="otp-actions">
+                <button type="button" class="btn btn-solid" id="ec-send-btn">Send verification code</button>
+                <button type="button" class="btn btn-ghost" id="ec-cancel-btn">Cancel</button>
+            </div>
+        </div>
+
+        {{-- Step 2: OTP --}}
+        <div id="ec-step-otp" style="display:none;">
+            <p id="ec-otp-sent-to" style="text-align:center;color:var(--g5);margin-bottom:16px;font-size:.9rem;"></p>
+            <div class="otp-inputs" id="ec-otp-inputs">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="0">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="1">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="2">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="3">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="4">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input ec-otp-digit" data-idx="5">
+            </div>
+            <div id="ec-error-otp" class="field-error otp-error" style="display:none;"></div>
+            <div class="otp-actions">
+                <button type="button" class="btn btn-solid" id="ec-verify-btn">Verify & change email</button>
+                <button type="button" class="btn btn-ghost" id="ec-back-btn">Back</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Password Change Modal --}}
+<div id="pw-change-modal" class="modal-overlay" style="display:none;" role="presentation">
+    <div class="otp-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="otp-modal-header">
+            <div class="otp-modal-icon">
+                <i class="fa-solid fa-key" id="pw-icon" aria-hidden="true"></i>
+            </div>
+            <h2 id="pw-title">Change Password</h2>
+            <p id="pw-subtitle">An OTP will be sent to your email for verification.</p>
+        </div>
+
+        {{-- Step 1: Current Password --}}
+        <div id="pw-step-form">
+            <div class="form-group">
+                <label for="pw-current">Current Password</label>
+                <input type="password" id="pw-current" placeholder="Enter your current password">
+            </div>
+            <div id="pw-error-form" class="field-error otp-error" style="display:none;"></div>
+            <div class="otp-actions">
+                <button type="button" class="btn btn-solid" id="pw-send-btn">Send verification code</button>
+                <button type="button" class="btn btn-ghost" id="pw-cancel-btn">Cancel</button>
+            </div>
+        </div>
+
+        {{-- Step 2: OTP + New Password --}}
+        <div id="pw-step-otp" style="display:none;">
+            <p id="pw-otp-sent-to" style="text-align:center;color:var(--g5);margin-bottom:16px;font-size:.9rem;"></p>
+            <div class="otp-inputs" id="pw-otp-inputs">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="0">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="1">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="2">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="3">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="4">
+                <input type="text" inputmode="numeric" maxlength="1" class="otp-input pw-otp-digit" data-idx="5">
+            </div>
+            <div class="form-group" style="margin-top:14px;">
+                <label for="pw-new">New Password</label>
+                <input type="password" id="pw-new" placeholder="At least 8 characters">
+            </div>
+            <div class="form-group" style="margin-top:10px;">
+                <label for="pw-confirm">Confirm New Password</label>
+                <input type="password" id="pw-confirm" placeholder="Re-enter new password">
+            </div>
+            <div id="pw-error-otp" class="field-error otp-error" style="display:none;"></div>
+            <div class="otp-actions">
+                <button type="button" class="btn btn-solid" id="pw-verify-btn">Verify & change password</button>
+                <button type="button" class="btn btn-ghost" id="pw-back-btn">Back</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
+window.authToken = "{{ auth()->user()->createToken('worker-profile-page')->plainTextToken }}";
+
+// Email Change Modal
+(function() {
+    const modal = document.getElementById('email-change-modal');
+    const openBtn = document.getElementById('email-change-btn');
+    const cancelBtn = document.getElementById('ec-cancel-btn');
+    const backBtn = document.getElementById('ec-back-btn');
+    const sendBtn = document.getElementById('ec-send-btn');
+    const verifyBtn = document.getElementById('ec-verify-btn');
+
+    const stepForm = document.getElementById('ec-step-form');
+    const stepOtp  = document.getElementById('ec-step-otp');
+    const ecIcon   = document.getElementById('ec-icon');
+    const ecTitle  = document.getElementById('ec-title');
+    const ecSubtitle = document.getElementById('ec-subtitle');
+    const ecOtpSentTo = document.getElementById('ec-otp-sent-to');
+
+    const errForm = document.getElementById('ec-error-form');
+    const errOtp  = document.getElementById('ec-error-otp');
+
+    const newEmailInput = document.getElementById('ec-new-email');
+    const confirmEmailInput = document.getElementById('ec-confirm-email');
+    const passwordInput = document.getElementById('ec-password');
+    const otpInputs = document.querySelectorAll('.ec-otp-digit');
+
+    let currentNewEmail = '';
+    let loading = false;
+
+    function showError(container, msg) {
+        container.textContent = msg;
+        container.style.display = 'block';
+    }
+
+    function hideError(container) {
+        container.textContent = '';
+        container.style.display = 'none';
+    }
+
+    function resetModal() {
+        stepForm.style.display = 'block';
+        stepOtp.style.display = 'none';
+        ecIcon.className = 'fa-solid fa-envelope';
+        ecTitle.textContent = 'Change Email Address';
+        ecSubtitle.innerHTML = 'Current: <strong>{{ auth()->user()->email }}</strong>';
+        newEmailInput.value = '';
+        confirmEmailInput.value = '';
+        passwordInput.value = '';
+        otpInputs.forEach(inp => inp.value = '');
+        hideError(errForm);
+        hideError(errOtp);
+        loading = false;
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send verification code';
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify & change email';
+    }
+
+    function openModal() {
+        resetModal();
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    openBtn?.addEventListener('click', openModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', closeModal);
+
+    backBtn?.addEventListener('click', function() {
+        stepForm.style.display = 'block';
+        stepOtp.style.display = 'none';
+        ecIcon.className = 'fa-solid fa-envelope';
+        ecTitle.textContent = 'Change Email Address';
+        ecSubtitle.innerHTML = 'Current: <strong>{{ auth()->user()->email }}</strong>';
+        hideError(errOtp);
+    });
+
+    // OTP digit handling
+    otpInputs.forEach((input, idx) => {
+        input.addEventListener('input', function(e) {
+            const val = e.target.value;
+            if (val && !/^\d$/.test(val)) { this.value = ''; return; }
+            if (val && idx < 5) otpInputs[idx + 1].focus();
+            hideError(errOtp);
+        });
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && !this.value && idx > 0) {
+                otpInputs[idx - 1].focus();
+            }
+        });
+    });
+
+    // Paste support for OTP
+    document.getElementById('ec-otp-inputs')?.addEventListener('paste', function(e) {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (!pasted) return;
+        otpInputs.forEach((inp, i) => { inp.value = pasted[i] || ''; });
+        const focusIdx = Math.min(pasted.length, 5);
+        otpInputs[focusIdx]?.focus();
+    });
+
+    function getAuthHeaders() {
+        return {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + window.authToken,
+        };
+    }
+
+    // Send OTP
+    sendBtn?.addEventListener('click', async function() {
+        const newEmail = newEmailInput.value.trim();
+        const confirmEmail = confirmEmailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!newEmail || !confirmEmail || !password) {
+            showError(errForm, 'Please fill in all fields.');
+            return;
+        }
+        if (newEmail !== confirmEmail) {
+            showError(errForm, 'Emails do not match.');
+            return;
+        }
+
+        loading = true;
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending…';
+        hideError(errForm);
+
+        try {
+            const res = await fetch('/email-otp/send', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    new_email: newEmail,
+                    new_email_confirmation: confirmEmail,
+                    current_password: password,
+                }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to send code.');
+
+            currentNewEmail = newEmail;
+            stepForm.style.display = 'none';
+            stepOtp.style.display = 'block';
+            ecIcon.className = 'fa-solid fa-shield-check';
+            ecTitle.textContent = 'Verify the code';
+            ecOtpSentTo.textContent = 'Enter the code sent to ' + newEmail + '. It expires in 10 minutes.';
+            setTimeout(() => otpInputs[0]?.focus(), 50);
+        } catch (err) {
+            showError(errForm, err.message);
+        } finally {
+            loading = false;
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send verification code';
+        }
+    });
+
+    // Verify OTP
+    verifyBtn?.addEventListener('click', async function() {
+        const otp = Array.from(otpInputs).map(inp => inp.value).join('');
+        if (otp.length !== 6) {
+            showError(errOtp, 'Enter the 6-digit code.');
+            return;
+        }
+
+        loading = true;
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verifying…';
+        hideError(errOtp);
+
+        try {
+            const res = await fetch('/email-otp/verify', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ otp }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Verification failed.');
+
+            // Update the displayed email in the profile
+            const emailDisplay = document.querySelector('.form-value');
+            if (emailDisplay) emailDisplay.textContent = currentNewEmail;
+
+            closeModal();
+            alert('Email changed successfully.');
+        } catch (err) {
+            showError(errOtp, err.message);
+            otpInputs.forEach(inp => inp.value = '');
+            setTimeout(() => otpInputs[0]?.focus(), 50);
+        } finally {
+            loading = false;
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify & change email';
+        }
+    });
+})();
+
+// Password Change Modal
+(function() {
+    const modal = document.getElementById('pw-change-modal');
+    const openBtn = document.getElementById('pw-change-btn');
+    const cancelBtn = document.getElementById('pw-cancel-btn');
+    const backBtn = document.getElementById('pw-back-btn');
+    const sendBtn = document.getElementById('pw-send-btn');
+    const verifyBtn = document.getElementById('pw-verify-btn');
+
+    const stepForm = document.getElementById('pw-step-form');
+    const stepOtp  = document.getElementById('pw-step-otp');
+    const pwIcon   = document.getElementById('pw-icon');
+    const pwTitle  = document.getElementById('pw-title');
+    const pwSubtitle = document.getElementById('pw-subtitle');
+    const pwOtpSentTo = document.getElementById('pw-otp-sent-to');
+
+    const errForm = document.getElementById('pw-error-form');
+    const errOtp  = document.getElementById('pw-error-otp');
+
+    const currentPwInput = document.getElementById('pw-current');
+    const newPwInput = document.getElementById('pw-new');
+    const confirmPwInput = document.getElementById('pw-confirm');
+    const otpInputs = document.querySelectorAll('.pw-otp-digit');
+
+    let loading = false;
+
+    function showError(container, msg) {
+        container.textContent = msg;
+        container.style.display = 'block';
+    }
+
+    function hideError(container) {
+        container.textContent = '';
+        container.style.display = 'none';
+    }
+
+    function resetModal() {
+        stepForm.style.display = 'block';
+        stepOtp.style.display = 'none';
+        pwIcon.className = 'fa-solid fa-key';
+        pwTitle.textContent = 'Change Password';
+        pwSubtitle.textContent = 'An OTP will be sent to your email for verification.';
+        currentPwInput.value = '';
+        newPwInput.value = '';
+        confirmPwInput.value = '';
+        otpInputs.forEach(inp => inp.value = '');
+        hideError(errForm);
+        hideError(errOtp);
+        loading = false;
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send verification code';
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify & change password';
+    }
+
+    function openModal() {
+        resetModal();
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    openBtn?.addEventListener('click', openModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', closeModal);
+
+    backBtn?.addEventListener('click', function() {
+        stepForm.style.display = 'block';
+        stepOtp.style.display = 'none';
+        pwIcon.className = 'fa-solid fa-key';
+        pwTitle.textContent = 'Change Password';
+        pwSubtitle.textContent = 'An OTP will be sent to your email for verification.';
+        hideError(errOtp);
+    });
+
+    // OTP digit handling
+    otpInputs.forEach((input, idx) => {
+        input.addEventListener('input', function(e) {
+            const val = e.target.value;
+            if (val && !/^\d$/.test(val)) { this.value = ''; return; }
+            if (val && idx < 5) otpInputs[idx + 1].focus();
+            hideError(errOtp);
+        });
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && !this.value && idx > 0) {
+                otpInputs[idx - 1].focus();
+            }
+        });
+    });
+
+    // Paste support for OTP
+    document.getElementById('pw-otp-inputs')?.addEventListener('paste', function(e) {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (!pasted) return;
+        otpInputs.forEach((inp, i) => { inp.value = pasted[i] || ''; });
+        const focusIdx = Math.min(pasted.length, 5);
+        otpInputs[focusIdx]?.focus();
+    });
+
+    // Send OTP
+    sendBtn?.addEventListener('click', async function() {
+        const currentPassword = currentPwInput.value;
+
+        if (!currentPassword) {
+            showError(errForm, 'Please enter your current password.');
+            return;
+        }
+
+        loading = true;
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending…';
+        hideError(errForm);
+
+        try {
+            const res = await fetch('/password-otp/send', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + window.authToken,
+                },
+                body: JSON.stringify({ current_password: currentPassword }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to send code.');
+
+            stepForm.style.display = 'none';
+            stepOtp.style.display = 'block';
+            pwIcon.className = 'fa-solid fa-shield-check';
+            pwTitle.textContent = 'Verify the code';
+            pwOtpSentTo.textContent = 'Enter the code sent to your email. It expires in 10 minutes.';
+            setTimeout(() => otpInputs[0]?.focus(), 50);
+        } catch (err) {
+            showError(errForm, err.message);
+        } finally {
+            loading = false;
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send verification code';
+        }
+    });
+
+    // Verify OTP & change password
+    verifyBtn?.addEventListener('click', async function() {
+        const otp = Array.from(otpInputs).map(inp => inp.value).join('');
+        const newPassword = newPwInput.value;
+        const confirmPassword = confirmPwInput.value;
+        const currentPassword = currentPwInput.value;
+
+        if (otp.length !== 6) {
+            showError(errOtp, 'Enter the 6-digit code.');
+            return;
+        }
+        if (!newPassword || newPassword.length < 8) {
+            showError(errOtp, 'New password must be at least 8 characters.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            showError(errOtp, 'Passwords do not match.');
+            return;
+        }
+
+        loading = true;
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verifying…';
+        hideError(errOtp);
+
+        try {
+            const res = await fetch('/password-otp/verify', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + window.authToken,
+                },
+                body: JSON.stringify({
+                    otp,
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                    new_password_confirmation: confirmPassword,
+                }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Verification failed.');
+
+            closeModal();
+            alert('Password changed successfully.');
+        } catch (err) {
+            showError(errOtp, err.message);
+            otpInputs.forEach(inp => inp.value = '');
+            setTimeout(() => otpInputs[0]?.focus(), 50);
+        } finally {
+            loading = false;
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify & change password';
+        }
+    });
+})();
+
 document.getElementById('avatar-input')?.addEventListener('change', function() {
     if (this.files && this.files[0]) {
         document.getElementById('avatar-form').submit();
@@ -450,5 +1054,115 @@ function updateBarangayInput() {
     const checked = document.querySelectorAll('.barangay-checkbox:checked');
     hiddenInput.value = Array.from(checked).map(cb => cb.value).join(',');
 }
+
+// Tag Input Component
+function initTagInput(wrapEl) {
+    const list = wrapEl.querySelector('.tag-list');
+    const field = list.querySelector('.tag-field');
+    const hidden = wrapEl.parentElement.querySelector('input[type="hidden"]');
+
+    function syncHidden() {
+        const chips = list.querySelectorAll('.tag-chip');
+        hidden.value = Array.from(chips).map(c => c.dataset.value).join(',');
+    }
+
+    function addTag(text) {
+        text = text.trim();
+        if (!text) return;
+        const existing = list.querySelectorAll('.tag-chip');
+        for (const chip of existing) {
+            if (chip.dataset.value.toLowerCase() === text.toLowerCase()) return;
+        }
+        const chip = document.createElement('span');
+        chip.className = 'tag-chip';
+        chip.dataset.value = text;
+        chip.innerHTML = text + '<span class="tag-remove">&times;</span>';
+        chip.querySelector('.tag-remove').addEventListener('click', function () {
+            chip.remove();
+            syncHidden();
+        });
+        list.insertBefore(chip, field);
+        field.value = '';
+        syncHidden();
+    }
+
+    field.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addTag(this.value);
+        }
+    });
+    field.addEventListener('paste', function (e) {
+        const pasted = (e.clipboardData || window.clipboardData).getData('text');
+        if (pasted.includes(',')) {
+            e.preventDefault();
+            pasted.split(',').forEach(function (s) { addTag(s); });
+        }
+    });
+    // Initialize existing chips
+    list.querySelectorAll('.tag-chip').forEach(function (chip) {
+        chip.querySelector('.tag-remove').addEventListener('click', function () {
+            chip.remove();
+            syncHidden();
+        });
+    });
+}
+
+document.querySelectorAll('.tag-input-wrap').forEach(initTagInput);
+
+// Availability component
+(function () {
+    const grid = document.getElementById('avail-grid');
+    const hiddenInput = document.getElementById('availability-input');
+    if (!grid) return;
+
+    function serializeAvailability() {
+        const rows = grid.querySelectorAll('.avail-row');
+        const data = [];
+        rows.forEach(function (row) {
+            const cb = row.querySelector('.avail-checkbox');
+            const start = row.querySelector('.avail-start');
+            const end = row.querySelector('.avail-end');
+            data.push({
+                day: row.dataset.day,
+                active: cb.checked,
+                start: cb.checked ? start.value : null,
+                end: cb.checked ? end.value : null,
+            });
+        });
+        hiddenInput.value = JSON.stringify(data);
+    }
+
+    grid.addEventListener('change', function (e) {
+        if (e.target.classList.contains('avail-checkbox')) {
+            const row = e.target.closest('.avail-row');
+            const times = row.querySelector('.avail-times');
+            const start = row.querySelector('.avail-start');
+            const end = row.querySelector('.avail-end');
+            times.style.display = e.target.checked ? '' : 'none';
+            if (!e.target.checked) {
+                start.value = '08:00';
+                end.value = '17:00';
+            }
+            serializeAvailability();
+        }
+        if (e.target.classList.contains('avail-start') || e.target.classList.contains('avail-end')) {
+            serializeAvailability();
+        }
+    });
+
+    // Apply same time to all active days
+    document.getElementById('apply-all-times')?.addEventListener('click', function () {
+        const firstActive = grid.querySelector('.avail-row:has(.avail-checkbox:checked)');
+        if (!firstActive) return;
+        const refStart = firstActive.querySelector('.avail-start').value;
+        const refEnd = firstActive.querySelector('.avail-end').value;
+        grid.querySelectorAll('.avail-row:has(.avail-checkbox:checked)').forEach(function (row) {
+            row.querySelector('.avail-start').value = refStart;
+            row.querySelector('.avail-end').value = refEnd;
+        });
+        serializeAvailability();
+    });
+})();
 </script>
 @endpush

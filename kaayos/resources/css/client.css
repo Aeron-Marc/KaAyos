@@ -1257,6 +1257,13 @@ a { text-decoration: none; color: inherit; }
     font-weight: 500;
 }
 
+.form-value {
+    font-size: .9rem;
+    color: var(--g9);
+    padding: 10px 0;
+    font-weight: 500;
+}
+
 .info-banner {
     display: flex;
     align-items: flex-start;
@@ -1406,7 +1413,7 @@ a { text-decoration: none; color: inherit; }
     border-radius: var(--radius);
     box-shadow: var(--shadow-md);
     width: 100%;
-    max-width: 420px;
+    max-width: 500px;
     padding: 28px 24px;
 }
 
@@ -1504,6 +1511,7 @@ a { text-decoration: none; color: inherit; }
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-top: 16px;
 }
 
 .otp-actions .btn {

@@ -4,6 +4,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\EmailOtpController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -30,6 +31,14 @@ RateLimiter::for('login', function (Request $request) {
 
 RateLimiter::for('register', function (Request $request) {
     return Limit::perHour(3)->by($request->ip());
+});
+
+RateLimiter::for('email-otp-send', function (Request $request) {
+    return Limit::perHour(3)->by($request->user()->id);
+});
+
+RateLimiter::for('email-otp-verify', function (Request $request) {
+    return Limit::perHour(5)->by($request->user()->id);
 });
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -71,11 +80,15 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
 });
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/password-otp/send',   [PasswordOtpController::class, 'send']);
-    Route::post('/password-otp/verify', [PasswordOtpController::class, 'verify']);
-    Route::put('/api/profile',           [ProfileController::class, 'updateProfile']);
-    Route::put('/api/preferences',       [ProfileController::class, 'updatePreferences']);
-    Route::post('/api/profile/avatar',   [ProfileController::class, 'uploadAvatar']);
+    Route::post('/password-otp/send',            [PasswordOtpController::class, 'send']);
+    Route::post('/password-otp/verify',          [PasswordOtpController::class, 'verify']);
+    Route::post('/email-otp/send',               [EmailOtpController::class, 'sendOtp'])
+        ->middleware('throttle:email-otp-send');
+    Route::post('/email-otp/verify',             [EmailOtpController::class, 'verifyOtp'])
+        ->middleware('throttle:email-otp-verify');
+    Route::put('/api/profile',                    [ProfileController::class, 'updateProfile']);
+    Route::put('/api/preferences',                [ProfileController::class, 'updatePreferences']);
+    Route::post('/api/profile/avatar',            [ProfileController::class, 'uploadAvatar']);
 });
 
 // Chatbot (authenticated)
@@ -140,7 +153,7 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::post('/users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
 
     // Workers
-    Route::get('/workers', [AdminWorkerController::class, 'index'])->name('workers.index');
+    Route::get('/workers', [App\Http\Controllers\Admin\WorkerController::class, 'index'])->name('workers.index');
 
     // Verifications
     Route::get('/verification', [VerificationController::class, 'index'])->name('verification.index');
