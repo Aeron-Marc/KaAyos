@@ -286,7 +286,7 @@
 
                 @php
                     $allBarangays = ['Acle','Bayudbud','Bolbok','Burgos','Dalima','Dao','Guinhawa','Lumbangan','Luna','Luntal','Magahis','Malibu','Mataywanac','Palincaro','Putol','Rillo','Rizal','Sabang','San Jose','Talon','Toong','Tuyon-Tuyon'];
-                    $coveredBarangays = $workerProfile ? ($workerProfile->service_zone ?? $workerProfile->service_areas ?? []) : [];
+                    $coveredBarangays = $workerProfile ? ($workerProfile->service_areas ?? $workerProfile->service_zone ?? []) : [];
                 @endphp
                 <div class="form-group">
                     <label for="barangay">Barangay</label>
