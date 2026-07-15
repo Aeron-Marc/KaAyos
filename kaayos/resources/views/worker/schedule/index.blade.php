@@ -193,7 +193,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 11px 18px;
+    padding: 14px 20px;
     border-bottom: 1px solid var(--g1);
     cursor: pointer;
     transition: background .12s;
@@ -415,7 +415,7 @@
 @media (max-width: 640px) {
     .job-modal-layout { grid-template-columns: 1fr; gap: 14px; }
     .job-card { padding: 10px 14px; gap: 10px; }
-    .schedule-date-box { width: 40px; height: 40px; }
+    .schedule-date-box {     width: 40px; height: 40px; }
     .schedule-day { font-size: .9rem; }
     .schedule-month { font-size: .55rem; }
     .job-card-time { margin-left: 0; width: 100%; }
@@ -577,6 +577,9 @@ function showConfirmModal(index) {
     var step = { 'new':{a:'accepted',l:'Accept',v:'accepting'}, 'accepted':{a:'en_route',l:'Mark as En Route',v:'marking as en route'}, 'en_route':{a:'in_progress',l:'Start',v:'starting'}, 'in_progress':{a:'completed',l:'Complete',v:'completing'} }[job.raw_status];
     if (!step) return;
     var titles = { 'new':'Accept Job Request', 'accepted':'Mark as En Route', 'en_route':'Start Job', 'in_progress':'Complete Job' };
+    var agreeHtml = (job.raw_status === 'new')
+        ? '<div class="agreement-check-wrap"><label class="agreement-check"><input type="checkbox" id="agree-terms-worker"><span>I agree to the <a href="{{ url('/terms') }}" target="_blank">Terms of Service</a> and confirm the details above to accept this booking.</span></label></div>'
+        : '';
     document.getElementById('confirmModalTitle').textContent = titles[job.raw_status] || 'Confirm';
     document.getElementById('confirmModalBody').innerHTML =
         '<p style="margin:0 0 12px;color:var(--g6);">You are about to <strong>' + step.v + '</strong> the following job:</p>' +
@@ -586,10 +589,18 @@ function showConfirmModal(index) {
             '<span class="detail-label">Schedule</span><span class="detail-value">' + job.date + '</span>' +
             '<span class="detail-label">Amount</span><span class="detail-value">₱' + Number(job.price).toLocaleString() + '</span>' +
         '</div>' +
-        '<p style="margin:14px 0 0;font-size:.82rem;color:var(--g4);">This action cannot be undone.</p>';
+        '<p style="margin:14px 0 0;font-size:.82rem;color:var(--g4);">This action cannot be undone.</p>' +
+        agreeHtml;
     document.getElementById('confirmForm').action = '{{ route("worker.jobs.status", "__ID__") }}'.replace('__ID__', job.id);
     document.getElementById('confirmStatus').value = step.a;
     document.getElementById('confirmSubmit').textContent = step.l;
+    document.getElementById('confirmForm').onsubmit = function(e) {
+        if (agreeHtml && !document.getElementById('agree-terms-worker').checked) {
+            e.preventDefault();
+            alert('Please agree to the Service Agreement before accepting.');
+            return false;
+        }
+    };
     document.getElementById('confirmModal').style.display = 'flex';
 }
 
@@ -631,4 +642,33 @@ function confirmCancel() {
     });
 }
 </script>
+@endpush
+
+@push('styles')
+<style>
+.agreement-check-wrap {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border: 1px solid var(--g1);
+    border-radius: 8px;
+}
+.agreement-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: .78rem;
+    color: var(--g6);
+    line-height: 1.45;
+    cursor: pointer;
+}
+.agreement-check input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+.agreement-check a {
+    color: var(--b6);
+    text-decoration: underline;
+}
+</style>
 @endpush

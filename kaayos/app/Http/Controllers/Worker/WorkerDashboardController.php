@@ -97,6 +97,10 @@ class WorkerDashboardController extends Controller
                 };
             }
 
+            if ($validated['status'] === Booking::STATUS_ACCEPTED) {
+                $booking->update(['agreed_by_worker_at' => now()]);
+            }
+
             $booking->transitionTo($validated['status'], auth()->id(), $afterSave);
         } catch (BookingStateException $e) {
             if ($request->expectsJson()) {

@@ -27,7 +27,7 @@
             <textarea class="review-textarea" placeholder="Share your experience — it helps the community find trusted workers."></textarea>
             <div class="review-photo-upload">
                 <label class="photo-upload-label">
-                    <i class="fa-regular fa-camera" aria-hidden="true"></i>
+                    <i class="fa-solid fa-camera" aria-hidden="true"></i>
                     <span>Add photo</span>
                     <input type="file" accept="image/jpeg,image/png,image/webp" class="review-photo-input" data-pending="{{ $pi }}">
                 </label>

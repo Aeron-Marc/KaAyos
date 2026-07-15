@@ -151,7 +151,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 11px 18px;
+    padding: 14px 20px;
     border-bottom: 1px solid var(--g1);
     cursor: pointer;
     transition: background .12s;
@@ -356,7 +356,7 @@
 @media (max-width: 640px) {
     .booking-modal-layout { grid-template-columns: 1fr; gap: 14px; }
     .booking-card { padding: 10px 14px; gap: 10px; }
-    .schedule-date-box { width: 40px; height: 40px; }
+    .schedule-date-box {     width: 40px; height: 40px;  }
     .schedule-day { font-size: .9rem; }
     .schedule-month { font-size: .55rem; }
     .booking-card-time { margin-left: 0; width: 100%; }

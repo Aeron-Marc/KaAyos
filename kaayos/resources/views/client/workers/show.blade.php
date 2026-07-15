@@ -320,6 +320,20 @@
                     </div>
                 @endif
 
+                <div class="agreement-box">
+                    <p class="agreement-title">Service Agreement</p>
+                    <div class="agreement-summary">
+                        <span><strong>Service:</strong> <span id="agree-service">{{ $worker->service_category ?? '—' }}</span></span>
+                        <span><strong>Date:</strong> <span id="agree-date">—</span></span>
+                        <span><strong>Location:</strong> <span id="agree-location">—</span></span>
+                        <span><strong>Price:</strong> <span id="agree-price">—</span></span>
+                    </div>
+                    <label class="agreement-check">
+                        <input type="checkbox" id="agree-terms" required>
+                        <span>I agree to the <a href="{{ url('/terms') }}" target="_blank">Terms of Service</a> and confirm that the details above are accurate. I understand that this creates a binding service agreement with the worker.</span>
+                    </label>
+                </div>
+
                 <div id="book-msg" style="display:none;"></div>
             </form>
         </div>
@@ -392,8 +406,23 @@ function validateSchedule() {
     btn.disabled = false;
 }
 
+function updateAgreementSummary() {
+    const svc  = document.querySelector('[name="service_category"]')?.value || '—';
+    const dt   = document.querySelector('[name="scheduled_at"]')?.value || '—';
+    const addr = [document.querySelector('[name="house_no"]')?.value, document.querySelector('[name="street"]')?.value, document.querySelector('[name="barangay"]')?.value].filter(Boolean).join(', ') || '—';
+    const pr   = document.querySelector('[name="price"]')?.value;
+    document.getElementById('agree-service').textContent  = svc;
+    document.getElementById('agree-date').textContent     = dt ? new Date(dt).toLocaleString('en-PH',{dateStyle:'long',timeStyle:'short'}) : '—';
+    document.getElementById('agree-location').textContent = addr;
+    document.getElementById('agree-price').textContent    = pr ? '₱' + Number(pr).toLocaleString() : '—';
+}
+
 function submitBooking(e) {
     e.preventDefault();
+    if (!document.getElementById('agree-terms').checked) {
+        alert('Please agree to the Service Agreement before submitting.');
+        return;
+    }
     const form = e.target;
     const btn = document.getElementById('book-submit-btn');
     const msg = document.getElementById('book-msg');
@@ -451,6 +480,9 @@ document.addEventListener('keydown', function (e) {
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('scheduled_at').addEventListener('change', validateSchedule);
     document.getElementById('scheduled_at').addEventListener('input', validateSchedule);
+
+    document.querySelector('#book-form').addEventListener('input', updateAgreementSummary);
+    document.querySelector('#book-form').addEventListener('change', updateAgreementSummary);
 });
 </script>
 @endpush
@@ -589,6 +621,46 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .lightbox-close:hover {
     background: rgba(255,255,255,.25);
+}
+
+/* ── Agreement ── */
+.agreement-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid var(--g1);
+    border-radius: 8px;
+}
+.agreement-title {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--b8);
+    margin: 0 0 6px;
+}
+.agreement-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: .8rem;
+    color: var(--g6);
+    margin-bottom: 10px;
+}
+.agreement-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: .78rem;
+    color: var(--g6);
+    line-height: 1.45;
+    cursor: pointer;
+}
+.agreement-check input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+.agreement-check a {
+    color: var(--b6);
+    text-decoration: underline;
 }
 </style>
 @endpush

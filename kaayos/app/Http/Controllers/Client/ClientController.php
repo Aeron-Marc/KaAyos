@@ -490,16 +490,17 @@ class ClientController extends Controller
 
         $booking = DB::transaction(function () use ($validated, $address, $worker) {
             $booking = Booking::create([
-                'client_id'        => auth()->id(),
-                'worker_id'        => $validated['worker_id'],
-                'service_category' => $validated['service_category'],
-                'scheduled_at'     => $validated['scheduled_at'],
-                'address'          => $address,
-                'house_no'         => $validated['house_no'],
-                'barangay'         => $validated['barangay'],
-                'notes'            => $validated['notes'] ?? null,
-                'price'            => $validated['price'] ?? 0,
-                'status'           => Booking::STATUS_NEW,
+                'client_id'          => auth()->id(),
+                'worker_id'          => $validated['worker_id'],
+                'service_category'   => $validated['service_category'],
+                'scheduled_at'       => $validated['scheduled_at'],
+                'address'            => $address,
+                'house_no'           => $validated['house_no'],
+                'barangay'           => $validated['barangay'],
+                'notes'              => $validated['notes'] ?? null,
+                'price'              => $validated['price'] ?? 0,
+                'status'             => Booking::STATUS_NEW,
+                'agreed_by_client_at' => now(),
             ]);
 
             $booking->history()->create([

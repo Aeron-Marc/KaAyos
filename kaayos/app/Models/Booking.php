@@ -31,6 +31,8 @@ class Booking extends Model
         'reschedule_responded_at',
         'house_no',
         'barangay',
+        'agreed_by_client_at',
+        'agreed_by_worker_at',
     ];
 
     protected static function booted(): void
@@ -87,8 +89,10 @@ class Booking extends Model
         'completed_at'          => 'datetime',
         'cancelled_at'          => 'datetime',
         'price'                 => 'decimal:2',
-        'reschedule_proposed_at' => 'datetime',
+        'reschedule_proposed_at'  => 'datetime',
         'reschedule_responded_at' => 'datetime',
+        'agreed_by_client_at'     => 'datetime',
+        'agreed_by_worker_at'     => 'datetime',
     ];
 
     // ── Relationships ──────────────────────────────────────────
