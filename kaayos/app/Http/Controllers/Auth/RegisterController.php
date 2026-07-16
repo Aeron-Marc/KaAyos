@@ -57,8 +57,13 @@ class RegisterController extends Controller
         if (config('mail.mailers.smtp.username')) {
             event(new Registered($user));
 
-            return redirect()
-                ->route('login')
+            $loginUrl = route('login');
+
+            if ($intended = $request->input('intended')) {
+                $loginUrl .= '?intended=' . urlencode($intended);
+            }
+
+            return redirect($loginUrl)
                 ->with('status', 'Registration successful! Please check your email to verify your account before logging in.');
         }
 

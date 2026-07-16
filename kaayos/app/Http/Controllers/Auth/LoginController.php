@@ -51,6 +51,10 @@ class LoginController extends Controller
             'locked_until'         => null,
         ]);
 
+        if ($intended = $request->input('intended')) {
+            return redirect($intended);
+        }
+
         return match (Auth::user()->role) {
             'admin'  => redirect()->intended(route('admin.dashboard')),
             'worker' => redirect()->intended(route('worker.dashboard')),
