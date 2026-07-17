@@ -5,7 +5,7 @@ A home services marketplace platform connecting clients with verified workers in
 ## Tech Stack
 
 - **Backend:** Laravel 13, PHP ^8.3
-- **Frontend:** React 19 (client SPA), Blade + vanilla JS (worker/admin dashboards), Vue 3 (marketing pages)
+- **Frontend:** React 19 (client SPA), Blade + vanilla JS (worker & admin dashboards)
 - **Styling:** Tailwind CSS 4 (via Vite)
 - **Database:** SQLite (default) / MySQL
 - **Auth:** Laravel Sanctum (API), session-based (web)
