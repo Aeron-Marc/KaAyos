@@ -1,16 +1,19 @@
 # KaAyos
 
-A home services marketplace platform connecting clients with verified workers in **Tuy, Batangas**, built with Laravel 13, React, Vue, and Blade.
+A home services marketplace platform connecting clients with verified workers in **Tuy, Batangas**, built with Laravel 13.
 
 ## Tech Stack
 
 - **Backend:** Laravel 13, PHP ^8.3
-- **Frontend:** React 19 (client dashboard), Blade + vanilla JS (worker dashboard), Vue 3 (marketing pages)
+- **Frontend:** React 19 (client SPA), Blade + vanilla JS (worker/admin dashboards), Vue 3 (marketing pages)
 - **Styling:** Tailwind CSS 4 (via Vite)
 - **Database:** SQLite (default) / MySQL
 - **Auth:** Laravel Sanctum (API), session-based (web)
+- **Realtime:** Laravel Reverb (WebSockets for chat & notifications)
 - **Queues & Cache:** Database driver
 - **Build:** Vite 8, concurrently
+- **ML Microservice:** Python FastAPI (scikit-learn for geospatial clustering & worker matching)
+- **AI Chatbot:** OpenAI / Gemini-powered assistant (`/api/chat`)
 
 ## Architecture
 
@@ -28,6 +31,7 @@ Three user roles, each with a dedicated dashboard:
 - [Composer](https://getcomposer.org)
 - Node.js 18+
 - SQLite or MySQL
+- Python 3.10+ (for ML microservice, optional)
 
 ## Installation
 
@@ -69,6 +73,18 @@ MAIL_USERNAME=your@email.com
 MAIL_PASSWORD=your-app-password
 ```
 
+Additional custom config variables (add to `.env` as needed):
+
+| Variable                      | Default          | Description                              |
+| ----------------------------- | ---------------- | ---------------------------------------- |
+| `KAAYOS_PLATFORM_FEE_PERCENT` | `10`             | Platform fee percentage on worker earnings |
+| `KAAYOS_BOOKING_EXPIRY_HOURS` | `24`             | Hours before unaccepted bookings expire   |
+| `KAAYOS_MAX_CONCURRENT_JOBS`  | `3`              | Max active jobs per worker                |
+| `KAAYOS_NO_SHOW_MINUTES`      | `60`             | Minutes before worker is marked no-show   |
+| `CHATBOT_PROVIDER`            | `openai`         | AI provider (`openai` or `gemini`)        |
+| `CHATBOT_API_KEY`             | —                | API key for chatbot provider              |
+| `CHATBOT_MODEL`               | `gpt-4o-mini`    | Model for chatbot                         |
+
 ### 4. Generate app key
 
 ```bash
@@ -84,7 +100,7 @@ php artisan migrate --seed
 ### 6. Install & build frontend assets
 
 ```bash
-npm install --ignore-scripts
+npm install
 npm run build
 ```
 
@@ -112,27 +128,97 @@ Available at `http://localhost:8000`.
 
 ## Test Accounts
 
-After seeding, you can log in with any of the following:
+After seeding, you can log in with any of the following (password: `password`):
 
-| Role   | Email                  | Password   |
-| ------ | ---------------------- | ---------- |
-| Admin  | admin@kaayos.com       | password   |
-| Client | maria@example.com      | password   |
-| Client | john@example.com       | password   |
-| Worker | juan@example.com       | password   |
-| Worker | elena@example.com      | password   |
+| Role   | Email                  | Name              | Service         |
+| ------ | ---------------------- | ----------------- | --------------- |
+| Admin  | admin@kaayos.com       | Admin KaAyos      | —               |
+| Client | maria@example.com      | Maria Santos      | —               |
+| Client | john@example.com       | John Villanueva   | —               |
+| Worker | juan@example.com       | Juan Dela Cruz    | Plumbing        |
+| Worker | elena@example.com      | Elena Santos      | Cleaning        |
+| Worker | marco@example.com      | Marco Reyes       | Electrical      |
 
 All seeded data is scoped to barangays in **Tuy, Batangas**.
 
-## Available Routes
+## Booking Lifecycle
 
-### Public
+```
+new → accepted → en_route → in_progress → completed
+```
+
+- **Cancellation** allowed from any status except `completed` or `cancelled`.
+- **Rescheduling** supported — either party can request, the other accepts/declines.
+- **Booking Photos** — workers can upload job-site photos during a booking.
+- **Booking History** — full audit trail of all status changes.
+- **Reference Code** — auto-generated format `BK-YYYYMMDD-XXXX`.
+
+### Statuses
+
+| Status       | Description                             |
+| ------------ | --------------------------------------- |
+| `new`        | Created by client, awaiting worker       |
+| `accepted`   | Worker accepted the job                  |
+| `en_route`   | Worker is traveling to the job site      |
+| `in_progress`| Work is being performed                  |
+| `completed`  | Job finished successfully                |
+| `cancelled`  | Cancelled by client, worker, or admin    |
+
+## Platform Fee
+
+Configured via `KAAYOS_PLATFORM_FEE_PERCENT` in `.env` (default: `10%`). Deducted from worker earnings upon job completion.
+
+## Worker Verification
+
+Workers must upload the following for admin approval:
+1. **Government-Issued ID** — PhilID, UMID, Passport, or Driver's License
+2. **Police / NBI Clearance** — issued within 6 months
+3. **Barangay Clearance** — proof of address
+4. **Proof of Competency** — TESDA NC/COC or portfolio photos / character reference
+
+Statuses: `pending` → `approved` | `rejected`
+
+## Realtime Features (Laravel Reverb)
+
+Start the WebSocket server for realtime chat & notifications:
+
+```bash
+php artisan reverb:start
+```
+
+For production or external access:
+
+```bash
+php artisan reverb:start --port=8080 --host=0.0.0.0
+```
+
+## AI Chatbot
+
+An AI assistant is available at `POST /api/chat` (authenticated). Configurable via `CHATBOT_PROVIDER`, `CHATBOT_API_KEY`, and `CHATBOT_MODEL` env vars. Supports OpenAI and Gemini backends.
+
+## ML Microservice
+
+Located in `ml_service/` — a FastAPI-based Python microservice providing:
+- **Geospatial clustering** (DBSCAN) of workers by location
+- **Worker matching** (Random Forest) using distance, rating, completion rate, and experience
+- **Model retraining** endpoint
+
+```bash
+cd ml_service
+pip install -r requirements.txt
+uvicorn main:app --port 8000
+```
+
+## Routes
+
+### Public Web
 
 | Method | URI                        | Description          |
 | ------ | -------------------------- | -------------------- |
 | GET    | `/`                        | Home page            |
 | GET    | `/search`                  | Search workers       |
 | GET    | `/services`                | Services listing     |
+| GET    | `/workers/{worker}`        | Worker public profile|
 | GET    | `/login`                   | Login page           |
 | POST   | `/login`                   | Login action         |
 | POST   | `/logout`                  | Logout               |
@@ -146,43 +232,73 @@ All seeded data is scoped to barangays in **Tuy, Batangas**.
 | GET    | `/terms`                   | Terms of service     |
 | GET    | `/safety`                  | Safety guidelines    |
 
-### API (auth:sanctum)
+### API (Sanctum auth)
 
-| Method | URI                        | Description                |
-| ------ | -------------------------- | -------------------------- |
-| POST   | `/password-otp/send`       | Send OTP for password change |
-| POST   | `/password-otp/verify`     | Verify OTP & change password |
-| POST   | `/email-otp/send`          | Send OTP for email change  |
-| POST   | `/email-otp/verify`        | Verify OTP & change email  |
-| PUT    | `/api/profile`             | Update profile (name, phone, barangay) |
-| PUT    | `/api/preferences`         | Update notification & language prefs |
-| POST   | `/api/profile/avatar`      | Upload avatar image        |
+| Method | URI                                  | Description                       |
+| ------ | ------------------------------------ | --------------------------------- |
+| POST   | `/api/login`                         | API login                         |
+| POST   | `/api/register`                      | API registration                  |
+| POST   | `/api/logout`                        | API logout                        |
+| GET    | `/api/user`                          | Current user                      |
+| POST   | `/password-otp/send`                 | Send OTP for password change      |
+| POST   | `/password-otp/verify`               | Verify OTP & change password      |
+| POST   | `/email-otp/send`                    | Send OTP for email change         |
+| POST   | `/email-otp/verify`                  | Verify OTP & change email         |
+| PUT    | `/api/profile`                       | Update profile                    |
+| PUT    | `/api/preferences`                   | Update preferences                |
+| POST   | `/api/profile/avatar`                | Upload avatar                     |
+| GET    | `/api/categories`                    | List service categories           |
+| GET    | `/api/workers`                       | Browse workers                    |
+| GET    | `/api/workers/{id}`                  | Worker detail                     |
+| GET    | `/api/bookings`                      | List user bookings                |
+| POST   | `/api/bookings`                      | Create booking                    |
+| POST   | `/api/bookings/{booking}/cancel`     | Cancel booking                    |
+| POST   | `/api/bookings/{booking}/review`     | Submit review                     |
+| POST   | `/api/bookings/{booking}/reschedule` | Request reschedule                |
+| GET    | `/api/conversations`                 | List conversations                |
+| GET    | `/api/conversations/{conv}/messages` | Poll messages                     |
+| POST   | `/api/conversations/{conv}/messages` | Send message                      |
+| POST   | `/api/conversations/{conv}/messages/read` | Mark messages read          |
 
-### Client (auth, verified)
+### Client Web (auth, verified)
 
 | Method | URI                               | Description               |
 | ------ | --------------------------------- | ------------------------- |
 | GET    | `/client/dashboard`               | Client dashboard          |
+| GET    | `/client/dashboard/notifications` | Dashboard notifications   |
 | GET    | `/client/workers`                 | Browse workers            |
 | GET    | `/client/workers/{worker}`        | Worker detail/profile     |
 | GET    | `/client/bookings`                | Manage bookings           |
 | POST   | `/client/bookings`                | Create a booking          |
-| PATCH  | `/client/bookings/{booking}/cancel` | Cancel a booking        |
-| POST   | `/client/bookings/{booking}/review` | Submit review           |
+| POST   | `/client/bookings/{booking}/cancel`    | Cancel a booking      |
+| POST   | `/client/bookings/{booking}/review`    | Submit review         |
+| POST   | `/client/bookings/{booking}/reschedule` | Request reschedule    |
+| POST   | `/client/bookings/{booking}/reschedule-respond` | Respond to reschedule |
 | GET    | `/client/messages`                | Messages page             |
+| GET    | `/client/messages/poll/{conv}`    | Poll messages             |
 | POST   | `/client/messages/send`           | Send a message            |
-| GET    | `/client/account/profile`         | Account settings page     |
+| POST   | `/client/messages/{conv}/read`    | Mark messages read        |
+| GET    | `/client/reviews`                 | My reviews                |
+| GET    | `/client/account/profile`         | Account settings          |
 
-### Worker (auth, verified, worker)
+### Worker Web (auth, verified, worker)
 
 | Method | URI                                     | Description              |
 | ------ | --------------------------------------- | ------------------------ |
 | GET    | `/worker/dashboard`                     | Worker dashboard         |
+| GET    | `/worker/dashboard/notifications`       | Dashboard notifications  |
+| GET    | `/worker/dashboard/data`                | Dashboard JSON data      |
 | GET    | `/worker/jobs`                          | Job listings             |
 | GET    | `/worker/schedule`                      | Schedule calendar        |
 | PATCH  | `/worker/jobs/{booking}/status`         | Update job status        |
+| POST   | `/worker/jobs/{booking}/photo`          | Upload job photo         |
+| POST   | `/worker/jobs/{booking}/cancel`         | Cancel a job             |
+| POST   | `/worker/jobs/{booking}/reschedule`      | Request reschedule       |
+| POST   | `/worker/jobs/{booking}/reschedule-respond` | Respond to reschedule |
 | GET    | `/worker/messages`                      | Messages                 |
+| GET    | `/worker/messages/poll/{conv}`          | Poll messages            |
 | POST   | `/worker/messages/send`                 | Send a message           |
+| POST   | `/worker/messages/{conv}/read`          | Mark messages read       |
 | GET    | `/worker/earnings`                      | Earnings report          |
 | GET    | `/worker/earnings/export`               | Export earnings          |
 | GET    | `/worker/profile`                       | Profile page             |
@@ -194,7 +310,7 @@ All seeded data is scoped to barangays in **Tuy, Batangas**.
 | GET    | `/worker/documents`                     | Documents page           |
 | PUT    | `/worker/location`                      | Update current location  |
 
-### Admin (auth, verified, admin)
+### Admin Web (auth, verified, admin)
 
 | Method | URI                                              | Description                   |
 | ------ | ------------------------------------------------ | ----------------------------- |
@@ -203,22 +319,27 @@ All seeded data is scoped to barangays in **Tuy, Batangas**.
 | GET    | `/admin/users/{user}`                            | User detail                   |
 | POST   | `/admin/users/{user}/suspend`                    | Suspend a user                |
 | POST   | `/admin/users/{user}/reactivate`                 | Reactivate a user             |
-| GET    | `/admin/workers`                                 | Worker management with filters |
+| GET    | `/admin/workers`                                 | Worker management with filters|
 | GET    | `/admin/verification`                            | Worker document verifications |
 | GET    | `/admin/verification/{verification}`             | Verification detail           |
 | POST   | `/admin/verification/{verification}/approve`     | Approve verification          |
 | POST   | `/admin/verification/{verification}/reject`      | Reject verification           |
-| GET    | `/admin/service-categories`                      | Manage service categories     |
+| GET    | `/admin/service-categories`                      | Service categories            |
+| GET    | `/admin/service-categories/create`               | Create category page          |
 | POST   | `/admin/service-categories`                      | Create category               |
+| GET    | `/admin/service-categories/{id}/edit`            | Edit category page            |
 | PUT    | `/admin/service-categories/{id}`                 | Update category               |
 | DELETE | `/admin/service-categories/{id}`                 | Delete category               |
 | GET    | `/admin/services`                                | Manage services               |
+| GET    | `/admin/services/create`                         | Create service page           |
 | POST   | `/admin/services`                                | Create service                |
+| GET    | `/admin/services/{id}/edit`                      | Edit service page             |
 | PUT    | `/admin/services/{id}`                           | Update service                |
 | DELETE | `/admin/services/{id}`                           | Delete service                |
 | GET    | `/admin/provider-services`                       | Provider service assignments  |
 | GET    | `/admin/bookings`                                | View all bookings             |
 | GET    | `/admin/bookings/{booking}`                      | Booking detail                |
+| POST   | `/admin/bookings/{booking}/cancel`               | Cancel a booking              |
 | GET    | `/admin/disputes`                                | Dispute management            |
 | GET    | `/admin/disputes/{dispute}`                      | Dispute detail                |
 | PUT    | `/admin/disputes/{dispute}`                      | Update dispute                |
@@ -235,28 +356,13 @@ php artisan queue:listen --tries=1 --timeout=0
 
 This is included automatically in `composer run dev`.
 
-## Realtime Notifications & Chats (Laravel Reverb)
+## Rate Limiting
 
-Start the WebSocket server for realtime features:
-
-```bash
-php artisan reverb:start
-```
-
-For production or external access:
-
-```bash
-php artisan reverb:start --port=8080 --host=0.0.0.0
-```
-
-## Platform Fee
-
-Configured via `KAAYOS_PLATFORM_FEE_PERCENT` in `.env` (default: `10`).
-
-## Worker Documents
-
-Workers must upload the following for verification:
-1. **Government-Issued ID** — PhilID, UMID, Passport, or Driver's License
-2. **Police / NBI Clearance** — issued within 6 months
-3. **Barangay Clearance** — proof of address
-4. **Proof of Competency** — TESDA NC/COC or portfolio photos / character reference
+| Endpoint              | Limit              |
+| --------------------- | ------------------ |
+| Login                 | 5/min per email+IP |
+| Registration          | 3/hr per IP        |
+| Email OTP Send        | 3/hr per user      |
+| Email OTP Verify      | 5/hr per user      |
+| Client Booking Create | 10/min             |
+| Message Polling       | 30/min             |
