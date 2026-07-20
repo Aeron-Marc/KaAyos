@@ -13,15 +13,21 @@ class PublicWorkerController extends Controller
             abort(404);
         }
 
-        $worker->load('workerProfile', 'workerDocuments');
+        $worker->load('workerProfile.portfolios', 'workerDocuments');
 
         $reviews = $worker->reviewsReceived()->with('client')->latest()->get();
+        $reviewCount = $reviews->count();
+        $averageRating = $reviewCount > 0
+            ? (float) round((float) $reviews->avg('rating'), 1)
+            : 0.0;
 
         return view('workers.public-show', [
             'worker'        => $worker,
             'workerProfile' => $worker->workerProfile,
             'documents'     => $worker->workerDocuments,
             'reviews'       => $reviews,
+            'reviewCount'   => $reviewCount,
+            'averageRating' => $averageRating,
         ]);
     }
 }

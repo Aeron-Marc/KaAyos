@@ -150,13 +150,14 @@ body{
   background:var(--paper);
   display:flex;
   justify-content:center;
+  align-items:center;
   padding:38px 56px 32px;
   overflow-y:auto;
 }
-.form-inner{width:100%;max-width:440px;display:flex;flex-direction:column;min-height:100%}
+.form-inner{width:100%;max-width:460px;display:flex;flex-direction:column}
 
-.step-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
-.step-count{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;color:var(--slate);letter-spacing:.04em}
+.step-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.step-count{font-size:.72rem;font-weight:600;color:var(--slate);letter-spacing:.04em}
 .step-count b{color:var(--ink)}
 .step-track{display:flex;gap:6px}
 .step-seg{width:30px;height:4px;border-radius:2px;background:var(--paper-2)}
@@ -164,11 +165,11 @@ body{
 .step-seg.current{background:var(--amber)}
 
 .eyebrow{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--signal);margin-bottom:6px}
-.step-title{font-family:'Archivo',sans-serif;font-weight:800;font-size:1.55rem;color:var(--ink);letter-spacing:-.01em;margin-bottom:6px}
-.step-sub{font-size:.86rem;color:var(--slate);margin-bottom:22px;line-height:1.45}
+.step-title{font-family:'Archivo',sans-serif;font-weight:800;font-size:1.4rem;color:var(--ink);letter-spacing:-.01em;margin-bottom:6px}
+.step-sub{font-size:.86rem;color:var(--slate);margin-bottom:16px;line-height:1.45}
 
-.alert{background:var(--danger-bg);border:1px solid #f3c6c6;border-radius:8px;padding:9px 12px;font-size:.8rem;color:var(--danger);margin-bottom:14px;display:flex;align-items:flex-start;gap:8px}
-.alert i{margin-top:1px}
+.alert{background:var(--danger-bg);border:1px solid #f3c6c6;border-radius:8px;padding:11px 14px;font-size:.82rem;color:var(--danger);margin-bottom:16px;display:flex;align-items:flex-start;gap:8px}
+.alert i{margin-top:2px}
 
 /* role cards */
 .role-cards{display:flex;flex-direction:column;gap:10px}
@@ -177,16 +178,16 @@ body{
   border:1.5px solid var(--line);
   background:#fff;
   border-radius:12px;
-  padding:16px 16px;
+  padding:18px 20px;
   cursor:pointer;
   transition:border-color .15s,box-shadow .15s,background .15s;
 }
 .role-card:hover{border-color:var(--signal)}
-.role-card.active{border-color:var(--signal);background:var(--sky);box-shadow:0 0 0 3px rgba(26,111,196,.1)}
+.role-card.active{border-color:var(--signal);background:var(--sky);box-shadow:0 0 0 3px rgba(26,111,196,.12)}
 .role-card .ic{
-  width:42px;height:42px;border-radius:10px;flex-shrink:0;
+  width:44px;height:44px;border-radius:10px;flex-shrink:0;
   background:var(--paper-2);color:var(--slate);
-  display:flex;align-items:center;justify-content:center;font-size:1.05rem;
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
   transition:background .15s,color .15s;
 }
 .role-card.active .ic{background:var(--signal);color:#fff}
@@ -198,22 +199,22 @@ body{
 .role-card.active .radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--signal)}
 
 /* form fields */
-.field{margin-bottom:14px}
-.field label{display:block;font-size:.78rem;font-weight:600;color:var(--graphite);margin-bottom:5px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--graphite);margin-bottom:6px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
 .input-wrap{position:relative}
-.input-wrap i.icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--slate);font-size:.85rem;pointer-events:none}
+.input-wrap i.icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--slate);font-size:.9rem;pointer-events:none}
 input[type=email],input[type=password],input[type=text],select{
   width:100%;border:1.5px solid var(--line);border-radius:9px;
-  padding:10px 12px 10px 36px;font-size:.88rem;font-family:'Inter',sans-serif;
+  padding:12px 14px 12px 40px;font-size:.9rem;font-family:'Inter',sans-serif;
   color:var(--graphite);background:#fff;outline:none;
   transition:border-color .15s,box-shadow .15s;appearance:none;-webkit-appearance:none;
 }
 input:focus,select:focus{border-color:var(--signal);box-shadow:0 0 0 3px rgba(26,111,196,.12)}
 input::placeholder{color:#A8AFB8}
-select{cursor:pointer;padding-right:34px}
+select{cursor:pointer;padding-right:38px}
 .select-arrow{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--slate);font-size:.72rem}
-.tog{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--slate);font-size:.85rem;padding:2px}
+.tog{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--slate);font-size:.88rem;padding:0;transition:color .15s}
 .tog:hover{color:var(--signal)}
 .field-error{font-size:.74rem;color:var(--danger);margin-top:4px}
 
@@ -225,24 +226,24 @@ select{cursor:pointer;padding-right:34px}
 .worker-block.show{display:block}
 .worker-block .tag-label{font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--amber-2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 
-.strength-bar{height:3px;border-radius:2px;background:var(--paper-2);margin:-6px 0 14px;overflow:hidden}
+.strength-bar{height:3px;border-radius:2px;background:var(--paper-2);margin:4px 0 16px;overflow:hidden}
 .strength-fill{height:100%;border-radius:2px;width:0;transition:width .3s,background .3s}
 
 .terms-wrap{display:flex;align-items:flex-start;gap:9px;margin:6px 0 20px}
 .terms-wrap input[type=checkbox]{width:16px;height:16px;accent-color:var(--signal);cursor:pointer;margin-top:2px;flex-shrink:0}
-.terms-wrap span{font-size:.8rem;color:var(--graphite);line-height:1.45}
+.terms-wrap span{font-size:.84rem;color:var(--graphite);line-height:1.45}
 .terms-wrap a{color:var(--signal);font-weight:600;text-decoration:none}
 .terms-wrap a:hover{color:var(--signal-2)}
 
-.step-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:auto;padding-top:6px;}
-.btn{border:none;border-radius:9px;padding:12px 20px;min-width:140px;font-size:.92rem;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .12s,color .15s,border-color .15s;}
+.step-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:12px;}
+.btn{border:none;border-radius:9px;padding:13px 20px;min-width:120px;font-size:.95rem;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .12s,color .15s,border-color .15s;}
 .btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--graphite);}
 .btn-ghost:hover{border-color:var(--slate)}
 .btn-primary{background:var(--signal);color:#fff}
 .btn-primary:hover{background:var(--signal-2);transform:translateY(-1px)}
 .btn-primary:active{transform:translateY(0)}
 
-.signin-row{text-align:center;font-size:.83rem;color:var(--slate);margin-top:18px}
+.signin-row{text-align:center;font-size:.84rem;color:var(--slate);margin-top:18px}
 .signin-row a{color:var(--signal);font-weight:600;text-decoration:none}
 .signin-row a:hover{color:var(--signal-2)}
 
@@ -312,7 +313,30 @@ select{cursor:pointer;padding-right:34px}
         </div>
       </div>
 
-      <form id="registerForm" method="POST" action="{{ route('register') }}">
+      @if($errors->any())
+      <div style="background:#FBEAEA;border:1px solid #f3c6c6;border-radius:10px;padding:14px 16px;margin-bottom:20px">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <i class="fa-solid fa-circle-exclamation" style="color:#A32D2D;margin-top:2px;flex-shrink:0"></i>
+          <div style="flex:1">
+            <div style="font-size:.85rem;font-weight:600;color:#A32D2D;margin-bottom:6px">Please fix the following errors:</div>
+            <ul style="list-style:none;padding:0;margin:0">
+              @foreach($errors->all() as $error)
+                <li style="font-size:.8rem;color:#A32D2D;padding:2px 0;display:flex;align-items:flex-start;gap:6px">
+                  <i class="fa-solid fa-circle" style="font-size:.35rem;margin-top:6px;flex-shrink:0"></i>
+                  <span>{{ $error }}</span>
+                </li>
+              @endforeach
+            </ul>
+          </div>
+        </div>
+      </div>
+      @endif
+
+      @if(session('error'))
+      <div class="alert"><i class="fa-solid fa-circle-exclamation"></i>{{ session('error') }}</div>
+      @endif
+
+      <form id="registerForm" method="POST" action="{{ route('register') }}" novalidate>
         @csrf
         <input type="hidden" name="role" id="roleInput" value="client">
         <input type="hidden" name="intended" id="intendedInput" value="">

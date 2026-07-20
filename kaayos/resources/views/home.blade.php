@@ -1,182 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fil">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="KaAyos – Find trusted, PESO-accredited skilled workers (trabahador) in Tuy, Batangas. AI-matched plumbing, electrical, carpentry &amp; cleaning services.">
+<meta property="og:title" content="KaAyos – Trusted Home Services in Tuy, Batangas">
+<meta property="og:description" content="Find verified skilled workers near you. AI-matched, PESO-accredited, and community-rated.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url()->current() }}">
 <title>KaAyos – Trusted Home Services</title>
 <link rel="icon" href="../images/KaAyos_logo.jpeg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
---b9:#042C53;--b8:#0C447C;--b7:#185FA5;--b6:#1A6FC4;--b4:#378ADD;--b2:#85B7EB;--b1:#B5D4F4;--b0:#E6F1FB;
---g9:#1B2430;--g7:#3D4A56;--g4:#8C97A4;--g1:#E8ECF0;--white:#fff;--off:#F7F8FA;
-}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',sans-serif;color:var(--g7);background:var(--off);line-height:1.6;font-size:16px}
-a{text-decoration:none;color:inherit}
-
-/* NAV */
-.nav{background:var(--b9);padding:0 5%;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
-.nav-logo{display:flex;align-items:center;gap:9px}
-.logo-box{width:50px;height:50px;background:var(--b6);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px}
-.logo-box img{width:100%;height:100%;object-fit:contain;}
-.nav-logo span{font-size:1.4rem;font-weight:700;color:#fff;letter-spacing:.02em}
-.nav-links{display:flex;gap:26px;list-style:none}
-.nav-links a{font-size:.875rem;font-weight:500;color:rgba(255,255,255,.72);transition:color .18s}
-.nav-links a:hover{color:#fff}
-.nav-cta{display:flex;gap:9px}
-.btn{font-size:.875rem;font-weight:600;border-radius:7px;padding:8px 18px;cursor:pointer;border:none;transition:all .18s;white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
-.btn-ghost{background:transparent;color:rgba(255,255,255,.82);border:1.5px solid rgba(255,255,255,.3)}
-.btn-ghost:hover{border-color:rgba(255,255,255,.7);color:#fff}
-.btn-solid{background:var(--b6);color:#fff}
-.btn-solid:hover{background:var(--b7)}
-.btn-lg{font-size:1rem;padding:12px 26px;border-radius:8px}
-.btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.45);font-size:1rem;font-weight:600;padding:11px 24px;border-radius:8px;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:8px}
-.btn-outline:hover{border-color:#fff}
-
-/* HERO — single column, centered */
-.hero{
-    background:var(--b9);
-    padding:90px 5% 80px;
-    text-align:center;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-}
-.hero-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(55,138,221,.18);border:1px solid rgba(55,138,221,.35);border-radius:100px;padding:5px 13px;margin-bottom:20px}
-.hero-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--b4);animation:pulse 1.8s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.hero-tag span{font-size:.75rem;font-weight:600;color:var(--b2);letter-spacing:.06em;text-transform:uppercase}
-.hero h1{font-size:clamp(2.6rem,5vw,4rem);font-weight:700;line-height:1.08;color:#fff;margin-bottom:16px;letter-spacing:-.01em;max-width:640px}
-.hero h1 em{font-style:normal;color:var(--b4)}
-.hero-sub{font-size:1.05rem;color:rgba(255,255,255,.65);max-width:520px;margin-bottom:36px;line-height:1.75}
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-
-/* SEARCH */
-.search-section{background:#fff;padding:28px 5%;box-shadow:0 2px 16px rgba(0,0,0,.07)}
-.search-label{font-size:.8rem;font-weight:600;color:var(--b8);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px}
-.search-bar{display:flex;gap:9px;max-width:740px}
-.search-bar input{flex:1;border:1.5px solid var(--g1);border-radius:7px;padding:11px 16px;font-size:.95rem;color:var(--g9);background:var(--off);outline:none;font-family:inherit;transition:border-color .18s}
-.search-bar input:focus{border-color:var(--b4)}
-.search-bar input::placeholder{color:var(--g4)}
-.loc-input{width:200px!important;flex:none!important}
-
-/* SECTIONS */
-.section{padding:60px 5%}
-.section-alt{background:#fff}
-.eyebrow{font-size:.76rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--b6);margin-bottom:7px}
-.sec-title{font-size:clamp(1.7rem,3vw,2.3rem);font-weight:700;color:var(--b9);line-height:1.12;margin-bottom:8px}
-.sec-sub{font-size:.93rem;color:var(--g4);max-width:500px}
-.sec-header{margin-bottom:36px}
-
-/* SERVICES */
-.service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
-.service-card{background:var(--off);border:1.5px solid var(--g1);border-radius:12px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;display:block}
-.service-card:hover{border-color:var(--b4);background:var(--b0);transform:translateY(-2px)}
-.svc-icon{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.35rem}
-.ic-b{background:#dbeeff;color:#185FA5}
-.ic-y{background:#fef3d0;color:#a07b10}
-.ic-o{background:#fde8d8;color:#b04d1a}
-.ic-g{background:#d6f5e8;color:#1a6852}
-.ic-p{background:#ede8fc;color:#534AB7}
-.ic-s{background:#e4eaf0;color:#3D4A56}
-.ic-t{background:#d4f4f4;color:#0F6E56}
-.ic-r{background:#fde0de;color:#A32D2D}
-.svc-name{font-size:.95rem;font-weight:600;color:var(--b9)}
-.svc-sub{font-size:.76rem;color:var(--g4);margin-top:3px}
-
-/* WORKER GRID */
-.worker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.worker-card{background:var(--white);border:1.5px solid var(--g1);border-radius:14px;padding:18px 20px;cursor:pointer;transition:all .2s;display:block}
-.worker-card:hover{border-color:var(--b4);box-shadow:0 4px 20px rgba(0,0,0,.07);transform:translateY(-2px)}
-.w-card-top{display:flex;gap:14px;align-items:flex-start}
-.w-avatar{width:56px;height:56px;border-radius:12px;object-fit:cover;flex-shrink:0}
-.w-initials{background:var(--b0);color:var(--b6);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700}
-.w-meta{flex:1;min-width:0}
-.w-name-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.w-name{font-size:.95rem;font-weight:600;color:var(--b9)}
-.w-trade{font-size:.8rem;color:var(--b6);font-weight:500;margin-top:1px}
-.w-rating{display:flex;align-items:center;gap:3px;background:var(--b0);padding:3px 8px;border-radius:7px;font-size:.8rem;font-weight:600;color:var(--b8);white-space:nowrap;flex-shrink:0}
-.w-rating i{color:#f59e0b;font-size:.7rem}
-.w-details-row{display:flex;align-items:center;gap:14px;margin-top:6px;font-size:.8rem;color:var(--g4)}
-.w-details-row .w-price{font-weight:600;color:var(--b7);margin-left:auto}
-.w-skills{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
-.w-skill-tag{background:var(--b0);color:var(--b7);padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:500}
-
-/* TRUST */
-.trust{background:var(--b9);padding:24px 5%;display:flex;align-items:center;justify-content:space-around;gap:16px;flex-wrap:wrap}
-.trust-item{display:flex;align-items:center;gap:12px}
-.trust-ico{width:40px;height:40px;background:rgba(255,255,255,.08);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--b2);font-size:1.1rem;flex-shrink:0}
-.trust-item strong{display:block;font-size:.88rem;font-weight:600;color:#fff}
-.trust-item span{font-size:.74rem;color:rgba(255,255,255,.5)}
-
-/* HOW IT WORKS */
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px}
-.step{background:var(--b0);border-left:3px solid var(--b4);border-radius:0 12px 12px 0;padding:24px 22px}
-.step-n{font-size:2.4rem;font-weight:700;color:rgba(55,138,221,.2);line-height:1;margin-bottom:12px}
-.step-icon{width:40px;height:40px;background:var(--b6);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;margin-bottom:12px}
-.step-title{font-size:1rem;font-weight:600;color:var(--b9);margin-bottom:6px}
-.step-desc{font-size:.87rem;color:var(--g7);line-height:1.65}
-
-/* JOIN */
-.join{background:var(--b8);padding:60px 5%;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
-.join-text h2{font-size:clamp(1.8rem,3vw,2.6rem);font-weight:700;color:#fff;margin-bottom:14px;line-height:1.12}
-.join-text p{color:rgba(255,255,255,.7);font-size:.97rem;line-height:1.75;max-width:420px;margin-bottom:28px}
-.perks{display:flex;flex-direction:column;gap:12px}
-.perk{display:flex;align-items:flex-start;gap:12px;background:rgba(255,255,255,.07);border-radius:10px;padding:14px 16px}
-.perk-ico{width:38px;height:38px;background:rgba(255,255,255,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#fff;flex-shrink:0}
-.perk strong{display:block;font-weight:600;color:#fff;font-size:.92rem}
-.perk span{font-size:.8rem;color:rgba(255,255,255,.6)}
-
-/* FAQ */
-.faq-list{max-width:680px}
-.faq-item{border-bottom:1px solid var(--g1);padding:18px 0}
-.faq-q{display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:600;color:var(--b9);font-size:.96rem;gap:14px}
-.faq-q:hover{color:var(--b6)}
-.faq-chev{color:var(--b4);transition:transform .25s;flex-shrink:0;font-size:.9rem}
-.faq-item.open .faq-chev{transform:rotate(180deg)}
-.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s;font-size:.9rem;color:var(--g7);line-height:1.7}
-.faq-item.open .faq-a{max-height:180px;padding-top:10px}
-
-/* FOOTER */
-.footer{background:var(--g9);padding:48px 5% 24px}
-.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:36px;margin-bottom:36px}
-.f-brand p{font-size:.84rem;color:rgba(255,255,255,.45);line-height:1.65;max-width:250px;margin-top:12px}
-.f-brand .brand{display:flex;align-items:center;gap:9px}
-.f-brand .brand span{font-size:1.3rem;font-weight:700;color:#fff}
-.f-brand .flogo{width:32px;height:32px;background:var(--b6);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
-.f-title{font-size:.8rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;margin-bottom:12px}
-.f-links{list-style:none;display:flex;flex-direction:column;gap:8px}
-.f-links a{font-size:.84rem;color:rgba(255,255,255,.45);transition:color .18s;display:inline-flex;align-items:center;gap:6px}
-.f-links a:hover{color:var(--b2)}
-.f-bottom{border-top:1px solid rgba(255,255,255,.07);padding-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.f-bottom p{font-size:.76rem;color:rgba(255,255,255,.3)}
-.socials{display:flex;gap:10px}
-.soc{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:rgba(255,255,255,.45);cursor:pointer;transition:all .18s}
-.soc:hover{background:var(--b6);color:#fff}
-
-/* RESPONSIVE */
-@media(max-width:768px){
-.nav-links{display:none}
-.hero{padding:64px 5% 56px}
-.hero h1{font-size:2.4rem}
-.join{grid-template-columns:1fr;gap:28px}
-.footer-grid{grid-template-columns:1fr 1fr}
-.search-bar{flex-wrap:wrap}
-.loc-input{width:100%!important}
-.trust{justify-content:flex-start;gap:18px}
-}
-@media(max-width:480px){
-.footer-grid{grid-template-columns:1fr}
-.service-grid{grid-template-columns:repeat(2,1fr)}
-.hero h1{font-size:2rem}
-}
-</style>
+@vite(['resources/css/landing.css'])
 </head>
 <body>
+
+<!-- MOBILE OVERLAY -->
+<div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+
+<!-- MOBILE DRAWER -->
+<aside id="mobileDrawer" class="mobile-drawer" role="dialog" aria-label="Navigation menu">
+  <button class="drawer-close" onclick="closeMobileMenu()" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
+  <a href="#services" onclick="closeMobileMenu()"><i class="fa-solid fa-briefcase"></i> Services</a>
+  <a href="#how-it-works" onclick="closeMobileMenu()"><i class="fa-solid fa-list-ol"></i> How It Works</a>
+  <a href="#join" onclick="closeMobileMenu()"><i class="fa-solid fa-hammer"></i> Join as Worker</a>
+  <a href="#faq" onclick="closeMobileMenu()"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+  <div class="drawer-cta">
+    <a href="/login" class="btn-ghost"><i class="fa-regular fa-user"></i> Log In</a>
+    <a href="/register" class="btn-amber"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign Up Free</a>
+  </div>
+</aside>
 
 <!-- NAV -->
 <nav class="nav">
@@ -192,17 +47,31 @@ a{text-decoration:none;color:inherit}
   </ul>
   <div class="nav-cta">
     <a href="/login" class="btn btn-ghost"><i class="fa-regular fa-user" aria-hidden="true"></i> Log In</a>
-    <a href="/register" class="btn btn-solid"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign Up Free</a>
+    <a href="/register" class="btn btn-amber"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign Up Free</a>
+    <button class="nav-toggle" id="navToggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-tag"><div class="dot"></div><span>Tuy, Batangas &amp; nearby areas</span></div>
+  <div class="hero-icons-floating">
+    <div class="hero-icon-f"><i class="fa-solid fa-wrench"></i></div>
+    <div class="hero-icon-f"><i class="fa-solid fa-bolt"></i></div>
+    <div class="hero-icon-f"><i class="fa-solid fa-paint-roller"></i></div>
+    <div class="hero-icon-f"><i class="fa-solid fa-broom"></i></div>
+    <div class="hero-icon-f"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+    <div class="hero-icon-f"><i class="fa-solid fa-hammer"></i></div>
+  </div>
+  <div class="peso-stamp">
+    <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy Accredited">
+  </div>
+  <div class="hero-tag"><div class="dot"></div><span>In Partnership with PESO Tuy, Batangas</span></div>
   <h1>Find a Trusted <em>Trabahador</em> in Minutes</h1>
-  <p class="hero-sub">KaAyos connects homeowners with verified skilled workers matched by skill, rating, and location. No more endless referrals.</p>
+  <p class="hero-sub">KaAyos connects homeowners with verified skilled workers matched by skill, rating, and location. Every worker is PESO-accredited and verified by the Public Employment Service Office.</p>
   <div class="hero-actions">
-    <a href="/register" class="btn btn-solid btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Hire a Worker Now</a>
+    <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Hire a Worker Now</a>
     <a href="#join" class="btn-outline"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Join as Trabahador</a>
   </div>
 </section>
@@ -211,119 +80,182 @@ a{text-decoration:none;color:inherit}
 <div class="search-section">
   <div class="search-label">What do you need fixed?</div>
   <div class="search-bar">
-    <input type="text" placeholder="e.g. leaking pipe, broken circuit, painting…" aria-label="Service type">
-    <input type="text" class="loc-input" placeholder="Your barangay" aria-label="Location">
-    <a href="/search" class="btn btn-solid btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Find Workers</a>
+    <div class="input-wrap">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <input type="text" id="searchQuery" placeholder="e.g. leaking pipe, broken circuit, painting…" aria-label="Service type">
+    </div>
+    <div class="input-wrap loc-input">
+      <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+      <input type="text" id="searchLocation" placeholder="Your barangay" aria-label="Location">
+    </div>
+    <button class="btn btn-primary btn-lg" onclick="doSearch()"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Find Workers</button>
+  </div>
+  <div class="search-tags">
+    <button class="search-tag" onclick="searchTag(this)">Leaking Pipe</button>
+    <button class="search-tag" onclick="searchTag(this)">Cleaning</button>
+    <button class="search-tag" onclick="searchTag(this)">Painting</button>
+    <button class="search-tag" onclick="searchTag(this)">Electrical Repair</button>
+    <button class="search-tag" onclick="searchTag(this)">Aircon Cleaning</button>
   </div>
 </div>
 
-<!-- SERVICES -->
-<section class="section" id="services">
-  <div class="sec-header">
-    <div class="eyebrow">Our Services</div>
-    <h2 class="sec-title">Every Trade, One Platform</h2>
-    <p class="sec-sub">Browse verified workers across all major home service categories.</p>
-  </div>
-  <div class="service-grid">
-    <a href="/services?category=plumbing" class="service-card"><div class="svc-icon ic-b"><i class="fa-solid fa-wrench"></i></div><div class="svc-name">Plumbing</div><div class="svc-sub">Pipes, leaks &amp; fixtures</div></a>
-    <a href="/services?category=electrical" class="service-card"><div class="svc-icon ic-y"><i class="fa-solid fa-bolt"></i></div><div class="svc-name">Electrical</div><div class="svc-sub">Wiring, outlets &amp; panels</div></a>
-    <a href="/services?category=carpentry" class="service-card"><div class="svc-icon ic-o"><i class="fa-solid fa-screwdriver-wrench"></i></div><div class="svc-name">Carpentry</div><div class="svc-sub">Furniture &amp; woodwork</div></a>
-    <a href="/services?category=cleaning" class="service-card"><div class="svc-icon ic-g"><i class="fa-solid fa-broom"></i></div><div class="svc-name">Cleaning</div><div class="svc-sub">Deep clean &amp; maintenance</div></a>
-    <a href="/services?category=painting" class="service-card"><div class="svc-icon ic-p"><i class="fa-solid fa-paint-roller"></i></div><div class="svc-name">Painting</div><div class="svc-sub">Interior &amp; exterior</div></a>
-    <a href="/services?category=roofing" class="service-card"><div class="svc-icon ic-s"><i class="fa-solid fa-house"></i></div><div class="svc-name">Roofing</div><div class="svc-sub">Repair &amp; waterproofing</div></a>
-    <a href="/services?category=aircon" class="service-card"><div class="svc-icon ic-t"><i class="fa-solid fa-snowflake"></i></div><div class="svc-name">Aircon</div><div class="svc-sub">Cleaning &amp; repair</div></a>
-    <a href="/services?category=hauling" class="service-card"><div class="svc-icon ic-r"><i class="fa-solid fa-truck"></i></div><div class="svc-name">Hauling</div><div class="svc-sub">Junk removal &amp; moving</div></a>
-  </div>
-</section>
+<div class="section-divider" style="margin-top:48px"></div>
 
-@if(!empty($workers))
-<!-- WORKERS -->
-<section class="section" id="workers">
-  <div class="sec-header">
-    <div class="eyebrow">Featured Workers</div>
-    <h2 class="sec-title">Available Trabahadors Near You</h2>
-    <p class="sec-sub">Browse verified skilled workers in Tuy, Batangas. No sign-in needed.</p>
+<!-- SERVICES & WORKERS -->
+<section class="section" id="services">
+  <div class="sec-header fade-up">
+    <div class="eyebrow">Services & Workers</div>
+    <h2 class="sec-title">Every Trade, One Platform</h2>
+    <p class="sec-sub">Browse verified workers across all major home service categories. Click a category to filter.</p>
   </div>
-  <div class="worker-grid">
-    @foreach($workers as $w)
-      <a href="{{ route('workers.public.show', $w['id']) }}" class="worker-card">
-        <div class="w-card-top">
-          @if($w['avatar'])
-            <img src="{{ $w['avatar'] }}" alt="{{ $w['name'] }}" class="w-avatar">
-          @else
-            <div class="w-avatar w-initials">{{ $w['initials'] }}</div>
-          @endif
-          <div class="w-meta">
-            <div class="w-name-row">
-              <div>
-                <div class="w-name">{{ $w['name'] }}</div>
-                <div class="w-trade">{{ $w['category'] }}</div>
-              </div>
-              <div class="w-rating">
-                <i class="fa-solid fa-star" aria-hidden="true"></i>
-                {{ number_format($w['rating'], 1) }}
-              </div>
-            </div>
-            <div class="w-details-row">
-              <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $w['distance'] }}</span>
-              @if($w['price'] > 0)
-                <span class="w-price">₱{{ number_format($w['price']) }}/hr</span>
-              @endif
-            </div>
-          </div>
-        </div>
-        @if(!empty($w['skills']) && count($w['skills']) > 0)
-          <div class="w-skills">
-            @foreach(array_slice($w['skills'], 0, 3) as $skill)
-              <span class="w-skill-tag">{{ $skill }}</span>
-            @endforeach
-          </div>
-        @endif
-      </a>
+
+  <div class="cat-pills fade-up">
+    <button class="cat-pill {{ !$category ? 'active' : '' }}" data-category="">All</button>
+    @foreach($categories as $cat)
+      <button class="cat-pill {{ $category === $cat->slug ? 'active' : '' }}" data-category="{{ $cat->slug }}"><i class="fa-solid {{ $cat->icon ?: 'fa-wrench' }}"></i> {{ $cat->name }}</button>
     @endforeach
   </div>
+
+  @if(!empty($workers))
+    <div class="worker-grid fade-up" id="workerGrid">
+      @foreach($workers as $w)
+        <a href="{{ route('workers.public.show', $w['id']) }}" class="worker-card" data-category="{{ strtolower($w['category']) }}">
+          <div class="w-card-top">
+            @if($w['avatar'])
+              <img src="{{ $w['avatar'] }}" alt="{{ $w['name'] }}" class="w-avatar" loading="lazy">
+            @else
+              <div class="w-avatar w-initials">{{ $w['initials'] }}</div>
+            @endif
+            <div class="w-meta">
+              <div class="w-name-row">
+                <div>
+                  <div class="w-name">{{ $w['name'] }}</div>
+                  <div class="w-trade">{{ $w['category'] }} <span class="peso-badge"><i class="fa-solid fa-certificate"></i> PESO</span></div>
+                </div>
+                <div class="w-rating">
+                  <i class="fa-solid fa-star" aria-hidden="true"></i>
+                  {{ number_format($w['rating'], 1) }}
+                </div>
+              </div>
+              <div class="w-details-row">
+                <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $w['distance'] }}</span>
+                @if($w['reviews'] > 0)
+                  <span><i class="fa-regular fa-comment"></i> {{ $w['reviews'] }}</span>
+                @endif
+                @if($w['price'] > 0)
+                  <span class="w-price">₱{{ number_format($w['price']) }}/hr</span>
+                @endif
+              </div>
+            </div>
+          </div>
+          @if(!empty($w['skills']) && count($w['skills']) > 0)
+            <div class="w-skills">
+              @foreach(array_slice($w['skills'], 0, 3) as $skill)
+                <span class="w-skill-tag">{{ $skill }}</span>
+              @endforeach
+            </div>
+          @endif
+          @if(!empty($w['works']) && count(array_filter(array_column($w['works'],'photo'))) > 0)
+            <div class="w-works">
+              <div class="w-works-row">
+                @php $photos = array_filter(array_column($w['works'],'photo')); @endphp
+                @foreach(array_slice($photos, 0, 3) as $photo)
+                  <div class="w-work-thumb" style="background-image:url('{{ $photo }}')" title="Work sample"></div>
+                @endforeach
+              </div>
+            </div>
+          @endif
+
+          <div class="w-card-actions">
+            <span class="btn-outline-card" onclick="event.stopPropagation();event.preventDefault();window.location.href='{{ route('workers.public.show', $w['id']) }}'"><i class="fa-regular fa-user" aria-hidden="true"></i> View Profile</span>
+            <span class="btn btn-solid" onclick="event.stopPropagation();event.preventDefault();showBookModal({{ $w['id'] }},'{{ addslashes($w['name']) }}','{{ addslashes($w['category']) }}')"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Book Now</span>
+          </div>
+        </a>
+      @endforeach
+    </div>
+  @else
+    <div class="empty-workers fade-up">
+      <i class="fa-solid fa-users-slash"></i>
+      <h3>No workers found</h3>
+      <p>No workers are available in this category yet. Check back soon or browse all categories.</p>
+      <a href="/#services" class="btn btn-solid btn-lg" onclick="document.querySelector('.cat-pill.active')?.click()"><i class="fa-solid fa-arrow-left"></i> View All Workers</a>
+    </div>
+  @endif
 </section>
-@endif
+
+<!-- STATS -->
+<div class="stats fade-up">
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num">500+</div><div class="stat-label">Active Workers</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num">1,000+</div><div class="stat-label">Jobs Completed</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num">42</div><div class="stat-label">Barangays Covered</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num">4.8★</div><div class="stat-label">Avg Rating</div></div>
+</div>
 
 <!-- TRUST -->
 <div class="trust">
   <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-id-card" aria-hidden="true"></i></div><div><strong>ID-Verified Workers</strong><span>Valid ID &amp; clearance required</span></div></div>
   <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-robot" aria-hidden="true"></i></div><div><strong>AI-Assisted Matching</strong><span>Best worker for your job</span></div></div>
-  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></div><div><strong>Geolocation-Based</strong><span>Nearest available worker</span></div></div>
+  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-certificate" aria-hidden="true"></i></div><div><strong>PESO-Accredited Workers</strong><span>Verified by Public Employment Service Office</span></div></div>
   <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div><strong>Rated &amp; Reviewed</strong><span>Read real feedback first</span></div></div>
 </div>
 
 <!-- HOW IT WORKS -->
 <section class="section section-alt" id="how-it-works">
-  <div class="sec-header">
+  <div class="sec-header fade-up">
     <div class="eyebrow">How It Works</div>
     <h2 class="sec-title">Booked in Four Steps</h2>
     <p class="sec-sub">From posting your job to getting it done — fast and simple.</p>
   </div>
   <div class="steps">
-    <div class="step">
+    <div class="step fade-up">
       <div class="step-n">01</div>
       <div class="step-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></div>
-      <div class="step-title">Post Your Job</div>
+      <h3 class="step-title">Post Your Job</h3>
       <p class="step-desc">Describe what needs fixing — type, location, and when you need it done.</p>
     </div>
-    <div class="step">
+    <div class="step fade-up">
       <div class="step-n">02</div>
       <div class="step-icon"><i class="fa-solid fa-robot" aria-hidden="true"></i></div>
-      <div class="step-title">AI Finds Matches</div>
+      <h3 class="step-title">AI Finds Matches</h3>
       <p class="step-desc">Our system recommends verified, nearby workers ranked by rating and distance.</p>
     </div>
-    <div class="step">
+    <div class="step fade-up">
       <div class="step-n">03</div>
       <div class="step-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></div>
-      <div class="step-title">Chat &amp; Book</div>
+      <h3 class="step-title">Chat &amp; Book</h3>
       <p class="step-desc">Message your worker, confirm pricing, and lock in the schedule in-app.</p>
     </div>
-    <div class="step">
+    <div class="step fade-up">
       <div class="step-n">04</div>
       <div class="step-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div>
-      <div class="step-title">Rate &amp; Done</div>
+      <h3 class="step-title">Rate &amp; Done</h3>
       <p class="step-desc">Leave a review after the job. Your feedback helps the whole community.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section" id="testimonials">
+  <div class="sec-header fade-up">
+    <div class="eyebrow">Testimonials</div>
+    <h2 class="sec-title">What Our Users Say</h2>
+    <p class="sec-sub">Real feedback from homeowners and workers in Tuy, Batangas.</p>
+  </div>
+  <div class="testimonials">
+    <div class="testimonial-card fade-up">
+      <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+      <p class="quote">"Na-book ko agad si Mang Jose para sa sirang gripo ko. Wala pang isang oras, nasa bahay na at naayos agad. Sobrang convenient!"</p>
+      <div class="author"><div class="author-avatar">AR</div><div class="author-info"><div class="name">Ana Reyes</div><div class="role">Homeowner, Tuy</div></div></div>
+    </div>
+    <div class="testimonial-card fade-up">
+      <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+      <p class="quote">"Dati referral lang ang kitaan. Ngayon, may regular akong booking galing sa KaAyos. Nakaipon na ako para sa bagong gamit."</p>
+      <div class="author"><div class="author-avatar">MC</div><div class="author-info"><div class="name">Mang Carlos</div><div class="role">Electrician, Tuy</div></div></div>
+    </div>
+    <div class="testimonial-card fade-up">
+      <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+      <p class="quote">"Yung AI matching nila, hindi biro. Inirecommend agad yung tamang worker para sa painting project namin. Sulit na sulit!"</p>
+      <div class="author"><div class="author-avatar">DB</div><div class="author-info"><div class="name">Dennis B.</div><div class="role">Homeowner, Nasugbu</div></div></div>
     </div>
   </div>
 </section>
@@ -331,9 +263,13 @@ a{text-decoration:none;color:inherit}
 <!-- JOIN AS WORKER -->
 <section class="join" id="join">
   <div class="join-text">
+    <div class="join-badge">
+      <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy">
+      <span>In Partnership with PESO Tuy, Batangas</span>
+    </div>
     <h2>Are You a Skilled Trabahador?</h2>
     <p>KaAyos helps Filipino workers earn more, reach more clients, and build a professional reputation — without relying on referrals alone.</p>
-    <a href="/register`" class="btn btn-solid btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Register as a Worker</a>
+    <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Register as a Worker</a>
   </div>
   <div class="perks">
     <div class="perk"><div class="perk-ico"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></div><div><strong>More Job Visibility</strong><span>Get discovered by homeowners in your barangay and beyond</span></div></div>
@@ -345,52 +281,72 @@ a{text-decoration:none;color:inherit}
 
 <!-- FAQ -->
 <section class="section section-alt" id="faq">
-  <div class="sec-header">
+  <div class="sec-header fade-up">
     <div class="eyebrow">FAQ</div>
     <h2 class="sec-title">Common Questions</h2>
   </div>
   <div class="faq-list">
-    <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">Is KaAyos free to use as a homeowner?<i class="fa-solid fa-chevron-down faq-chev"></i></div>
+    <div class="faq-item fade-up">
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-circle-question" style="color:var(--b6);margin-right:8px"></i>Is KaAyos free to use as a homeowner?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">Yes. Creating an account, browsing workers, and booking jobs is completely free. You only pay the worker directly.</div>
     </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">How are workers verified?<i class="fa-solid fa-chevron-down faq-chev"></i></div>
+    <div class="faq-item fade-up">
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-id-card" style="color:var(--b6);margin-right:8px"></i>How are workers verified?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">Every worker submits a valid government-issued ID and barangay clearance before their profile goes live. Workers who pass appear with a Verified badge.</div>
     </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">How does AI matching work?<i class="fa-solid fa-chevron-down faq-chev"></i></div>
+    <div class="faq-item fade-up">
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-robot" style="color:var(--b6);margin-right:8px"></i>How does AI matching work?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">When you post a job, KaAyos ranks candidates by distance, skill match, and community rating — so you see the most suitable workers first.</div>
     </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">What areas does KaAyos cover?<i class="fa-solid fa-chevron-down faq-chev"></i></div>
+    <div class="faq-item fade-up">
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-location-dot" style="color:var(--b6);margin-right:8px"></i>What areas does KaAyos cover?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">KaAyos currently serves all 42 barangays of Tuy, Batangas, with plans to expand to neighboring municipalities.</div>
     </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">Can I register as both a homeowner and a worker?<i class="fa-solid fa-chevron-down faq-chev"></i></div>
+    <div class="faq-item fade-up">
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-user" style="color:var(--b6);margin-right:8px"></i>Can I register as both a homeowner and a worker?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">Yes. One account supports both roles. Switch between them from your dashboard.</div>
     </div>
   </div>
+  <div class="faq-contact fade-up">
+    Still have questions? <a href="/contact">Contact our support team</a>
+  </div>
 </section>
+
+<!-- SIGN-IN MODAL -->
+<div id="signInModal" class="modal-overlay" onclick="if(event.target===this)hideSignInModal()" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-box">
+    <button class="modal-close" onclick="hideSignInModal()" aria-label="Close">&times;</button>
+    <div class="modal-icon"><i class="fa-solid fa-lock" aria-hidden="true"></i></div>
+    <h2 id="modalTitle">Sign In Required</h2>
+    <p>Please sign in or create an account to continue booking <strong id="modalWorkerName"></strong>.</p>
+    <div class="modal-actions">
+      <button onclick="goToSignIn()" class="btn btn-solid"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign In</button>
+      <button onclick="goToSignUp()" class="btn-ghost-dark"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Create Account</button>
+    </div>
+  </div>
+</div>
 
 <!-- FOOTER -->
 <footer class="footer">
   <div class="footer-grid">
     <div class="f-brand">
       <div class="brand">
-        <div class="flogo"><i class="fa-solid fa-house-chimney" aria-hidden="true"></i></div>
+        <div class="flogo"><img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos"></div>
         <span>KaAyos</span>
       </div>
-      <p>A web-based home service platform connecting homeowners with verified skilled workers in Tuy, Batangas — powered by AI matching.</p>
+      <p>A web-based home service platform connecting homeowners with verified skilled workers in Tuy, Batangas — powered by AI matching. In partnership with PESO Tuy, Batangas.</p>
+      <div class="partner-logos">
+        <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy">
+      </div>
     </div>
     <div>
       <div class="f-title">Services</div>
       <ul class="f-links">
-        <li><a href="/services?category=plumbing"><i class="fa-solid fa-wrench fa-fw" aria-hidden="true"></i> Plumbing</a></li>
-        <li><a href="/services?category=electrical"><i class="fa-solid fa-bolt fa-fw" aria-hidden="true"></i> Electrical</a></li>
-        <li><a href="/services?category=carpentry"><i class="fa-solid fa-screwdriver-wrench fa-fw" aria-hidden="true"></i> Carpentry</a></li>
-        <li><a href="/services?category=cleaning"><i class="fa-solid fa-broom fa-fw" aria-hidden="true"></i> Cleaning</a></li>
-        <li><a href="/services"><i class="fa-solid fa-grid-2 fa-fw" aria-hidden="true"></i> View all</a></li>
+        <li><a href="/?category=plumbing"><i class="fa-solid fa-wrench fa-fw" aria-hidden="true"></i> Plumbing</a></li>
+        <li><a href="/?category=electrical"><i class="fa-solid fa-bolt fa-fw" aria-hidden="true"></i> Electrical</a></li>
+        <li><a href="/?category=carpentry"><i class="fa-solid fa-screwdriver-wrench fa-fw" aria-hidden="true"></i> Carpentry</a></li>
+        <li><a href="/?category=cleaning"><i class="fa-solid fa-broom fa-fw" aria-hidden="true"></i> Cleaning</a></li>
+        <li><a href="/#services"><i class="fa-solid fa-list fa-fw" aria-hidden="true"></i> View all</a></li>
       </ul>
     </div>
     <div>
@@ -403,23 +359,152 @@ a{text-decoration:none;color:inherit}
         <li><a href="/contact"><i class="fa-solid fa-envelope fa-fw" aria-hidden="true"></i> Contact</a></li>
         <li><a href="/privacy"><i class="fa-solid fa-shield fa-fw" aria-hidden="true"></i> Privacy Policy</a></li>
         <li><a href="/terms"><i class="fa-solid fa-file-lines fa-fw" aria-hidden="true"></i> Terms of Service</a></li>
+        <li><a href="/safety"><i class="fa-solid fa-shield-halved fa-fw" aria-hidden="true"></i> Safety</a></li>
       </ul>
     </div>
   </div>
+  <button class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
   <div class="f-bottom">
-    <!-- <p>© 2025 KaAyos — Capstone project by Salanguit, Formentos &amp; Briones · Batangas State University ARASOF – Nasugbu Campus.</p> -->
+    <p>&copy; {{ date('Y') }} KaAyos &mdash; Capstone project by Salanguit, Formentos &amp; Briones &middot; Batangas State University ARASOF &ndash; Nasugbu Campus.</p>
     <div class="socials">
-      <div class="soc" title="Facebook"><i class="fa-brands fa-facebook-f"></i></div>
-      <div class="soc" title="Email"><i class="fa-solid fa-envelope"></i></div>
+      <a href="https://facebook.com/kaayos" class="soc" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+      <a href="mailto:hello@kaayos.com" class="soc" title="Email" aria-label="Email"><i class="fa-solid fa-envelope"></i></a>
     </div>
   </div>
 </footer>
 
 <script>
+function toggleMobileMenu() {
+  var open = document.getElementById('mobileDrawer').classList.toggle('open');
+  document.getElementById('mobileOverlay').classList.toggle('open');
+  document.getElementById('navToggle').classList.toggle('open');
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+function closeMobileMenu() {
+  document.getElementById('mobileDrawer').classList.remove('open');
+  document.getElementById('mobileOverlay').classList.remove('open');
+  document.getElementById('navToggle').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 function toggleFaq(el){
-  const item=el.closest('.faq-item'),open=item.classList.contains('open');
-  document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
-  if(!open)item.classList.add('open');
+  var item = el.closest('.faq-item');
+  var open = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(function(i){ i.classList.remove('open'); });
+  if(!open) item.classList.add('open');
+}
+
+/* NAV SCROLL */
+(function(){
+  var nav = document.querySelector('.nav');
+  if(nav){
+    window.addEventListener('scroll',function(){
+      if(window.scrollY>40){nav.classList.add('scrolled');}else{nav.classList.remove('scrolled');}
+    });
+  }
+})();
+
+/* SCROLL ANIMATIONS */
+(function(){
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.fade-up').forEach(function(el){ observer.observe(el); });
+})();
+
+/* CATEGORY FILTER */
+(function(){
+  var pills = document.querySelectorAll('.cat-pill');
+  var cards = document.querySelectorAll('.worker-card');
+  if(!pills.length) return;
+  pills.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var cat = btn.getAttribute('data-category');
+      pills.forEach(function(p){ p.classList.remove('active'); });
+      btn.classList.add('active');
+      var visibleCount = 0;
+      cards.forEach(function(card){
+        var match = !cat || card.getAttribute('data-category') === cat;
+        card.style.display = match ? '' : 'none';
+        if(match) visibleCount++;
+      });
+      var url = new URL(window.location);
+      if(cat){ url.searchParams.set('category', cat); }else{ url.searchParams.delete('category'); }
+      history.replaceState(null, '', url);
+    });
+  });
+})();
+
+/* SEARCH */
+function searchTag(el) {
+  document.getElementById('searchQuery').value = el.textContent;
+  doSearch();
+}
+
+function doSearch() {
+  var q = document.getElementById('searchQuery').value.trim();
+  var loc = document.getElementById('searchLocation').value.trim();
+  var params = new URLSearchParams();
+  if(q) params.set('q', q);
+  if(loc) params.set('location', loc);
+  window.location.href = '/search' + (params.toString() ? '?' + params.toString() : '');
+}
+
+/* ESC key closes modal + mobile menu */
+document.addEventListener('keydown', function(e) {
+  if(e.key === 'Escape') {
+    if(document.getElementById('signInModal').classList.contains('active')) hideSignInModal();
+    if(document.getElementById('mobileDrawer').classList.contains('open')) closeMobileMenu();
+  }
+});
+
+/* BOOKING INTENT */
+var _bookingWorkerId = null;
+var _bookingWorkerName = '';
+var _bookingCategory = '';
+
+function saveBookingIntent(workerId, workerName, serviceCategory) {
+  var data = {
+    worker_id: workerId,
+    worker_name: workerName,
+    service_category: serviceCategory,
+    timestamp: Date.now()
+  };
+  sessionStorage.setItem('kaayos_booking_intent', JSON.stringify(data));
+  localStorage.setItem('kaayos_booking_intent', JSON.stringify({
+    worker_id: workerId,
+    worker_name: workerName,
+    service_category: serviceCategory,
+    timestamp: data.timestamp,
+    expires: Date.now() + 24 * 60 * 60 * 1000
+  }));
+}
+
+function showBookModal(id, name, category) {
+  _bookingWorkerId = id;
+  _bookingWorkerName = name;
+  _bookingCategory = category;
+  document.getElementById('modalWorkerName').textContent = name;
+  var modal = document.getElementById('signInModal');
+  modal.classList.add('active');
+  setTimeout(function(){ modal.querySelector('.btn-solid').focus(); }, 100);
+}
+
+function hideSignInModal() {
+  document.getElementById('signInModal').classList.remove('active');
+}
+
+function goToSignIn() {
+  saveBookingIntent(_bookingWorkerId, _bookingWorkerName, _bookingCategory);
+  window.location.href = '/login?intended=/workers/' + _bookingWorkerId;
+}
+
+function goToSignUp() {
+  saveBookingIntent(_bookingWorkerId, _bookingWorkerName, _bookingCategory);
+  window.location.href = '/register?intended=/workers/' + _bookingWorkerId;
 }
 </script>
 </body>

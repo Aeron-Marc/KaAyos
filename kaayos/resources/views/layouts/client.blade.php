@@ -21,7 +21,7 @@
 
         <a href="{{ route('home') }}" class="sidebar-logo">
             <div class="logo-mark">
-                <i class="fa-solid fa-house-chimney" aria-hidden="true"></i>
+                <img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos">
             </div>
             <span class="logo-text">KaAyos</span>
         </a>

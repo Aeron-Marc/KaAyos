@@ -403,9 +403,10 @@
             <h3>Work Portfolio</h3>
 
             <div class="portfolio-grid">
-                @forelse($portfolios as $item)
+                @forelse($portfolios as $i => $item)
+                    @php $photoUrl = \Illuminate\Support\Facades\Storage::url($item->photo_path); @endphp
                     <div class="portfolio-card">
-                        <img src="{{ \Illuminate\Support\Facades\Storage::url($item->photo_path) }}" alt="Work photo">
+                        <img src="{{ $photoUrl }}" alt="Work photo" class="port-clickable" data-index="{{ $i }}" style="cursor:pointer">
                         @if($item->caption)
                             <div class="portfolio-caption">{{ $item->caption }}</div>
                         @endif
@@ -601,9 +602,86 @@
     </div>
 </div>
 
+@php
+$portraitPhotos = $portfolios->map(fn($p) => [
+    'url'     => \Illuminate\Support\Facades\Storage::url($p->photo_path),
+    'caption' => $p->caption,
+])->values()->toArray();
+@endphp
+
+{{-- Photo Lightbox --}}
+<div id="photoLightbox" class="photo-lightbox" onclick="if(event.target===this)closeLightbox()" role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <button class="pl-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
+  <button class="pl-nav pl-prev" onclick="navigateLightbox(-1)" aria-label="Previous photo"><i class="fa-solid fa-chevron-left"></i></button>
+  <button class="pl-nav pl-next" onclick="navigateLightbox(1)" aria-label="Next photo"><i class="fa-solid fa-chevron-right"></i></button>
+  <div class="pl-content">
+    <img class="pl-image" id="plImage" src="" alt="Portfolio photo">
+    <div class="pl-caption" id="plCaption"></div>
+  </div>
+</div>
+
+<style>
+.photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;display:none;align-items:center;justify-content:center;animation:plFadeIn .2s ease;padding:20px}
+.photo-lightbox.active{display:flex}
+.pl-close{position:absolute;top:16px;right:20px;background:none;border:none;color:rgba(255,255,255,.7);font-size:2.2rem;cursor:pointer;line-height:1;z-index:10;padding:4px 8px;border-radius:8px;transition:color .2s,background .2s}
+.pl-close:hover{color:#fff;background:rgba(255,255,255,.1)}
+.pl-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.7);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.2rem;transition:all .2s;z-index:10;display:none;align-items:center;justify-content:center}
+.pl-nav:hover{background:rgba(255,255,255,.18);color:#fff}
+.pl-nav.show{display:flex}
+.pl-prev{left:16px}
+.pl-next{right:16px}
+.pl-content{display:flex;flex-direction:column;align-items:center;max-width:90vw;max-height:90vh}
+.pl-image{max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.pl-caption{color:rgba(255,255,255,.7);font-size:.9rem;margin-top:16px;text-align:center;max-width:600px;line-height:1.5}
+@keyframes plFadeIn{from{opacity:0}to{opacity:1}}
+</style>
+
 @push('scripts')
 <script>
 window.authToken = "{{ auth()->user()->createToken('worker-profile-page')->plainTextToken }}";
+
+/* Photo Lightbox */
+var plPhotos = @json($portraitPhotos);
+var plIndex = 0;
+
+function openLightbox(index) {
+  plIndex = index;
+  updateLightbox();
+  document.getElementById('photoLightbox').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('photoLightbox').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function navigateLightbox(dir) {
+  plIndex = (plIndex + dir + plPhotos.length) % plPhotos.length;
+  updateLightbox();
+}
+
+function updateLightbox() {
+  var img = document.getElementById('plImage');
+  var cap = document.getElementById('plCaption');
+  img.src = plPhotos[plIndex].url;
+  img.alt = plPhotos[plIndex].caption || 'Portfolio photo';
+  cap.textContent = plPhotos[plIndex].caption || '';
+  document.querySelectorAll('.pl-nav').forEach(function(n){ n.classList.toggle('show', plPhotos.length > 1); });
+}
+
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('photoLightbox').classList.contains('active')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') navigateLightbox(-1);
+  if (e.key === 'ArrowRight') navigateLightbox(1);
+});
+
+document.querySelectorAll('.port-clickable').forEach(function(el) {
+  el.addEventListener('click', function() {
+    openLightbox(parseInt(this.dataset.index));
+  });
+});
 
 // Email Change Modal
 (function() {
