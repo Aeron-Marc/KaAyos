@@ -55,10 +55,35 @@
                         <span>{{ $workerProfile->years_of_experience }} years</span>
                     </div>
                 @endif
-                @if($workerProfile && $workerProfile->available_days)
-                    <div style="display:flex;justify-content:space-between;font-size:.88rem;">
-                        <span style="color:var(--g5);">Availability</span>
-                        <span>{{ $workerProfile->available_days }}</span>
+                @php
+                    $availDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+                    $dayShort = ['Monday'=>'Mon','Tuesday'=>'Tue','Wednesday'=>'Wed','Thursday'=>'Thu','Friday'=>'Fri','Saturday'=>'Sat','Sunday'=>'Sun'];
+                    $availMap = [];
+                    if ($workerProfile && $workerProfile->availability) {
+                        foreach ($workerProfile->availability as $a) {
+                            $availMap[$a['day']] = $a;
+                        }
+                    }
+                @endphp
+                @if($workerProfile && $workerProfile->availability)
+                    <div style="font-size:.82rem;">
+                        <div style="color:var(--g5);font-weight:500;margin-bottom:6px;">Availability</div>
+                        @foreach($availDays as $day)
+                            @php
+                                $a = $availMap[$day] ?? null;
+                                $active = $a && ($a['active'] ?? false);
+                            @endphp
+                            <div style="display:flex;justify-content:space-between;padding:3px 0;{{ !$active ? 'opacity:.5;' : '' }}">
+                                <span>{{ $dayShort[$day] ?? $day }}</span>
+                                <span>
+                                    @if($active)
+                                        {{ \Carbon\Carbon::createFromFormat('H:i', $a['start'])->format('g:i A') }} – {{ \Carbon\Carbon::createFromFormat('H:i', $a['end'])->format('g:i A') }}
+                                    @else
+                                        <span style="color:var(--g4);">Unavailable</span>
+                                    @endif
+                                </span>
+                            </div>
+                        @endforeach
                     </div>
                 @endif
                 @if($worker->phone)
@@ -72,111 +97,138 @@
     </div>
 
     {{-- Right: Details --}}
+    @php
+        $profileHasContent = $workerProfile && (
+            $workerProfile->bio
+            || !empty($workerProfile->skills)
+            || !empty($workerProfile->spoken_languages)
+            || ($workerProfile->portfolios && $workerProfile->portfolios->count() > 0)
+        );
+        $profileHasContent = $profileHasContent || ($documents && $documents->count() > 0);
+    @endphp
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;">
-        {{-- Bio --}}
-        @if($workerProfile && $workerProfile->bio)
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">About</h3>
-                </div>
-                <p style="font-size:.9rem;color:var(--g7);line-height:1.7;">{{ $workerProfile->bio }}</p>
-            </div>
-        @endif
-
-        {{-- Skills --}}
-        @if($workerProfile && !empty($workerProfile->skills))
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Skills</h3>
-                </div>
-                <div class="skill-tags" style="margin-top:4px;">
-                    @foreach($workerProfile->skills as $skill)
-                        <span class="skill-tag">{{ $skill }}</span>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        {{-- Languages --}}
-        @if($workerProfile && !empty($workerProfile->spoken_languages))
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Languages</h3>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
-                    @foreach($workerProfile->spoken_languages as $lang)
-                        <span style="background:var(--g0);padding:4px 12px;border-radius:20px;font-size:.82rem;color:var(--g7);">{{ $lang }}</span>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        {{-- Documents --}}
-        @if($documents && $documents->count() > 0)
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Documents</h3>
-                </div>
-                <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
-                    @foreach($documents as $doc)
-                        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--g0);border-radius:8px;font-size:.85rem;">
-                            <i class="fa-solid fa-file-lines" style="color:var(--b5);" aria-hidden="true"></i>
-                            <span style="flex:1;">{{ $doc->document_type }}</span>
-                            @if($doc->status === 'verified')
-                                <span style="color:#166534;font-size:.78rem;"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified</span>
-                            @else
-                                <span style="color:var(--g4);font-size:.78rem;">{{ ucfirst($doc->status) }}</span>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        {{-- Portfolio --}}
-        @if($workerProfile && $workerProfile->portfolios && $workerProfile->portfolios->count() > 0)
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Portfolio</h3>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:8px;">
-                    @foreach($workerProfile->portfolios as $item)
-                        <div style="border-radius:8px;overflow:hidden;background:var(--g0);">
-                            @if($item->photo_path)
-                                <img src="{{ Storage::url($item->photo_path) }}" alt="{{ $item->caption ?? '' }}"
-                                     style="width:100%;height:130px;object-fit:cover;display:block;">
-                            @endif
-                            @if($item->caption)
-                                <p style="padding:8px 10px;font-size:.78rem;color:var(--g6);">{{ $item->caption }}</p>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        {{-- Reviews --}}
-        @if($reviews->count() > 0)
-            <div class="card-panel">
-                <div class="card-panel-header">
-                    <h3 class="section-title">Reviews ({{ $reviews->count() }})</h3>
-                </div>
-                @foreach($reviews as $review)
-                    <div style="padding:14px 0;border-bottom:1px solid var(--g1);">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <span style="font-weight:500;font-size:.88rem;">{{ $review->client?->name ?? 'Anonymous' }}</span>
-                            <div style="display:flex;gap:2px;">
-                                @for($s = 1; $s <= 5; $s++)
-                                    <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" style="color:#f59e0b;font-size:.75rem;" aria-hidden="true"></i>
-                                @endfor
-                            </div>
-                        </div>
-                        @if($review->comment)
-                            <p style="font-size:.85rem;color:var(--g7);margin-top:6px;line-height:1.5;">{{ $review->comment }}</p>
-                        @endif
-                        <p style="font-size:.75rem;color:var(--g4);margin-top:4px;">{{ $review->created_at->diffForHumans() }}</p>
+        @if($profileHasContent)
+            {{-- Bio --}}
+            @if($workerProfile && $workerProfile->bio)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">About</h3>
                     </div>
-                @endforeach
+                    <p style="font-size:.9rem;color:var(--g7);line-height:1.7;">{{ $workerProfile->bio }}</p>
+                </div>
+            @endif
+
+            {{-- Skills --}}
+            @if($workerProfile && !empty($workerProfile->skills))
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Skills</h3>
+                    </div>
+                    <div class="skill-tags" style="margin-top:4px;">
+                        @foreach($workerProfile->skills as $skill)
+                            <span class="skill-tag">{{ $skill }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Languages --}}
+            @if($workerProfile && !empty($workerProfile->spoken_languages))
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Languages</h3>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+                        @foreach($workerProfile->spoken_languages as $lang)
+                            <span style="background:var(--g0);padding:4px 12px;border-radius:20px;font-size:.82rem;color:var(--g7);">{{ $lang }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Documents --}}
+            @if($documents && $documents->count() > 0)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Documents</h3>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+                        @foreach($documents as $doc)
+                            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--g0);border-radius:8px;font-size:.85rem;">
+                                <i class="fa-solid fa-file-lines" style="color:var(--b5);" aria-hidden="true"></i>
+                                <span style="flex:1;">{{ $doc->document_type }}</span>
+                                @if($doc->status === 'verified')
+                                    <span style="color:#166534;font-size:.78rem;"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified</span>
+                                @else
+                                    <span style="color:var(--g4);font-size:.78rem;">{{ ucfirst($doc->status) }}</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Portfolio --}}
+            @if($workerProfile && $workerProfile->portfolios && $workerProfile->portfolios->count() > 0)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Portfolio</h3>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:8px;">
+                        @foreach($workerProfile->portfolios as $item)
+                            <div style="border-radius:8px;overflow:hidden;background:var(--g0);">
+                                @if($item->photo_path)
+                                    <img src="{{ Storage::url($item->photo_path) }}" alt="{{ $item->caption ?? '' }}"
+                                         style="width:100%;height:130px;object-fit:cover;display:block;">
+                                @endif
+                                @if($item->caption)
+                                    <p style="padding:8px 10px;font-size:.78rem;color:var(--g6);">{{ $item->caption }}</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Reviews --}}
+            @if($reviews->count() > 0)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title">Reviews ({{ $reviews->count() }})</h3>
+                    </div>
+                    @foreach($reviews as $review)
+                        <div style="padding:14px 0;border-bottom:1px solid var(--g1);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-weight:500;font-size:.88rem;">{{ $review->client?->name ?? 'Anonymous' }}</span>
+                                <div style="display:flex;gap:2px;">
+                                    @for($s = 1; $s <= 5; $s++)
+                                        <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" style="color:#f59e0b;font-size:.75rem;" aria-hidden="true"></i>
+                                    @endfor
+                                </div>
+                            </div>
+                            @if($review->photo_url)
+                                <div class="review-photo-wrap" onclick="openLightbox('{{ $review->photo_url }}')">
+                                    <img src="{{ $review->photo_url }}" alt="Review photo">
+                                    <div class="review-photo-overlay"><i class="fa-solid fa-expand" aria-hidden="true"></i> View photo</div>
+                                </div>
+                            @endif
+                            @if($review->comment)
+                                <p style="font-size:.85rem;color:var(--g7);margin-top:6px;line-height:1.5;">{{ $review->comment }}</p>
+                            @endif
+                            <p style="font-size:.75rem;color:var(--g4);margin-top:4px;">{{ $review->created_at->diffForHumans() }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        @else
+            <div class="card-panel" style="text-align:center;padding:40px 22px;">
+                <div style="font-size:2.5rem;color:var(--g2);margin-bottom:14px;">
+                    <i class="fa-regular fa-user" aria-hidden="true"></i>
+                </div>
+                <h3 style="font-size:1.05rem;color:var(--g6);margin-bottom:6px;">Profile not yet set up</h3>
+                <p style="font-size:.85rem;color:var(--g4);max-width:360px;margin:0 auto;">
+                    {{ $worker->name }} hasn't added their profile details yet. Check back later for updates.
+                </p>
             </div>
         @endif
 
@@ -208,15 +260,28 @@
 
                 <div class="form-group">
                     <label for="service_category">Service</label>
-                    <input type="text" id="service_category" name="service_category"
-                           class="form-control" value="{{ $worker->service_category ?? '' }}"
-                           placeholder="e.g. Plumbing, Electrical" required>
+                    <select id="service_category" name="service_category" class="form-control" required>
+                        <option value="">Select service…</option>
+                        @forelse($workerServices as $ps)
+                            <option value="{{ $ps->service->name }}" {{ $loop->first ? 'selected' : '' }}>
+                                {{ $ps->service->name }}
+                            </option>
+                        @empty
+                            <option value="{{ $worker->service_category }}" selected>
+                                {{ $worker->service_category ?? 'General' }}
+                            </option>
+                        @endforelse
+                    </select>
                 </div>
 
                 <div class="form-group">
                     <label for="scheduled_at">Schedule</label>
                     <input type="datetime-local" id="scheduled_at" name="scheduled_at"
                            class="form-control" min="{{ now()->addHour()->format('Y-m-d\TH:i') }}" required>
+                    <div id="schedule-warning" style="display:none;margin-top:8px;padding:8px 12px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;font-size:.8rem;color:#856404;align-items:flex-start;gap:6px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="margin-top:1px;" aria-hidden="true"></i>
+                        <span id="schedule-warning-text"></span>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -225,32 +290,21 @@
                            placeholder="e.g. 123 Mabini St" required>
                 </div>
 
+                @php
+                    $allBarangays = ['Acle','Bayudbud','Bolbok','Burgos','Dalima','Dao','Guinhawa','Lumbangan','Luna','Luntal','Magahis','Malibu','Mataywanac','Palincaro','Putol','Rillo','Rizal','Sabang','San Jose','Talon','Toong','Tuyon-Tuyon'];
+                    $coveredBarangays = $workerProfile ? ($workerProfile->service_areas ?? $workerProfile->service_zone ?? []) : [];
+                @endphp
                 <div class="form-group">
                     <label for="barangay">Barangay</label>
                     <select id="barangay" name="barangay" class="form-control" required>
                         <option value="">Select barangay…</option>
-                        <option value="Acle">Acle</option>
-                        <option value="Bayudbud">Bayudbud</option>
-                        <option value="Bolbok">Bolbok</option>
-                        <option value="Burgos">Burgos</option>
-                        <option value="Dalima">Dalima</option>
-                        <option value="Dao">Dao</option>
-                        <option value="Guinhawa">Guinhawa</option>
-                        <option value="Lumbangan">Lumbangan</option>
-                        <option value="Luna">Luna</option>
-                        <option value="Luntal">Luntal</option>
-                        <option value="Magahis">Magahis</option>
-                        <option value="Malibu">Malibu</option>
-                        <option value="Mataywanac">Mataywanac</option>
-                        <option value="Palincaro">Palincaro</option>
-                        <option value="Putol">Putol</option>
-                        <option value="Rillo">Rillo</option>
-                        <option value="Rizal">Rizal</option>
-                        <option value="Sabang">Sabang</option>
-                        <option value="San Jose">San Jose</option>
-                        <option value="Talon">Talon</option>
-                        <option value="Toong">Toong</option>
-                        <option value="Tuyon-Tuyon">Tuyon-Tuyon</option>
+                        @forelse($coveredBarangays as $barangay)
+                            <option value="{{ $barangay }}">{{ $barangay }}</option>
+                        @empty
+                            @foreach($allBarangays as $barangay)
+                                <option value="{{ $barangay }}">{{ $barangay }}</option>
+                            @endforeach
+                        @endforelse
                     </select>
                 </div>
 
@@ -266,6 +320,20 @@
                     </div>
                 @endif
 
+                <div class="agreement-box">
+                    <p class="agreement-title">Service Agreement</p>
+                    <div class="agreement-summary">
+                        <span><strong>Service:</strong> <span id="agree-service">{{ $worker->service_category ?? '—' }}</span></span>
+                        <span><strong>Date:</strong> <span id="agree-date">—</span></span>
+                        <span><strong>Location:</strong> <span id="agree-location">—</span></span>
+                        <span><strong>Price:</strong> <span id="agree-price">—</span></span>
+                    </div>
+                    <label class="agreement-check">
+                        <input type="checkbox" id="agree-terms" required>
+                        <span>I agree to the <a href="{{ url('/terms') }}" target="_blank">Terms of Service</a> and confirm that the details above are accurate. I understand that this creates a binding service agreement with the worker.</span>
+                    </label>
+                </div>
+
                 <div id="book-msg" style="display:none;"></div>
             </form>
         </div>
@@ -276,21 +344,85 @@
     </div>
 </div>
 
+{{-- Lightbox --}}
+<div id="lightbox" class="lightbox-overlay" style="display:none;" onclick="closeLightbox()">
+    <button type="button" class="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <img id="lightboxImg" src="" alt="Photo">
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
+const WORKER_AVAILABILITY = @json($workerProfile && $workerProfile->availability ? $workerProfile->availability : []);
+const DAY_MAP = {0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
+
 function openBookModal() {
     document.getElementById('book-modal').style.display = 'flex';
     document.getElementById('book-msg').style.display = 'none';
+    document.getElementById('schedule-warning').style.display = 'none';
+    document.getElementById('book-submit-btn').disabled = false;
 }
 
 function closeBookModal() {
     document.getElementById('book-modal').style.display = 'none';
 }
 
+function validateSchedule() {
+    const input = document.getElementById('scheduled_at');
+    const warning = document.getElementById('schedule-warning');
+    const btn = document.getElementById('book-submit-btn');
+    const warningText = document.getElementById('schedule-warning-text');
+
+    if (!input.value || WORKER_AVAILABILITY.length === 0) {
+        warning.style.display = 'none';
+        btn.disabled = false;
+        return;
+    }
+
+    const date = new Date(input.value);
+    const dayName = DAY_MAP[date.getDay()];
+    const timeStr = String(date.getHours()).padStart(2,'0') + ':' + String(date.getMinutes()).padStart(2,'0');
+
+    const slot = WORKER_AVAILABILITY.find(function(a) {
+        return a.day === dayName && a.active;
+    });
+
+    if (!slot) {
+        warningText.textContent = dayName + ' is not in this worker\u2019s available days. The worker may not accept this schedule.';
+        warning.style.display = 'flex';
+        btn.disabled = true;
+        return;
+    }
+
+    if (timeStr < slot.start || timeStr >= slot.end) {
+        warningText.textContent = 'The selected time (' + timeStr.slice(0,5) + ') is outside the worker\u2019s available hours (' + slot.start.slice(0,5) + '\u2013' + slot.end.slice(0,5) + '). The worker may not accept this schedule.';
+        warning.style.display = 'flex';
+        btn.disabled = true;
+        return;
+    }
+
+    warning.style.display = 'none';
+    btn.disabled = false;
+}
+
+function updateAgreementSummary() {
+    const svc  = document.querySelector('[name="service_category"]')?.value || '—';
+    const dt   = document.querySelector('[name="scheduled_at"]')?.value || '—';
+    const addr = [document.querySelector('[name="house_no"]')?.value, document.querySelector('[name="street"]')?.value, document.querySelector('[name="barangay"]')?.value].filter(Boolean).join(', ') || '—';
+    const pr   = document.querySelector('[name="price"]')?.value;
+    document.getElementById('agree-service').textContent  = svc;
+    document.getElementById('agree-date').textContent     = dt ? new Date(dt).toLocaleString('en-PH',{dateStyle:'long',timeStyle:'short'}) : '—';
+    document.getElementById('agree-location').textContent = addr;
+    document.getElementById('agree-price').textContent    = pr ? '₱' + Number(pr).toLocaleString() : '—';
+}
+
 function submitBooking(e) {
     e.preventDefault();
+    if (!document.getElementById('agree-terms').checked) {
+        alert('Please agree to the Service Agreement before submitting.');
+        return;
+    }
     const form = e.target;
     const btn = document.getElementById('book-submit-btn');
     const msg = document.getElementById('book-msg');
@@ -334,6 +466,24 @@ function submitBooking(e) {
         btn.textContent = 'Send Request';
     });
 }
+
+function openLightbox(url) {
+    document.getElementById('lightboxImg').src = url;
+    document.getElementById('lightbox').style.display = 'flex';
+}
+function closeLightbox() {
+    document.getElementById('lightbox').style.display = 'none';
+}
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+});
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('scheduled_at').addEventListener('change', validateSchedule);
+    document.getElementById('scheduled_at').addEventListener('input', validateSchedule);
+
+    document.querySelector('#book-form').addEventListener('input', updateAgreementSummary);
+    document.querySelector('#book-form').addEventListener('change', updateAgreementSummary);
+});
 </script>
 @endpush
 
@@ -381,6 +531,136 @@ function submitBooking(e) {
 .modal-footer {
     display: flex; gap: 10px; justify-content: flex-end;
     padding: 0 22px 18px;
+}
+
+/* ── Review photo ── */
+.review-photo-wrap {
+    position: relative;
+    display: inline-block;
+    margin-top: 6px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    transition: box-shadow .2s, transform .2s;
+    cursor: pointer;
+}
+.review-photo-wrap:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+    transform: scale(1.02);
+}
+.review-photo-wrap img {
+    display: block;
+    max-width: 200px;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+.review-photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: .78rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity .2s;
+    border-radius: 10px;
+    letter-spacing: .02em;
+}
+.review-photo-wrap:hover .review-photo-overlay {
+    opacity: 1;
+}
+
+/* ── Lightbox ── */
+.lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.8);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: lbFade .2s ease;
+}
+@keyframes lbFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.lightbox-overlay img {
+    max-width: 90vw;
+    max-height: 85vh;
+    border-radius: 8px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.5);
+    animation: lbZoom .25s ease;
+}
+@keyframes lbZoom {
+    from { transform: scale(.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.lightbox-close {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    background: rgba(255,255,255,.12);
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+}
+.lightbox-close:hover {
+    background: rgba(255,255,255,.25);
+}
+
+/* ── Agreement ── */
+.agreement-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid var(--g1);
+    border-radius: 8px;
+}
+.agreement-title {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--b8);
+    margin: 0 0 6px;
+}
+.agreement-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: .8rem;
+    color: var(--g6);
+    margin-bottom: 10px;
+}
+.agreement-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: .78rem;
+    color: var(--g6);
+    line-height: 1.45;
+    cursor: pointer;
+}
+.agreement-check input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+.agreement-check a {
+    color: var(--b6);
+    text-decoration: underline;
 }
 </style>
 @endpush

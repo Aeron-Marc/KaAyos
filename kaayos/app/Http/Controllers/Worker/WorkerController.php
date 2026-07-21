@@ -4,11 +4,16 @@ namespace App\Http\Controllers\Worker;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Conversation;
+use App\Models\Message;
 use App\Models\WorkerProfile;
+use App\Events\MessageSent;
+use App\Notifications\NewMessage;
 use App\Support\WorkerDocuments;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -44,19 +49,17 @@ class WorkerController extends Controller
 
         $totalCompleted = $user->bookingsAsWorker()->completed()->count();
 
-        $rating = $user->workerProfile?->average_rating ?? 0;
-
         return [
             ['label' => 'Earnings This Week', 'value' => '₱' . number_format($weeklyEarnings), 'icon' => 'fa-coins', 'accent' => true],
             ['label' => 'Active Jobs',       'value' => $activeJobs,                         'icon' => 'fa-briefcase'],
-            ['label' => 'Rating',            'value' => number_format($rating, 1) . ' ★',    'icon' => 'fa-star'],
+            ['label' => 'Rating',            'value' => number_format($user->workerProfile?->average_rating ?? 0, 1) . ' ★', 'icon' => 'fa-star'],
             ['label' => 'Completed Jobs',    'value' => $totalCompleted,                     'icon' => 'fa-circle-check'],
         ];
     }
 
     protected function getJobRequests(?string $filter = null): array
     {
-        $query = auth()->user()->bookingsAsWorker()->with('client');
+        $query = auth()->user()->bookingsAsWorker()->with('client', 'history');
 
         if ($filter && in_array($filter, Booking::STATUSES)) {
             $query->where('status', $filter);
@@ -73,20 +76,32 @@ class WorkerController extends Controller
                     Booking::STATUS_COMPLETED  => 'Completed',
                 ];
 
+                $statusHistory = [];
+                foreach ($booking->history as $h) {
+                    $statusHistory[$h->new_status] = $h->created_at;
+                }
+                if (!isset($statusHistory['new'])) {
+                    $statusHistory['new'] = $booking->created_at;
+                }
+
                 return [
-                    'id'           => $booking->id,
-                    'client'       => $booking->client->name ?? 'Unknown',
-                    'client_phone' => $booking->client->phone ?? 'N/A',
-                    'client_email' => $booking->client->email ?? 'N/A',
-                    'service'      => $booking->service_category,
-                    'description'  => $booking->description ?? 'No details provided.',
-                    'date'         => $booking->scheduled_at->format('M d, Y · h:i A'),
-                    'location'     => $booking->address,
-                    'status'       => $labelMap[$booking->status] ?? ucfirst($booking->status),
-                    'raw_status'   => $booking->status,
-                    'price'        => $booking->price ?? 0,
-                    'created'      => $booking->created_at->format('M d, Y · h:i A'),
-                    'booking_ref'  => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
+                    'id'             => $booking->id,
+                    'client'         => $booking->client->name ?? 'Unknown',
+                    'client_phone'   => $booking->client->phone ?? 'N/A',
+                    'client_email'   => $booking->client->email ?? 'N/A',
+                    'service'        => $booking->service_category,
+                    'description'    => $booking->notes ?? 'No details provided.',
+                    'date'           => $booking->scheduled_at->format('M d, Y · h:i A'),
+                    'month'          => $booking->scheduled_at->format('M'),
+                    'day'            => $booking->scheduled_at->format('d'),
+                    'time'           => $booking->scheduled_at->format('g:i A'),
+                    'location'       => $booking->address,
+                    'status'         => $labelMap[$booking->status] ?? ucfirst($booking->status),
+                    'raw_status'     => $booking->status,
+                    'price'          => $booking->price ?? 0,
+                    'created'        => $booking->created_at->format('M d, Y · h:i A'),
+                    'booking_ref'    => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
+                    'status_history' => $statusHistory,
                 ];
             })
             ->toArray();
@@ -180,59 +195,51 @@ class WorkerController extends Controller
     {
         $user = auth()->user();
 
-        $conversations = [];
-        $isFirst = true;
-
-        $bookings = $user->bookingsAsWorker()
+        $conversations = Conversation::where('worker_id', $user->id)
             ->with('client', 'messages.sender')
-            ->latest()
+            ->latest('last_message_at')
             ->get();
 
-        $grouped = $bookings->groupBy('client_id');
+        $result = [];
 
-        foreach ($grouped as $clientId => $clientBookings) {
-            $client = $clientBookings->first()->client;
-            $latestBooking = $clientBookings->first();
+        foreach ($conversations as $convo) {
+            $client = $convo->client;
 
-            $allMessages = collect();
-            foreach ($clientBookings as $booking) {
-                $allMessages = $allMessages->merge($booking->messages);
-            }
+            $messages = $convo->messages->sortBy('created_at');
 
-            $allMessages = $allMessages->sortBy('created_at');
-
-            $messages = $allMessages->map(fn($msg) => [
-                'from' => $msg->sender_id === $user->id ? 'me' : 'them',
-                'text' => $msg->message,
-                'time' => $msg->created_at->diffForHumans(),
-            ])
-                ->values()
-                ->toArray();
-
-            $lastMsg = $allMessages->last();
-            $unreadCount = $allMessages->where('receiver_id', $user->id)->whereNull('read_at')->count();
+            $lastMsg = $messages->last();
+            $unreadCount = $messages->where('receiver_id', $user->id)->whereNull('read_at')->count();
 
             $initials = strtoupper(
-                ($client->first_name ? $client->first_name[0] : '') .
-                ($client->last_name ? $client->last_name[0] : '')
+                ($client?->first_name ? $client->first_name[0] : '') .
+                ($client?->last_name ? $client->last_name[0] : '')
             );
 
-            $conversations[] = [
-                'active'       => $isFirst,
-                'booking_id'   => $latestBooking->id,
-                'client_id'    => $client->id,
-                'initials'     => $initials ?: '?',
-                'name'         => $client->name ?? 'Unknown',
-                'time'         => $lastMsg?->created_at->diffForHumans() ?? $latestBooking->scheduled_at->diffForHumans(),
-                'preview'      => $lastMsg?->message ?? '',
-                'unread_count' => $unreadCount,
-                'messages'     => $messages,
+            $result[] = [
+                'active'          => false,
+                'conversation_id' => $convo->id,
+                'client_id'       => $client?->id,
+                'initials'        => $initials ?: '?',
+                'name'            => $client?->name ?? 'Unknown',
+                'time'            => $lastMsg?->created_at->diffForHumans()
+                                    ?? $convo->last_message_at?->diffForHumans()
+                                    ?? $convo->created_at->diffForHumans(),
+                'preview'         => $lastMsg?->message ?? '',
+                'unread_count'    => $unreadCount,
+                'messages'        => $messages->map(fn($msg) => [
+                    'id'   => $msg->id,
+                    'from' => $msg->sender_id === $user->id ? 'me' : 'them',
+                    'text' => $msg->message,
+                    'time' => $msg->created_at->diffForHumans(),
+                ])->values()->toArray(),
             ];
-
-            $isFirst = false;
         }
 
-        return $conversations;
+        if (!empty($result)) {
+            $result[0]['active'] = true;
+        }
+
+        return $result;
     }
 
     protected function getEarnings(): array
@@ -312,19 +319,20 @@ class WorkerController extends Controller
         return view('worker.dashboard.notifications', $this->shared());
     }
 
-    public function jobs(Request $request): View
+    public function jobs(Request $request): RedirectResponse
+    {
+        $query = $request->query('filter') ? ['filter' => $request->query('filter')] : [];
+        return redirect()->route('worker.schedule', $query);
+    }
+
+    public function schedule(Request $request): View
     {
         $filter = $request->query('filter');
         $data = $this->shared();
         $data['jobRequests'] = $this->getJobRequests($filter);
-        $data['activeFilter'] = $filter;
+        $data['activeFilter'] = $filter ?? '';
 
-        return view('worker.jobs.index', $data);
-    }
-
-    public function schedule(): View
-    {
-        return view('worker.schedule.index', $this->shared());
+        return view('worker.schedule.index', $data);
     }
 
     public function messages(): View
@@ -335,26 +343,43 @@ class WorkerController extends Controller
     public function sendMessage(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'booking_id' => ['required', 'exists:bookings,id'],
-            'message'    => ['required', 'string', 'max:2000'],
+            'conversation_id' => ['required', 'exists:conversations,id'],
+            'message'         => ['required', 'string', 'max:2000'],
         ]);
 
-        $booking = Booking::findOrFail($validated['booking_id']);
+        $conversation = Conversation::findOrFail($validated['conversation_id']);
 
-        if ($booking->worker_id !== auth()->id()) {
+        if ($conversation->worker_id !== auth()->id()) {
             abort(403);
         }
 
+        $latestBooking = Booking::where('client_id', $conversation->client_id)
+            ->where('worker_id', $conversation->worker_id)
+            ->latest('created_at')
+            ->first();
+
         $msg = Message::create([
-            'booking_id'  => $booking->id,
-            'sender_id'   => auth()->id(),
-            'receiver_id' => $booking->client_id,
-            'message'     => $validated['message'],
+            'conversation_id' => $conversation->id,
+            'booking_id'      => $latestBooking?->id,
+            'sender_id'       => auth()->id(),
+            'receiver_id'     => $conversation->client_id,
+            'message'         => $validated['message'],
         ]);
+
+        $conversation->update(['last_message_at' => now()]);
+
+        $msg->load('sender');
+
+        $recipient = $conversation->client;
+        if ($recipient) {
+            Notification::send($recipient, new NewMessage($msg));
+        }
+        broadcast(new MessageSent($msg))->toOthers();
 
         return response()->json([
             'success' => true,
             'message' => [
+                'id'   => $msg->id,
                 'from' => 'me',
                 'text' => $msg->message,
                 'time' => $msg->created_at->diffForHumans(),
@@ -426,7 +451,6 @@ class WorkerController extends Controller
         $data = $request->validate([
             'first_name'         => ['required', 'string', 'max:100'],
             'last_name'          => ['required', 'string', 'max:100'],
-            'email'              => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'phone'              => ['nullable', 'string', 'max:20', 'regex:/^(?:\+63|0)[0-9]{10}$/'],
             'city'               => ['nullable', 'string', 'max:255'],
             'language'           => ['required', 'string', Rule::in(['English', 'Filipino'])],
@@ -437,6 +461,7 @@ class WorkerController extends Controller
             'hourly_rate'        => ['nullable', 'numeric', 'min:0'],
             'available_days'     => ['nullable', 'string', 'max:255'],
             'preferred_hours'    => ['nullable', 'string', 'max:255'],
+            'availability'       => ['nullable', 'json'],
             'service_areas'      => ['nullable', 'string'],
             'years_of_experience'=> ['nullable', 'integer', 'min:0', 'max:100'],
             'service_radius'     => ['nullable', 'integer', 'min:0', 'max:500'],
@@ -447,26 +472,26 @@ class WorkerController extends Controller
             'first_name'       => $data['first_name'],
             'last_name'        => $data['last_name'],
             'name'             => $data['first_name'] . ' ' . $data['last_name'],
-            'email'            => $data['email'],
-            'phone'            => $data['phone'] ?: null,
-            'city'             => $data['city'] ?: null,
+            'phone'            => $data['phone'] ?? null,
+            'city'             => $data['city'] ?? null,
             'language'         => $data['language'],
-            'service_category' => $data['service_category'] ?: null,
+            'service_category' => $data['service_category'] ?? null,
         ]);
 
         $profile = $user->workerProfile ?? new WorkerProfile(['user_id' => $user->id]);
 
         $profile->fill([
-            'bio'                => $data['bio'] ?: null,
-            'skills'             => $data['skills'] ? array_map('trim', explode(',', $data['skills'])) : null,
-            'spoken_languages'   => $data['spoken_languages'] ? array_map('trim', explode(',', $data['spoken_languages'])) : null,
-            'hourly_rate'        => $data['hourly_rate'] ?: null,
-            'available_days'     => $data['available_days'] ?: null,
-            'preferred_hours'    => $data['preferred_hours'] ?: null,
-            'service_areas'      => $data['service_areas'] ? array_map('trim', explode(',', $data['service_areas'])) : null,
-            'years_of_experience'=> $data['years_of_experience'] ?: null,
-            'service_radius'     => $data['service_radius'] ?: null,
-            'service_zone'       => $data['service_zone'] ? array_map('trim', explode(',', $data['service_zone'])) : null,
+            'bio'                => $data['bio'] ?? null,
+            'skills'             => isset($data['skills']) ? array_map('trim', explode(',', $data['skills'])) : null,
+            'spoken_languages'   => isset($data['spoken_languages']) ? array_map('trim', explode(',', $data['spoken_languages'])) : null,
+            'hourly_rate'        => $data['hourly_rate'] ?? null,
+            'available_days'     => $data['available_days'] ?? null,
+            'preferred_hours'    => $data['preferred_hours'] ?? null,
+            'availability'       => isset($data['availability']) ? json_decode($data['availability'], true) : null,
+            'service_areas'      => isset($data['service_areas']) ? array_map('trim', explode(',', $data['service_areas'])) : null,
+            'years_of_experience'=> $data['years_of_experience'] ?? null,
+            'service_radius'     => $data['service_radius'] ?? null,
+            'service_zone'       => isset($data['service_zone']) ? array_map('trim', explode(',', $data['service_zone'])) : null,
         ]);
 
         $profile->save();
@@ -559,6 +584,10 @@ class WorkerController extends Controller
         $doc->verified_at = null;
         $doc->save();
 
+        if ($user->workerProfile) {
+            $user->workerProfile->update(['government_id_verified' => false]);
+        }
+
         return redirect()
             ->route('worker.profile')
             ->with('success', 'Document uploaded successfully. Awaiting verification.');
@@ -567,5 +596,38 @@ class WorkerController extends Controller
     public function documents(): View
     {
         return view('worker.documents.index', $this->shared());
+    }
+
+    public function pollMessages(Request $request, Conversation $conversation): JsonResponse
+    {
+        if ($conversation->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $query = $conversation->messages()->orderBy('created_at');
+
+        if ($afterId = $request->integer('after')) {
+            $query->where('id', '>', $afterId);
+        }
+
+        $messages = $query->get()->map(fn ($m) => [
+            'id'   => $m->id,
+            'from' => $m->sender_id === auth()->id() ? 'me' : 'them',
+            'text' => $m->message,
+            'time' => $m->created_at->diffForHumans(),
+        ]);
+
+        return response()->json(['messages' => $messages]);
+    }
+
+    public function markMessagesRead(Conversation $conversation): JsonResponse
+    {
+        if ($conversation->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $count = Message::markAllAsReadForConversation($conversation->id, auth()->id());
+
+        return response()->json(['success' => true, 'marked_read' => $count]);
     }
 }

@@ -25,6 +25,18 @@
 .bubble-text { line-height: 1.5; }
 .bubble-time { font-size: .65rem; opacity: .6; margin-top: 4px; }
 .chat-bubble.me .bubble-time { text-align: right; }
+
+/* ── Chat viewport fix (desktop) ── */
+@media (min-width: 769px) {
+    .content { overflow: hidden; padding: 0; }
+    .messages-layout {
+        height: calc(100vh - 64px);
+        min-height: 0;
+        border-radius: 0;
+        grid-template-rows: minmax(0, 1fr);
+    }
+    .messages-layout > * { min-height: 0; }
+}
 </style>
 @endpush
 
@@ -72,7 +84,7 @@
             </div>
             <div class="chat-body" id="chat-body">
                 @foreach($activeConvo['messages'] as $msg)
-                    <div class="chat-bubble {{ $msg['from'] === 'me' ? 'me' : 'them' }}">
+                    <div class="chat-bubble {{ $msg['from'] === 'me' ? 'me' : 'them' }}" data-id="{{ $msg['id'] ?? '' }}">
                         <div class="bubble-text">{{ $msg['text'] }}</div>
                         <div class="bubble-time">{{ $msg['time'] ?? '' }}</div>
                     </div>
@@ -99,6 +111,10 @@
 @push('scripts')
 <script>
 const conversations = @json($conversations);
+let activeConversationId = null;
+let activeConvo = null;
+let _pollInterval = null;
+let _echoChannel = null;
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -107,32 +123,95 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+function subscribeToConversation(conversationId) {
+    if (_echoChannel) _echoChannel.stopListening('MessageSent');
+    if (!conversationId || !window.Echo) return;
+    _echoChannel = window.Echo.private('conversation.' + conversationId);
+    _echoChannel.listen('MessageSent', function (e) {
+        if (activeConversationId && String(e.conversation_id) === String(activeConversationId)) {
+            var body = document.getElementById('chat-body');
+            if (!body) return;
+            if (body.querySelector('[data-id="' + e.id + '"]')) return;
+            var bubble = document.createElement('div');
+            bubble.className = 'chat-bubble them';
+            bubble.setAttribute('data-id', e.id);
+            bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(e.text) + '</div><div class="bubble-time">' + (e.time || 'just now') + '</div>';
+            body.appendChild(bubble);
+            body.scrollTop = body.scrollHeight;
+        }
+    });
+}
+
+function startPolling(conversationId) {
+    if (_pollInterval) clearInterval(_pollInterval);
+    _pollInterval = setInterval(function () {
+        if (!conversationId) return;
+        var lastMsg = document.querySelector('#chat-body .chat-bubble:last-child');
+        var afterParam = lastMsg ? '?after=' + lastMsg.getAttribute('data-id') : '';
+        fetch('/client/messages/poll/' + conversationId + afterParam, {
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.messages || !activeConvo) return;
+            var body = document.getElementById('chat-body');
+            if (!body) return;
+            var existingIds = Array.from(body.querySelectorAll('[data-id]')).map(function (el) { return el.getAttribute('data-id'); });
+            data.messages.forEach(function (msg) {
+                if (msg.from === 'them' && !existingIds.includes(String(msg.id))) {
+                    var bubble = document.createElement('div');
+                    bubble.className = 'chat-bubble them';
+                    bubble.setAttribute('data-id', msg.id);
+                    bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(msg.text) + '</div><div class="bubble-time">' + (msg.time || '') + '</div>';
+                    body.appendChild(bubble);
+                }
+            });
+            body.scrollTop = body.scrollHeight;
+        })
+        .catch(function () {});
+    }, 2000);
+}
+
+function markConversationRead(conversationId) {
+    fetch('/client/messages/' + conversationId + '/read', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+    }).catch(function () {});
+}
+
 function switchConversation(index) {
-    const convo = conversations[index];
+    var convo = conversations[index];
     if (!convo) return;
 
-    document.querySelectorAll('.convo-item').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.convo-item[data-index="${index}"]`)?.classList.add('active');
+    activeConversationId = convo.conversation_id;
+    activeConvo = convo;
+    subscribeToConversation(convo.conversation_id);
+    markConversationRead(convo.conversation_id);
 
-    const pane = document.getElementById('chat-pane');
+    document.querySelectorAll('.convo-item').forEach(function (el) { el.classList.remove('active'); });
+    var target = document.querySelector('.convo-item[data-index="' + index + '"]');
+    if (target) target.classList.add('active');
 
-    const header = document.createElement('div');
+    var pane = document.getElementById('chat-pane');
+    var workerUrl = '/client/workers/' + (convo.worker_id || '');
+
+    var header = document.createElement('div');
     header.className = 'chat-header';
     header.id = 'chat-header';
-    var workerUrl = '/client/workers/' + (convo.worker_id || '');
     header.innerHTML = '<i class="fa-solid fa-circle" style="color:#22c55e;font-size:.5rem;margin-right:6px;" aria-hidden="true"></i> <span id="chat-worker-name">' + convo.name + '</span> <a href="' + workerUrl + '" class="chat-header-book" title="Book this worker"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> Book</a>';
 
-    const body = document.createElement('div');
+    var body = document.createElement('div');
     body.className = 'chat-body';
     body.id = 'chat-body';
     convo.messages.forEach(function (msg) {
-        const bubble = document.createElement('div');
+        var bubble = document.createElement('div');
         bubble.className = 'chat-bubble ' + (msg.from === 'me' ? 'me' : 'them');
+        bubble.setAttribute('data-id', msg.id);
         bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(msg.text) + '</div><div class="bubble-time">' + (msg.time || '') + '</div>';
         body.appendChild(bubble);
     });
 
-    const inputRow = document.createElement('div');
+    var inputRow = document.createElement('div');
     inputRow.className = 'chat-input-row';
     inputRow.id = 'chat-input-row';
     inputRow.innerHTML = '<input type="text" class="msg-input" placeholder="Type a message…" aria-label="Message"><button type="button" class="btn btn-solid send-btn"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></button>';
@@ -143,16 +222,17 @@ function switchConversation(index) {
     pane.appendChild(inputRow);
 
     attachSendHandler(convo);
+    startPolling(convo.conversation_id);
     body.scrollTop = body.scrollHeight;
 }
 
 function attachSendHandler(convo) {
-    const btn = document.querySelector('.send-btn');
-    const input = document.querySelector('.msg-input');
+    var btn = document.querySelector('.send-btn');
+    var input = document.querySelector('.msg-input');
     if (!btn || !input) return;
 
     function send() {
-        const text = input.value.trim();
+        var text = input.value.trim();
         if (!text) return;
 
         fetch('{{ route('client.messages.send') }}', {
@@ -161,21 +241,24 @@ function attachSendHandler(convo) {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json',
+                'X-Socket-ID': window.Echo ? window.Echo.socketId() : '',
             },
-            body: JSON.stringify({ booking_id: convo.booking_id, message: text }),
+            body: JSON.stringify({ conversation_id: convo.conversation_id, message: text }),
         })
-        .then(r => r.json())
-        .then(data => {
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
             if (!data.success) return;
-            const body = document.getElementById('chat-body');
-            const bubble = document.createElement('div');
+            var body = document.getElementById('chat-body');
+            if (body.querySelector('[data-id="' + data.message.id + '"]')) return;
+            var bubble = document.createElement('div');
             bubble.className = 'chat-bubble me';
+            bubble.setAttribute('data-id', data.message.id || '');
             bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(data.message.text) + '</div><div class="bubble-time">' + (data.message.time || 'just now') + '</div>';
             body.appendChild(bubble);
             input.value = '';
             body.scrollTop = body.scrollHeight;
         })
-        .catch(() => {});
+        .catch(function () {});
     }
 
     btn.addEventListener('click', send);
@@ -184,9 +267,9 @@ function attachSendHandler(convo) {
     });
 }
 
-function selectConvoByBookingId(bookingId) {
-    for (let i = 0; i < conversations.length; i++) {
-        if (String(conversations[i].booking_id) === String(bookingId)) {
+function selectConvoByConversationId(conversationId) {
+    for (var i = 0; i < conversations.length; i++) {
+        if (String(conversations[i].conversation_id) === String(conversationId)) {
             switchConversation(i);
             return;
         }
@@ -194,17 +277,30 @@ function selectConvoByBookingId(bookingId) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    const bookingParam = urlParams.get('booking');
-    if (bookingParam) {
-        selectConvoByBookingId(bookingParam);
-    }
+    var checkEcho = setInterval(function () {
+        if (window.Echo) {
+            clearInterval(checkEcho);
 
-    const active = document.querySelector('.convo-item.active');
-    if (active) {
-        const convo = conversations[active.dataset.index];
-        if (convo) attachSendHandler(convo);
-    }
+            var urlParams = new URLSearchParams(window.location.search);
+            var conversationParam = urlParams.get('conversation');
+            if (conversationParam) {
+                selectConvoByConversationId(conversationParam);
+                return;
+            }
+
+            var active = document.querySelector('.convo-item.active');
+            if (active) {
+                var convo = conversations[active.dataset.index];
+                if (convo) {
+                    activeConversationId = convo.conversation_id;
+                    activeConvo = convo;
+                    subscribeToConversation(convo.conversation_id);
+                    startPolling(convo.conversation_id);
+                    attachSendHandler(convo);
+                }
+            }
+        }
+    }, 200);
 });
 </script>
 @endpush

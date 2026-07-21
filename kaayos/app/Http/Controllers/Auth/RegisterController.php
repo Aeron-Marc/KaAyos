@@ -54,10 +54,28 @@ class RegisterController extends Controller
             'city'             => $validated['city'] ?? null,
         ]);
 
-        event(new Registered($user));
+        if (config('mail.mailers.smtp.username')) {
+            event(new Registered($user));
 
-        return redirect()
-            ->route('login')
-            ->with('status', 'Registration successful! Please check your email to verify your account before logging in.');
+            $loginUrl = route('login');
+
+            if ($intended = $request->input('intended')) {
+                $loginUrl .= '?intended=' . urlencode($intended);
+            }
+
+            return redirect($loginUrl)
+                ->with('status', 'Registration successful! Please check your email to verify your account before logging in.');
+        }
+
+        $user->markEmailAsVerified();
+        auth()->login($user);
+
+        $dashboard = match ($user->role) {
+            'worker' => route('worker.dashboard'),
+            default  => route('client.dashboard'),
+        };
+
+        return redirect()->intended($dashboard)
+            ->with('success', 'Registration successful! Welcome to KaAyos.');
     }
 }

@@ -15,7 +15,6 @@ class ProfileController extends Controller
     {
         $data = $request->validate([
             'fullName' => 'required|string|max:255',
-            'email'    => ['required', 'email', Rule::unique('users', 'email')->ignore($request->user()->id)],
             'phone'    => ['nullable', 'string', 'max:20', 'regex:/^(?:\+63|0)[0-9]{10}$/'],
             'barangay' => 'nullable|string|max:255',
         ]);
@@ -29,9 +28,8 @@ class ProfileController extends Controller
         $user->update([
             'first_name' => $firstName,
             'last_name'  => $lastName,
-            'email'      => $data['email'],
-            'phone'      => $data['phone'] ?: null,
-            'city'       => $data['barangay'] ?: null,
+            'phone'      => $data['phone'] ?? null,
+            'city'       => $data['barangay'] ?? null,
         ]);
 
         return response()->json([

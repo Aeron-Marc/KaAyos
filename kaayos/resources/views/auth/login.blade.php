@@ -104,6 +104,7 @@ input::placeholder{color:var(--g4)}
 
         <form method="POST" action="{{ route('login') }}">
             @csrf
+            <input type="hidden" name="intended" id="intendedInput" value="">
 
             <div>
                 <label for="email">Email Address</label>
@@ -185,6 +186,8 @@ btn.addEventListener('click', () => {
     pwd.type = show ? 'text' : 'password';
     ico.className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
 });
+var intended = new URLSearchParams(window.location.search).get('intended');
+if (intended) document.getElementById('intendedInput').value = intended;
 </script>
 </body>
 </html>

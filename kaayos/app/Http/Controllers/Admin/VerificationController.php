@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ApproveRejectVerificationRequest;
 use App\Models\User;
 use App\Models\WorkerDocument;
+use App\Support\WorkerDocuments;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 
@@ -55,6 +56,7 @@ class VerificationController extends Controller
         ]);
 
         $user = $verification->user;
+        $this->checkWorkerVerification($user);
         $user->notify(new \App\Notifications\VerificationApproved($user));
 
         return redirect()->route('admin.verification.index')
@@ -71,9 +73,29 @@ class VerificationController extends Controller
         ]);
 
         $user = $verification->user;
+        if ($user->workerProfile) {
+            $user->workerProfile->update(['government_id_verified' => false]);
+        }
         $user->notify(new \App\Notifications\VerificationRejected($user, $request->input('rejection_reason')));
 
         return redirect()->route('admin.verification.index')
             ->with('error', "Verification for {$user->name} has been rejected.");
+    }
+
+    private function checkWorkerVerification(User $user): void
+    {
+        $types = collect(WorkerDocuments::types())->pluck('name');
+        $verifiedTypes = WorkerDocument::where('user_id', $user->id)
+            ->whereIn('document_type', $types)
+            ->where('status', 'verified')
+            ->pluck('document_type');
+
+        $allVerified = $types->diff($verifiedTypes)->isEmpty();
+
+        if ($user->workerProfile) {
+            $user->workerProfile->update([
+                'government_id_verified' => $allVerified,
+            ]);
+        }
     }
 }

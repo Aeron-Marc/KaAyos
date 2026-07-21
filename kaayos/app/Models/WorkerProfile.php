@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkerProfile extends Model
@@ -22,6 +21,7 @@ class WorkerProfile extends Model
         'service_radius',
         'service_radius_km',
         'service_zone',
+        'availability',
         'cover_photo',
         'government_id_verified',
         'average_rating',
@@ -34,6 +34,7 @@ class WorkerProfile extends Model
         'spoken_languages'      => 'array',
         'service_areas'         => 'array',
         'service_zone'          => 'array',
+        'availability'          => 'array',
         'hourly_rate'           => 'decimal:2',
         'years_of_experience'   => 'integer',
         'service_radius'        => 'integer',
@@ -54,9 +55,4 @@ class WorkerProfile extends Model
         return $this->hasMany(WorkPortfolio::class);
     }
 
-    public function skillTags(): BelongsToMany
-    {
-        return $this->belongsToMany(SkillTag::class, 'worker_skill_tag')
-            ->withTimestamps();
-    }
 }

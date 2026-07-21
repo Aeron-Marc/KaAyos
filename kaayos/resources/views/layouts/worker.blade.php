@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    @vite(['resources/css/client.css'])
+    @vite(['resources/css/client.css', 'resources/js/echo.js'])
     @stack('styles')
 </head>
 <body>
@@ -32,12 +32,6 @@
                class="nav-item {{ request()->routeIs('worker.dashboard*') ? 'active' : '' }}">
                 <i class="fa-solid fa-gauge-high nav-icon" aria-hidden="true"></i>
                 {{ __('nav.dashboard') }}
-            </a>
-
-            <a href="{{ route('worker.jobs') }}"
-               class="nav-item {{ request()->routeIs('worker.jobs*') ? 'active' : '' }}">
-                <i class="fa-solid fa-clipboard-list nav-icon" aria-hidden="true"></i>
-                {{ __('nav.job_requests') }}
             </a>
 
             <a href="{{ route('worker.schedule') }}"
@@ -130,5 +124,25 @@
 </div>
 
 @stack('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var checkEcho = setInterval(function () {
+        if (window.Echo) {
+            clearInterval(checkEcho);
+            var userId = {{ auth()->id() }};
+            window.Echo.private('user.' + userId)
+                .listen('BookingCreated', function (e) {
+                    var badge = document.querySelector('.badge-dot');
+                    if (badge) badge.style.display = '';
+                    var toast = document.createElement('div');
+                    toast.className = 'toast-notification';
+                    toast.innerHTML = '<strong>New Booking!</strong><br>' + e.client_name + ' booked you for ' + e.service;
+                    document.body.appendChild(toast);
+                    setTimeout(function () { toast.remove(); }, 5000);
+                });
+        }
+    }, 200);
+});
+</script>
 </body>
 </html>

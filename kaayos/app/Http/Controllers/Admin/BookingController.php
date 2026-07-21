@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Events\BookingStatusUpdated;
+use App\Notifications\BookingCancelled;
+use App\Notifications\BookingStatusChanged;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class BookingController extends Controller
 {
@@ -45,5 +49,25 @@ class BookingController extends Controller
     {
         $booking->load(['client', 'worker']);
         return view('admin.bookings.show', compact('booking'));
+    }
+
+    public function cancel(Request $request, Booking $booking)
+    {
+        $oldStatus = $booking->status;
+
+        try {
+            $booking->cancel($request->input('reason', 'Cancelled by admin.'), auth()->id());
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        $booking->load(['client', 'worker']);
+
+        Notification::send($booking->client, new BookingCancelled($booking));
+        Notification::send($booking->worker, new BookingCancelled($booking));
+
+        broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
+
+        return redirect()->back()->with('success', 'Booking #' . ($booking->booking_ref ?? $booking->id) . ' has been cancelled.');
     }
 }

@@ -315,6 +315,7 @@ select{cursor:pointer;padding-right:34px}
       <form id="registerForm" method="POST" action="{{ route('register') }}">
         @csrf
         <input type="hidden" name="role" id="roleInput" value="client">
+        <input type="hidden" name="intended" id="intendedInput" value="">
 
         <!-- STEP 1: ROLE -->
         <section class="step active" data-step="1">
@@ -538,6 +539,8 @@ function checkStrength(val){
   fill.style.width = widths[score];
   fill.style.background = colors[score];
 }
+var intended = new URLSearchParams(window.location.search).get('intended');
+if (intended) document.getElementById('intendedInput').value = intended;
 </script>
 </body>
 </html>

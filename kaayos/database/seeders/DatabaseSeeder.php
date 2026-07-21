@@ -8,7 +8,7 @@ use App\Models\ServiceCategory;
 use App\Models\Service;
 use App\Models\ProviderService;
 use App\Models\Booking;
-use App\Models\SkillTag;
+
 use App\Models\Earning;
 use App\Models\Message;
 use Illuminate\Database\Seeder;
@@ -124,23 +124,6 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // ── Skill Tags ──────────────────────────────────────────────
-
-        $skillTagNames = [
-            'Plumbing', 'Pipe Repair', 'Drain Cleaning', 'Water Heater',
-            'Electrical Wiring', 'Lighting Installation', 'Electrical Panel',
-            'Deep Cleaning', 'Window Cleaning', 'Floor Care',
-            'Interior Painting', 'Exterior Painting', 'Cabinet Refinishing',
-            'Furniture Assembly', 'Cabinet Installation', 'Custom Shelving',
-            'AC Cleaning', 'AC Repair', 'AC Installation',
-            'General Handyman',
-        ];
-
-        $skillTags = [];
-        foreach ($skillTagNames as $name) {
-            $skillTags[] = SkillTag::create(['name' => $name]);
-        }
-
         // ── Worker Users & Profiles (all from Tuy, Batangas) ───────
         // Tuy centre: ~13.9581° N, 120.7278° E
 
@@ -154,7 +137,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
                 'lat' => 13.9581, 'lng' => 120.7278, 'verified' => true,  'rating' => 4.7,
-                'skill_tag_ids' => [0, 1, 2, 3],
             ],
             [
                 'first_name' => 'Elena',    'last_name' => 'Santos',    'email' => 'elena@example.com',   'category' => 'Cleaning',
@@ -165,7 +147,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
                 'lat' => 13.9550, 'lng' => 120.7300, 'verified' => true,  'rating' => 4.5,
-                'skill_tag_ids' => [8, 9, 10],
             ],
             [
                 'first_name' => 'Marco',    'last_name' => 'Reyes',     'email' => 'marco@example.com',   'category' => 'Electrical',
@@ -176,7 +157,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'All Week', 'hours' => 'Full Day (8 AM — 5 PM)',
                 'lat' => 13.9600, 'lng' => 120.7250, 'verified' => true,  'rating' => 4.9,
-                'skill_tag_ids' => [4, 5, 6],
             ],
             [
                 'first_name' => 'Sofia',    'last_name' => 'Gomez',     'email' => 'sofia@example.com',   'category' => 'Painting',
@@ -187,7 +167,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'Monday — Saturday', 'hours' => 'Morning (8 AM — 12 PM)',
                 'lat' => 13.9520, 'lng' => 120.7200, 'verified' => true,  'rating' => 4.3,
-                'skill_tag_ids' => [11, 12, 13],
             ],
             [
                 'first_name' => 'Pedro',    'last_name' => 'Marcos',    'email' => 'pedro@example.com',    'category' => 'Carpentry',
@@ -198,7 +177,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
                 'lat' => 13.9560, 'lng' => 120.7350, 'verified' => true,  'rating' => 4.8,
-                'skill_tag_ids' => [14, 15, 16, 19],
             ],
             [
                 'first_name' => 'Liza',     'last_name' => 'Cruz',      'email' => 'liza@example.com',     'category' => 'Cleaning',
@@ -209,7 +187,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
                 'lat' => 13.9530, 'lng' => 120.7220, 'verified' => false, 'rating' => 4.1,
-                'skill_tag_ids' => [8, 9],
             ],
             [
                 'first_name' => 'Ramon',    'last_name' => 'Villanueva', 'email' => 'ramon@example.com',   'category' => 'Aircon',
@@ -220,7 +197,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'All Week', 'hours' => 'Full Day (8 AM — 6 PM)',
                 'lat' => 13.9620, 'lng' => 120.7300, 'verified' => true,  'rating' => 4.6,
-                'skill_tag_ids' => [17, 18, 19],
             ],
             [
                 'first_name' => 'Bella',    'last_name' => 'Torres',     'email' => 'bella@example.com',    'category' => 'Plumbing',
@@ -231,7 +207,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
                 'lat' => 13.9500, 'lng' => 120.7280, 'verified' => true,  'rating' => 4.4,
-                'skill_tag_ids' => [0, 1, 3],
             ],
             [
                 'first_name' => 'Dante',    'last_name' => 'Alcantara',  'email' => 'dante@example.com',    'category' => 'Electrical',
@@ -242,7 +217,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'All Week', 'hours' => 'Full Day (7 AM — 6 PM)',
                 'lat' => 13.9650, 'lng' => 120.7400, 'verified' => true,  'rating' => 5.0,
-                'skill_tag_ids' => [4, 5, 6],
             ],
             [
                 'first_name' => 'Carmen',   'last_name' => 'Rivera',     'email' => 'carmen@example.com',   'category' => 'Painting',
@@ -253,7 +227,6 @@ class DatabaseSeeder extends Seeder
                 'areas' => $barangays,
                 'days' => 'Monday — Saturday', 'hours' => 'Morning (8 AM — 12 PM)',
                 'lat' => 13.9480, 'lng' => 120.7150, 'verified' => false, 'rating' => 4.2,
-                'skill_tag_ids' => [11, 12, 19],
             ],
         ];
 
@@ -288,9 +261,6 @@ class DatabaseSeeder extends Seeder
                 'current_latitude'      => $data['lat'],
                 'current_longitude'     => $data['lng'],
             ]);
-
-            $tagIds = array_map(fn($idx) => $skillTags[$idx]->id, $data['skill_tag_ids']);
-            $profile->skillTags()->attach($tagIds);
 
             $workerUsers[] = $user;
         }

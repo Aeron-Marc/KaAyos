@@ -14,8 +14,9 @@
         <label for="status">Status:</label>
         <select name="status" id="status" onchange="this.form.submit()">
             <option value="">All Statuses</option>
-            <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-            <option value="confirmed" {{ request('status') === 'confirmed' ? 'selected' : '' }}>Confirmed</option>
+            <option value="new" {{ request('status') === 'new' ? 'selected' : '' }}>New</option>
+            <option value="accepted" {{ request('status') === 'accepted' ? 'selected' : '' }}>Accepted</option>
+            <option value="en_route" {{ request('status') === 'en_route' ? 'selected' : '' }}>En Route</option>
             <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>In Progress</option>
             <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
             <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>

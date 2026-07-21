@@ -18,7 +18,7 @@
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-circle-info"></i> Booking Details</div>
         <div class="detail-section">
-            <div class="detail-row"><span class="detail-label">Booking ID</span><span class="detail-value">#{{ $booking->id }}</span></div>
+            <div class="detail-row"><span class="detail-label">Booking Ref</span><span class="detail-value">{{ $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT) }}</span></div>
             <div class="detail-row"><span class="detail-label">Service</span><span class="detail-value">{{ $booking->service_category }}</span></div>
             <div class="detail-row"><span class="detail-label">Scheduled At</span><span class="detail-value">{{ $booking->scheduled_at?->format('F d, Y \a\t g:i A') ?? 'N/A' }}</span></div>
             <div class="detail-row"><span class="detail-label">Location</span><span class="detail-value" style="text-align:right;max-width:60%">{{ $booking->address }}</span></div>
@@ -79,5 +79,16 @@
             <div class="detail-row"><span class="detail-label">Created At</span><span class="detail-value">{{ $booking->created_at->format('F d, Y \a\t g:i A') }}</span></div>
         </div>
     </div>
+</div>
+<div style="margin-top:24px;border-top:1px solid var(--b2);padding-top:20px;display:flex;gap:10px;">
+    @if(!in_array($booking->status, [\App\Models\Booking::STATUS_COMPLETED, \App\Models\Booking::STATUS_CANCELLED]))
+        <form action="{{ route('admin.bookings.cancel', $booking) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+            @csrf
+            <input type="hidden" name="reason" value="Cancelled by administrator.">
+            <button type="submit" class="btn btn-solid" style="background:var(--r6);">
+                <i class="fa-solid fa-ban"></i> Cancel Booking
+            </button>
+        </form>
+    @endif
 </div>
 @endsection
