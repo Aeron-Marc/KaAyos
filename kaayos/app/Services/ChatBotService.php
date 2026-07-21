@@ -54,8 +54,9 @@ PROMPT;
         }
 
         return match ($this->provider) {
-            'gemini' => $this->askGemini($message, $history),
-            default  => $this->askOpenAI($message, $history),
+            'gemini'     => $this->askGemini($message, $history),
+            'openrouter' => $this->askOpenRouter($message, $history),
+            default      => $this->askOpenAI($message, $history),
         };
     }
 
@@ -134,6 +135,46 @@ PROMPT;
             ];
         } catch (\Exception $e) {
             Log::error('Gemini exception: ' . $e->getMessage());
+            return $this->fallbackResponse();
+        }
+    }
+
+    protected function askOpenRouter(string $message, array $history): array
+    {
+        $messages = [['role' => 'system', 'content' => $this->systemPrompt()]];
+
+        foreach (array_slice($history, -10) as $msg) {
+            $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
+        }
+
+        $messages[] = ['role' => 'user', 'content' => $message];
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
+                'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
+            ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
+                'model'       => $this->model,
+                'messages'    => $messages,
+                'temperature' => 0.7,
+                'max_tokens'  => 500,
+            ]);
+
+            if ($response->failed()) {
+                Log::error('OpenRouter API error', ['status' => $response->status(), 'body' => $response->body()]);
+                return $this->fallbackResponse();
+            }
+
+            $data = $response->json();
+            $reply = $data['choices'][0]['message']['content'] ?? '';
+
+            return [
+                'reply'       => $reply,
+                'suggestions' => $this->getSuggestions($reply),
+            ];
+        } catch (\Exception $e) {
+            Log::error('OpenRouter exception: ' . $e->getMessage());
             return $this->fallbackResponse();
         }
     }

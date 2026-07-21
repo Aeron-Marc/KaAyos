@@ -295,6 +295,11 @@ class ClientController extends Controller
         return view('client.account.profile', $this->shared());
     }
 
+    public function suggestions(): View
+    {
+        return view('client.suggestions.index', $this->shared());
+    }
+
     public function rescheduleRequest(Request $request, Booking $booking): JsonResponse
     {
         if ($booking->client_id !== auth()->id()) abort(403);

@@ -58,6 +58,12 @@
                 {{ __('nav.reviews') }}
             </a>
 
+            <a href="{{ route('client.suggestions') }}"
+               class="nav-item {{ request()->routeIs('client.suggestions*') ? 'active' : '' }}">
+                <i class="fa-solid fa-lightbulb nav-icon" aria-hidden="true"></i>
+                {{ __('nav.suggestions') }}
+            </a>
+
             <a href="{{ route('client.account.profile') }}"
                class="nav-item {{ request()->routeIs('client.account*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user nav-icon" aria-hidden="true"></i>
