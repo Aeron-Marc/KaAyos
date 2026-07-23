@@ -37,7 +37,8 @@ class MessageSent implements ShouldBroadcast
             'sender_id'       => $this->message->sender_id,
             'text'            => $this->message->message,
             'time'            => $this->message->created_at->diffForHumans(),
-            'from'            => 'them',
+            'is_system'       => $this->message->receiver_id === null,
+            'from'            => $this->message->receiver_id === null ? 'system' : 'them',
         ];
     }
 }

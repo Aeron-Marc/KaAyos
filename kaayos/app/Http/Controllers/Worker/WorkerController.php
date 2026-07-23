@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\User;
 use App\Models\WorkerProfile;
 use App\Events\MessageSent;
 use App\Notifications\NewMessage;
@@ -191,9 +192,27 @@ class WorkerController extends Controller
             ->toArray();
     }
 
+    private static function previewText(string $message): string
+    {
+        $decoded = json_decode($message, true);
+        if ($decoded && isset($decoded['type']) && $decoded['type'] === 'booking_status') {
+            $labels = [
+                'new'         => '📋 Booking created',
+                'accepted'    => '✅ Booking accepted',
+                'en_route'    => '🚗 On the way',
+                'in_progress' => '🔧 Work in progress',
+                'completed'   => '✅ Booking completed',
+                'cancelled'   => '❌ Booking cancelled',
+            ];
+            return $labels[$decoded['status']] ?? '📋 Booking ' . $decoded['status'];
+        }
+        return $message;
+    }
+
     protected function getConversations(): array
     {
         $user = auth()->user();
+        $systemUserId = User::getSystemUserId();
 
         $conversations = Conversation::where('worker_id', $user->id)
             ->with('client', 'messages.sender')
@@ -224,13 +243,14 @@ class WorkerController extends Controller
                 'time'            => $lastMsg?->created_at->diffForHumans()
                                     ?? $convo->last_message_at?->diffForHumans()
                                     ?? $convo->created_at->diffForHumans(),
-                'preview'         => $lastMsg?->message ?? '',
+                'preview'         => $lastMsg ? self::previewText($lastMsg->message) : '',
                 'unread_count'    => $unreadCount,
                 'messages'        => $messages->map(fn($msg) => [
-                    'id'   => $msg->id,
-                    'from' => $msg->sender_id === $user->id ? 'me' : 'them',
-                    'text' => $msg->message,
-                    'time' => $msg->created_at->diffForHumans(),
+                    'id'        => $msg->id,
+                    'from'      => $msg->sender_id === $systemUserId ? 'system' : ($msg->sender_id === $user->id ? 'me' : 'them'),
+                    'text'      => $msg->message,
+                    'time'      => $msg->created_at->diffForHumans(),
+                    'is_system' => $msg->sender_id === $systemUserId,
                 ])->values()->toArray(),
             ];
         }
@@ -338,6 +358,21 @@ class WorkerController extends Controller
     public function messages(): View
     {
         return view('worker.messages.index', $this->shared());
+    }
+
+    public function startConversation(Request $request): RedirectResponse
+    {
+        $request->validate(['client_id' => ['required', 'exists:users,id']]);
+
+        $client = User::findOrFail($request->client_id);
+
+        if ($client->role !== 'client') {
+            abort(404);
+        }
+
+        $conversation = Conversation::findOrCreateForPair($client->id, auth()->id());
+
+        return redirect()->route('worker.messages', ['conversation' => $conversation->id]);
     }
 
     public function sendMessage(Request $request): JsonResponse
@@ -461,7 +496,14 @@ class WorkerController extends Controller
             'hourly_rate'        => ['nullable', 'numeric', 'min:0'],
             'available_days'     => ['nullable', 'string', 'max:255'],
             'preferred_hours'    => ['nullable', 'string', 'max:255'],
-            'availability'       => ['nullable', 'json'],
+            'availability'       => ['nullable', function ($attribute, $value, $fail) {
+                if ($value !== null && $value !== '' && !is_string($value)) {
+                    $fail('The availability must be valid JSON.');
+                }
+                if (is_string($value) && $value !== '' && json_decode($value) === null && json_last_error() !== JSON_ERROR_NONE) {
+                    $fail('The availability must be valid JSON.');
+                }
+            }],
             'service_areas'      => ['nullable', 'string'],
             'years_of_experience'=> ['nullable', 'integer', 'min:0', 'max:100'],
             'service_radius'     => ['nullable', 'integer', 'min:0', 'max:500'],
@@ -604,6 +646,8 @@ class WorkerController extends Controller
             abort(403);
         }
 
+        $systemUserId = User::getSystemUserId();
+
         $query = $conversation->messages()->orderBy('created_at');
 
         if ($afterId = $request->integer('after')) {
@@ -611,10 +655,11 @@ class WorkerController extends Controller
         }
 
         $messages = $query->get()->map(fn ($m) => [
-            'id'   => $m->id,
-            'from' => $m->sender_id === auth()->id() ? 'me' : 'them',
-            'text' => $m->message,
-            'time' => $m->created_at->diffForHumans(),
+            'id'        => $m->id,
+            'from'      => $m->sender_id === $systemUserId ? 'system' : ($m->sender_id === auth()->id() ? 'me' : 'them'),
+            'text'      => $m->message,
+            'time'      => $m->created_at->diffForHumans(),
+            'is_system' => $m->sender_id === $systemUserId,
         ]);
 
         return response()->json(['messages' => $messages]);

@@ -67,6 +67,12 @@ a{text-decoration:none;color:inherit}
 .skill-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .skill-tag{background:var(--b0);color:var(--b7);padding:5px 14px;border-radius:20px;font-size:.82rem;font-weight:500}
 
+.works-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.works-thumb{aspect-ratio:1;border-radius:10px;background:var(--off);background-size:cover;background-position:center;border:1.5px solid var(--g1);display:flex;align-items:center;justify-content:center;color:var(--g4);font-size:1.3rem;transition:all .2s;cursor:pointer}
+.works-thumb:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,.1);border-color:var(--b4)}
+.works-sample{background:var(--b0);color:var(--b2);border-style:dashed}
+.works-sample:hover{border-color:var(--b4);color:var(--b6)}
+
 .lang-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .lang-tag{background:var(--g1);color:var(--g7);padding:4px 12px;border-radius:20px;font-size:.82rem}
 
@@ -79,12 +85,34 @@ a{text-decoration:none;color:inherit}
 .review-comment{font-size:.85rem;color:var(--g7);line-height:1.6;margin-top:4px}
 .review-date{font-size:.75rem;color:var(--g4);margin-top:4px}
 
+/* TABS */
+.tabs-card{position:relative}
+.tabs-bar{display:flex;position:relative;border-bottom:2px solid var(--g1);margin-bottom:16px}
+.tabs-bar label{flex:1;padding:10px 0;text-align:center;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--g4);transition:color .2s;position:relative;z-index:1}
+.tabs-card input[type="radio"]{display:none}
+#pt-posts:checked~.tabs-bar label[for="pt-posts"],
+#pt-reviews:checked~.tabs-bar label[for="pt-reviews"]{color:var(--b6)}
+.tabs-slider{position:absolute;bottom:-2px;left:0;width:50%;height:3px;background:var(--b6);transition:left .3s ease;border-radius:2px}
+#pt-reviews:checked~.tabs-bar .tabs-slider{left:50%}
+.tab-content{display:none}
+#pt-posts:checked~.tab-content#tc-posts,
+#pt-reviews:checked~.tab-content#tc-reviews{display:block}
+.tab-empty{text-align:center;padding:40px 20px;color:var(--g4)}
+.tab-empty i{font-size:2.5rem;display:block;margin-bottom:12px}
+.tab-empty p{font-size:.9rem}
+.works-item{position:relative;border-radius:10px;overflow:hidden;background:var(--off);border:1.5px solid var(--g1);transition:all .2s}
+.works-item:hover{border-color:var(--b4);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.works-item .thumb{width:100%;aspect-ratio:1;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:var(--g4);font-size:1.3rem}
+.works-item .thumb.sample{background:var(--b0);color:var(--b2);border-style:dashed}
+.works-caption{padding:6px 10px 10px;font-size:.8rem;color:var(--g7);line-height:1.4}
+
 .footer{background:var(--g9);padding:48px 5% 24px;margin-top:60px}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:36px;margin-bottom:36px}
 .f-brand p{font-size:.84rem;color:rgba(255,255,255,.45);line-height:1.65;max-width:250px;margin-top:12px}
 .f-brand .brand{display:flex;align-items:center;gap:9px}
 .f-brand .brand span{font-size:1.3rem;font-weight:700;color:#fff}
 .f-brand .flogo{width:32px;height:32px;background:var(--b6);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+.f-brand .flogo img{width:100%;height:100%;object-fit:contain;border-radius:6px}
 .f-title{font-size:.8rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;margin-bottom:12px}
 .f-links{list-style:none;display:flex;flex-direction:column;gap:8px}
 .f-links a{font-size:.84rem;color:rgba(255,255,255,.45);transition:color .18s;display:inline-flex;align-items:center;gap:6px}
@@ -160,11 +188,11 @@ a{text-decoration:none;color:inherit}
       <h2>{{ $worker->name }}</h2>
       <p class="trade">{{ $worker->service_category ?? 'General' }}</p>
 
-      @if($workerProfile && $workerProfile->average_rating)
+      @if($reviewCount > 0)
         <div class="rating-row">
           <i class="fa-solid fa-star" aria-hidden="true"></i>
-          <span>{{ number_format($workerProfile->average_rating, 1) }}</span>
-          <small>({{ $reviews->count() }} {{ \Illuminate\Support\Str::plural('review', $reviews->count()) }})</small>
+          <span>{{ number_format($averageRating, 1) }}</span>
+          <small>({{ $reviewCount }} {{ \Illuminate\Support\Str::plural('review', $reviewCount) }})</small>
         </div>
       @endif
 
@@ -236,27 +264,69 @@ a{text-decoration:none;color:inherit}
         </div>
       @endif
 
-      @if($reviews->count() > 0)
-        <div class="content-card">
-          <h3>Reviews ({{ $reviews->count() }})</h3>
-          @foreach($reviews as $review)
-            <div class="review-item">
-              <div class="review-header">
-                <span class="reviewer">{{ $review->client?->name ?? 'Anonymous' }}</span>
-                <div class="stars">
-                  @for($s = 1; $s <= 5; $s++)
-                    <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" aria-hidden="true"></i>
-                  @endfor
-                </div>
-              </div>
-              @if($review->comment)
-                <p class="review-comment">{{ $review->comment }}</p>
-              @endif
-              <p class="review-date">{{ $review->created_at->diffForHumans() }}</p>
-            </div>
-          @endforeach
+      @php
+        $hasPortfolio = $workerProfile && $workerProfile->portfolios && $workerProfile->portfolios->count() > 0;
+        $hasReviews = $reviews->count() > 0;
+      @endphp
+
+      <div class="content-card tabs-card">
+        <input type="radio" name="p-tabs" id="pt-posts"{{ $hasPortfolio ? ' checked' : '' }}>
+        <input type="radio" name="p-tabs" id="pt-reviews"{{ !$hasPortfolio ? ' checked' : '' }}>
+
+        <div class="tabs-bar">
+          <label for="pt-posts"><i class="fa-solid fa-images" aria-hidden="true"></i> Posts</label>
+          <label for="pt-reviews"><i class="fa-solid fa-star" aria-hidden="true"></i> Reviews</label>
+          <div class="tabs-slider"></div>
         </div>
-      @endif
+
+        <div class="tab-content" id="tc-posts">
+          @if($hasPortfolio)
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+              @foreach($workerProfile->portfolios as $i => $item)
+                <div class="works-item">
+                  <div class="thumb{{ !$item->photo_path ? ' sample' : '' }}"@if($item->photo_path) style="background-image:url('{{ Storage::url($item->photo_path) }}');cursor:pointer"@endif data-index="{{ $i }}">
+                    @if(!$item->photo_path)<i class="fa-solid fa-camera"></i>@endif
+                  </div>
+                  @if($item->caption)
+                    <div class="works-caption">{{ $item->caption }}</div>
+                  @endif
+                </div>
+              @endforeach
+            </div>
+          @else
+            <div class="tab-empty">
+              <i class="fa-regular fa-image" aria-hidden="true"></i>
+              <p>No posts yet</p>
+            </div>
+          @endif
+        </div>
+
+        <div class="tab-content" id="tc-reviews">
+          @if($hasReviews)
+            @foreach($reviews as $review)
+              <div class="review-item">
+                <div class="review-header">
+                  <span class="reviewer">{{ $review->client?->name ?? 'Anonymous' }}</span>
+                  <div class="stars">
+                    @for($s = 1; $s <= 5; $s++)
+                      <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" aria-hidden="true"></i>
+                    @endfor
+                  </div>
+                </div>
+                @if($review->comment)
+                  <p class="review-comment">{{ $review->comment }}</p>
+                @endif
+                <p class="review-date">{{ $review->created_at->diffForHumans() }}</p>
+              </div>
+            @endforeach
+          @else
+            <div class="tab-empty">
+              <i class="fa-regular fa-comment" aria-hidden="true"></i>
+              <p>No reviews yet</p>
+            </div>
+          @endif
+        </div>
+      </div>
 
     </div>
   </div>
@@ -266,7 +336,7 @@ a{text-decoration:none;color:inherit}
   <div class="footer-grid">
     <div class="f-brand">
       <div class="brand">
-        <div class="flogo"><i class="fa-solid fa-house-chimney" aria-hidden="true"></i></div>
+        <div class="flogo"><img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos"></div>
         <span>KaAyos</span>
       </div>
       <p>A web-based home service platform connecting homeowners with verified skilled workers in Tuy, Batangas — powered by AI matching.</p>
@@ -274,11 +344,11 @@ a{text-decoration:none;color:inherit}
     <div>
       <div class="f-title">Services</div>
       <ul class="f-links">
-        <li><a href="/services?category=plumbing"><i class="fa-solid fa-wrench fa-fw" aria-hidden="true"></i> Plumbing</a></li>
-        <li><a href="/services?category=electrical"><i class="fa-solid fa-bolt fa-fw" aria-hidden="true"></i> Electrical</a></li>
-        <li><a href="/services?category=carpentry"><i class="fa-solid fa-screwdriver-wrench fa-fw" aria-hidden="true"></i> Carpentry</a></li>
-        <li><a href="/services?category=cleaning"><i class="fa-solid fa-broom fa-fw" aria-hidden="true"></i> Cleaning</a></li>
-        <li><a href="/services"><i class="fa-solid fa-grid-2 fa-fw" aria-hidden="true"></i> View all</a></li>
+        <li><a href="/?category=plumbing"><i class="fa-solid fa-wrench fa-fw" aria-hidden="true"></i> Plumbing</a></li>
+        <li><a href="/?category=electrical"><i class="fa-solid fa-bolt fa-fw" aria-hidden="true"></i> Electrical</a></li>
+        <li><a href="/?category=carpentry"><i class="fa-solid fa-screwdriver-wrench fa-fw" aria-hidden="true"></i> Carpentry</a></li>
+        <li><a href="/?category=cleaning"><i class="fa-solid fa-broom fa-fw" aria-hidden="true"></i> Cleaning</a></li>
+        <li><a href="/#services"><i class="fa-solid fa-grid-2 fa-fw" aria-hidden="true"></i> View all</a></li>
       </ul>
     </div>
     <div>
@@ -302,6 +372,32 @@ a{text-decoration:none;color:inherit}
   </div>
 </footer>
 
+<div id="photoLightbox" class="photo-lightbox" onclick="if(event.target===this)closeLightbox()" role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <button class="pl-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
+  <button class="pl-nav pl-prev" onclick="navigateLightbox(-1)" aria-label="Previous photo"><i class="fa-solid fa-chevron-left"></i></button>
+  <button class="pl-nav pl-next" onclick="navigateLightbox(1)" aria-label="Next photo"><i class="fa-solid fa-chevron-right"></i></button>
+  <div class="pl-content">
+    <img class="pl-image" id="plImage" src="" alt="Portfolio photo">
+    <div class="pl-caption" id="plCaption"></div>
+  </div>
+</div>
+
+<style>
+.photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;display:none;align-items:center;justify-content:center;animation:plFadeIn .2s ease;padding:20px}
+.photo-lightbox.active{display:flex}
+.pl-close{position:absolute;top:16px;right:20px;background:none;border:none;color:rgba(255,255,255,.7);font-size:2.2rem;cursor:pointer;line-height:1;z-index:10;padding:4px 8px;border-radius:8px;transition:color .2s,background .2s}
+.pl-close:hover{color:#fff;background:rgba(255,255,255,.1)}
+.pl-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.7);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.2rem;transition:all .2s;z-index:10;display:none;align-items:center;justify-content:center}
+.pl-nav:hover{background:rgba(255,255,255,.18);color:#fff}
+.pl-nav.show{display:flex}
+.pl-prev{left:16px}
+.pl-next{right:16px}
+.pl-content{display:flex;flex-direction:column;align-items:center;max-width:90vw;max-height:90vh}
+.pl-image{max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.pl-caption{color:rgba(255,255,255,.7);font-size:.9rem;margin-top:16px;text-align:center;max-width:600px;line-height:1.5}
+@keyframes plFadeIn{from{opacity:0}to{opacity:1}}
+</style>
+
 <div id="signInModal" class="modal-overlay" onclick="if(event.target===this)hideSignInModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="hideSignInModal()" aria-label="Close">&times;</button>
@@ -315,7 +411,58 @@ a{text-decoration:none;color:inherit}
   </div>
 </div>
 
+@php
+$pubPhotos = $workerProfile && $workerProfile->portfolios
+    ? $workerProfile->portfolios->map(fn($p) => [
+        'url'     => $p->photo_path ? Storage::url($p->photo_path) : null,
+        'caption' => $p->caption,
+    ])->values()->toArray()
+    : [];
+@endphp
+
 <script>
+var pubPhotos = @json($pubPhotos);
+
+function openLightbox(index) {
+  plIndex = index;
+  updateLightbox();
+  document.getElementById('photoLightbox').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('photoLightbox').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function navigateLightbox(dir) {
+  plIndex = (plIndex + dir + pubPhotos.length) % pubPhotos.length;
+  updateLightbox();
+}
+
+function updateLightbox() {
+  var img = document.getElementById('plImage');
+  var cap = document.getElementById('plCaption');
+  img.src = pubPhotos[plIndex].url;
+  cap.textContent = pubPhotos[plIndex].caption || '';
+  document.querySelectorAll('.pl-nav').forEach(function(n){ n.classList.toggle('show', pubPhotos.length > 1); });
+}
+
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('photoLightbox').classList.contains('active')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') navigateLightbox(-1);
+  if (e.key === 'ArrowRight') navigateLightbox(1);
+});
+
+document.querySelectorAll('.works-item .thumb[data-index]').forEach(function(el) {
+  el.addEventListener('click', function() {
+    openLightbox(parseInt(this.dataset.index));
+  });
+});
+
+var plIndex = 0;
+
 function saveBookingIntent() {
   var data = {
     worker_id: {{ $worker->id }},

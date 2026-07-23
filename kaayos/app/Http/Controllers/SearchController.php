@@ -7,36 +7,38 @@ use App\Models\ServiceCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class HomeController extends Controller
+class SearchController extends Controller
 {
     public function index(Request $request)
     {
+        $query = $request->input('q');
         $category = $request->input('category');
 
-        $categories = ServiceCategory::active()->get();
-
         $workersQuery = User::where('role', 'worker')
-            ->withCount('reviewsReceived')
-            ->withAvg('reviewsReceived', 'rating')
-            ->with([
-                'workerProfile.portfolios',
-                'reviewsReceived' => fn($q) => $q->latest()->take(2)->with('client'),
-            ])
+            ->with(['workerProfile.portfolios', 'reviewsReceived'])
             ->active();
 
         if ($category) {
             $workersQuery->where('service_category', 'LIKE', "%{$category}%");
         }
 
-        $workers = $workersQuery->take(12)->get()
-            ->map(fn ($u) => [
+        if ($query) {
+            $workersQuery->where(function ($q) use ($query) {
+                $q->where('first_name', 'LIKE', "%{$query}%")
+                  ->orWhere('last_name', 'LIKE', "%{$query}%")
+                  ->orWhere('service_category', 'LIKE', "%{$query}%");
+            });
+        }
+
+        $workers = $workersQuery->paginate(12)
+            ->through(fn ($u) => [
                 'id'       => $u->id,
                 'name'     => $u->name,
                 'category' => $u->service_category ?? 'General',
                 'avatar'   => $u->avatar ? Storage::url($u->avatar) : null,
                 'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
-                'rating'   => (float) ($u->reviews_received_avg_rating ?? $u->workerProfile?->average_rating ?? 0),
-                'reviews'  => (int) ($u->reviews_received_count ?? 0),
+                'rating'   => $u->workerProfile?->average_rating ?? 0,
+                'reviews'  => $u->reviewsReceived()->count(),
                 'distance' => 'Tuy, Batangas',
                 'price'    => $u->workerProfile?->hourly_rate ?? 0,
                 'verified' => $u->workerProfile?->government_id_verified ?? false,
@@ -45,14 +47,10 @@ class HomeController extends Controller
                     'photo'   => $p->photo_path ? Storage::url($p->photo_path) : null,
                     'caption' => $p->caption,
                 ])->toArray() ?? [],
-                'recent_reviews' => $u->reviewsReceived->map(fn($r) => [
-                    'rating'     => $r->rating,
-                    'comment'    => $r->comment,
-                    'client_name' => $r->client?->name ?? 'Anonymous',
-                ])->toArray(),
-            ])
-            ->toArray();
+            ]);
 
-        return view('home', compact('workers', 'categories', 'category'));
+        $categories = ServiceCategory::active()->get();
+
+        return view('search.index', compact('workers', 'categories', 'query', 'category'));
     }
 }

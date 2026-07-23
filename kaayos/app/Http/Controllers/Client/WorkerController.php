@@ -79,21 +79,10 @@ class WorkerController extends Controller
 
         $reviews = $worker->reviewsReceived()->with('client')->latest()->get();
 
-        $userId = auth()->id();
         $existingBooking = auth()->user()->bookingsAsClient()
             ->where('worker_id', $worker->id)
             ->latest()
             ->first();
-
-        $bookingIdForMessage = null;
-        if ($existingBooking) {
-            $msgBookingId = \App\Models\Message::where('booking_id', $existingBooking->id)
-                ->where(function ($q) use ($userId) {
-                    $q->where('sender_id', $userId)->orWhere('receiver_id', $userId);
-                })
-                ->value('booking_id');
-            $bookingIdForMessage = $msgBookingId ?? $existingBooking->id;
-        }
 
         $workerServices = $worker->providerServices
             ->filter(fn ($ps) => $ps->service && $ps->is_available)
@@ -104,7 +93,7 @@ class WorkerController extends Controller
             'workerProfile'       => $worker->workerProfile,
             'documents'           => $worker->workerDocuments,
             'reviews'             => $reviews,
-            'bookingIdForMessage' => $bookingIdForMessage,
+            'canMessage'          => (bool) $existingBooking,
             'workerServices'      => $workerServices,
         ]);
     }

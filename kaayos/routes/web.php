@@ -45,13 +45,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/workers/{worker}', [App\Http\Controllers\Workers\PublicWorkerController::class, 'show'])->name('workers.public.show');
 
-Route::get('/search', function () {
-    return view('search.index');
-})->name('search');
+Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search');
 
-Route::get('/services', function () {
-    return view('services.index');
-})->name('services.index');
+Route::get('/services', function () { return redirect('/#services'); })->name('services.index');
 
 Route::get('/login',  [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store'])
@@ -78,6 +74,7 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::post('/bookings/{booking}/reschedule', [ClientController::class, 'rescheduleRequest'])->name('bookings.reschedule');
     Route::post('/bookings/{booking}/reschedule-respond', [ClientController::class, 'respondReschedule'])->name('bookings.reschedule-respond');
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
+    Route::get('/messages/start', [ClientController::class, 'startConversation'])->name('messages.start');
     Route::get('/messages/poll/{conversation}', [ClientController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
     Route::post('/messages/send', [ClientController::class, 'sendMessage'])->middleware('throttle:30,1')->name('messages.send');
     Route::post('/messages/{conversation}/read', [ClientController::class, 'markMessagesRead'])->name('messages.read');
@@ -110,6 +107,7 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
     Route::get('/schedule', [WorkerController::class, 'schedule'])->name('schedule');
     Route::get('/messages', [WorkerController::class, 'messages'])->name('messages');
+    Route::get('/messages/start', [WorkerController::class, 'startConversation'])->name('messages.start');
     Route::get('/messages/poll/{conversation}', [WorkerController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
     Route::post('/messages/send', [WorkerController::class, 'sendMessage'])->middleware('throttle:30,1')->name('messages.send');
     Route::post('/messages/{conversation}/read', [WorkerController::class, 'markMessagesRead'])->name('messages.read');
@@ -152,11 +150,15 @@ Route::post('/email/verification-notification', function (Request $request) {
     return back()->with('message', 'Verification link sent!');
 })->middleware(['auth', 'throttle:6,1', 'no-cache'])->name('verification.send');
 
-Route::get('/about',   function () { return view('pages.about'); })->name('about');
-Route::get('/contact', function () { return view('pages.contact'); })->name('contact');
-Route::get('/privacy', function () { return view('pages.privacy'); })->name('privacy');
+Route::get('/about',   [App\Http\Controllers\PageController::class, 'about'])->name('about');
+Route::get('/contact', [App\Http\Controllers\PageController::class, 'contact'])->name('contact');
+Route::post('/contact', function (\Illuminate\Http\Request $request) {
+    $request->validate(['name' => 'required', 'email' => 'required|email', 'message' => 'required']);
+    return redirect()->route('contact')->with('success', 'Thank you for your message! We will get back to you within 24 hours.');
+});
+Route::get('/privacy', [App\Http\Controllers\PageController::class, 'privacy'])->name('privacy');
 Route::get('/terms',   function () { return view('pages.terms'); })->name('terms');
-Route::get('/safety',  function () { return view('pages.safety'); })->name('safety');
+Route::get('/safety',  [App\Http\Controllers\PageController::class, 'safety'])->name('safety');
 
 // Admin Routes
 Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->name('admin.')->group(function () {

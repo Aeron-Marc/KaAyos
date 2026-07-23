@@ -168,58 +168,75 @@
                 </div>
             @endif
 
-            {{-- Portfolio --}}
-            @if($workerProfile && $workerProfile->portfolios && $workerProfile->portfolios->count() > 0)
-                <div class="card-panel">
-                    <div class="card-panel-header">
-                        <h3 class="section-title">Portfolio</h3>
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:8px;">
-                        @foreach($workerProfile->portfolios as $item)
-                            <div style="border-radius:8px;overflow:hidden;background:var(--g0);">
-                                @if($item->photo_path)
-                                    <img src="{{ Storage::url($item->photo_path) }}" alt="{{ $item->caption ?? '' }}"
-                                         style="width:100%;height:130px;object-fit:cover;display:block;">
+            @php
+                $hasPortfolio = $workerProfile && $workerProfile->portfolios && $workerProfile->portfolios->count() > 0;
+                $hasReviews = $reviews->count() > 0;
+            @endphp
+
+            <div class="card-panel tabs-card">
+                <input type="radio" name="p-tabs" id="pt-posts"{{ $hasPortfolio ? ' checked' : '' }}>
+                <input type="radio" name="p-tabs" id="pt-reviews"{{ !$hasPortfolio ? ' checked' : '' }}>
+
+                <div class="tabs-bar">
+                    <label for="pt-posts"><i class="fa-solid fa-images" aria-hidden="true"></i> Posts</label>
+                    <label for="pt-reviews"><i class="fa-solid fa-star" aria-hidden="true"></i> Reviews</label>
+                    <div class="tabs-slider"></div>
+                </div>
+
+                <div class="tab-content" id="tc-posts">
+                    @if($hasPortfolio)
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+                            @foreach($workerProfile->portfolios as $item)
+                                <div class="works-item">
+                                    <div class="thumb"@if($item->photo_path) style="background-image:url('{{ Storage::url($item->photo_path) }}')"@endif>
+                                        @if(!$item->photo_path)<i class="fa-solid fa-camera" aria-hidden="true"></i>@endif
+                                    </div>
+                                    @if($item->caption)
+                                        <div class="works-caption">{{ $item->caption }}</div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="tab-empty">
+                            <i class="fa-regular fa-image" aria-hidden="true"></i>
+                            <p>No posts yet</p>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="tab-content" id="tc-reviews">
+                    @if($hasReviews)
+                        @foreach($reviews as $review)
+                            <div style="padding:14px 0;border-bottom:1px solid var(--g1);">
+                                <div style="display:flex;justify-content:space-between;align-items:center;">
+                                    <span style="font-weight:500;font-size:.88rem;">{{ $review->client?->name ?? 'Anonymous' }}</span>
+                                    <div style="display:flex;gap:2px;">
+                                        @for($s = 1; $s <= 5; $s++)
+                                            <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" style="color:#f59e0b;font-size:.75rem;" aria-hidden="true"></i>
+                                        @endfor
+                                    </div>
+                                </div>
+                                @if($review->photo_url)
+                                    <div class="review-photo-wrap" onclick="openLightbox('{{ $review->photo_url }}')">
+                                        <img src="{{ $review->photo_url }}" alt="Review photo">
+                                        <div class="review-photo-overlay"><i class="fa-solid fa-expand" aria-hidden="true"></i> View photo</div>
+                                    </div>
                                 @endif
-                                @if($item->caption)
-                                    <p style="padding:8px 10px;font-size:.78rem;color:var(--g6);">{{ $item->caption }}</p>
+                                @if($review->comment)
+                                    <p style="font-size:.85rem;color:var(--g7);margin-top:6px;line-height:1.5;">{{ $review->comment }}</p>
                                 @endif
+                                <p style="font-size:.75rem;color:var(--g4);margin-top:4px;">{{ $review->created_at->diffForHumans() }}</p>
                             </div>
                         @endforeach
-                    </div>
-                </div>
-            @endif
-
-            {{-- Reviews --}}
-            @if($reviews->count() > 0)
-                <div class="card-panel">
-                    <div class="card-panel-header">
-                        <h3 class="section-title">Reviews ({{ $reviews->count() }})</h3>
-                    </div>
-                    @foreach($reviews as $review)
-                        <div style="padding:14px 0;border-bottom:1px solid var(--g1);">
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <span style="font-weight:500;font-size:.88rem;">{{ $review->client?->name ?? 'Anonymous' }}</span>
-                                <div style="display:flex;gap:2px;">
-                                    @for($s = 1; $s <= 5; $s++)
-                                        <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" style="color:#f59e0b;font-size:.75rem;" aria-hidden="true"></i>
-                                    @endfor
-                                </div>
-                            </div>
-                            @if($review->photo_url)
-                                <div class="review-photo-wrap" onclick="openLightbox('{{ $review->photo_url }}')">
-                                    <img src="{{ $review->photo_url }}" alt="Review photo">
-                                    <div class="review-photo-overlay"><i class="fa-solid fa-expand" aria-hidden="true"></i> View photo</div>
-                                </div>
-                            @endif
-                            @if($review->comment)
-                                <p style="font-size:.85rem;color:var(--g7);margin-top:6px;line-height:1.5;">{{ $review->comment }}</p>
-                            @endif
-                            <p style="font-size:.75rem;color:var(--g4);margin-top:4px;">{{ $review->created_at->diffForHumans() }}</p>
+                    @else
+                        <div class="tab-empty">
+                            <i class="fa-regular fa-comment" aria-hidden="true"></i>
+                            <p>No reviews yet</p>
                         </div>
-                    @endforeach
+                    @endif
                 </div>
-            @endif
+            </div>
         @else
             <div class="card-panel" style="text-align:center;padding:40px 22px;">
                 <div style="font-size:2.5rem;color:var(--g2);margin-bottom:14px;">
@@ -234,8 +251,8 @@
 
         {{-- Actions --}}
         <div style="display:flex;gap:12px;justify-content:flex-end;">
-            @if($bookingIdForMessage)
-                <a href="{{ route('client.messages') }}?booking={{ $bookingIdForMessage }}" class="btn btn-outline">
+            @if($canMessage)
+                <a href="{{ route('client.messages.start', ['worker_id' => $worker->id]) }}" class="btn btn-outline">
                     <i class="fa-regular fa-comment" aria-hidden="true"></i> Send Message
                 </a>
             @endif
@@ -503,6 +520,26 @@ document.addEventListener('DOMContentLoaded', function() {
     .worker-profile-layout { flex-direction: column; }
     .worker-profile-layout > .card-panel { flex: none !important; width: 100%; }
 }
+
+/* TABS */
+.tabs-card{position:relative}
+.tabs-bar{display:flex;position:relative;border-bottom:2px solid var(--g1);margin-bottom:16px}
+.tabs-bar label{flex:1;padding:10px 0;text-align:center;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--g4);transition:color .2s;position:relative;z-index:1}
+.tabs-card input[type="radio"]{display:none}
+#pt-posts:checked~.tabs-bar label[for="pt-posts"],
+#pt-reviews:checked~.tabs-bar label[for="pt-reviews"]{color:var(--b6)}
+.tabs-slider{position:absolute;bottom:-2px;left:0;width:50%;height:3px;background:var(--b6);transition:left .3s ease;border-radius:2px}
+#pt-reviews:checked~.tabs-bar .tabs-slider{left:50%}
+.tab-content{display:none}
+#pt-posts:checked~.tab-content#tc-posts,
+#pt-reviews:checked~.tab-content#tc-reviews{display:block}
+.tab-empty{text-align:center;padding:40px 20px;color:var(--g4)}
+.tab-empty i{font-size:2.5rem;display:block;margin-bottom:12px}
+.tab-empty p{font-size:.9rem}
+.works-item{position:relative;border-radius:10px;overflow:hidden;background:var(--g0);border:1px solid var(--g1);transition:all .2s}
+.works-item:hover{border-color:var(--b4);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.works-item .thumb{width:100%;aspect-ratio:1;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:var(--g4);font-size:1.3rem}
+.works-caption{padding:6px 10px 10px;font-size:.8rem;color:var(--g6);line-height:1.4}
 .modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,.45); z-index: 1000;

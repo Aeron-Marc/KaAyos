@@ -5,6 +5,11 @@
 
 @section('content')
 
+<div id="reviewPageData"
+    data-submit-url-template="{{ route('client.bookings.review', '__BOOKING__') }}"
+    data-csrf-token="{{ csrf_token() }}"></div>
+<script id="pendingReviewsData" type="application/json">@json($reviews['pending'])</script>
+
 @if(!empty($reviews['pending']))
     <div class="section-header">
         <h2 class="section-title">Pending Reviews</h2>
@@ -36,7 +41,7 @@
                     <button type="button" class="photo-remove" data-pending="{{ $pi }}">&times;</button>
                 </div>
             </div>
-            <button type="button" class="btn btn-solid" onclick="submitReview({{ $pi }})">Submit Review</button>
+            <button type="button" class="btn btn-solid submit-review-btn" data-pending-index="{{ $pi }}">Submit Review</button>
         </div>
     @endforeach
 @endif
@@ -56,7 +61,7 @@
                 @endfor
             </div>
             @if($review['photo_url'])
-                <div class="review-photo-wrap" onclick="openLightbox('{{ $review['photo_url'] }}')">
+                <div class="review-photo-wrap js-lightbox-trigger" data-photo-url="{{ $review['photo_url'] }}">
                     <img src="{{ $review['photo_url'] }}" alt="Review photo">
                     <div class="review-photo-overlay"><i class="fa-solid fa-expand" aria-hidden="true"></i> View photo</div>
                 </div>
@@ -76,8 +81,8 @@
 @endif
 
 {{-- Lightbox --}}
-<div id="lightbox" class="lightbox-overlay" style="display:none;" onclick="closeLightbox()">
-    <button type="button" class="lightbox-close" onclick="closeLightbox()">&times;</button>
+<div id="lightbox" class="lightbox-overlay" style="display:none;">
+    <button type="button" class="lightbox-close" id="lightboxCloseBtn">&times;</button>
     <img id="lightboxImg" src="" alt="Photo">
 </div>
 
@@ -90,23 +95,26 @@
     align-items: center;
     gap: 12px;
     margin-top: 10px;
+    margin-bottom: 14px;
 }
 
 .photo-upload-label {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border: 1px dashed var(--g3);
+    gap: 8px;
+    padding: 10px 18px;
+    border: none;
     border-radius: 8px;
-    font-size: .82rem;
-    color: var(--g5);
+    font-size: .875rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--b6);
     cursor: pointer;
-    transition: border-color .12s, color .12s;
+    white-space: nowrap;
+    transition: all .18s;
 }
 .photo-upload-label:hover {
-    border-color: var(--b5);
-    color: var(--b7);
+    background: var(--b7);
 }
 .photo-upload-label input[type="file"] {
     display: none;
@@ -234,7 +242,11 @@
 
 @push('scripts')
 <script>
-const pendingReviews = @json($reviews['pending']);
+const pageDataEl = document.getElementById('reviewPageData');
+const pendingReviewsRaw = document.getElementById('pendingReviewsData');
+const pendingReviews = pendingReviewsRaw ? JSON.parse(pendingReviewsRaw.textContent || '[]') : [];
+const submitUrlTemplate = pageDataEl ? pageDataEl.dataset.submitUrlTemplate : '';
+const csrfToken = pageDataEl ? pageDataEl.dataset.csrfToken : '';
 
 function openLightbox(url) {
     document.getElementById('lightboxImg').src = url;
@@ -247,14 +259,45 @@ document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closeLightbox();
 });
 
+const lightbox = document.getElementById('lightbox');
+const lightboxImage = document.getElementById('lightboxImg');
+const lightboxCloseBtn = document.getElementById('lightboxCloseBtn');
+
+if (lightbox) {
+    lightbox.addEventListener('click', function (e) {
+        if (e.target === lightbox) closeLightbox();
+    });
+}
+if (lightboxImage) {
+    lightboxImage.addEventListener('click', function (e) {
+        e.stopPropagation();
+    });
+}
+if (lightboxCloseBtn) {
+    lightboxCloseBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        closeLightbox();
+    });
+}
+
+document.querySelectorAll('.js-lightbox-trigger').forEach(function (trigger) {
+    trigger.addEventListener('click', function () {
+        const url = this.dataset.photoUrl || '';
+        if (url) openLightbox(url);
+    });
+});
+
 // Star picker interaction
 document.querySelectorAll('.star-picker').forEach(function (picker) {
     const stars = picker.querySelectorAll('.fa-star');
     stars.forEach(function (star) {
         star.addEventListener('click', function () {
-            const val = parseInt(this.dataset.star);
+            const val = parseInt(this.dataset.star, 10);
             stars.forEach(function (s, i) {
-                s.className = i < val ? 'fa-solid fa-star' : 'fa-regular fa-star';
+                const isSelected = i < val;
+                s.classList.toggle('fa-solid', isSelected);
+                s.classList.toggle('fa-regular', !isSelected);
+                s.classList.toggle('active', isSelected);
             });
             picker.dataset.rating = val;
         });
@@ -287,23 +330,31 @@ document.querySelectorAll('.photo-remove').forEach(function (btn) {
     });
 });
 
+document.querySelectorAll('.submit-review-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        const index = parseInt(this.dataset.pendingIndex, 10);
+        submitReview(index);
+    });
+});
+
 function submitReview(index) {
     const pending = pendingReviews[index];
     if (!pending) return;
 
-    const card = document.querySelector(`.review-card[data-pending-index="${index}"]`);
+    const card = document.querySelector('.review-card[data-pending-index="' + index + '"]');
     if (!card) return;
 
     const picker = card.querySelector('.star-picker');
-    const rating = parseInt(picker?.dataset?.rating || '0');
+    const rating = parseInt((picker && picker.dataset && picker.dataset.rating) ? picker.dataset.rating : '0', 10);
     if (!rating) {
         alert('Please select a rating.');
         return;
     }
 
-    const comment = card.querySelector('.review-textarea')?.value?.trim() || '';
+    const reviewTextarea = card.querySelector('.review-textarea');
+    const comment = reviewTextarea ? reviewTextarea.value.trim() : '';
     const photoInput = card.querySelector('.review-photo-input');
-    const photoFile = photoInput?.files?.[0] || null;
+    const photoFile = photoInput && photoInput.files ? (photoInput.files[0] || null) : null;
 
     const btn = card.querySelector('.btn.btn-solid');
     btn.disabled = true;
@@ -314,10 +365,10 @@ function submitReview(index) {
     formData.append('comment', comment);
     if (photoFile) formData.append('photo', photoFile);
 
-    fetch('{{ route('client.bookings.review', '__BOOKING__') }}'.replace('__BOOKING__', pending.booking_id), {
+    fetch(submitUrlTemplate.replace('__BOOKING__', pending.booking_id), {
         method: 'POST',
         headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-CSRF-TOKEN': csrfToken,
             'Accept': 'application/json',
         },
         body: formData,

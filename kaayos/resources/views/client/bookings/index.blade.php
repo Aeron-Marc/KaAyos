@@ -495,7 +495,7 @@ function openBookingModal(index) {
     } else {
         footer.innerHTML =
             '<button type="button" class="btn btn-outline" onclick="closeBookingModal(); showCancelModal(' + index + ')">Cancel Booking</button>' +
-            '<a href="{{ route('client.messages') }}?booking=' + b.id + '" class="btn btn-solid"><i class="fa-regular fa-comment" aria-hidden="true"></i> Message</a>';
+            '<a href="{{ route('client.messages.start') }}?worker_id=' + b.worker_id + '" class="btn btn-solid"><i class="fa-regular fa-comment" aria-hidden="true"></i> Message</a>';
     }
 
     document.getElementById('bookingModal').style.display = 'flex';
@@ -560,5 +560,19 @@ function confirmCancel() {
         document.getElementById('confirmCancelBtn').textContent = 'Yes, Cancel';
     });
 }
+
+// Focus handler: ?focus=ID opens the booking modal on load
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var focusId = params.get('focus');
+    if (focusId) {
+        for (var i = 0; i < bookings.length; i++) {
+            if (String(bookings[i].id) === String(focusId)) {
+                openBookingModal(i);
+                break;
+            }
+        }
+    }
+})();
 </script>
 @endpush

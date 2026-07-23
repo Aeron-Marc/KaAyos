@@ -11,6 +11,7 @@ use App\Events\BookingStatusUpdated;
 use App\Notifications\BookingCancelled;
 use App\Notifications\BookingStatusChanged;
 use App\Notifications\RescheduleRequested;
+use App\Services\BookingMessageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -113,6 +114,8 @@ class WorkerDashboardController extends Controller
         Notification::send($booking->client, new BookingStatusChanged($booking, $oldStatus));
         broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
 
+        BookingMessageService::post($booking, $booking->status);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Job status updated successfully.',
@@ -146,6 +149,8 @@ class WorkerDashboardController extends Controller
         $booking->load('client');
         Notification::send($booking->client, new BookingCancelled($booking, $booking->worker->name));
         broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
+
+        BookingMessageService::post($booking, 'cancelled');
 
         if (request()->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Job cancelled.']);

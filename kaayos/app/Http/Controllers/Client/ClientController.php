@@ -8,18 +8,21 @@ use App\Models\Booking;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Review;
+use App\Models\WorkerProfile;
 use App\Models\BookingHistory;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Events\BookingCreated;
 use App\Events\BookingStatusUpdated;
 use App\Events\MessageSent;
+use App\Services\BookingMessageService;
 use App\Notifications\BookingCancelled;
 use App\Notifications\NewBooking;
 use App\Notifications\NewMessage;
 use App\Notifications\NewReview;
 use App\Notifications\RescheduleRequested;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -40,6 +43,23 @@ class ClientController extends Controller
             'reviews'       => $this->getReviews(),
             'stats'         => $this->getStats(),
         ];
+    }
+
+    private static function previewText(string $message): string
+    {
+        $decoded = json_decode($message, true);
+        if ($decoded && isset($decoded['type']) && $decoded['type'] === 'booking_status') {
+            $labels = [
+                'new'         => '📋 Booking created',
+                'cancelled'   => '❌ Booking cancelled',
+                'accepted'    => '✅ Booking accepted',
+                'en_route'    => '🚗 Worker on the way',
+                'in_progress' => '🔧 Work in progress',
+                'completed'   => '✅ Booking completed',
+            ];
+            return $labels[$decoded['status']] ?? '📋 Booking ' . $decoded['status'];
+        }
+        return $message;
     }
 
     protected function getCategories(): array
@@ -163,6 +183,7 @@ class ClientController extends Controller
     protected function getConversations(): array
     {
         $userId = auth()->id();
+        $systemUserId = User::getSystemUserId();
 
         $conversations = Conversation::where('client_id', $userId)
             ->with('worker', 'messages')
@@ -185,16 +206,17 @@ class ClientController extends Controller
                     substr($other?->first_name ?? 'U', 0, 1) .
                     substr($other?->last_name ?? 'N', 0, 1)
                 ),
-                'preview'         => $lastMsg?->message ?? 'No messages yet',
+                'preview'         => $lastMsg ? self::previewText($lastMsg->message) : 'No messages yet',
                 'time'            => $lastMsg?->created_at?->diffForHumans()
                                     ?? $convo->last_message_at?->diffForHumans()
                                     ?? $convo->created_at->diffForHumans(),
                 'active'          => false,
                 'messages'        => $messages->map(fn ($m) => [
-                    'id'   => $m->id,
-                    'from' => $m->sender_id === $userId ? 'me' : 'them',
-                    'text' => $m->message,
-                    'time' => $m->created_at->diffForHumans(),
+                    'id'        => $m->id,
+                    'from'      => $m->sender_id === $systemUserId ? 'system' : ($m->sender_id === $userId ? 'me' : 'them'),
+                    'text'      => $m->message,
+                    'time'      => $m->created_at->diffForHumans(),
+                    'is_system' => $m->sender_id === $systemUserId,
                 ])->values()->toArray(),
             ];
         }
@@ -361,6 +383,8 @@ class ClientController extends Controller
             abort(403);
         }
 
+        $systemUserId = User::getSystemUserId();
+
         $query = $conversation->messages()->orderBy('created_at');
 
         if ($afterId = $request->integer('after')) {
@@ -368,10 +392,11 @@ class ClientController extends Controller
         }
 
         $messages = $query->get()->map(fn ($m) => [
-            'id'   => $m->id,
-            'from' => $m->sender_id === auth()->id() ? 'me' : 'them',
-            'text' => $m->message,
-            'time' => $m->created_at->diffForHumans(),
+            'id'        => $m->id,
+            'from'      => $m->sender_id === $systemUserId ? 'system' : ($m->sender_id === auth()->id() ? 'me' : 'them'),
+            'text'      => $m->message,
+            'time'      => $m->created_at->diffForHumans(),
+            'is_system' => $m->sender_id === $systemUserId,
         ]);
 
         return response()->json(['messages' => $messages]);
@@ -386,6 +411,21 @@ class ClientController extends Controller
         $count = Message::markAllAsReadForConversation($conversation->id, auth()->id());
 
         return response()->json(['success' => true, 'marked_read' => $count]);
+    }
+
+    public function startConversation(Request $request): RedirectResponse
+    {
+        $request->validate(['worker_id' => ['required', 'exists:users,id']]);
+
+        $worker = User::findOrFail($request->worker_id);
+
+        if ($worker->role !== 'worker') {
+            abort(404);
+        }
+
+        $conversation = Conversation::findOrCreateForPair(auth()->id(), $worker->id);
+
+        return redirect()->route('client.messages', ['conversation' => $conversation->id]);
     }
 
     // ── API / Mutation Methods ────────────────────────────────────
@@ -458,6 +498,8 @@ class ClientController extends Controller
         Notification::send($booking->worker, new BookingCancelled($booking, $booking->worker->name));
         broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
 
+        BookingMessageService::post($booking, 'cancelled');
+
         return response()->json(['success' => true]);
     }
 
@@ -522,6 +564,8 @@ class ClientController extends Controller
         Notification::send($booking->worker, new NewBooking($booking));
         broadcast(new BookingCreated($booking))->toOthers();
 
+        BookingMessageService::post($booking, 'new');
+
         return response()->json([
             'success' => true,
             'booking' => $booking,
@@ -561,6 +605,12 @@ class ClientController extends Controller
         );
 
         $review->load('client');
+
+        $averageRating = (float) Review::where('worker_id', $booking->worker_id)->avg('rating');
+        WorkerProfile::updateOrCreate(
+            ['user_id' => $booking->worker_id],
+            ['average_rating' => round($averageRating, 2)]
+        );
 
         Notification::send($booking->worker, new NewReview($review));
 

@@ -641,6 +641,20 @@ function confirmCancel() {
         document.getElementById('confirmCancelBtn').textContent = 'Yes, Cancel';
     });
 }
+
+// Focus handler: ?focus=ID opens the job modal on load
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var focusId = params.get('focus');
+    if (focusId) {
+        for (var i = 0; i < jobs.length; i++) {
+            if (String(jobs[i].id) === String(focusId)) {
+                openJobModal(i);
+                break;
+            }
+        }
+    }
+})();
 </script>
 @endpush
 
