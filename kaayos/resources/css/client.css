@@ -785,6 +785,7 @@ a { text-decoration: none; color: inherit; }
 .notif-item:last-child { border-bottom: none; }
 
 .notif-item:hover { background: var(--b0); }
+a.notif-item { text-decoration: none; color: inherit; }
 
 .notif-item.unread { background: rgba(230, 241, 251, .5); }
 
@@ -940,6 +941,12 @@ a { text-decoration: none; color: inherit; }
     align-self: flex-end;
     border-bottom-right-radius: 4px;
 }
+
+.msg-status { margin-left: 4px; font-size: .7rem; vertical-align: middle; }
+.msg-status.sending { color: rgba(255,255,255,.6); }
+.msg-status.sent { color: rgba(255,255,255,.6); }
+.msg-status.seen { color: #7dd3fc; }
+.msg-status.failed { color: #fca5a5; }
 
 .chat-input-row {
     padding: 14px 18px;
