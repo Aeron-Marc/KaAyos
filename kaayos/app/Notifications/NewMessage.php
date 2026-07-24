@@ -39,11 +39,12 @@ class NewMessage extends Notification
         $sender = $this->message->sender;
 
         return [
-            'title'      => 'New Message',
-            'message'    => $sender->name . ': ' . $this->message->message,
-            'booking_id' => $this->message->booking_id,
-            'type'       => 'message',
-            'sender_id'  => $sender->id,
+            'title'           => 'New Message',
+            'message'         => $sender->name . ': ' . $this->message->message,
+            'booking_id'      => $this->message->booking_id,
+            'conversation_id' => $this->message->conversation_id,
+            'type'            => 'message',
+            'sender_id'       => $sender->id,
         ];
     }
 }

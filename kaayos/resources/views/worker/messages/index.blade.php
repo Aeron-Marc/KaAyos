@@ -92,7 +92,7 @@
 <div class="messages-layout">
     <div class="convo-list">
         @forelse($conversations as $i => $convo)
-            <div class="convo-item {{ $convo['active'] ? 'active' : '' }}" data-index="{{ $i }}">
+            <div class="convo-item {{ $convo['active'] ? 'active' : '' }}" data-index="{{ $i }}" data-conversation-id="{{ $convo['conversation_id'] }}">
                 <div class="convo-avatar">{{ $convo['initials'] }}</div>
                 <div style="flex:1;min-width:0;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -160,7 +160,15 @@
                         @else
                             <div class="chat-bubble {{ $msg['from'] === 'me' ? 'me' : 'them' }}" data-id="{{ $msg['id'] ?? '' }}">
                                 <div class="bubble-text">{{ $msg['text'] }}</div>
-                                <div class="bubble-time">{{ $msg['time'] ?? '' }}</div>
+                                <div class="bubble-time">{{ $msg['time'] ?? '' }}
+                                    @if($msg['from'] === 'me')
+                                        @if(!empty($msg['read_at']))
+                                            <span class="msg-status seen"><i class="fa-solid fa-check-double" aria-hidden="true"></i></span>
+                                        @else
+                                            <span class="msg-status sent"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
+                                        @endif
+                                    @endif
+                                </div>
                             </div>
                         @endif
                     @elseif(($msg['is_system'] ?? false) && !$isJsonLike)
@@ -170,7 +178,15 @@
                     @else
                         <div class="chat-bubble {{ $msg['from'] === 'me' ? 'me' : 'them' }}" data-id="{{ $msg['id'] ?? '' }}">
                             <div class="bubble-text">{{ $msg['text'] }}</div>
-                            <div class="bubble-time">{{ $msg['time'] ?? '' }}</div>
+                            <div class="bubble-time">{{ $msg['time'] ?? '' }}
+                                @if($msg['from'] === 'me')
+                                    @if(!empty($msg['read_at']))
+                                        <span class="msg-status seen"><i class="fa-solid fa-check-double" aria-hidden="true"></i></span>
+                                    @else
+                                        <span class="msg-status sent"><i class="fa-solid fa-check" aria-hidden="true"></i></span>
+                                    @endif
+                                @endif
+                            </div>
                         </div>
                     @endif
                 @endforeach
@@ -198,6 +214,7 @@
 @push('scripts')
 <script>
 const conversations = @json($conversations);
+const userId = {{ auth()->id() }};
 let activeConversationId = null;
 let activeConvo = null;
 let _pollInterval = null;
@@ -298,8 +315,29 @@ function appendMessage(body, msg) {
     var bubble = document.createElement('div');
     bubble.className = 'chat-bubble ' + (msg.from === 'me' ? 'me' : 'them');
     bubble.setAttribute('data-id', msg.id);
-    bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(msg.text) + '</div><div class="bubble-time">' + (msg.time || '') + '</div>';
+    var statusHtml = '';
+    if (msg.from === 'me') {
+        if (msg.status === 'sending') {
+            statusHtml = '<span class="msg-status sending"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i></span>';
+        } else if (msg.read_at) {
+            statusHtml = '<span class="msg-status seen"><i class="fa-solid fa-check-double" aria-hidden="true"></i></span>';
+        } else {
+            statusHtml = '<span class="msg-status sent"><i class="fa-solid fa-check" aria-hidden="true"></i></span>';
+        }
+    }
+    bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(msg.text) + '</div><div class="bubble-time">' + (msg.time || '') + statusHtml + '</div>';
     body.appendChild(bubble);
+}
+
+function updateSidebarPreview(conversationId, text, time) {
+    var item = document.querySelector('.convo-item[data-conversation-id="' + conversationId + '"]');
+    if (!item) return;
+    var preview = item.querySelector('.convo-preview');
+    if (preview) preview.textContent = text.substring(0, 60);
+    var timeEl = item.querySelector('.convo-time');
+    if (timeEl) timeEl.textContent = time || 'just now';
+    var list = item.parentNode;
+    if (list) list.prepend(item);
 }
 
 function subscribeToConversation(conversationId) {
@@ -312,7 +350,9 @@ function subscribeToConversation(conversationId) {
             if (!body) return;
             if (body.querySelector('[data-id="' + e.id + '"]')) return;
             appendMessage(body, { id: e.id, text: e.text, from: e.is_system ? 'system' : 'them', is_system: e.is_system, time: e.time || 'just now' });
-            body.scrollTop = body.scrollHeight;
+            if (body.scrollTop + body.clientHeight >= body.scrollHeight - 60) {
+                body.scrollTop = body.scrollHeight;
+            }
         }
     });
 }
@@ -333,10 +373,28 @@ function startPolling(conversationId) {
             if (!body) return;
             var existingIds = Array.from(body.querySelectorAll('[data-id]')).map(function (el) { return el.getAttribute('data-id'); });
             data.messages.forEach(function (msg) {
-                if (existingIds.includes(String(msg.id))) return;
+                if (existingIds.includes(String(msg.id))) {
+                    if (msg.from === 'me' && msg.read_at) {
+                        var el = body.querySelector('[data-id="' + msg.id + '"]');
+                        if (el) {
+                            var s = el.querySelector('.msg-status');
+                            if (s) { s.className = 'msg-status seen'; s.innerHTML = '<i class="fa-solid fa-check-double" aria-hidden="true"></i>'; }
+                        }
+                    }
+                    return;
+                }
                 appendMessage(body, msg);
+                updateSidebarPreview(conversationId, msg.text, msg.time);
+                for (var ci = 0; ci < conversations.length; ci++) {
+                    if (conversations[ci].conversation_id == conversationId) {
+                        conversations[ci].messages.push(msg);
+                        break;
+                    }
+                }
             });
-            body.scrollTop = body.scrollHeight;
+            if (body.scrollTop + body.clientHeight >= body.scrollHeight - 60) {
+                body.scrollTop = body.scrollHeight;
+            }
         })
         .catch(function () {});
     }, 2000);
@@ -413,6 +471,17 @@ function attachSendHandler(convo) {
         isSending = true;
         btn.disabled = true;
 
+        var tempId = 'temp-' + Date.now();
+        var body = document.getElementById('chat-body');
+
+        var bubble = document.createElement('div');
+        bubble.className = 'chat-bubble me';
+        bubble.setAttribute('data-id', tempId);
+        bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(text) + '</div><div class="bubble-time">just now<span class="msg-status sending"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i></span></div>';
+        body.appendChild(bubble);
+        body.scrollTop = body.scrollHeight;
+        input.value = '';
+
         fetch('{{ route('worker.messages.send') }}', {
             method: 'POST',
             headers: {
@@ -425,18 +494,35 @@ function attachSendHandler(convo) {
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-            if (!data.success) return;
-            var body = document.getElementById('chat-body');
-            if (body.querySelector('[data-id="' + data.message.id + '"]')) return;
-            var bubble = document.createElement('div');
-            bubble.className = 'chat-bubble me';
-            bubble.setAttribute('data-id', data.message.id || '');
-            bubble.innerHTML = '<div class="bubble-text">' + escapeHtml(data.message.text) + '</div><div class="bubble-time">' + (data.message.time || 'just now') + '</div>';
-            body.appendChild(bubble);
-            input.value = '';
-            body.scrollTop = body.scrollHeight;
+            if (!data.success) {
+                var el = body.querySelector('[data-id="' + tempId + '"]');
+                if (el) {
+                    var s = el.querySelector('.msg-status');
+                    if (s) { s.className = 'msg-status failed'; s.innerHTML = '<i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>'; }
+                }
+                return;
+            }
+            var el = body.querySelector('[data-id="' + tempId + '"]');
+            if (el) {
+                el.setAttribute('data-id', data.message.id);
+                var s = el.querySelector('.msg-status');
+                if (s) { s.className = 'msg-status sent'; s.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i>'; }
+            } else {
+                var existing = body.querySelector('[data-id="' + data.message.id + '"]');
+                if (!existing) {
+                    appendMessage(body, data.message);
+                }
+            }
+            convo.messages.push(data.message);
+            updateSidebarPreview(convo.conversation_id, data.message.text, data.message.time);
         })
-        .catch(function () {})
+        .catch(function () {
+            var el = body.querySelector('[data-id="' + tempId + '"]');
+            if (el) {
+                var s = el.querySelector('.msg-status');
+                if (s) { s.className = 'msg-status failed'; s.innerHTML = '<i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>'; }
+            }
+        })
         .finally(function () {
             isSending = false;
             btn.disabled = false;
@@ -460,28 +546,34 @@ function selectConvoByConversationId(conversationId) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    var urlParams = new URLSearchParams(window.location.search);
+    var conversationParam = urlParams.get('conversation');
+    if (conversationParam) {
+        selectConvoByConversationId(conversationParam);
+    } else {
+        var active = document.querySelector('.convo-item.active');
+        if (active) {
+            var convo = conversations[active.dataset.index];
+            if (convo) {
+                activeConversationId = convo.conversation_id;
+                activeConvo = convo;
+                startPolling(convo.conversation_id);
+                attachSendHandler(convo);
+                var chatBody = document.getElementById('chat-body');
+                if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
+            }
+        }
+    }
     var checkEcho = setInterval(function () {
         if (window.Echo) {
             clearInterval(checkEcho);
-
-            var urlParams = new URLSearchParams(window.location.search);
-            var conversationParam = urlParams.get('conversation');
-            if (conversationParam) {
-                selectConvoByConversationId(conversationParam);
-                return;
+            if (activeConversationId) {
+                subscribeToConversation(activeConversationId);
             }
-
-            var active = document.querySelector('.convo-item.active');
-            if (active) {
-                var convo = conversations[active.dataset.index];
-                if (convo) {
-                    activeConversationId = convo.conversation_id;
-                    activeConvo = convo;
-                    subscribeToConversation(convo.conversation_id);
-                    startPolling(convo.conversation_id);
-                    attachSendHandler(convo);
-                }
-            }
+            window.Echo.private('user.' + userId)
+                .listen('MessageSent', function (e) {
+                    updateSidebarPreview(e.conversation_id, e.text, e.time);
+                });
         }
     }, 200);
 });

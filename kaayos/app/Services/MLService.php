@@ -22,7 +22,7 @@ class MLService
                 return $response->json();
             }
         } catch (\Exception $e) {
-            Log::warning('ML service health check failed: ' . $e->getMessage());
+            Log::debug('ML service health check failed: ' . $e->getMessage());
         }
         return null;
     }
@@ -42,9 +42,9 @@ class MLService
                 return $response->json();
             }
 
-            Log::warning('ML predict failed', ['status' => $response->status(), 'body' => $response->body()]);
+            Log::debug('ML predict failed', ['status' => $response->status(), 'body' => $response->body()]);
         } catch (\Exception $e) {
-            Log::warning('ML predict exception: ' . $e->getMessage());
+            Log::debug('ML predict exception: ' . $e->getMessage());
         }
 
         return null;
