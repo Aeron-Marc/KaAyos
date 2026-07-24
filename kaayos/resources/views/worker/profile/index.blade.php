@@ -139,6 +139,19 @@
 .avail-sep {
     color: var(--g4); font-weight: 500;
 }
+@media(max-width:768px){
+    .profile-grid{grid-template-columns:1fr!important}
+    .form-row{grid-template-columns:1fr}
+    .avail-row{flex-wrap:wrap;gap:8px}
+    .avail-times{flex-wrap:wrap}
+    .portfolio-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+    .doc-card{flex-wrap:wrap;gap:10px}
+    .doc-card .status-badge{margin-left:0}
+    .barangay-chip{padding:6px 12px;font-size:.8rem}
+}
+@media(max-width:480px){
+    .portfolio-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+}
 </style>
 @endpush
 

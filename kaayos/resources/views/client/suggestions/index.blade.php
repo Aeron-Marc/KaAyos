@@ -313,6 +313,22 @@
   height: 260px;
   width: 100%;
 }
+@media(max-width:768px){
+  .suggestion-chat{
+    height: calc(100vh - 120px);
+    max-height: none;
+    border-radius: 0;
+    margin: 0 -20px;
+  }
+  .s-msg{max-width:92%}
+  .s-chip{font-size:.8rem;padding:6px 12px}
+  .s-worker-card{padding:12px}
+}
+@media(max-width:480px){
+  .suggestion-chat{margin: 0 -16px}
+  .suggestion-chat-header{padding:12px 16px}
+  .suggestion-messages{padding:12px 16px}
+}
 </style>
 @endpush
 

@@ -237,6 +237,15 @@
 .lightbox-close:hover {
     background: rgba(255,255,255,.25);
 }
+@media(max-width:768px){
+    .review-photo-upload{flex-wrap:wrap}
+    .review-photo-wrap img{max-width:160px}
+    .review-textarea{min-height:80px}
+}
+@media(max-width:480px){
+    .review-photo-wrap img{max-width:120px}
+    .lightbox-overlay img{max-width:95vw;max-height:80vh}
+}
 </style>
 @endpush
 

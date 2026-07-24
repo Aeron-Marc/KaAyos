@@ -160,17 +160,31 @@
         .w-auto{width:auto}
         .table-col-price{text-align:right;font-variant-numeric:tabular-nums}
         .badge-dot{width:8px;height:8px;border-radius:50%;background:var(--d10);display:inline-block}
+        .admin-topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:var(--b9);z-index:200;align-items:center;padding:0 16px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+        .admin-hamburger{display:flex;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px;z-index:210}
+        .admin-hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;transition:all .3s}
+        .admin-hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+        .admin-hamburger.active span:nth-child(2){opacity:0}
+        .admin-hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+        .admin-topbar-brand{display:flex;align-items:center;gap:8px;margin-left:12px}
+        .admin-topbar-brand img{height:28px;width:auto}
+        .admin-topbar-brand span{font-size:1rem;font-weight:700;color:#fff}
+        .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;opacity:0;transition:opacity .3s}
+        .sidebar-overlay.active{display:block;opacity:1}
         @media(max-width:1024px){
             .layout-grid-2{grid-template-columns:1fr;gap:20px}
         }
         @media(max-width:768px){
-            .admin-container{flex-direction:column}
-            .sidebar{width:100%;height:auto;position:relative;padding:20px;margin-bottom:0}
-            .main-content{margin-left:0;padding:20px}
+            .admin-topbar{display:flex}
+            .sidebar{position:fixed;left:-280px;top:0;height:100vh;width:280px;z-index:100;transition:left .3s ease;padding-top:72px}
+            .sidebar.open{left:0}
+            .main-content{margin-left:0;padding:72px 20px 20px}
             .header{flex-direction:column;align-items:flex-start}
             .header-left h1{font-size:1.4rem}
             .metrics-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
             .table-container{overflow-x:auto}
+            .card{overflow-x:auto}
+            .card table{min-width:480px}
             .filters-bar{flex-direction:column;align-items:stretch}
             .filter-group{width:100%}
             .filter-group select,.filter-group input{width:100%}
@@ -181,8 +195,18 @@
     @stack('styles')
 </head>
 <body>
+<div class="admin-topbar">
+    <button class="admin-hamburger" id="adminHamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="admin-topbar-brand">
+        <img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos">
+        <span>Admin Panel</span>
+    </div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-container">
-    <aside class="sidebar">
+    <aside class="sidebar" id="adminSidebar">
         <div class="sidebar-brand">
             <img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos" style="height:36px;width:auto;">
             <span class="sidebar-brand-name">Admin Panel</span>
@@ -282,6 +306,22 @@
         @yield('content')
     </main>
 </div>
+<script>
+(function(){
+    var hamburger=document.getElementById('adminHamburger');
+    var sidebar=document.getElementById('adminSidebar');
+    var overlay=document.getElementById('sidebarOverlay');
+    if(!hamburger||!sidebar||!overlay)return;
+    function toggleMenu(){
+        hamburger.classList.toggle('active');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+        document.body.style.overflow=sidebar.classList.contains('open')?'hidden':'';
+    }
+    hamburger.addEventListener('click',toggleMenu);
+    overlay.addEventListener('click',toggleMenu);
+})();
+</script>
 @stack('scripts')
 </body>
 </html>

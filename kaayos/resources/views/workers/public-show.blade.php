@@ -140,10 +140,21 @@ a{text-decoration:none;color:inherit}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 
+.nav-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px}
+.nav-hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;transition:all .3s}
+.nav-hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+.nav-hamburger.active span:nth-child(2){opacity:0}
+.nav-hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+.mobile-nav{display:none;position:fixed;top:60px;left:0;right:0;background:var(--b9);z-index:99;padding:16px 5% 20px;box-shadow:0 4px 12px rgba(0,0,0,.2);flex-direction:column;gap:4px}
+.mobile-nav.open{display:flex}
+.mobile-nav a{display:block;padding:12px 16px;border-radius:8px;color:rgba(255,255,255,.72);font-size:.95rem;font-weight:500;transition:all .18s}
+.mobile-nav a:hover{background:rgba(255,255,255,.08);color:#fff}
 @media(max-width:768px){
 .profile-layout{flex-direction:column}
 .profile-card{flex:none!important;width:100%}
 .nav-links{display:none}
+.nav-hamburger{display:flex}
+.nav{padding:0 4%}
 .footer-grid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:480px){
@@ -168,7 +179,16 @@ a{text-decoration:none;color:inherit}
     <a href="{{ route('login') }}" class="btn btn-ghost"><i class="fa-regular fa-user" aria-hidden="true"></i> Log In</a>
     <a href="{{ route('register') }}" class="btn btn-solid"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign Up Free</a>
   </div>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+<div class="mobile-nav" id="mobileNav">
+  <a href="{{ route('home') }}#services">Services</a>
+  <a href="{{ route('home') }}#how-it-works">How It Works</a>
+  <a href="{{ route('home') }}#join">Join as Worker</a>
+  <a href="{{ route('home') }}#faq">FAQ</a>
+</div>
 
 <div class="back-bar">
   <a href="{{ route('home') }}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Home</a>
@@ -421,6 +441,10 @@ $pubPhotos = $workerProfile && $workerProfile->portfolios
 @endphp
 
 <script>
+document.getElementById('navHamburger').addEventListener('click', function() {
+  this.classList.toggle('active');
+  document.getElementById('mobileNav').classList.toggle('open');
+});
 var pubPhotos = @json($pubPhotos);
 
 function openLightbox(index) {

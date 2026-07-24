@@ -95,6 +95,9 @@
     <div class="main">
 
         <header class="topbar">
+            <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
             <h1 class="page-title">@yield('page_title', __('page_title.default'))</h1>
 
             <div class="topbar-actions">
@@ -123,6 +126,24 @@
 
 </div>
 
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<script>
+(function(){
+    var btn=document.getElementById('mobileToggle');
+    var sidebar=document.querySelector('.sidebar');
+    var overlay=document.getElementById('sidebarOverlay');
+    if(!btn||!sidebar||!overlay)return;
+    function toggle(){
+        btn.classList.toggle('active');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+        document.body.style.overflow=sidebar.classList.contains('open')?'hidden':'';
+    }
+    btn.addEventListener('click',toggle);
+    overlay.addEventListener('click',toggle);
+})();
+</script>
 @stack('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
