@@ -313,6 +313,12 @@ a{text-decoration:none;color:inherit}
                     @endfor
                   </div>
                 </div>
+                @if($review->photo_url)
+                  <div class="review-photo-wrap" onclick="openReviewLightbox('{{ $review->photo_url }}')">
+                    <img src="{{ $review->photo_url }}" alt="Review photo">
+                    <div class="review-photo-overlay"><i class="fa-solid fa-expand" aria-hidden="true"></i> View photo</div>
+                  </div>
+                @endif
                 @if($review->comment)
                   <p class="review-comment">{{ $review->comment }}</p>
                 @endif
@@ -382,6 +388,12 @@ a{text-decoration:none;color:inherit}
   </div>
 </div>
 
+{{-- Review photo lightbox --}}
+<div id="reviewLightbox" class="review-lightbox-overlay" style="display:none;" onclick="if(event.target===this)closeReviewLightbox()">
+  <button type="button" class="review-lightbox-close" onclick="closeReviewLightbox()" aria-label="Close">&times;</button>
+  <img id="reviewLightboxImg" src="" alt="Review photo">
+</div>
+
 <style>
 .photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;display:none;align-items:center;justify-content:center;animation:plFadeIn .2s ease;padding:20px}
 .photo-lightbox.active{display:flex}
@@ -396,6 +408,15 @@ a{text-decoration:none;color:inherit}
 .pl-image{max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.4)}
 .pl-caption{color:rgba(255,255,255,.7);font-size:.9rem;margin-top:16px;text-align:center;max-width:600px;line-height:1.5}
 @keyframes plFadeIn{from{opacity:0}to{opacity:1}}
+.review-photo-wrap{position:relative;display:inline-block;margin-top:6px;border-radius:10px;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:box-shadow .2s,transform .2s}
+.review-photo-wrap:hover{box-shadow:0 4px 14px rgba(0,0,0,.12);transform:scale(1.02)}
+.review-photo-wrap img{display:block;max-width:200px;width:100%;height:auto;border-radius:10px}
+.review-photo-overlay{position:absolute;inset:0;background:rgba(0,0,0,.35);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-size:.78rem;font-weight:500;opacity:0;transition:opacity .2s;border-radius:10px}
+.review-photo-wrap:hover .review-photo-overlay{opacity:1}
+.review-lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:2000;display:flex;align-items:center;justify-content:center;cursor:pointer;animation:plFadeIn .2s ease}
+.review-lightbox-overlay img{max-width:90vw;max-height:85vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.review-lightbox-close{position:fixed;top:20px;right:24px;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:1.5rem;width:42px;height:42px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:2001}
+.review-lightbox-close:hover{background:rgba(255,255,255,.25)}
 </style>
 
 <div id="signInModal" class="modal-overlay" onclick="if(event.target===this)hideSignInModal()">
@@ -449,7 +470,12 @@ function updateLightbox() {
 }
 
 document.addEventListener('keydown', function(e) {
-  if (!document.getElementById('photoLightbox').classList.contains('active')) return;
+  if (!document.getElementById('photoLightbox').classList.contains('active')) {
+    if (document.getElementById('reviewLightbox').style.display === 'flex' && e.key === 'Escape') {
+      closeReviewLightbox();
+    }
+    return;
+  }
   if (e.key === 'Escape') closeLightbox();
   if (e.key === 'ArrowLeft') navigateLightbox(-1);
   if (e.key === 'ArrowRight') navigateLightbox(1);
@@ -462,6 +488,16 @@ document.querySelectorAll('.works-item .thumb[data-index]').forEach(function(el)
 });
 
 var plIndex = 0;
+
+function openReviewLightbox(url) {
+  document.getElementById('reviewLightboxImg').src = url;
+  document.getElementById('reviewLightbox').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeReviewLightbox() {
+  document.getElementById('reviewLightbox').style.display = 'none';
+  document.body.style.overflow = '';
+}
 
 function saveBookingIntent() {
   var data = {
