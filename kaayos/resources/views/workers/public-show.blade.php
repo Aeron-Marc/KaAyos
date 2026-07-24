@@ -481,11 +481,11 @@ function saveBookingIntent() {
 }
 function goToSignIn() {
   saveBookingIntent();
-  window.location.href = '{{ route('login') }}?intended={{ urlencode('/workers/' . $worker->id) }}';
+  window.location.href = '{{ route('login') }}?intended={{ urlencode('/client/workers/' . $worker->id) }}';
 }
 function goToSignUp() {
   saveBookingIntent();
-  window.location.href = '{{ route('register') }}?intended={{ urlencode('/workers/' . $worker->id) }}';
+  window.location.href = '{{ route('register') }}?intended={{ urlencode('/client/workers/' . $worker->id) }}';
 }
 function showSignInModal() { document.getElementById('signInModal').classList.add('active'); }
 function hideSignInModal() { document.getElementById('signInModal').classList.remove('active'); }
@@ -502,7 +502,9 @@ function hideSignInModal() { document.getElementById('signInModal').classList.re
     sessionStorage.removeItem('kaayos_booking_intent');
     localStorage.removeItem('kaayos_booking_intent');
     @auth
+    @if(auth()->user()->role === 'client')
     window.location.href = '/client/workers/' + intent.worker_id;
+    @endif
     @endauth
   }
 })();

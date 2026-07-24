@@ -41,6 +41,8 @@ class RegisterController extends Controller
 
         $validated = $request->validate($rules);
 
+        $role = $request->input('intended') ? 'client' : $validated['role'];
+
         try {
             $user = User::create([
                 'first_name'       => $validated['first_name'],
@@ -49,7 +51,7 @@ class RegisterController extends Controller
                 'email'            => $validated['email'],
                 'phone'            => $validated['phone'] ?? null,
                 'password'         => Hash::make($validated['password']),
-                'role'             => $validated['role'],
+                'role'             => $role,
                 'service_category' => $validated['service_category'] ?? null,
                 'city'             => $validated['city'] ?? null,
             ]);

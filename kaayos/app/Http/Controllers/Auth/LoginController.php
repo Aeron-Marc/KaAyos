@@ -52,6 +52,18 @@ class LoginController extends Controller
         ]);
 
         if ($intended = $request->input('intended')) {
+            $role = Auth::user()->role;
+
+            if ($role === 'worker') {
+                return redirect()->route('worker.dashboard')
+                    ->with('error', 'You need a client account to book services. Please log in with a client account.');
+            }
+
+            if ($role === 'admin') {
+                return redirect()->route('admin.dashboard')
+                    ->with('error', 'You need a client account to book services. Please log in with a client account.');
+            }
+
             return redirect($intended);
         }
 
