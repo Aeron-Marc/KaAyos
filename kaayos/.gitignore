@@ -26,3 +26,17 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 kaayos_db
+
+# Compiled views
+/storage/framework/views/
+
+# SSL certificates
+/storage/cacert.pem
+
+# Python cache
+__pycache__/
+*.pyc
+
+# SQLite database (project uses MySQL)
+/database/database.sqlite
+/database/database.sqlite-journal
