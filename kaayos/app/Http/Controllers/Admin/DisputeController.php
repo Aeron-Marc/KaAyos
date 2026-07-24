@@ -12,7 +12,11 @@ class DisputeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Dispute::with(['booking', 'raisedBy']);
+        $query = Dispute::with(['booking', 'raisedBy', 'reportedWorker']);
+
+        if ($type = $request->input('type')) {
+            $query->where('type', $type);
+        }
 
         if ($status = $request->input('status')) {
             $query->where('status', $status);
@@ -32,7 +36,7 @@ class DisputeController extends Controller
 
     public function show(Dispute $dispute)
     {
-        $dispute->load(['booking.client', 'booking.worker', 'raisedBy', 'resolvedBy']);
+        $dispute->load(['booking.client', 'booking.worker', 'raisedBy', 'resolvedBy', 'reportedWorker']);
         return view('admin.disputes.show', compact('dispute'));
     }
 

@@ -140,6 +140,35 @@
     </div>
 </div>
 
+{{-- Report Modal --}}
+<div id="reportModal" class="modal-overlay" style="display:none;" onclick="closeReportModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Report Worker</h3>
+            <button type="button" class="modal-close" onclick="closeReportModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin:0 0 12px;color:var(--g6);font-size:.9rem;">
+                Describe your issue with this worker. An admin will review your report.
+            </p>
+            <div id="reportSummary" style="margin-bottom:14px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:.85rem;color:#991b1b;"></div>
+            <div style="margin-top:14px;">
+                <label style="font-size:.85rem;font-weight:500;color:var(--g6);display:block;margin-bottom:4px;">
+                    Reason <span style="color:var(--d10)">*</span>
+                </label>
+                <textarea id="reportReason" class="review-textarea" placeholder="Explain what happened… (min. 10 characters)" style="min-height:100px;"></textarea>
+                <div id="reportError" style="display:none;margin-top:6px;font-size:.8rem;color:var(--d10);"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeReportModal()">Cancel</button>
+            <button type="button" class="btn btn-solid" style="background:#dc2626;" id="reportSubmitBtn" onclick="submitReport()">
+                <i class="fa-solid fa-flag"></i> Submit Report
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('styles')
@@ -353,6 +382,13 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+.btn-report {
+    color: #dc2626 !important;
+    border-color: #fca5a5 !important;
+}
+.btn-report:hover {
+    background: #fef2f2 !important;
+}
 @media (max-width: 640px) {
     .booking-modal-layout { grid-template-columns: 1fr; gap: 14px; }
     .booking-card { padding: 10px 14px; gap: 10px; }
@@ -489,7 +525,8 @@ function openBookingModal(index) {
     if (b.raw_status === 'cancelled' || b.raw_status === 'completed') {
         var extra = '';
         if (b.raw_status === 'completed') {
-            extra = '<a href="{{ route('client.reviews') }}" class="btn btn-outline"><i class="fa-regular fa-star" aria-hidden="true"></i> Leave Review</a>';
+            extra = '<a href="{{ route('client.reviews') }}" class="btn btn-outline"><i class="fa-regular fa-star" aria-hidden="true"></i> Leave Review</a>' +
+                    '<button type="button" class="btn btn-outline btn-report" onclick="showReportModal(' + index + ')"><i class="fa-solid fa-flag"></i> Report Worker</button>';
         }
         footer.innerHTML = extra + '<button type="button" class="btn btn-outline" onclick="closeBookingModal()">Close</button>';
     } else {
@@ -558,6 +595,71 @@ function confirmCancel() {
     .finally(function () {
         document.getElementById('confirmCancelBtn').disabled = false;
         document.getElementById('confirmCancelBtn').textContent = 'Yes, Cancel';
+    });
+}
+
+// ── Report ──
+var reportIndexHolder = { value: null };
+
+function showReportModal(index) {
+    var b = bookings[index];
+    if (!b) return;
+    reportIndexHolder.value = index;
+    document.getElementById('reportSummary').innerHTML =
+        '<strong>Worker:</strong> ' + b.worker + '<br>' +
+        '<strong>Service:</strong> ' + b.service + '<br>' +
+        '<strong>Date:</strong> ' + b.date;
+    document.getElementById('reportReason').value = '';
+    document.getElementById('reportError').style.display = 'none';
+    document.getElementById('reportSubmitBtn').disabled = false;
+    document.getElementById('reportSubmitBtn').innerHTML = '<i class="fa-solid fa-flag"></i> Submit Report';
+    document.getElementById('reportModal').style.display = 'flex';
+}
+
+function closeReportModal(e) {
+    if (e && e.target && !e.target.closest) return;
+    document.getElementById('reportModal').style.display = 'none';
+    reportIndexHolder.value = null;
+}
+
+function submitReport() {
+    if (reportIndexHolder.value === null) return;
+    var b = bookings[reportIndexHolder.value];
+    var reason = document.getElementById('reportReason').value.trim();
+    var errorEl = document.getElementById('reportError');
+
+    if (reason.length < 10) {
+        errorEl.textContent = 'Please provide at least 10 characters describing the issue.';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    var btn = document.getElementById('reportSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting…';
+
+    fetch('/client/bookings/' + b.id + '/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        body: JSON.stringify({ reason: reason }),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+        if (data.success) {
+            closeReportModal();
+            alert(data.message || 'Report submitted.');
+        } else {
+            errorEl.textContent = data.message || 'Failed to submit report.';
+            errorEl.style.display = 'block';
+        }
+    })
+    .catch(function () {
+        errorEl.textContent = 'Something went wrong. Please try again.';
+        errorEl.style.display = 'block';
+    })
+    .finally(function () {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-flag"></i> Submit Report';
     });
 }
 

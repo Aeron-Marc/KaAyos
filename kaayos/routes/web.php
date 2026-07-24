@@ -71,6 +71,7 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::post('/bookings', [ClientController::class, 'storeBooking'])->middleware('throttle:10,1')->name('bookings.store');
     Route::post('/bookings/{booking}/cancel', [ClientController::class, 'cancelBooking'])->name('bookings.cancel');
     Route::post('/bookings/{booking}/review', [ClientController::class, 'submitReview'])->name('bookings.review');
+    Route::post('/bookings/{booking}/report', [ClientController::class, 'reportWorker'])->middleware('throttle:3,1')->name('bookings.report');
     Route::post('/bookings/{booking}/reschedule', [ClientController::class, 'rescheduleRequest'])->name('bookings.reschedule');
     Route::post('/bookings/{booking}/reschedule-respond', [ClientController::class, 'respondReschedule'])->name('bookings.reschedule-respond');
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
