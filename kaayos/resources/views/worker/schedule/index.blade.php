@@ -528,6 +528,8 @@ function openJobModal(index) {
 
     // Details
     var desc = job.description || 'No details provided.';
+    var cancelReason = job.cancellation_reason || '';
+    var cancelledAt = job.cancelled_at ? formatTime(job.cancelled_at) : '';
     document.getElementById('jobModalTitle').textContent = 'Job Details';
     document.getElementById('jobModalDetails').innerHTML =
         '<div class="detail-grid-compact">' +
@@ -545,6 +547,8 @@ function openJobModal(index) {
             '<span class="detail-value" style="font-weight:600;">₱' + Number(job.price).toLocaleString() + '</span>' +
             '<span class="detail-label">Description</span>' +
             '<span class="detail-value">' + desc + '</span>' +
+            (cancelledAt ? '<span class="detail-label">Cancelled At</span><span class="detail-value">' + cancelledAt + '</span>' : '') +
+            (cancelReason ? '<span class="detail-label">Cancel Reason</span><span class="detail-value">' + cancelReason + '</span>' : '') +
         '</div>';
 
     // Timeline
@@ -570,6 +574,22 @@ function openJobModal(index) {
         timelineHtml += '</div>';
     }
     timelineHtml += '</div>';
+
+    // Add cancelled step if applicable
+    if (job.raw_status === 'cancelled') {
+        var cancelledTs = job.cancelled_at || null;
+        var timeHtml2 = cancelledTs ? '<span class="timeline-time">' + formatTime(cancelledTs) + '</span>' : '';
+        timelineHtml += '<div class="timeline-item current" style="color:var(--color-danger,#dc3545);">';
+        timelineHtml +=   '<div class="timeline-dot-col">';
+        timelineHtml +=     '<div class="timeline-dot current" style="background:var(--color-danger,#dc3545);border-color:var(--color-danger,#dc3545);">✕</div>';
+        timelineHtml +=   '</div>';
+        timelineHtml +=   '<div class="timeline-content">';
+        timelineHtml +=     '<span class="timeline-status">Cancelled</span>';
+        timelineHtml +=     timeHtml2;
+        timelineHtml +=   '</div>';
+        timelineHtml += '</div>';
+    }
+
     document.getElementById('jobModalTimeline').innerHTML = timelineHtml;
 
     // Footer

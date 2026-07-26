@@ -8,8 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Dispute extends Model
 {
     protected $fillable = [
+        'type',
         'booking_id',
         'raised_by',
+        'reported_worker_id',
         'status',
         'reason',
         'resolution_notes',
@@ -36,6 +38,11 @@ class Dispute extends Model
         return $this->belongsTo(User::class, 'resolved_by');
     }
 
+    public function reportedWorker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reported_worker_id');
+    }
+
     public function scopeOpen($query)
     {
         return $query->where('status', 'open');
@@ -49,5 +56,15 @@ class Dispute extends Model
     public function scopeResolved($query)
     {
         return $query->where('status', 'resolved');
+    }
+
+    public function scopeBookingDisputes($query)
+    {
+        return $query->where('type', 'booking_dispute');
+    }
+
+    public function scopeWorkerReports($query)
+    {
+        return $query->where('type', 'worker_report');
     }
 }

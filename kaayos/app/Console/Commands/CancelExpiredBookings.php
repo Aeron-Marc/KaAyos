@@ -47,6 +47,32 @@ class CancelExpiredBookings extends Command
             $count++;
         }
 
-        $this->info("Cancelled {$count} expired/no-show booking(s).");
+        // En-route bookings that never started (2h past scheduled time)
+        $staleEnRoute = Booking::where('status', Booking::STATUS_EN_ROUTE)
+            ->where('scheduled_at', '<', now()->subHours(2))
+            ->get();
+
+        foreach ($staleEnRoute as $booking) {
+            $booking->cancel('Worker marked en-route but did not start the job within 2 hours of the scheduled time.');
+            $booking->load(['client', 'worker']);
+            Notification::send($booking->client, new BookingCancelled($booking, $booking->worker->name));
+            Notification::send($booking->worker, new BookingCancelled($booking));
+            $count++;
+        }
+
+        // In-progress bookings stuck for more than 12 hours
+        $staleInProgress = Booking::where('status', Booking::STATUS_IN_PROGRESS)
+            ->where('updated_at', '<', now()->subHours(12))
+            ->get();
+
+        foreach ($staleInProgress as $booking) {
+            $booking->cancel('Job was in progress for over 12 hours without completion. Auto-cancelled.');
+            $booking->load(['client', 'worker']);
+            Notification::send($booking->client, new BookingCancelled($booking, $booking->worker->name));
+            Notification::send($booking->worker, new BookingCancelled($booking));
+            $count++;
+        }
+
+        $this->info("Cancelled {$count} expired/no-show/stale booking(s).");
     }
 }

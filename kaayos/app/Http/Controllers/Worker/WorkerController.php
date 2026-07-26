@@ -103,6 +103,8 @@ class WorkerController extends Controller
                     'created'        => $booking->created_at->format('M d, Y · h:i A'),
                     'booking_ref'    => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
                     'status_history' => $statusHistory,
+                    'cancellation_reason' => $booking->cancellation_reason,
+                    'cancelled_at'  => $booking->cancelled_at?->toIso8601String(),
                 ];
             })
             ->toArray();

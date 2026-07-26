@@ -10,6 +10,7 @@ use App\Models\Message;
 use App\Models\Review;
 use App\Models\WorkerProfile;
 use App\Models\BookingHistory;
+use App\Models\Dispute;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Events\BookingCreated;
@@ -20,6 +21,7 @@ use App\Notifications\BookingCancelled;
 use App\Notifications\NewBooking;
 use App\Notifications\NewMessage;
 use App\Notifications\NewReview;
+use App\Notifications\ReportReceived;
 use App\Notifications\RescheduleRequested;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -131,6 +133,8 @@ class ClientController extends Controller
                     'created'       => $b->created_at->format('M d, Y · h:i A'),
                     'booking_ref'   => $b->booking_ref ?? 'BK-' . str_pad($b->id, 5, '0', STR_PAD_LEFT),
                     'status_history'=> $statusHistory,
+                    'cancellation_reason' => $b->cancellation_reason,
+                    'cancelled_at'  => $b->cancelled_at?->toIso8601String(),
                 ];
             })->toArray();
     }
@@ -517,6 +521,46 @@ class ClientController extends Controller
         BookingMessageService::post($booking, 'cancelled');
 
         return response()->json(['success' => true]);
+    }
+
+    public function reportWorker(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:10', 'max:5000'],
+        ]);
+
+        $exists = Dispute::where('type', 'worker_report')
+            ->where('booking_id', $booking->id)
+            ->where('raised_by', auth()->id())
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have already submitted a report for this booking.',
+            ], 422);
+        }
+
+        $dispute = Dispute::create([
+            'type'              => 'worker_report',
+            'booking_id'        => $booking->id,
+            'raised_by'         => auth()->id(),
+            'reported_worker_id' => $booking->worker_id,
+            'status'            => 'open',
+            'reason'            => $validated['reason'],
+        ]);
+
+        auth()->user()->notify(new ReportReceived($dispute));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Your report has been submitted. An admin will review it shortly.',
+            'dispute' => ['id' => $dispute->id],
+        ]);
     }
 
     public function storeBooking(Request $request): JsonResponse

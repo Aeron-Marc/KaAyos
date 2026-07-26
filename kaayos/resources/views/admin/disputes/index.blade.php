@@ -11,6 +11,14 @@
 
 <form method="GET" action="{{ route('admin.disputes.index') }}" class="filters-bar">
     <div class="filter-group">
+        <label for="type">Type:</label>
+        <select name="type" id="type" onchange="this.form.submit()">
+            <option value="">All Types</option>
+            <option value="booking_dispute" {{ request('type') === 'booking_dispute' ? 'selected' : '' }}>Booking Dispute</option>
+            <option value="worker_report" {{ request('type') === 'worker_report' ? 'selected' : '' }}>Worker Report</option>
+        </select>
+    </div>
+    <div class="filter-group">
         <label for="status">Status:</label>
         <select name="status" id="status" onchange="this.form.submit()">
             <option value="">All Statuses</option>
@@ -31,6 +39,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Type</th>
                     <th>Booking</th>
                     <th>Raised By</th>
                     <th>Reason</th>
@@ -43,9 +52,22 @@
                 @foreach($disputes as $dispute)
                 <tr>
                     <td class="fw-600">#{{ $dispute->id }}</td>
-                    <td><a href="{{ route('admin.bookings.show', $dispute->booking_id) }}" style="color:var(--b6)">#{{ $dispute->booking_id }}</a></td>
+                    <td>
+                        @if($dispute->type === 'worker_report')
+                            <span class="status-badge" style="background:#fef2f2;color:#991b1b;">Report</span>
+                        @else
+                            <span class="status-badge" style="background:#eff6ff;color:#1e40af;">Dispute</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($dispute->booking_id)
+                            <a href="{{ route('admin.bookings.show', $dispute->booking_id) }}" style="color:var(--b6)">#{{ $dispute->booking_id }}</a>
+                        @else
+                            <span class="text-muted">—</span>
+                        @endif
+                    </td>
                     <td class="text-sm">{{ $dispute->raisedBy->name ?? 'N/A' }}</td>
-                    <td class="text-sm" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $dispute->reason }}</td>
+                    <td class="text-sm" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $dispute->reason }}</td>
                     <td><span class="status-badge status-{{ $dispute->status }}">{{ str_replace('_', ' ', ucfirst($dispute->status)) }}</span></td>
                     <td class="text-sm text-muted">{{ $dispute->created_at->format('M d, Y') }}</td>
                     <td style="text-align: center;">
