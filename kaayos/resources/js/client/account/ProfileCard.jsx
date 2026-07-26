@@ -1,9 +1,11 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { getInitials } from './utils';
+import Skeleton from './Skeleton';
 
 export default function ProfileCard({ fullName, email, avatarUrl, onPhotoSelect }) {
     const fileRef = useRef(null);
     const initials = getInitials(fullName);
+    const [imageLoaded, setImageLoaded] = useState(false);
 
     const handleFileChange = (event) => {
         const file = event.target.files?.[0];
@@ -16,7 +18,16 @@ export default function ProfileCard({ fullName, email, avatarUrl, onPhotoSelect 
         <div className="profile-sidebar-card">
             <div className="profile-avatar-wrap">
                 {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="profile-big-avatar profile-avatar-img" />
+                    <>
+                        {!imageLoaded && <Skeleton variant="avatar-lg" />}
+                        <img
+                            src={avatarUrl}
+                            alt=""
+                            className={`profile-big-avatar profile-avatar-img${imageLoaded ? '' : ' skeleton-loading'}`}
+                            style={imageLoaded ? {} : { display: 'none' }}
+                            onLoad={() => setImageLoaded(true)}
+                        />
+                    </>
                 ) : (
                     <div className="profile-big-avatar">{initials}</div>
                 )}
