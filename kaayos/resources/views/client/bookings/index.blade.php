@@ -28,6 +28,44 @@
     ];
 @endphp
 
+@section('skeleton')
+    <div class="sp-tabs">
+        <div class="skeleton" style="height:32px;width:50px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:60px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:70px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:80px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:90px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:65px;border-radius:99px;"></div>
+    </div>
+    <div class="sp-panel">
+        <div class="skeleton skeleton-title" style="width:220px;margin-bottom:20px;"></div>
+        <div style="display:flex;gap:16px;margin-bottom:16px;">
+            <div class="skeleton" style="width:60px;height:60px;border-radius:12px;flex-shrink:0;"></div>
+            <div style="flex:1;">
+                <div class="skeleton skeleton-text" style="width:50%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:30%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:70%;"></div>
+            </div>
+        </div>
+        <div style="display:flex;gap:16px;margin-bottom:16px;">
+            <div class="skeleton" style="width:60px;height:60px;border-radius:12px;flex-shrink:0;"></div>
+            <div style="flex:1;">
+                <div class="skeleton skeleton-text" style="width:45%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:35%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:60%;"></div>
+            </div>
+        </div>
+        <div style="display:flex;gap:16px;">
+            <div class="skeleton" style="width:60px;height:60px;border-radius:12px;flex-shrink:0;"></div>
+            <div style="flex:1;">
+                <div class="skeleton skeleton-text" style="width:55%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:25%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:65%;"></div>
+            </div>
+        </div>
+    </div>
+@endsection
+
 @section('content')
 
 {{-- Filter Pills --}}

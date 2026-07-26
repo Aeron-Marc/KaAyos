@@ -160,17 +160,70 @@
         .w-auto{width:auto}
         .table-col-price{text-align:right;font-variant-numeric:tabular-nums}
         .badge-dot{width:8px;height:8px;border-radius:50%;background:var(--d10);display:inline-block}
+        .admin-topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:var(--b9);z-index:200;align-items:center;padding:0 16px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+
+        /* ── Admin Skeleton Page ── */
+        @keyframes ad-shimmer {
+            0%   { background-position: -400px 0; }
+            100% { background-position: 400px 0; }
+        }
+        .ad-sk {
+            background: #e8ecf0;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .ad-sk::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.5) 50%, transparent 100%);
+            background-size: 800px 100%;
+            animation: ad-shimmer 1.5s ease-in-out infinite;
+        }
+        .ad-sk-text { height: 14px; width: 100%; margin-bottom: 8px; }
+        .ad-sk-text-sm { height: 14px; width: 60%; margin-bottom: 8px; }
+        .ad-sk-title { height: 24px; width: 40%; margin-bottom: 12px; }
+        .ad-sk-stat { height: 100px; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        .ad-sk-stat-circle { width: 40px; height: 40px; border-radius: 10px; margin-bottom: 12px; }
+        .ad-sk-row { height: 52px; width: 100%; margin-bottom: 4px; border-radius: 6px; }
+        .ad-sk-panel { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,.04); padding: 24px; margin-bottom: 20px; }
+
+        .skeleton-page {
+            position: absolute; inset: 0; padding: 32px; background: var(--off); z-index: 20;
+            opacity: 1; transition: opacity 0.35s ease; pointer-events: auto; overflow-y: auto;
+        }
+        .skeleton-page--loaded { opacity: 0; pointer-events: none; transition-delay: 0.1s; }
+        .skeleton-page .sp-section { margin-bottom: 24px; }
+        .skeleton-page .sp-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 24px; margin-bottom: 28px; }
+        .skeleton-page .sp-title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .skeleton-page .sp-filter-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .skeleton-page .sp-filter-bar .ad-sk { height: 38px; width: 100px; }
+        .skeleton-page .sp-filter-bar .ad-sk-search { width: 240px; }
+        .main-content { position: relative; }
+        .admin-hamburger{display:flex;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px;z-index:210}
+        .admin-hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;transition:all .3s}
+        .admin-hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+        .admin-hamburger.active span:nth-child(2){opacity:0}
+        .admin-hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+        .admin-topbar-brand{display:flex;align-items:center;gap:8px;margin-left:12px}
+        .admin-topbar-brand img{height:28px;width:auto}
+        .admin-topbar-brand span{font-size:1rem;font-weight:700;color:#fff}
+        .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;opacity:0;transition:opacity .3s}
+        .sidebar-overlay.active{display:block;opacity:1}
         @media(max-width:1024px){
             .layout-grid-2{grid-template-columns:1fr;gap:20px}
         }
         @media(max-width:768px){
-            .admin-container{flex-direction:column}
-            .sidebar{width:100%;height:auto;position:relative;padding:20px;margin-bottom:0}
-            .main-content{margin-left:0;padding:20px}
+            .admin-topbar{display:flex}
+            .sidebar{position:fixed;left:-280px;top:0;height:100vh;width:280px;z-index:100;transition:left .3s ease;padding-top:72px}
+            .sidebar.open{left:0}
+            .main-content{margin-left:0;padding:72px 20px 20px}
             .header{flex-direction:column;align-items:flex-start}
             .header-left h1{font-size:1.4rem}
             .metrics-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
             .table-container{overflow-x:auto}
+            .card{overflow-x:auto}
+            .card table{min-width:480px}
             .filters-bar{flex-direction:column;align-items:stretch}
             .filter-group{width:100%}
             .filter-group select,.filter-group input{width:100%}
@@ -181,8 +234,18 @@
     @stack('styles')
 </head>
 <body>
+<div class="admin-topbar">
+    <button class="admin-hamburger" id="adminHamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="admin-topbar-brand">
+        <img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos">
+        <span>Admin Panel</span>
+    </div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-container">
-    <aside class="sidebar">
+    <aside class="sidebar" id="adminSidebar">
         <div class="sidebar-brand">
             <img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos" style="height:36px;width:auto;">
             <span class="sidebar-brand-name">Admin Panel</span>
@@ -267,21 +330,82 @@
         </div>
     </aside>
     <main class="main-content">
-        @if(session('success'))
-            <div class="alert alert-success">
-                <i class="fa-solid fa-circle-check"></i>
-                {{ session('success') }}
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger">
-                <i class="fa-solid fa-circle-exclamation"></i>
-                {{ session('error') }}
-            </div>
-        @endif
-        @yield('content')
+        <div class="skeleton-page" id="skeletonPage">
+            @hasSection('skeleton')
+                @yield('skeleton')
+            @else
+                <div class="sp-title-row">
+                    <div class="ad-sk ad-sk-title" style="width:220px;"></div>
+                    <div class="ad-sk" style="height:38px;width:120px;border-radius:8px;"></div>
+                </div>
+                <div class="sp-stats">
+                    <div class="ad-sk ad-sk-stat"><div class="ad-sk ad-sk-stat-circle"></div><div class="ad-sk ad-sk-title" style="width:60px;"></div><div class="ad-sk ad-sk-text-sm" style="width:100px;"></div></div>
+                    <div class="ad-sk ad-sk-stat"><div class="ad-sk ad-sk-stat-circle"></div><div class="ad-sk ad-sk-title" style="width:60px;"></div><div class="ad-sk ad-sk-text-sm" style="width:100px;"></div></div>
+                    <div class="ad-sk ad-sk-stat"><div class="ad-sk ad-sk-stat-circle"></div><div class="ad-sk ad-sk-title" style="width:60px;"></div><div class="ad-sk ad-sk-text-sm" style="width:100px;"></div></div>
+                    <div class="ad-sk ad-sk-stat"><div class="ad-sk ad-sk-stat-circle"></div><div class="ad-sk ad-sk-title" style="width:60px;"></div><div class="ad-sk ad-sk-text-sm" style="width:100px;"></div></div>
+                </div>
+                <div class="ad-sk-panel">
+                    <div class="ad-sk ad-sk-title" style="width:160px;margin-bottom:20px;"></div>
+                    <div class="ad-sk ad-sk-text"></div>
+                    <div class="ad-sk ad-sk-text"></div>
+                    <div class="ad-sk ad-sk-text-sm"></div>
+                    <div style="height:16px;"></div>
+                    <div class="ad-sk ad-sk-row"></div>
+                    <div class="ad-sk ad-sk-row"></div>
+                    <div class="ad-sk ad-sk-row"></div>
+                    <div class="ad-sk ad-sk-row"></div>
+                </div>
+            @endif
+        </div>
+        <div>
+            @if(session('success'))
+                <div class="alert alert-success">
+                    <i class="fa-solid fa-circle-check"></i>
+                    {{ session('success') }}
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    {{ session('error') }}
+                </div>
+            @endif
+            @yield('content')
+        </div>
     </main>
 </div>
+<script>
+(function(){
+    var hamburger=document.getElementById('adminHamburger');
+    var sidebar=document.getElementById('adminSidebar');
+    var overlay=document.getElementById('sidebarOverlay');
+    if(!hamburger||!sidebar||!overlay)return;
+    function toggleMenu(){
+        hamburger.classList.toggle('active');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+        document.body.style.overflow=sidebar.classList.contains('open')?'hidden':'';
+    }
+    hamburger.addEventListener('click',toggleMenu);
+    overlay.addEventListener('click',toggleMenu);
+})();
+</script>
 @stack('scripts')
+<script>
+(function() {
+    var el = document.getElementById('skeletonPage');
+    if (!el) return;
+    var loaded = sessionStorage.getItem('sk_' + window.location.pathname);
+    if (loaded) { el.style.display = 'none'; return; }
+    var delay = Math.max(400, 200 + Math.random() * 300);
+    setTimeout(function() {
+        el.classList.add('skeleton-page--loaded');
+        setTimeout(function() {
+            el.style.display = 'none';
+            try { sessionStorage.setItem('sk_' + window.location.pathname, '1'); } catch(e) {}
+        }, 450);
+    }, delay);
+})();
+</script>
 </body>
 </html>

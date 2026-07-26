@@ -85,14 +85,14 @@ class ReportController extends Controller
                 'active' => $bookings->whereIn('status', ['pending', 'confirmed', 'in_progress'])->count(),
             ],
             'rows' => $bookings->map(fn ($b) => [
-                $b->id,
-                $b->client->name ?? 'N/A',
-                $b->worker->name ?? 'N/A',
-                $b->service_category,
-                $b->status,
-                number_format((float) $b->price, 2),
-                $b->scheduled_at?->format('Y-m-d H:i'),
-                $b->created_at->format('Y-m-d H:i'),
+                'ID'        => $b->id,
+                'Client'    => $b->client->name ?? 'N/A',
+                'Worker'    => $b->worker->name ?? 'N/A',
+                'Service'   => $b->service_category,
+                'Status'    => $b->status,
+                'Price'     => number_format((float) $b->price, 2),
+                'Scheduled' => $b->scheduled_at?->format('Y-m-d H:i'),
+                'Created'   => $b->created_at->format('Y-m-d H:i'),
             ])->toArray(),
         ];
     }
@@ -112,11 +112,11 @@ class ReportController extends Controller
                 'average_booking_value' => $completed->avg('price'),
             ],
             'rows' => $completed->map(fn ($b) => [
-                $b->id,
-                $b->client->name ?? 'N/A',
-                $b->worker->name ?? 'N/A',
-                number_format((float) $b->price, 2),
-                $b->completed_at?->format('Y-m-d H:i'),
+                'Booking ID'    => $b->id,
+                'Client'        => $b->client->name ?? 'N/A',
+                'Worker'        => $b->worker->name ?? 'N/A',
+                'Price'         => number_format((float) $b->price, 2),
+                'Completed At'  => $b->completed_at?->format('Y-m-d H:i'),
             ])->toArray(),
         ];
     }
@@ -136,11 +136,11 @@ class ReportController extends Controller
                 'rejected' => $docs->where('status', 'rejected')->count(),
             ],
             'rows' => $docs->map(fn ($d) => [
-                $d->user->name ?? 'N/A',
-                $d->user->email ?? 'N/A',
-                $d->document_type,
-                $d->status,
-                $d->reviewed_at?->format('Y-m-d H:i'),
+                'Provider'      => $d->user->name ?? 'N/A',
+                'Email'         => $d->user->email ?? 'N/A',
+                'Document Type' => $d->document_type,
+                'Status'        => $d->status,
+                'Reviewed At'   => $d->reviewed_at?->format('Y-m-d H:i'),
             ])->toArray(),
         ];
     }

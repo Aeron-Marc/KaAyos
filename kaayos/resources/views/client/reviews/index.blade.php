@@ -3,6 +3,47 @@
 @section('title', 'Reviews')
 @section('page_title', 'Reviews')
 
+@section('skeleton')
+    <div class="skeleton skeleton-title" style="width:200px;margin-bottom:20px;"></div>
+    <div class="sp-panel">
+        <div style="display:flex;gap:16px;margin-bottom:16px;">
+            <div class="skeleton skeleton-avatar"></div>
+            <div style="flex:1;">
+                <div class="skeleton skeleton-text" style="width:40%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:30%;"></div>
+                <div style="display:flex;gap:4px;margin-top:8px;">
+                    <div class="skeleton" style="width:18px;height:18px;border-radius:4px;"></div>
+                    <div class="skeleton" style="width:18px;height:18px;border-radius:4px;"></div>
+                    <div class="skeleton" style="width:18px;height:18px;border-radius:4px;"></div>
+                    <div class="skeleton" style="width:18px;height:18px;border-radius:4px;"></div>
+                    <div class="skeleton" style="width:18px;height:18px;border-radius:4px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-text-sm"></div>
+    </div>
+    <div class="sp-panel">
+        <div class="skeleton skeleton-title" style="width:140px;margin-bottom:16px;"></div>
+        <div style="display:flex;gap:16px;margin-bottom:16px;">
+            <div class="skeleton skeleton-avatar"></div>
+            <div style="flex:1;">
+                <div class="skeleton skeleton-text" style="width:50%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:35%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:60%;"></div>
+            </div>
+        </div>
+        <div style="display:flex;gap:16px;">
+            <div class="skeleton skeleton-avatar"></div>
+            <div style="flex:1;">
+                <div class="skeleton skeleton-text" style="width:45%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:40%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:55%;"></div>
+            </div>
+        </div>
+    </div>
+@endsection
+
 @section('content')
 
 <div id="reviewPageData"
@@ -236,6 +277,15 @@
 }
 .lightbox-close:hover {
     background: rgba(255,255,255,.25);
+}
+@media(max-width:768px){
+    .review-photo-upload{flex-wrap:wrap}
+    .review-photo-wrap img{max-width:160px}
+    .review-textarea{min-height:80px}
+}
+@media(max-width:480px){
+    .review-photo-wrap img{max-width:120px}
+    .lightbox-overlay img{max-width:95vw;max-height:80vh}
 }
 </style>
 @endpush

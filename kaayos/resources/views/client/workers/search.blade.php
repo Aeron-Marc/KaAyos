@@ -9,6 +9,24 @@
     </button>
 @endsection
 
+@section('skeleton')
+    <div class="skeleton" style="height:52px;border-radius:var(--radius);margin-bottom:16px;"></div>
+    <div class="sp-tabs">
+        <div class="skeleton" style="height:32px;width:50px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:80px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:70px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:100px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:60px;border-radius:99px;"></div>
+    </div>
+    <div class="skeleton skeleton-title" style="width:180px;margin-bottom:16px;"></div>
+    <div class="sp-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));">
+        <div class="skeleton" style="height:240px;border-radius:var(--radius);"></div>
+        <div class="skeleton" style="height:240px;border-radius:var(--radius);"></div>
+        <div class="skeleton" style="height:240px;border-radius:var(--radius);"></div>
+        <div class="skeleton" style="height:240px;border-radius:var(--radius);"></div>
+    </div>
+@endsection
+
 @section('content')
 
 <form action="{{ route('client.workers') }}" class="search-row">

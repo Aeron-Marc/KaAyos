@@ -1,6 +1,39 @@
 @extends('layouts.admin')
 
 @section('title', 'Dashboard')
+@section('skeleton')
+    <div class="sp-title-row">
+        <div class="ad-sk ad-sk-title" style="width:260px;"></div>
+    </div>
+    <div class="sp-stats">
+        <div class="ad-sk ad-sk-stat"><div class="ad-sk ad-sk-stat-circle"></div><div class="ad-sk ad-sk-title" style="width:40px;"></div><div class="ad-sk ad-sk-text-sm" style="width:100px;"></div></div>
+        <div class="ad-sk ad-sk-stat"><div class="ad-sk ad-sk-stat-circle"></div><div class="ad-sk ad-sk-title" style="width:40px;"></div><div class="ad-sk ad-sk-text-sm" style="width:100px;"></div></div>
+        <div class="ad-sk ad-sk-stat"><div class="ad-sk ad-sk-stat-circle"></div><div class="ad-sk ad-sk-title" style="width:40px;"></div><div class="ad-sk ad-sk-text-sm" style="width:100px;"></div></div>
+        <div class="ad-sk ad-sk-stat"><div class="ad-sk ad-sk-stat-circle"></div><div class="ad-sk ad-sk-title" style="width:40px;"></div><div class="ad-sk ad-sk-text-sm" style="width:100px;"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
+        <div class="ad-sk-panel">
+            <div class="ad-sk ad-sk-title" style="width:140px;"></div>
+            <div class="ad-sk ad-sk-row"></div>
+            <div class="ad-sk ad-sk-row"></div>
+            <div class="ad-sk ad-sk-row"></div>
+            <div class="ad-sk ad-sk-row"></div>
+        </div>
+        <div class="ad-sk-panel">
+            <div class="ad-sk ad-sk-title" style="width:140px;"></div>
+            <div class="ad-sk ad-sk-row"></div>
+            <div class="ad-sk ad-sk-row"></div>
+            <div class="ad-sk ad-sk-row"></div>
+        </div>
+    </div>
+    <div class="ad-sk-panel">
+        <div class="ad-sk ad-sk-title" style="width:120px;"></div>
+        <div style="display:flex;gap:12px;">
+            <div class="ad-sk" style="height:38px;width:180px;border-radius:8px;"></div>
+            <div class="ad-sk" style="height:38px;width:140px;border-radius:8px;"></div>
+        </div>
+    </div>
+@endsection
 @section('content')
 <div class="header">
     <div class="header-left">

@@ -20,6 +20,57 @@
     </a>
 @endsection
 
+@section('skeleton')
+    <div class="sp-title-row">
+        <div class="skeleton skeleton-title" style="width:280px;"></div>
+        <div class="skeleton skeleton-button" style="width:140px;"></div>
+    </div>
+    <div class="sp-stats">
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:40px;"></div><div class="skeleton skeleton-text-sm" style="width:80px;"></div></div>
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:40px;"></div><div class="skeleton skeleton-text-sm" style="width:80px;"></div></div>
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:40px;"></div><div class="skeleton skeleton-text-sm" style="width:80px;"></div></div>
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:40px;"></div><div class="skeleton skeleton-text-sm" style="width:80px;"></div></div>
+    </div>
+    <div class="skeleton" style="height:56px;border-radius:var(--radius);margin-bottom:24px;"></div>
+    <div class="sp-section">
+        <div class="skeleton skeleton-title" style="width:200px;margin-bottom:16px;"></div>
+        <div style="display:flex;gap:12px;">
+            <div class="skeleton" style="height:48px;width:120px;border-radius:99px;"></div>
+            <div class="skeleton" style="height:48px;width:100px;border-radius:99px;"></div>
+            <div class="skeleton" style="height:48px;width:140px;border-radius:99px;"></div>
+            <div class="skeleton" style="height:48px;width:90px;border-radius:99px;"></div>
+        </div>
+    </div>
+    <div class="sp-section">
+        <div class="sp-title-row">
+            <div class="skeleton skeleton-title" style="width:200px;"></div>
+            <div class="skeleton skeleton-text-sm" style="width:100px;margin:0;"></div>
+        </div>
+        <div class="sp-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));">
+            <div class="skeleton" style="height:200px;border-radius:var(--radius);"></div>
+            <div class="skeleton" style="height:200px;border-radius:var(--radius);"></div>
+            <div class="skeleton" style="height:200px;border-radius:var(--radius);"></div>
+        </div>
+    </div>
+    <div class="sp-panel">
+        <div class="sp-title-row">
+            <div class="skeleton skeleton-title" style="width:160px;"></div>
+            <div class="skeleton skeleton-text-sm" style="width:80px;margin:0;"></div>
+        </div>
+        <div class="sp-table-header">
+            <div class="skeleton skeleton-text" style="height:16px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;width:80px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;width:60px;"></div>
+        </div>
+        <div class="skeleton skeleton-table-row"></div>
+        <div class="skeleton skeleton-table-row"></div>
+        <div class="skeleton skeleton-table-row"></div>
+        <div class="skeleton skeleton-table-row"></div>
+    </div>
+@endsection
+
 @section('content')
 
 @php

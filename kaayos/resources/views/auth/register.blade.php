@@ -564,7 +564,13 @@ function checkStrength(val){
   fill.style.background = colors[score];
 }
 var intended = new URLSearchParams(window.location.search).get('intended');
-if (intended) document.getElementById('intendedInput').value = intended;
+if (intended) {
+  document.getElementById('intendedInput').value = intended;
+  var workerCard = document.getElementById('roleWorker');
+  if (workerCard) workerCard.style.display = 'none';
+  setRole('client');
+  setTimeout(function() { nextStep(); }, 100);
+}
 </script>
 </body>
 </html>

@@ -9,6 +9,43 @@
     </a>
 @endsection
 
+@section('skeleton')
+    <div class="sp-sidebar-layout">
+        <div>
+            <div class="skeleton skeleton-avatar-lg" style="margin:0 auto 16px;"></div>
+            <div class="skeleton skeleton-title" style="width:120px;margin:0 auto 8px;"></div>
+            <div class="skeleton skeleton-text-sm" style="width:80px;margin:0 auto 20px;"></div>
+            <div class="skeleton skeleton-text" style="width:90%;"></div>
+            <div class="skeleton skeleton-text-sm" style="width:60%;"></div>
+            <div class="skeleton" style="height:38px;width:100%;border-radius:var(--radius-sm);margin-top:16px;"></div>
+        </div>
+        <div>
+            <div class="sp-panel">
+                <div class="skeleton skeleton-title" style="width:100px;"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text-sm"></div>
+            </div>
+            <div class="sp-panel">
+                <div class="skeleton skeleton-title" style="width:80px;"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <div class="skeleton" style="height:28px;width:70px;border-radius:99px;"></div>
+                    <div class="skeleton" style="height:28px;width:90px;border-radius:99px;"></div>
+                    <div class="skeleton" style="height:28px;width:60px;border-radius:99px;"></div>
+                </div>
+            </div>
+            <div class="sp-panel">
+                <div style="display:flex;gap:12px;margin-bottom:12px;">
+                    <div class="skeleton" style="height:28px;width:70px;border-radius:99px;"></div>
+                    <div class="skeleton" style="height:28px;width:60px;border-radius:99px;"></div>
+                    <div class="skeleton" style="height:28px;width:80px;border-radius:99px;"></div>
+                </div>
+                <div class="skeleton skeleton-card"></div>
+            </div>
+        </div>
+    </div>
+@endsection
+
 @section('content')
 
 <div class="worker-profile-layout">

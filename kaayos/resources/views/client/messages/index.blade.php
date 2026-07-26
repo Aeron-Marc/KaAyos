@@ -99,6 +99,35 @@
 </style>
 @endpush
 
+@section('skeleton')
+    <div class="sp-sidebar-layout">
+        <div>
+            <div class="skeleton skeleton-title" style="width:120px;margin-bottom:16px;"></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;">
+                <div class="skeleton skeleton-avatar-sm"></div>
+                <div style="flex:1;"><div class="skeleton skeleton-text" style="width:70%;"></div><div class="skeleton skeleton-text-sm" style="width:40%;"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;">
+                <div class="skeleton skeleton-avatar-sm"></div>
+                <div style="flex:1;"><div class="skeleton skeleton-text" style="width:60%;"></div><div class="skeleton skeleton-text-sm" style="width:50%;"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;">
+                <div class="skeleton skeleton-avatar-sm"></div>
+                <div style="flex:1;"><div class="skeleton skeleton-text" style="width:75%;"></div><div class="skeleton skeleton-text-sm" style="width:35%;"></div></div>
+            </div>
+        </div>
+        <div class="sp-panel">
+            <div class="skeleton skeleton-title" style="width:180px;margin-bottom:20px;"></div>
+            <div style="display:flex;flex-direction:column;gap:12px;padding:0 12px;">
+                <div style="align-self:flex-start;max-width:70%;"><div class="skeleton" style="height:40px;border-radius:12px;"></div></div>
+                <div style="align-self:flex-end;max-width:70%;"><div class="skeleton" style="height:40px;border-radius:12px;"></div></div>
+                <div style="align-self:flex-start;max-width:60%;"><div class="skeleton" style="height:50px;border-radius:12px;"></div></div>
+                <div style="align-self:flex-end;max-width:50%;"><div class="skeleton" style="height:36px;border-radius:12px;"></div></div>
+            </div>
+        </div>
+    </div>
+@endsection
+
 @section('content')
 
 @php

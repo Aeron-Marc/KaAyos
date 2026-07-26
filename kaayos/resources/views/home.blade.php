@@ -499,12 +499,12 @@ function hideSignInModal() {
 
 function goToSignIn() {
   saveBookingIntent(_bookingWorkerId, _bookingWorkerName, _bookingCategory);
-  window.location.href = '/login?intended=/workers/' + _bookingWorkerId;
+  window.location.href = '/login?intended=/client/workers/' + _bookingWorkerId;
 }
 
 function goToSignUp() {
   saveBookingIntent(_bookingWorkerId, _bookingWorkerName, _bookingCategory);
-  window.location.href = '/register?intended=/workers/' + _bookingWorkerId;
+  window.location.href = '/register?intended=/client/workers/' + _bookingWorkerId;
 }
 </script>
 </body>
