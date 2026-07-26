@@ -753,3 +753,88 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
   .worker-grid{grid-template-columns:1fr}
   .nav-cta .btn-ghost{display:none}
 }
+
+/* ══════════════════════════════════════════════
+   SKELETON & LOADING — LANDING PAGE
+   ══════════════════════════════════════════════ */
+
+@keyframes shimmer {
+    0%   { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.skeleton {
+    background: #e8ecf0;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.5) 50%,
+        transparent 100%
+    );
+    background-size: 800px 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-text {
+    height: 14px;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.skeleton-text-sm {
+    height: 14px;
+    width: 60%;
+    margin-bottom: 8px;
+}
+
+.skeleton-title {
+    height: 24px;
+    width: 40%;
+    margin-bottom: 12px;
+}
+
+.skeleton-card {
+    height: 180px;
+    width: 100%;
+    border-radius: 12px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid #e8ecf0;
+    border-top-color: #1a6fc4;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.spinner-lg {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+}
+
+.loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    gap: 16px;
+    color: #8c97a4;
+    font-size: .9rem;
+}
