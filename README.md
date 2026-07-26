@@ -148,6 +148,13 @@ new → accepted → en_route → in_progress → completed
 ```
 
 - **Cancellation** allowed from any status except `completed` or `cancelled`.
+- **Auto-Cancellation** — Bookings are automatically cancelled when stale:
+  - `new` bookings with no worker response after 24 hours
+  - `accepted` jobs where the worker doesn't start within 60 minutes of the scheduled time (no-show)
+  - `en_route` jobs that don't transition to `in_progress` within 2 hours of the scheduled time
+  - `in_progress` jobs not updated for over 12 hours
+- **Cancellation Reasons** — Both client and worker can provide an optional reason when cancelling. Auto-cancellations include a system-generated reason. Reasons are displayed in the booking detail modal on both the client and worker dashboards.
+- **Worker Reporting** — Clients can submit a report against a worker after a completed booking. Reports are stored as disputes of type `worker_report` and are visible in the admin dispute panel.
 - **Rescheduling** supported — either party can request, the other accepts/declines.
 - **Booking Photos** — workers can upload job-site photos during a booking.
 - **Booking History** — full audit trail of all status changes.
@@ -155,14 +162,14 @@ new → accepted → en_route → in_progress → completed
 
 ### Statuses
 
-| Status       | Description                             |
-| ------------ | --------------------------------------- |
-| `new`        | Created by client, awaiting worker       |
-| `accepted`   | Worker accepted the job                  |
-| `en_route`   | Worker is traveling to the job site      |
-| `in_progress`| Work is being performed                  |
-| `completed`  | Job finished successfully                |
-| `cancelled`  | Cancelled by client, worker, or admin    |
+| Status       | Description                             | Auto-Cancel Trigger |
+| ------------ | --------------------------------------- | ------------------- |
+| `new`        | Created by client, awaiting worker       | No response within 24 hours |
+| `accepted`   | Worker accepted the job                  | Worker doesn't start within 60 min of scheduled time |
+| `en_route`   | Worker is traveling to the job site      | No start within 2 hours of scheduled time |
+| `in_progress`| Work is being performed                  | No update for 12 hours |
+| `completed`  | Job finished successfully                | — |
+| `cancelled`  | Cancelled by client, worker, or admin    | — |
 
 ## Platform Fee
 
@@ -274,6 +281,7 @@ uvicorn main:app --port 8000
 | POST   | `/client/bookings/{booking}/review`    | Submit review         |
 | POST   | `/client/bookings/{booking}/reschedule` | Request reschedule    |
 | POST   | `/client/bookings/{booking}/reschedule-respond` | Respond to reschedule |
+| POST   | `/client/bookings/{booking}/report`     | Report a worker       |
 | GET    | `/client/messages`                | Messages page             |
 | GET    | `/client/messages/poll/{conv}`    | Poll messages             |
 | POST   | `/client/messages/send`           | Send a message            |
@@ -365,4 +373,5 @@ This is included automatically in `composer run dev`.
 | Email OTP Send        | 3/hr per user      |
 | Email OTP Verify      | 5/hr per user      |
 | Client Booking Create | 10/min             |
+| Worker Report         | 3/min per user      |
 | Message Polling       | 30/min             |

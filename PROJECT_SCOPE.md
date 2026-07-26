@@ -19,16 +19,18 @@ A home services marketplace platform connecting clients with verified workers in
 - **Registration & Onboarding** — Account creation, email verification, role selection
 - **Worker Verification** — Upload government ID, NBI/police clearance, barangay clearance, proof of competency (TESDA/portfolio) → admin approval
 - **Booking Lifecycle** — Client books → worker accepts/declines → job in progress → completed/cancelled → review
+- **Auto-Cancellation** — Scheduled command cancels stale bookings: expired new bookings (24h), worker no-show (60 min), stale en-route (2h), stuck in-progress (12h)
+- **Worker Reporting** — Clients can report workers after completed bookings; stored as disputes of type `worker_report`
 - **Realtime Chat** — Client-worker messaging via Laravel Reverb
 - **Realtime Notifications** — Booking updates, messages, verification status
-- **Dispute Resolution** — Admin-mediated dispute handling
+- **Dispute Resolution** — Admin-mediated dispute handling for booking disputes and worker reports
 - **Earnings Tracking** — Worker earnings report with export
 - **Profile Management** — Avatar, contact info, barangay, preferences
 - **Password & Email Change** — OTP-verified via email
 
 ### Booking Statuses
 
-`pending` → `accepted` | `declined` → `in_progress` → `completed` | `cancelled`
+`new` → `accepted` → `en_route` → `in_progress` → `completed` | `cancelled`
 
 ### Platform Fee
 
