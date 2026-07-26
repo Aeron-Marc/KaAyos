@@ -276,19 +276,9 @@
                 <input type="hidden" name="worker_id" value="{{ $worker->id }}">
 
                 <div class="form-group">
-                    <label for="service_category">Service</label>
-                    <select id="service_category" name="service_category" class="form-control" required>
-                        <option value="">Select service…</option>
-                        @forelse($workerServices as $ps)
-                            <option value="{{ $ps->service->name }}" {{ $loop->first ? 'selected' : '' }}>
-                                {{ $ps->service->name }}
-                            </option>
-                        @empty
-                            <option value="{{ $worker->service_category }}" selected>
-                                {{ $worker->service_category ?? 'General' }}
-                            </option>
-                        @endforelse
-                    </select>
+                    <label>Service</label>
+                    <input type="text" class="form-control" value="{{ $worker->service_category ?? 'General' }}" readonly style="background:#f5f5f5;cursor:default;">
+                    <input type="hidden" name="service_category" value="{{ $worker->service_category ?? 'General' }}">
                 </div>
 
                 <div class="form-group">

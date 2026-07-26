@@ -133,6 +133,8 @@ class ClientController extends Controller
                     'created'       => $b->created_at->format('M d, Y · h:i A'),
                     'booking_ref'   => $b->booking_ref ?? 'BK-' . str_pad($b->id, 5, '0', STR_PAD_LEFT),
                     'status_history'=> $statusHistory,
+                    'cancellation_reason' => $b->cancellation_reason,
+                    'cancelled_at'  => $b->cancelled_at?->toIso8601String(),
                 ];
             })->toArray();
     }

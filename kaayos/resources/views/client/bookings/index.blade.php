@@ -476,6 +476,8 @@ function openBookingModal(index) {
 
     // Details
     var notes = b.notes || 'No details provided.';
+    var cancelReason = b.cancellation_reason || '';
+    var cancelledAt = b.cancelled_at ? formatTime(b.cancelled_at) : '';
     document.getElementById('bookingModalTitle').textContent = 'Booking Details';
     document.getElementById('bookingModalDetails').innerHTML =
         '<div class="detail-grid-compact">' +
@@ -493,6 +495,8 @@ function openBookingModal(index) {
             '<span class="detail-value" style="font-weight:600;">₱' + Number(b.price).toLocaleString() + '</span>' +
             '<span class="detail-label">Notes</span>' +
             '<span class="detail-value">' + notes + '</span>' +
+            (cancelledAt ? '<span class="detail-label">Cancelled At</span><span class="detail-value">' + cancelledAt + '</span>' : '') +
+            (cancelReason ? '<span class="detail-label">Cancel Reason</span><span class="detail-value">' + cancelReason + '</span>' : '') +
         '</div>';
 
     // Timeline
@@ -518,6 +522,22 @@ function openBookingModal(index) {
         timelineHtml += '</div>';
     }
     timelineHtml += '</div>';
+
+    // Add cancelled step if applicable
+    if (b.raw_status === 'cancelled') {
+        var cancelledTs = b.cancelled_at || null;
+        var timeHtml2 = cancelledTs ? '<span class="timeline-time">' + formatTime(cancelledTs) + '</span>' : '';
+        timelineHtml += '<div class="timeline-item current" style="color:var(--color-danger,#dc3545);">';
+        timelineHtml +=   '<div class="timeline-dot-col">';
+        timelineHtml +=     '<div class="timeline-dot current" style="background:var(--color-danger,#dc3545);border-color:var(--color-danger,#dc3545);">✕</div>';
+        timelineHtml +=   '</div>';
+        timelineHtml +=   '<div class="timeline-content">';
+        timelineHtml +=     '<span class="timeline-status">Cancelled</span>';
+        timelineHtml +=     timeHtml2;
+        timelineHtml +=   '</div>';
+        timelineHtml += '</div>';
+    }
+
     document.getElementById('bookingModalTimeline').innerHTML = timelineHtml;
 
     // Footer
