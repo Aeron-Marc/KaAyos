@@ -93,6 +93,16 @@
                     </div>
                 @endif
             </div>
+
+            <hr style="border:none;border-top:1px solid var(--g1);margin:16px 0 12px;">
+            @if($canMessage)
+                <a href="{{ route('client.messages.start', ['worker_id' => $worker->id]) }}" class="btn btn-outline" style="width:100%;justify-content:center;">
+                    <i class="fa-regular fa-comment" aria-hidden="true"></i> Send Message
+                </a>
+            @endif
+            <button type="button" class="btn btn-solid" onclick="openBookModal()" style="width:100%;justify-content:center;{{ $canMessage ? 'margin-top:8px;' : '' }}">
+                <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Book Now
+            </button>
         </div>
     </div>
 
@@ -249,17 +259,7 @@
             </div>
         @endif
 
-        {{-- Actions --}}
-        <div style="display:flex;gap:12px;justify-content:flex-end;">
-            @if($canMessage)
-                <a href="{{ route('client.messages.start', ['worker_id' => $worker->id]) }}" class="btn btn-outline">
-                    <i class="fa-regular fa-comment" aria-hidden="true"></i> Send Message
-                </a>
-            @endif
-            <button type="button" class="btn btn-solid" onclick="openBookModal()">
-                <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Book Now
-            </button>
-        </div>
+
     </div>
 </div>
 

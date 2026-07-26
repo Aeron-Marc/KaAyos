@@ -171,22 +171,41 @@ class WorkerController extends Controller
                 $data = $notif->data;
 
                 $typeMap = [
-                    'App\Notifications\NewBooking'         => 'booking',
-                    'App\Notifications\BookingConfirmed'   => 'booking',
-                    'App\Notifications\BookingCompleted'   => 'booking',
-                    'App\Notifications\NewMessage'         => 'message',
-                    'App\Notifications\NewReview'          => 'review',
-                    'App\Notifications\PayoutProcessed'    => 'earnings',
-                    'App\Notifications\DocumentVerified'   => 'system',
-                    'App\Notifications\DocumentRejected'   => 'system',
+                    'App\Notifications\NewBooking'            => 'booking',
+                    'App\Notifications\BookingConfirmed'      => 'booking',
+                    'App\Notifications\BookingCancelled'      => 'booking',
+                    'App\Notifications\BookingCompleted'      => 'booking',
+                    'App\Notifications\BookingStatusChanged'  => 'booking',
+                    'App\Notifications\NewMessage'            => 'message',
+                    'App\Notifications\NewReview'             => 'review',
+                    'App\Notifications\RescheduleRequested'   => 'booking',
+                    'App\Notifications\PayoutProcessed'       => 'earnings',
+                    'App\Notifications\VerificationApproved'  => 'system',
+                    'App\Notifications\VerificationRejected'  => 'system',
+                    'App\Notifications\DocumentVerified'      => 'system',
+                    'App\Notifications\DocumentRejected'      => 'system',
+                    'App\Notifications\DisputeResolved'       => 'system',
                 ];
 
+                $type = $typeMap[$notif->type] ?? 'system';
+
+                $url = match ($type) {
+                    'message' => route('worker.messages', isset($data['conversation_id']) ? ['conversation' => $data['conversation_id']] : []),
+                    'booking' => route('worker.schedule'),
+                    'review'  => route('worker.schedule'),
+                    'earnings'=> route('worker.earnings'),
+                    default   => route('worker.dashboard'),
+                };
+
                 return [
-                    'type'   => $typeMap[$notif->type] ?? 'system',
-                    'title'  => $data['title'] ?? 'Notification',
-                    'desc'   => $data['message'] ?? '',
-                    'time'   => $notif->created_at->diffForHumans(),
-                    'unread' => is_null($notif->read_at),
+                    'type'           => $type,
+                    'title'          => $data['title'] ?? 'Notification',
+                    'desc'           => $data['message'] ?? '',
+                    'time'           => $notif->created_at->diffForHumans(),
+                    'unread'         => is_null($notif->read_at),
+                    'url'            => $url,
+                    'booking_id'     => $data['booking_id'] ?? null,
+                    'conversation_id'=> $data['conversation_id'] ?? null,
                 ];
             })
             ->toArray();
@@ -251,6 +270,7 @@ class WorkerController extends Controller
                     'text'      => $msg->message,
                     'time'      => $msg->created_at->diffForHumans(),
                     'is_system' => $msg->sender_id === $systemUserId,
+                    'read_at'   => $msg->read_at?->diffForHumans(),
                 ])->values()->toArray(),
             ];
         }
@@ -414,10 +434,11 @@ class WorkerController extends Controller
         return response()->json([
             'success' => true,
             'message' => [
-                'id'   => $msg->id,
-                'from' => 'me',
-                'text' => $msg->message,
-                'time' => $msg->created_at->diffForHumans(),
+                'id'       => $msg->id,
+                'from'     => 'me',
+                'text'     => $msg->message,
+                'time'     => $msg->created_at->diffForHumans(),
+                'read_at'  => null,
             ],
         ]);
     }
@@ -660,6 +681,7 @@ class WorkerController extends Controller
             'text'      => $m->message,
             'time'      => $m->created_at->diffForHumans(),
             'is_system' => $m->sender_id === $systemUserId,
+            'read_at'   => $m->read_at?->diffForHumans(),
         ]);
 
         return response()->json(['messages' => $messages]);

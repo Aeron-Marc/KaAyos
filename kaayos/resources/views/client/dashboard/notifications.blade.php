@@ -42,7 +42,7 @@
 
     <div class="notif-list">
         @forelse($notifications as $notif)
-            <div class="notif-item {{ $notif['unread'] ? 'unread' : '' }}">
+            <a href="{{ $notif['url'] ?? '#' }}" class="notif-item {{ $notif['unread'] ? 'unread' : '' }}">
                 <div class="notif-icon {{ $notif['type'] }}">
                     @switch($notif['type'])
                         @case('booking')
@@ -66,7 +66,7 @@
                 @if($notif['unread'])
                     <span class="notif-unread-dot" aria-label="Unread"></span>
                 @endif
-            </div>
+            </a>
         @empty
             <div class="empty-state">
                 <i class="fa-regular fa-bell" aria-hidden="true"></i>
