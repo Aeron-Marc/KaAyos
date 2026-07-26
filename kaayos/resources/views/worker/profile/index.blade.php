@@ -155,6 +155,44 @@
 </style>
 @endpush
 
+@section('skeleton')
+    <div class="sp-sidebar-layout" style="grid-template-columns:280px 1fr;">
+        <div>
+            <div class="skeleton skeleton-avatar-lg" style="margin:0 auto 16px;"></div>
+            <div class="skeleton skeleton-title" style="width:100px;margin:0 auto 8px;"></div>
+            <div class="skeleton skeleton-text-sm" style="width:140px;margin:0 auto 20px;"></div>
+            <div class="skeleton" style="height:38px;width:100%;border-radius:var(--radius-sm);"></div>
+            <div style="margin-top:16px;">
+                <div class="skeleton skeleton-text" style="width:80%;"></div>
+                <div class="skeleton skeleton-text-sm" style="width:50%;"></div>
+            </div>
+        </div>
+        <div>
+            <div class="sp-panel">
+                <div class="skeleton skeleton-title" style="width:160px;"></div>
+                <div style="display:flex;gap:16px;margin-top:16px;">
+                    <div style="flex:1;"><div class="skeleton skeleton-text"></div><div class="skeleton" style="height:38px;border-radius:var(--radius-sm);"></div></div>
+                    <div style="flex:1;"><div class="skeleton skeleton-text"></div><div class="skeleton" style="height:38px;border-radius:var(--radius-sm);"></div></div>
+                </div>
+            </div>
+            <div class="sp-panel">
+                <div class="skeleton skeleton-title" style="width:120px;"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton" style="height:80px;border-radius:var(--radius-sm);"></div>
+            </div>
+            <div class="sp-panel">
+                <div class="skeleton skeleton-title" style="width:140px;"></div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <div class="skeleton" style="height:28px;width:80px;border-radius:99px;"></div>
+                    <div class="skeleton" style="height:28px;width:100px;border-radius:99px;"></div>
+                    <div class="skeleton" style="height:28px;width:70px;border-radius:99px;"></div>
+                    <div class="skeleton" style="height:28px;width:90px;border-radius:99px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
 @section('content')
 
 @if(session('success'))

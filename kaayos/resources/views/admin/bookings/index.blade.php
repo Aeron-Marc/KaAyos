@@ -1,6 +1,25 @@
 @extends('layouts.admin')
 
 @section('title', 'Bookings')
+@section('skeleton')
+    <div class="sp-title-row">
+        <div class="ad-sk ad-sk-title" style="width:140px;"></div>
+    </div>
+    <div class="sp-filter-bar">
+        <div class="ad-sk" style="height:38px;width:60px;border-radius:8px;"></div>
+        <div class="ad-sk" style="height:38px;width:120px;border-radius:8px;"></div>
+        <div class="ad-sk" style="height:38px;width:130px;border-radius:8px;"></div>
+        <div class="ad-sk" style="height:38px;width:200px;border-radius:8px;"></div>
+        <div class="ad-sk" style="height:38px;width:38px;border-radius:8px;"></div>
+    </div>
+    <div class="ad-sk-panel">
+        <div class="ad-sk ad-sk-row"></div>
+        <div class="ad-sk ad-sk-row"></div>
+        <div class="ad-sk ad-sk-row"></div>
+        <div class="ad-sk ad-sk-row"></div>
+        <div class="ad-sk ad-sk-row"></div>
+    </div>
+@endsection
 @section('content')
 <div class="header">
     <div class="header-left">

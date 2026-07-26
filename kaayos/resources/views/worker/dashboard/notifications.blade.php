@@ -19,6 +19,31 @@
     </a>
 @endsection
 
+@section('skeleton')
+    <div class="skeleton skeleton-title" style="width:160px;margin-bottom:20px;"></div>
+    <div class="sp-tabs">
+        <div class="skeleton" style="height:32px;width:60px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:80px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:70px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:60px;border-radius:99px;"></div>
+        <div class="skeleton" style="height:32px;width:70px;border-radius:99px;"></div>
+    </div>
+    <div class="sp-panel">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div class="skeleton" style="width:40px;height:40px;border-radius:10px;flex-shrink:0;"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-text" style="width:70%;"></div><div class="skeleton skeleton-text-sm" style="width:40%;"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div class="skeleton" style="width:40px;height:40px;border-radius:10px;flex-shrink:0;"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-text" style="width:60%;"></div><div class="skeleton skeleton-text-sm" style="width:50%;"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div class="skeleton" style="width:40px;height:40px;border-radius:10px;flex-shrink:0;"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-text" style="width:80%;"></div><div class="skeleton skeleton-text-sm" style="width:30%;"></div></div>
+        </div>
+    </div>
+@endsection
+
 @section('content')
 
 <div class="filter-pills">

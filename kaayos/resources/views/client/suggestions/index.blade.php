@@ -3,6 +3,31 @@
 @section('title', 'Suggestions')
 @section('page_title', 'Suggestions')
 
+@section('skeleton')
+    <div class="sp-panel" style="max-width:720px;margin:0 auto;">
+        <div class="skeleton skeleton-title" style="width:200px;margin-bottom:16px;"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:16px;">
+            <div style="align-self:flex-start;max-width:80%;">
+                <div class="skeleton" style="height:48px;border-radius:12px 12px 12px 4px;"></div>
+            </div>
+            <div style="align-self:flex-end;max-width:60%;">
+                <div class="skeleton" style="height:36px;border-radius:12px 12px 4px 12px;"></div>
+            </div>
+            <div style="align-self:flex-start;max-width:70%;">
+                <div class="skeleton" style="height:52px;border-radius:12px 12px 12px 4px;"></div>
+            </div>
+            <div style="align-self:flex-end;max-width:50%;">
+                <div class="skeleton" style="height:36px;border-radius:12px 12px 4px 12px;"></div>
+            </div>
+        </div>
+        <div class="skeleton" style="height:44px;border-radius:99px;margin-top:16px;"></div>
+    </div>
+    <div class="sp-grid" style="margin-top:24px;">
+        <div class="skeleton" style="height:120px;border-radius:var(--radius);"></div>
+        <div class="skeleton" style="height:120px;border-radius:var(--radius);"></div>
+    </div>
+@endsection
+
 @section('content')
 
 <div id="suggestion-chat" class="suggestion-chat"

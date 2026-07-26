@@ -14,6 +14,47 @@
     </a>
 @endsection
 
+@section('skeleton')
+    <div class="sp-stats">
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:40px;"></div><div class="skeleton skeleton-text-sm" style="width:80px;"></div></div>
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:40px;"></div><div class="skeleton skeleton-text-sm" style="width:80px;"></div></div>
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:40px;"></div><div class="skeleton skeleton-text-sm" style="width:80px;"></div></div>
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:40px;"></div><div class="skeleton skeleton-text-sm" style="width:80px;"></div></div>
+    </div>
+    <div class="sp-panel">
+        <div class="sp-title-row">
+            <div class="skeleton skeleton-title" style="width:200px;"></div>
+            <div class="skeleton skeleton-text-sm" style="width:60px;margin:0;"></div>
+        </div>
+        <div class="sp-table-header">
+            <div class="skeleton skeleton-text" style="height:16px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;width:80px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;width:60px;"></div>
+        </div>
+        <div class="skeleton skeleton-table-row"></div>
+        <div class="skeleton skeleton-table-row"></div>
+        <div class="skeleton skeleton-table-row"></div>
+    </div>
+    <div class="sp-panel">
+        <div class="sp-title-row">
+            <div class="skeleton skeleton-title" style="width:180px;"></div>
+            <div class="skeleton skeleton-text-sm" style="width:60px;margin:0;"></div>
+        </div>
+        <div style="display:flex;gap:16px;padding:16px;border-bottom:1px solid var(--g1);">
+            <div class="skeleton" style="width:48px;height:48px;border-radius:10px;flex-shrink:0;"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-text" style="width:50%;"></div><div class="skeleton skeleton-text-sm" style="width:40%;"></div></div>
+            <div class="skeleton skeleton-badge"></div>
+        </div>
+        <div style="display:flex;gap:16px;padding:16px;">
+            <div class="skeleton" style="width:48px;height:48px;border-radius:10px;flex-shrink:0;"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-text" style="width:45%;"></div><div class="skeleton skeleton-text-sm" style="width:35%;"></div></div>
+            <div class="skeleton skeleton-badge"></div>
+        </div>
+    </div>
+@endsection
+
 @section('content')
 
 @php

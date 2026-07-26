@@ -3,6 +3,33 @@
 @section('title', 'Documents')
 @section('page_title', 'Documents')
 
+@section('skeleton')
+    <div class="sp-panel">
+        <div class="skeleton skeleton-title" style="width:200px;margin-bottom:16px;"></div>
+        <div style="display:flex;align-items:center;gap:16px;padding:18px 22px;border-bottom:1px solid var(--g1);">
+            <div class="skeleton" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-text" style="width:50%;"></div><div class="skeleton skeleton-text-sm" style="width:70%;"></div></div>
+            <div class="skeleton skeleton-badge"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;padding:18px 22px;border-bottom:1px solid var(--g1);">
+            <div class="skeleton" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-text" style="width:45%;"></div><div class="skeleton skeleton-text-sm" style="width:60%;"></div></div>
+            <div class="skeleton skeleton-badge"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;padding:18px 22px;">
+            <div class="skeleton" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-text" style="width:55%;"></div><div class="skeleton skeleton-text-sm" style="width:65%;"></div></div>
+            <div class="skeleton skeleton-badge"></div>
+        </div>
+    </div>
+    <div class="sp-panel">
+        <div class="skeleton skeleton-title" style="width:140px;margin-bottom:16px;"></div>
+        <div class="skeleton skeleton-text" style="width:70%;"></div>
+        <div class="skeleton skeleton-text" style="width:80%;"></div>
+        <div class="skeleton skeleton-text-sm" style="width:60%;"></div>
+    </div>
+@endsection
+
 @section('content')
 
 <div class="welcome-banner">

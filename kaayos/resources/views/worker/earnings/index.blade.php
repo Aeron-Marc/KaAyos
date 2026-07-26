@@ -3,6 +3,33 @@
 @section('title', 'Earnings')
 @section('page_title', 'Earnings')
 
+@section('skeleton')
+    <div class="sp-stats">
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:60px;"></div><div class="skeleton skeleton-text-sm" style="width:90px;"></div></div>
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:60px;"></div><div class="skeleton skeleton-text-sm" style="width:90px;"></div></div>
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:60px;"></div><div class="skeleton skeleton-text-sm" style="width:90px;"></div></div>
+        <div class="skeleton skeleton-stat"><div class="skeleton skeleton-stat-circle"></div><div class="skeleton skeleton-title" style="width:60px;"></div><div class="skeleton skeleton-text-sm" style="width:90px;"></div></div>
+    </div>
+    <div class="sp-panel">
+        <div class="sp-title-row">
+            <div class="skeleton skeleton-title" style="width:140px;"></div>
+            <div class="skeleton skeleton-button" style="width:100px;"></div>
+        </div>
+        <div class="sp-table-header">
+            <div class="skeleton skeleton-text" style="height:16px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;width:80px;"></div>
+            <div class="skeleton skeleton-text" style="height:16px;width:70px;"></div>
+        </div>
+        <div class="skeleton skeleton-table-row"></div>
+        <div class="skeleton skeleton-table-row"></div>
+        <div class="skeleton skeleton-table-row"></div>
+        <div class="skeleton skeleton-table-row"></div>
+        <div class="skeleton skeleton-table-row"></div>
+    </div>
+@endsection
+
 @section('content')
 
 <div class="stats-grid">
