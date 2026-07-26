@@ -300,7 +300,7 @@
     </div>
     <div class="faq-item fade-up">
       <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-location-dot" style="color:var(--b6);margin-right:8px"></i>What areas does KaAyos cover?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
-      <div class="faq-a">KaAyos currently serves all 42 barangays of Tuy, Batangas, with plans to expand to neighboring municipalities.</div>
+      <div class="faq-a">KaAyos currently serves all 22 barangays of Tuy, Batangas, with plans to expand to neighboring municipalities.</div>
     </div>
     <div class="faq-item fade-up">
       <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-user" style="color:var(--b6);margin-right:8px"></i>Can I register as both a homeowner and a worker?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>

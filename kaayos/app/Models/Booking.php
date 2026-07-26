@@ -33,6 +33,10 @@ class Booking extends Model
         'barangay',
         'agreed_by_client_at',
         'agreed_by_worker_at',
+        'completion_requested_by',
+        'completion_requested_at',
+        'confirmed_by_worker_at',
+        'confirmed_by_client_at',
     ];
 
     protected static function booted(): void
@@ -93,6 +97,10 @@ class Booking extends Model
         'reschedule_responded_at' => 'datetime',
         'agreed_by_client_at'     => 'datetime',
         'agreed_by_worker_at'     => 'datetime',
+        'completion_requested_by' => 'integer',
+        'completion_requested_at' => 'datetime',
+        'confirmed_by_worker_at'  => 'datetime',
+        'confirmed_by_client_at'  => 'datetime',
     ];
 
     // ── Relationships ──────────────────────────────────────────
@@ -130,6 +138,11 @@ class Booking extends Model
     public function rescheduleRequestedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reschedule_requested_by');
+    }
+
+    public function completionInitiator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'completion_requested_by');
     }
 
     // ── Scopes ─────────────────────────────────────────────────
@@ -182,6 +195,13 @@ class Booking extends Model
     public function isInProgress(): bool  { return $this->status === self::STATUS_IN_PROGRESS; }
     public function isCompleted(): bool   { return $this->status === self::STATUS_COMPLETED; }
 
+    public function isCompletionPending(): bool
+    {
+        return $this->status === self::STATUS_IN_PROGRESS
+            && $this->completion_requested_at !== null
+            && ($this->confirmed_by_worker_at === null || $this->confirmed_by_client_at === null);
+    }
+
     public function isActive(): bool
     {
         return in_array($this->status, [
@@ -193,8 +213,124 @@ class Booking extends Model
 
     public function canTransitionTo(string $nextStatus): bool
     {
+        // Block direct transitions to COMPLETED - must use confirmCompletion() instead
+        if ($nextStatus === self::STATUS_COMPLETED) {
+            return false;
+        }
+
         return isset(self::STATUS_FLOW[$this->status])
             && self::STATUS_FLOW[$this->status] === $nextStatus;
+    }
+
+    public function canMarkComplete(?int $userId = null): bool
+    {
+        // Job must be in progress and not already have a completion request pending
+        if ($this->status !== self::STATUS_IN_PROGRESS) {
+            return false;
+        }
+
+        // If no completion requested yet, either party can request
+        if ($this->completion_requested_at === null) {
+            return true;
+        }
+
+        // If completion already requested, only the other party can confirm
+        if ($userId === null) {
+            return false;
+        }
+
+        return $this->completion_requested_by !== $userId;
+    }
+
+    public function getCompletionStatus(): array
+    {
+        return [
+            'is_pending' => $this->isCompletionPending(),
+            'requested_by' => $this->completion_requested_by,
+            'requested_at' => $this->completion_requested_at,
+            'worker_confirmed' => $this->confirmed_by_worker_at !== null,
+            'client_confirmed' => $this->confirmed_by_client_at !== null,
+            'pending_from' => $this->getPendingConfirmationFrom(),
+        ];
+    }
+
+    public function getPendingConfirmationFrom(): ?string
+    {
+        if ($this->confirmed_by_worker_at === null) {
+            return 'worker';
+        }
+        if ($this->confirmed_by_client_at === null) {
+            return 'client';
+        }
+        return null;
+    }
+
+    public function markComplete(User $user, ?\Closure $afterSave = null): void
+    {
+        if ($this->status !== self::STATUS_IN_PROGRESS) {
+            throw new \InvalidArgumentException(
+                "Cannot mark complete a booking that is not 'in_progress'."
+            );
+        }
+
+        DB::transaction(function () use ($user, $afterSave) {
+            $fresh = self::lockForUpdate()->findOrFail($this->id);
+
+            // If no completion request yet, this user is initiating
+            if ($fresh->completion_requested_at === null) {
+                $fresh->completion_requested_by = $user->id;
+                $fresh->completion_requested_at = now();
+
+                // If user is worker, mark worker confirmed
+                if ($user->id === $fresh->worker_id) {
+                    $fresh->confirmed_by_worker_at = now();
+                } else {
+                    // User is client, mark client confirmed
+                    $fresh->confirmed_by_client_at = now();
+                }
+            } else {
+                // Completion already requested, this user is confirming
+                if ($user->id === $fresh->completion_requested_by) {
+                    throw new \InvalidArgumentException(
+                        "You already marked this job as complete. Waiting for the other party to confirm."
+                    );
+                }
+
+                // Mark this user's confirmation
+                if ($user->id === $fresh->worker_id) {
+                    $fresh->confirmed_by_worker_at = now();
+                } else {
+                    $fresh->confirmed_by_client_at = now();
+                }
+            }
+
+            // If both parties confirmed, transition to completed
+            if ($fresh->confirmed_by_worker_at !== null && $fresh->confirmed_by_client_at !== null) {
+                $fresh->status = self::STATUS_COMPLETED;
+                $fresh->completed_at = now();
+            }
+
+            $fresh->save();
+
+            $fresh->history()->create([
+                'user_id'    => $user->id,
+                'old_status' => $this->status,
+                'new_status' => $fresh->status,
+                'notes'      => 'Completion confirmation by ' . ($user->id === $fresh->worker_id ? 'worker' : 'client'),
+            ]);
+
+            if ($afterSave) {
+                $afterSave($fresh);
+            }
+
+            $this->status = $fresh->status;
+            $this->completed_at = $fresh->completed_at;
+            $this->completion_requested_by = $fresh->completion_requested_by;
+            $this->completion_requested_at = $fresh->completion_requested_at;
+            $this->confirmed_by_worker_at = $fresh->confirmed_by_worker_at;
+            $this->confirmed_by_client_at = $fresh->confirmed_by_client_at;
+            $this->syncOriginalAttribute('status');
+        });
     }
 
     public function transitionTo(string $nextStatus, ?int $userId = null, ?\Closure $afterSave = null): void
@@ -217,10 +353,6 @@ class Booking extends Model
             $oldStatus = $fresh->status;
             $fresh->status = $nextStatus;
 
-            if ($nextStatus === self::STATUS_COMPLETED) {
-                $fresh->completed_at = now();
-            }
-
             $fresh->save();
 
             $fresh->history()->create([
@@ -234,7 +366,6 @@ class Booking extends Model
             }
 
             $this->status = $fresh->status;
-            $this->completed_at = $fresh->completed_at;
             $this->syncOriginalAttribute('status');
         });
     }

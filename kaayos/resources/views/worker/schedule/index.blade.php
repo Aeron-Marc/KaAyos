@@ -12,14 +12,6 @@
         'in_progress'    => 'In Progress',
         'completed'      => 'Completed',
     ];
-
-    $availability = auth()->user()->workerProfile?->availability ?? [];
-    $dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    $dayShort = ['Monday'=>'Mon','Tuesday'=>'Tue','Wednesday'=>'Wed','Thursday'=>'Thu','Friday'=>'Fri','Saturday'=>'Sat','Sunday'=>'Sun'];
-    $availByDay = [];
-    foreach ($availability as $a) {
-        $availByDay[$a['day']] = $a;
-    }
 @endphp
 
 @section('skeleton')
@@ -63,45 +55,43 @@
 
 @section('content')
 
-{{-- Weekly Availability --}}
-<div class="card-panel" style="margin-bottom:14px;">
-    <div class="card-panel-header">
-        <div>
-            <div class="eyebrow">Your Schedule</div>
-            <h2 class="section-title">Weekly Availability</h2>
-        </div>
-    </div>
-    <div class="avail-days">
-        @foreach($dayNames as $day)
-            @php
-                $a = $availByDay[$day] ?? null;
-                $active = $a && ($a['active'] ?? false);
-            @endphp
-            <div class="avail-row {{ !$active ? 'avail-off' : '' }}">
-                <span class="avail-day">{{ $dayShort[$day] ?? $day }}</span>
-                @if($active)
-                    <span class="avail-time">
-                        {{ \Carbon\Carbon::createFromFormat('H:i', $a['start'])->format('g:i A') }} – {{ \Carbon\Carbon::createFromFormat('H:i', $a['end'])->format('g:i A') }}
-                    </span>
-                    <span class="avail-badge avail-badge-on">Available</span>
-                @else
-                    <span class="avail-time" style="color:var(--g4);">—</span>
-                    <span class="avail-badge avail-badge-off">Off</span>
-                @endif
-            </div>
-        @endforeach
-    </div>
-</div>
 
-{{-- Filter Pills --}}
-<div class="filter-pills" id="job-filters">
-    @foreach($filterLabels as $val => $label)
-        <button type="button"
-                class="filter-pill {{ ($activeFilter ?? '') === $val ? 'active' : '' }}"
-                data-filter="{{ $val }}">
-            {{ $label }}
+
+<div class="cat-dropdown" id="jobStatusDropdown">
+    <button class="cat-dropdown-trigger" id="jobStatusTrigger">
+        <span class="cat-dropdown-label" id="jobStatusLabel">
+            <i class="fa-solid fa-list"></i> All
+        </span>
+        <i class="fa-solid fa-chevron-down cat-chev"></i>
+    </button>
+    <div class="cat-dropdown-menu" id="jobStatusMenu">
+        <div class="cat-menu-header">Filter by Status</div>
+        <button type="button" class="cat-option active" data-filter="">
+            <span class="cat-option-icon"><i class="fa-solid fa-list"></i></span>
+            <span class="cat-option-label">All</span>
         </button>
-    @endforeach
+        <div class="cat-menu-divider"></div>
+        <button type="button" class="cat-option" data-filter="new">
+            <span class="cat-option-icon"><i class="fa-regular fa-clock"></i></span>
+            <span class="cat-option-label">New</span>
+        </button>
+        <button type="button" class="cat-option" data-filter="accepted">
+            <span class="cat-option-icon"><i class="fa-regular fa-handshake"></i></span>
+            <span class="cat-option-label">Accepted</span>
+        </button>
+        <button type="button" class="cat-option" data-filter="en_route">
+            <span class="cat-option-icon"><i class="fa-solid fa-truck"></i></span>
+            <span class="cat-option-label">En Route</span>
+        </button>
+        <button type="button" class="cat-option" data-filter="in_progress">
+            <span class="cat-option-icon"><i class="fa-solid fa-spinner"></i></span>
+            <span class="cat-option-label">In Progress</span>
+        </button>
+        <button type="button" class="cat-option" data-filter="completed">
+            <span class="cat-option-icon"><i class="fa-regular fa-circle-check"></i></span>
+            <span class="cat-option-label">Completed</span>
+        </button>
+    </div>
 </div>
 
 {{-- Job Cards --}}
@@ -292,23 +282,6 @@
 .schedule-month { font-size: .6rem; text-transform: uppercase; color: var(--b4); }
 .schedule-day { font-size: 1.05rem; color: var(--b9); }
 
-/* ── Availability ── */
-.avail-days { padding: 0 22px 12px; }
-.avail-row {
-    display: flex; align-items: center; gap: 14px;
-    padding: 8px 0; border-bottom: 1px solid var(--g0);
-}
-.avail-row:last-child { border-bottom: none; }
-.avail-off { opacity: .6; }
-.avail-day { width: 52px; font-weight: 600; font-size: .85rem; color: var(--b9); }
-.avail-time { flex: 1; font-size: .82rem; color: var(--b7); }
-.avail-badge {
-    font-size: .72rem; font-weight: 500; padding: 2px 10px;
-    border-radius: 10px; white-space: nowrap;
-}
-.avail-badge-on { background: #dcfce7; color: #166534; }
-.avail-badge-off { background: var(--g0); color: var(--g5); }
-
 /* ── Job detail modal layout ── */
 .modal-wide { max-width: 640px !important; }
 
@@ -487,12 +460,28 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 200);
 });
 
-// ── Filter pills ──
+// ── Filter dropdown ──
 document.addEventListener('DOMContentLoaded', function () {
-    var pills = document.querySelectorAll('#job-filters .filter-pill');
+    var dd = document.getElementById('jobStatusDropdown');
+    var menu = document.getElementById('jobStatusMenu');
+    var trigger = document.getElementById('jobStatusTrigger');
+    var label = document.getElementById('jobStatusLabel');
     var cards = document.querySelectorAll('.job-card');
     var list = document.querySelector('.job-card-list');
     var empty = list ? list.querySelector('.empty-state') : null;
+
+    var statusIcons = {
+        '': 'fa-solid fa-list',
+        'new': 'fa-regular fa-clock',
+        'accepted': 'fa-regular fa-handshake',
+        'en_route': 'fa-solid fa-truck',
+        'in_progress': 'fa-solid fa-spinner',
+        'completed': 'fa-regular fa-circle-check',
+    };
+    var statusLabels = {
+        '': 'All', 'new': 'New', 'accepted': 'Accepted',
+        'en_route': 'En Route', 'in_progress': 'In Progress', 'completed': 'Completed',
+    };
 
     function updateEmpty() {
         if (!empty) return;
@@ -500,16 +489,34 @@ document.addEventListener('DOMContentLoaded', function () {
         empty.style.display = visible === 0 ? '' : 'none';
     }
 
-    pills.forEach(function (pill) {
-        pill.addEventListener('click', function () {
-            pills.forEach(function (p) { p.classList.remove('active'); });
-            this.classList.add('active');
+    trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        menu.classList.toggle('open');
+        var chev = trigger.querySelector('.cat-chev');
+        if (chev) chev.style.transform = menu.classList.contains('open') ? 'rotate(180deg)' : '';
+    });
+
+    menu.querySelectorAll('.cat-option').forEach(function (opt) {
+        opt.addEventListener('click', function (e) {
+            e.stopPropagation();
             var filter = this.dataset.filter;
+            menu.querySelectorAll('.cat-option').forEach(function (o) { o.classList.remove('active'); });
+            this.classList.add('active');
+            label.innerHTML = '<i class="' + statusIcons[filter] + '"></i> ' + statusLabels[filter];
+            menu.classList.remove('open');
+            var chev = trigger.querySelector('.cat-chev');
+            if (chev) chev.style.transform = '';
             cards.forEach(function (card) {
                 card.style.display = !filter || card.dataset.status === filter ? '' : 'none';
             });
             updateEmpty();
         });
+    });
+
+    document.addEventListener('click', function () {
+        menu.classList.remove('open');
+        var chev = trigger?.querySelector('.cat-chev');
+        if (chev) chev.style.transform = '';
     });
 
     document.addEventListener('keydown', function (e) {

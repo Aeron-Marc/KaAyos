@@ -29,26 +29,43 @@
 
 @section('content')
 
-<form action="{{ route('client.workers') }}" class="search-row">
-    <div class="search-field">
-        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search by name, skill, or service…" aria-label="Search workers">
-    </div>
-    <div class="search-field" style="max-width:220px;flex:none;">
-        <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-        <input type="text" name="location" value="Tuy, Batangas" placeholder="Your barangay" aria-label="Location" disabled style="background:var(--g0);cursor:not-allowed;">
-    </div>
-    <button type="submit" class="btn btn-solid">Search</button>
-</form>
+<div class="search-filter-bar">
+    <form action="{{ route('client.workers') }}" class="search-row">
+        <div class="search-field">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="text" name="q" value="{{ request('q') }}" placeholder="Search by name, skill, or service…" aria-label="Search workers">
+        </div>
+        <button type="submit" class="btn btn-solid">Search</button>
+    </form>
 
-<div class="filter-pills">
-    <a href="{{ route('client.workers') }}" class="filter-pill {{ !request('category') ? 'active' : '' }}">All</a>
-    @foreach($categories as $cat)
-        <a href="{{ route('client.workers', ['category' => $cat['id']]) }}"
-           class="filter-pill {{ request('category') === $cat['id'] ? 'active' : '' }}">
-            {{ $cat['name'] }}
-        </a>
-    @endforeach
+    <div class="cat-dropdown" id="clientCatDropdown">
+        <button class="cat-dropdown-trigger">
+            <span id="clientCatLabel">
+                @if(request('category'))
+                    @php $selCat = collect($categories)->firstWhere('id', request('category')); @endphp
+                    <i class="fa-solid {{ $selCat['icon'] ?? 'fa-wrench' }}"></i> {{ $selCat['name'] ?? 'Category' }}
+                @else
+                    <i class="fa-solid fa-th"></i> All Categories
+                @endif
+            </span>
+            <i class="fa-solid fa-chevron-down cat-chev"></i>
+        </button>
+        <div class="cat-dropdown-menu" id="clientCatMenu">
+            <div class="cat-menu-header">Filter by Category</div>
+            <a href="{{ route('client.workers') }}" class="cat-option {{ !request('category') ? 'active' : '' }}">
+                <span class="cat-option-icon"><i class="fa-solid fa-th"></i></span>
+                <span class="cat-option-label">All Categories</span>
+            </a>
+            <div class="cat-menu-divider"></div>
+            @foreach($categories as $cat)
+                <a href="{{ route('client.workers', ['category' => $cat['id']]) }}"
+                   class="cat-option {{ request('category') === $cat['id'] ? 'active' : '' }}">
+                    <span class="cat-option-icon"><i class="fa-solid {{ $cat['icon'] ?? 'fa-wrench' }}"></i></span>
+                    <span class="cat-option-label">{{ $cat['name'] }}</span>
+                </a>
+            @endforeach
+        </div>
+    </div>
 </div>
 
 <div class="section-header">
@@ -72,4 +89,23 @@
     </div>
 @endif
 
+<script>
+(function(){
+    var dd = document.getElementById('clientCatDropdown');
+    var menu = document.getElementById('clientCatMenu');
+    var trigger = dd?.querySelector('.cat-dropdown-trigger');
+    if(!dd||!menu) return;
+    trigger.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.classList.toggle('open');
+        var chev = trigger.querySelector('.cat-chev');
+        if(chev) chev.style.transform = menu.classList.contains('open') ? 'rotate(180deg)' : '';
+    });
+    document.addEventListener('click', function(){
+        menu.classList.remove('open');
+        var chev = trigger?.querySelector('.cat-chev');
+        if(chev) chev.style.transform = '';
+    });
+})();
+</script>
 @endsection

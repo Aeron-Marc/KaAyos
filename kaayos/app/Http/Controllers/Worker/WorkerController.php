@@ -608,18 +608,24 @@ class WorkerController extends Controller
             ->with('success', 'Work photo added to portfolio.');
     }
 
-    public function deletePortfolio($id): RedirectResponse
+    public function deletePortfolio(Request $request, $id): JsonResponse|RedirectResponse
     {
         $profile = auth()->user()->workerProfile;
 
         if (!$profile) {
-            return redirect()->route('worker.profile')->with('error', 'Profile not found.');
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => 'Profile not found.'], 404)
+                : redirect()->route('worker.profile')->with('error', 'Profile not found.');
         }
 
         $portfolio = $profile->portfolios()->findOrFail($id);
 
         Storage::disk('public')->delete($portfolio->photo_path);
         $portfolio->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Portfolio photo removed.']);
+        }
 
         return redirect()
             ->route('worker.profile')

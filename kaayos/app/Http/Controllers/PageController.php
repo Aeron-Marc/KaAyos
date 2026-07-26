@@ -12,7 +12,7 @@ class PageController extends Controller
         $stats = [
             'workers'    => User::where('role', 'worker')->active()->count(),
             'jobs'       => Booking::count(),
-            'barangays'  => User::whereNotNull('city')->distinct('city')->count('city') ?: 42,
+            'barangays'  => 22,
             'rating'     => '4.8',
         ];
 
@@ -31,7 +31,7 @@ class PageController extends Controller
         $stats = [
             'workers'   => User::where('role', 'worker')->active()->count(),
             'jobs'      => Booking::count(),
-            'barangays' => User::whereNotNull('city')->distinct('city')->count('city') ?: 42,
+            'barangays' => 22,
         ];
 
         return view('pages.contact', compact('stats'));

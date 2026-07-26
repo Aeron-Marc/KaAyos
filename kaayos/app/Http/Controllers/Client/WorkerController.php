@@ -28,6 +28,7 @@ class WorkerController extends Controller
             ->active();
 
         if ($category = $request->query('category')) {
+            $category = str_replace('-', ' ', $category);
             $query->where('service_category', 'LIKE', "%{$category}%");
         }
 

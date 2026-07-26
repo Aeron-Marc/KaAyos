@@ -10,12 +10,14 @@ class ChatBotService
     protected string $provider;
     protected string $apiKey;
     protected string $model;
+    protected AiTools $tools;
 
     public function __construct()
     {
         $this->provider = config('kaayos.chatbot_provider', 'openai');
         $this->apiKey = config('kaayos.chatbot_api_key', '');
         $this->model = config('kaayos.chatbot_model', 'gpt-4o-mini');
+        $this->tools = app(AiTools::class);
     }
 
     protected function systemPrompt(): string
@@ -25,10 +27,9 @@ You are KaAyos AI Assistant — a helpful support chatbot for KaAyos, a home ser
 Your role is to assist clients (homeowners) with finding and booking skilled workers ("trabahador").
 
 Key facts about KaAyos:
-- Service categories: Plumbing, Electrical, Carpentry, Cleaning, Painting, Roofing, Aircon Servicing, Hauling
 - Workers are verified with government ID and barangay clearance before going live
-- The system uses AI-assisted matching ranking workers by distance, rating, skill match, and completion rate
-- KaAyos currently serves all 42 barangays of Tuy, Batangas
+- The system matches workers by distance, rating, skill match, and completion rate
+- KaAyos currently serves all 22 barangays of Tuy, Batangas
 - Clients can browse workers, read reviews, chat with workers, and book directly
 - Bookings go through statuses: new → accepted → en_route → in_progress → completed
 - Workers can be cancelled only when status is "new" or "accepted"
@@ -39,11 +40,13 @@ Key facts about KaAyos:
 
 Guidelines:
 - Be friendly, concise, and helpful. Use conversational Filipino-English if appropriate.
-- If you don't know something, direct the user to contact support via the Contact page.
-- Do NOT make up pricing or availability — tell users to check worker profiles for current rates.
-- Do NOT share any user's personal information.
-- Keep responses under 3 paragraphs.
-- Suggest relevant follow-up questions when appropriate.
+- If you don't know something, use available tools to look it up instead of guessing
+- Do NOT make up pricing or availability — use tools to get accurate data
+- Do NOT share any user's personal information
+- Keep responses under 3 paragraphs
+- Always suggest 3 relevant follow-up questions at the end
+
+You have tools available to query categories, services, workers, and bookings. When a user asks for information, use the appropriate tool instead of making up data.
 PROMPT;
     }
 
@@ -54,10 +57,90 @@ PROMPT;
         }
 
         return match ($this->provider) {
+            'openrouter' => $this->askWithTools($message, $history),
             'gemini'     => $this->askGemini($message, $history),
-            'openrouter' => $this->askOpenRouter($message, $history),
             default      => $this->askOpenAI($message, $history),
         };
+    }
+
+    protected function askWithTools(string $message, array $history): array
+    {
+        $messages = [['role' => 'system', 'content' => $this->systemPrompt()]];
+
+        foreach (array_slice($history, -10) as $msg) {
+            $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
+        }
+
+        $messages[] = ['role' => 'user', 'content' => $message];
+
+        $tools = $this->tools->getDefinitions();
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
+                'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
+            ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
+                'model'       => $this->model,
+                'messages'    => $messages,
+                'tools'       => $tools,
+                'temperature' => 0.7,
+                'max_tokens'  => 1000,
+            ]);
+
+            if ($response->failed()) {
+                Log::error('OpenRouter API error', ['status' => $response->status(), 'body' => $response->body()]);
+                return $this->fallbackResponse();
+            }
+
+            $data = $response->json();
+            $choice = $data['choices'][0]['message'] ?? [];
+            $reply = $choice['content'] ?? '';
+
+            if (!empty($choice['tool_calls'])) {
+                $messages[] = $choice;
+
+                foreach ($choice['tool_calls'] as $toolCall) {
+                    $functionName = $toolCall['function']['name'] ?? '';
+                    $arguments = json_decode($toolCall['function']['arguments'] ?? '{}', true);
+                    $result = $this->tools->execute($functionName, $arguments ?? []);
+
+                    $messages[] = [
+                        'role' => 'tool',
+                        'tool_call_id' => $toolCall['id'],
+                        'content' => $result,
+                    ];
+                }
+
+                $response2 = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
+                    'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
+                ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
+                    'model'       => $this->model,
+                    'messages'    => $messages,
+                    'temperature' => 0.7,
+                    'max_tokens'  => 1000,
+                ]);
+
+                if ($response2->failed()) {
+                    Log::error('OpenRouter tool response error', ['status' => $response2->status()]);
+                    return $this->fallbackResponse();
+                }
+
+                $data2 = $response2->json();
+                $reply = $data2['choices'][0]['message']['content'] ?? '';
+            }
+
+            return [
+                'reply'       => $reply,
+                'suggestions' => $this->getSuggestions($reply),
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('OpenRouter exception: ' . $e->getMessage());
+            return $this->fallbackResponse();
+        }
     }
 
     protected function askOpenAI(string $message, array $history): array
@@ -135,46 +218,6 @@ PROMPT;
             ];
         } catch (\Exception $e) {
             Log::error('Gemini exception: ' . $e->getMessage());
-            return $this->fallbackResponse();
-        }
-    }
-
-    protected function askOpenRouter(string $message, array $history): array
-    {
-        $messages = [['role' => 'system', 'content' => $this->systemPrompt()]];
-
-        foreach (array_slice($history, -10) as $msg) {
-            $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
-        }
-
-        $messages[] = ['role' => 'user', 'content' => $message];
-
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
-                'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
-            ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
-                'model'       => $this->model,
-                'messages'    => $messages,
-                'temperature' => 0.7,
-                'max_tokens'  => 500,
-            ]);
-
-            if ($response->failed()) {
-                Log::error('OpenRouter API error', ['status' => $response->status(), 'body' => $response->body()]);
-                return $this->fallbackResponse();
-            }
-
-            $data = $response->json();
-            $reply = $data['choices'][0]['message']['content'] ?? '';
-
-            return [
-                'reply'       => $reply,
-                'suggestions' => $this->getSuggestions($reply),
-            ];
-        } catch (\Exception $e) {
-            Log::error('OpenRouter exception: ' . $e->getMessage());
             return $this->fallbackResponse();
         }
     }

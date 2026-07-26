@@ -68,15 +68,41 @@
 
 @section('content')
 
-{{-- Filter Pills --}}
-<div class="filter-pills" id="booking-filters">
-    @foreach($filterLabels as $val => $label)
-        <button type="button"
-                class="filter-pill {{ ($activeFilter ?? '') === $val ? 'active' : '' }}"
-                data-filter="{{ $val }}">
-            {{ $label }}
+<div class="cat-dropdown" id="bookingStatusDropdown">
+    <button class="cat-dropdown-trigger" id="bookingStatusTrigger">
+        <span class="cat-dropdown-label" id="bookingStatusLabel">
+            <i class="fa-solid fa-list"></i> All
+        </span>
+        <i class="fa-solid fa-chevron-down cat-chev"></i>
+    </button>
+    <div class="cat-dropdown-menu" id="bookingStatusMenu">
+        <div class="cat-menu-header">Filter by Status</div>
+        <button type="button" class="cat-option active" data-filter="">
+            <span class="cat-option-icon"><i class="fa-solid fa-list"></i></span>
+            <span class="cat-option-label">All</span>
         </button>
-    @endforeach
+        <div class="cat-menu-divider"></div>
+        <button type="button" class="cat-option" data-filter="new">
+            <span class="cat-option-icon"><i class="fa-regular fa-clock"></i></span>
+            <span class="cat-option-label">New</span>
+        </button>
+        <button type="button" class="cat-option" data-filter="accepted">
+            <span class="cat-option-icon"><i class="fa-regular fa-handshake"></i></span>
+            <span class="cat-option-label">Accepted</span>
+        </button>
+        <button type="button" class="cat-option" data-filter="en_route">
+            <span class="cat-option-icon"><i class="fa-solid fa-truck"></i></span>
+            <span class="cat-option-label">En Route</span>
+        </button>
+        <button type="button" class="cat-option" data-filter="in_progress">
+            <span class="cat-option-icon"><i class="fa-solid fa-spinner"></i></span>
+            <span class="cat-option-label">In Progress</span>
+        </button>
+        <button type="button" class="cat-option" data-filter="completed">
+            <span class="cat-option-icon"><i class="fa-regular fa-circle-check"></i></span>
+            <span class="cat-option-label">Completed</span>
+        </button>
+    </div>
 </div>
 
 {{-- Booking Cards --}}
@@ -474,12 +500,32 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 200);
 });
 
-// ── Filter pills ──
+// ── Filter dropdown ──
 document.addEventListener('DOMContentLoaded', function () {
-    var pills = document.querySelectorAll('#booking-filters .filter-pill');
+    var dd = document.getElementById('bookingStatusDropdown');
+    var menu = document.getElementById('bookingStatusMenu');
+    var trigger = document.getElementById('bookingStatusTrigger');
+    var label = document.getElementById('bookingStatusLabel');
     var cards = document.querySelectorAll('.booking-card');
     var list = document.querySelector('.booking-card-list');
     var empty = list ? list.querySelector('.empty-state') : null;
+
+    var statusIcons = {
+        '': 'fa-solid fa-list',
+        'new': 'fa-regular fa-clock',
+        'accepted': 'fa-regular fa-handshake',
+        'en_route': 'fa-solid fa-truck',
+        'in_progress': 'fa-solid fa-spinner',
+        'completed': 'fa-regular fa-circle-check',
+    };
+    var statusLabels = {
+        '': 'All',
+        'new': 'New',
+        'accepted': 'Accepted',
+        'en_route': 'En Route',
+        'in_progress': 'In Progress',
+        'completed': 'Completed',
+    };
 
     function updateEmpty() {
         if (!empty) return;
@@ -487,16 +533,34 @@ document.addEventListener('DOMContentLoaded', function () {
         empty.style.display = visible === 0 ? '' : 'none';
     }
 
-    pills.forEach(function (pill) {
-        pill.addEventListener('click', function () {
-            pills.forEach(function (p) { p.classList.remove('active'); });
-            this.classList.add('active');
+    trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        menu.classList.toggle('open');
+        var chev = trigger.querySelector('.cat-chev');
+        if (chev) chev.style.transform = menu.classList.contains('open') ? 'rotate(180deg)' : '';
+    });
+
+    menu.querySelectorAll('.cat-option').forEach(function (opt) {
+        opt.addEventListener('click', function (e) {
+            e.stopPropagation();
             var filter = this.dataset.filter;
+            menu.querySelectorAll('.cat-option').forEach(function (o) { o.classList.remove('active'); });
+            this.classList.add('active');
+            label.innerHTML = '<i class="' + statusIcons[filter] + '"></i> ' + statusLabels[filter];
+            menu.classList.remove('open');
+            var chev = trigger.querySelector('.cat-chev');
+            if (chev) chev.style.transform = '';
             cards.forEach(function (card) {
                 card.style.display = !filter || card.dataset.status === filter ? '' : 'none';
             });
             updateEmpty();
         });
+    });
+
+    document.addEventListener('click', function () {
+        menu.classList.remove('open');
+        var chev = trigger?.querySelector('.cat-chev');
+        if (chev) chev.style.transform = '';
     });
 
     document.addEventListener('keydown', function (e) {
@@ -587,6 +651,33 @@ function openBookingModal(index) {
                     '<button type="button" class="btn btn-outline btn-report" onclick="showReportModal(' + index + ')"><i class="fa-solid fa-flag"></i> Report Worker</button>';
         }
         footer.innerHTML = extra + '<button type="button" class="btn btn-outline" onclick="closeBookingModal()">Close</button>';
+    } else if (b.raw_status === 'in_progress') {
+        // Show completion workflow buttons
+        var completionHtml = '';
+        
+        if (b.completion_status.is_pending) {
+            // Completion is pending - show appropriate message and button
+            if (b.confirmed_by_client_at) {
+                completionHtml = '<p style="font-size:0.9rem;color:var(--g5);margin:0 0 12px;">✓ You confirmed completion. Waiting for worker to confirm…</p>';
+            } else if (b.completion_requested_by && b.completion_requested_by !== {{ auth()->id() }}) {
+                completionHtml = '<p style="font-size:0.9rem;color:var(--b6);margin:0 0 12px;"><i class="fa-solid fa-circle-info"></i> Worker marked job as complete. Review and confirm completion below.</p>' +
+                    '<div class="btn-group" style="display:flex;gap:8px;">' +
+                    '<button type="button" class="btn btn-outline" onclick="closeBookingModal()">Review Later</button>' +
+                    '<button type="button" class="btn btn-solid" onclick="confirmJobComplete(' + index + ')"><i class="fa-regular fa-circle-check"></i> Confirm Complete</button>' +
+                    '</div>';
+            } else {
+                completionHtml = '<p style="font-size:0.9rem;color:var(--g5);margin:0 0 12px;">✓ Marked complete. Waiting for worker to confirm…</p>';
+            }
+        } else {
+            // Not yet marked complete - show "Mark as Complete" button
+            completionHtml = '<div class="btn-group" style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                '<button type="button" class="btn btn-outline" onclick="closeBookingModal(); showCancelModal(' + index + ')"><i class="fa-regular fa-trash"></i> Cancel</button>' +
+                '<a href="{{ route('client.messages.start') }}?worker_id=' + b.worker_id + '" class="btn btn-outline"><i class="fa-regular fa-comment"></i> Message</a>' +
+                '<button type="button" class="btn btn-solid" onclick="markJobComplete(' + index + ')"><i class="fa-regular fa-circle-check"></i> Mark Complete</button>' +
+                '</div>';
+        }
+        
+        footer.innerHTML = completionHtml;
     } else {
         footer.innerHTML =
             '<button type="button" class="btn btn-outline" onclick="closeBookingModal(); showCancelModal(' + index + ')">Cancel Booking</button>' +
@@ -719,6 +810,65 @@ function submitReport() {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-flag"></i> Submit Report';
     });
+}
+
+// ── Job Completion Confirmation ──
+function markJobComplete(index) {
+    var b = bookings[index];
+    if (!b) return;
+    
+    if (confirm('Mark this job as complete? The worker will need to confirm.')) {
+        var btn = document.activeElement;
+        if (btn) btn.disabled = true;
+        
+        fetch('/client/bookings/' + b.id + '/mark-complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to mark job as complete.');
+            }
+        })
+        .catch(function () { 
+            alert('Something went wrong.'); 
+        })
+        .finally(function () {
+            if (btn) btn.disabled = false;
+        });
+    }
+}
+
+function confirmJobComplete(index) {
+    var b = bookings[index];
+    if (!b) return;
+    
+    if (confirm('Confirm job completion? This will finalize the booking.')) {
+        var btn = document.activeElement;
+        if (btn) btn.disabled = true;
+        
+        fetch('/client/bookings/' + b.id + '/confirm-complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to confirm job completion.');
+            }
+        })
+        .catch(function () { 
+            alert('Something went wrong.'); 
+        })
+        .finally(function () {
+            if (btn) btn.disabled = false;
+        });
+    }
 }
 
 // Focus handler: ?focus=ID opens the booking modal on load

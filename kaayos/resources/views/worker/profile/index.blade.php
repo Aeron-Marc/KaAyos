@@ -462,13 +462,9 @@
                             <div class="portfolio-caption">{{ $item->caption }}</div>
                         @endif
                         <div class="portfolio-actions">
-                            <form method="POST" action="{{ route('worker.profile.portfolio.delete', $item->id) }}" onsubmit="return confirm('Remove this photo?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-ghost" style="padding:4px 10px;font-size:.75rem;color:#c62828;border-color:#ef9a9a;">
-                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i> Remove
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-ghost portfolio-del-btn" data-id="{{ $item->id }}" data-caption="{{ $item->caption }}" style="padding:4px 10px;font-size:.75rem;color:#c62828;border-color:#ef9a9a;">
+                                <i class="fa-solid fa-trash-can" aria-hidden="true"></i> Remove
+                            </button>
                         </div>
                     </div>
                 @empty
@@ -543,6 +539,28 @@
 
     </div>
 
+</div>
+
+{{-- Portfolio Delete Modal --}}
+<div id="portfolioDelModal" class="modal-overlay" style="display:none;" onclick="closePortfolioDelModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Remove Photo</h3>
+            <button type="button" class="modal-close" onclick="closePortfolioDelModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin:0 0 12px;color:var(--g6);">
+                Are you sure you want to remove this photo from your portfolio?
+            </p>
+            <div id="portfolioDelSummary" style="padding:10px 12px;background:var(--g0);border-radius:8px;font-size:.85rem;color:var(--g7);"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closePortfolioDelModal()">Cancel</button>
+            <button type="button" class="btn btn-solid" style="background:#dc2626;" id="portfolioDelConfirm" onclick="confirmPortfolioDelete()">
+                <i class="fa-solid fa-trash-can" aria-hidden="true"></i> Remove
+            </button>
+        </div>
+    </div>
 </div>
 
 @endsection
@@ -1292,6 +1310,38 @@ document.querySelectorAll('.tag-input-wrap').forEach(initTagInput);
         });
         serializeAvailability();
     });
-})();
+    })();
+
+    // ── Portfolio Delete Modal ──
+    var delId = null;
+    window.closePortfolioDelModal = function (e) {
+        if (e && e.target && !e.target.closest) return;
+        document.getElementById('portfolioDelModal').style.display = 'none';
+        delId = null;
+    };
+    document.querySelectorAll('.portfolio-del-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            delId = this.dataset.id;
+            var caption = this.dataset.caption;
+            document.getElementById('portfolioDelSummary').textContent = caption ? 'Caption: ' + caption : 'No caption';
+            document.getElementById('portfolioDelModal').style.display = 'flex';
+        });
+    });
+    window.confirmPortfolioDelete = function () {
+        if (!delId) return;
+        var btn = document.getElementById('portfolioDelConfirm');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Removing…';
+        fetch('{{ route("worker.profile.portfolio.delete", "__ID__") }}'.replace('__ID__', delId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'X-HTTP-Method-Override': 'DELETE' },
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) { location.reload(); }
+            else { alert(data.message || 'Failed to remove photo.'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Remove'; }
+        })
+        .catch(function () { alert('Something went wrong.'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Remove'; });
+    };
 </script>
 @endpush

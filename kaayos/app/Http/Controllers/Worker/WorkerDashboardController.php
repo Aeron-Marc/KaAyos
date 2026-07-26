@@ -8,8 +8,11 @@ use App\Models\Booking;
 use App\Models\BookingPhoto;
 use App\Models\Earning;
 use App\Events\BookingStatusUpdated;
+use App\Events\JobCompletionStatusUpdated;
 use App\Notifications\BookingCancelled;
 use App\Notifications\BookingStatusChanged;
+use App\Notifications\JobCompletionRequested;
+use App\Notifications\JobCompletionConfirmed;
 use App\Notifications\RescheduleRequested;
 use App\Services\BookingMessageService;
 use Illuminate\Http\JsonResponse;
@@ -55,10 +58,16 @@ class WorkerDashboardController extends Controller
             abort(403, 'This job is not assigned to you.');
         }
 
+        // Allow normal status transitions or completion mark
         $allowed = array_filter([
             Booking::STATUS_FLOW[$booking->status] ?? null,
             Booking::STATUS_CANCELLED,
         ]);
+        
+        // Special handling for completion - worker can mark complete when in_progress
+        if ($booking->status === Booking::STATUS_IN_PROGRESS) {
+            $allowed[] = Booking::STATUS_COMPLETED;
+        }
 
         $validated = $request->validate([
             'status' => ['required', 'string', 'in:' . implode(',', $allowed)],
@@ -78,14 +87,121 @@ class WorkerDashboardController extends Controller
         $oldStatus = $booking->status;
 
         try {
-            $afterSave = null;
+            // Handle completion confirmation workflow
             if ($validated['status'] === Booking::STATUS_COMPLETED) {
-                $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                $gross = $booking->price ?? 0;
-                $fee = round($gross * ($platformFeePercent / 100), 2);
-                $net = $gross - $fee;
+                $afterSave = function (Booking $fresh) use ($user) {
+                    // Only record earnings if job is fully completed (both parties confirmed)
+                    if ($fresh->status === Booking::STATUS_COMPLETED) {
+                        $platformFeePercent = config('kaayos.platform_fee_percent', 10);
+                        $gross = $fresh->price ?? 0;
+                        $fee = round($gross * ($platformFeePercent / 100), 2);
+                        $net = $gross - $fee;
 
-                $afterSave = function (Booking $fresh) use ($user, $gross, $fee, $net) {
+                        Earning::updateOrCreate(
+                            ['booking_id' => $fresh->id],
+                            [
+                                'worker_id'    => $user->id,
+                                'gross_amount' => $gross,
+                                'platform_fee' => $fee,
+                                'net_amount'   => $net,
+                            ]
+                        );
+                    }
+                };
+
+                $booking->markComplete($user, $afterSave);
+                $booking->fresh();
+                
+                // Notify client if this was first request
+                if ($booking->completion_requested_by === $user->id && $booking->confirmed_by_client_at === null) {
+                    Notification::send(
+                        $booking->client,
+                        new JobCompletionRequested($booking, $user->name, 'worker')
+                    );
+                } else if ($booking->confirmed_by_client_at !== null && $booking->status === Booking::STATUS_COMPLETED) {
+                    // Both confirmed - notify of full completion
+                    Notification::send(
+                        $booking->client,
+                        new JobCompletionConfirmed($booking, $user->name, 'worker')
+                    );
+                }
+            } else if ($validated['status'] === Booking::STATUS_ACCEPTED) {
+                $booking->update(['agreed_by_worker_at' => now()]);
+                $booking->transitionTo($validated['status'], auth()->id());
+            } else {
+                $booking->transitionTo($validated['status'], auth()->id());
+            }
+        } catch (BookingStateException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 409);
+            }
+            return redirect()->back()->with('error', $e->getMessage());
+        } catch (\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        $booking->load('client');
+        
+        // Broadcast completion status if relevant
+        if ($oldStatus !== $booking->status) {
+            if ($booking->isCompletionPending()) {
+                broadcast(new JobCompletionStatusUpdated(
+                    $booking,
+                    $user->id === $booking->worker_id ? 'worker' : 'client',
+                    false
+                ))->toOthers();
+            } else if ($booking->status === Booking::STATUS_COMPLETED) {
+                broadcast(new JobCompletionStatusUpdated(
+                    $booking,
+                    $user->id === $booking->worker_id ? 'worker' : 'client',
+                    true
+                ))->toOthers();
+            } else {
+                broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
+            }
+        }
+
+        BookingMessageService::post($booking, $booking->status);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Job status updated successfully.',
+                'booking' => $booking->fresh()->load('earning'),
+                'completion_status' => $booking->getCompletionStatus(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Job status updated successfully.');
+    }
+
+    public function confirmJobCompletion(Request $request, Booking $booking): JsonResponse|RedirectResponse
+    {
+        $user = auth()->user();
+
+        if ($booking->worker_id !== $user->id) {
+            abort(403, 'This job is not assigned to you.');
+        }
+
+        if (!$booking->isCompletionPending()) {
+            $msg = 'This job is not awaiting completion confirmation.';
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        try {
+            $afterSave = function (Booking $fresh) use ($user) {
+                // Record earnings if job is now fully completed
+                if ($fresh->status === Booking::STATUS_COMPLETED) {
+                    $platformFeePercent = config('kaayos.platform_fee_percent', 10);
+                    $gross = $fresh->price ?? 0;
+                    $fee = round($gross * ($platformFeePercent / 100), 2);
+                    $net = $gross - $fee;
+
                     Earning::updateOrCreate(
                         ['booking_id' => $fresh->id],
                         [
@@ -95,35 +211,45 @@ class WorkerDashboardController extends Controller
                             'net_amount'   => $net,
                         ]
                     );
-                };
-            }
+                }
+            };
 
-            if ($validated['status'] === Booking::STATUS_ACCEPTED) {
-                $booking->update(['agreed_by_worker_at' => now()]);
-            }
-
-            $booking->transitionTo($validated['status'], auth()->id(), $afterSave);
-        } catch (BookingStateException $e) {
+            $booking->markComplete($user, $afterSave);
+            $booking->fresh();
+            $isFullyCompleted = $booking->status === Booking::STATUS_COMPLETED;
+            
+            $booking->load('client');
+            
+            // Notify client
+            Notification::send(
+                $booking->client,
+                new JobCompletionConfirmed($booking, $user->name, 'worker')
+            );
+            
+            broadcast(new JobCompletionStatusUpdated(
+                $booking,
+                'worker',
+                $isFullyCompleted
+            ))->toOthers();
+            
+        } catch (\InvalidArgumentException $e) {
+            $msg = $e->getMessage();
             if ($request->expectsJson()) {
-                return response()->json(['message' => $e->getMessage()], 409);
+                return response()->json(['success' => false, 'message' => $msg], 422);
             }
-            return redirect()->back()->with('error', $e->getMessage());
+            return redirect()->back()->with('error', $msg);
         }
-
-        $booking->load('client');
-        Notification::send($booking->client, new BookingStatusChanged($booking, $oldStatus));
-        broadcast(new BookingStatusUpdated($booking, $oldStatus))->toOthers();
-
-        BookingMessageService::post($booking, $booking->status);
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Job status updated successfully.',
+                'success' => true,
+                'message' => 'Job completion confirmed.',
                 'booking' => $booking->fresh()->load('earning'),
+                'completion_status' => $booking->getCompletionStatus(),
             ]);
         }
 
-        return redirect()->back()->with('success', 'Job status updated successfully.');
+        return redirect()->back()->with('success', 'Job completion confirmed.');
     }
 
     public function cancelJob(Booking $booking): JsonResponse|RedirectResponse

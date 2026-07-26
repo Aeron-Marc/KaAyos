@@ -133,9 +133,10 @@
 .s-msg-bubble {
   padding: 10px 16px;
   border-radius: 14px;
-  line-height: 1.55;
+  line-height: 1.6;
   font-size: 0.88rem;
   word-wrap: break-word;
+  white-space: pre-wrap;
   position: relative;
 }
 .s-msg.bot .s-msg-bubble {

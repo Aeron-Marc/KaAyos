@@ -15,6 +15,7 @@ use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Events\BookingCreated;
 use App\Events\BookingStatusUpdated;
+use App\Events\JobCompletionStatusUpdated;
 use App\Events\MessageSent;
 use App\Services\BookingMessageService;
 use App\Notifications\BookingCancelled;
@@ -23,6 +24,8 @@ use App\Notifications\NewMessage;
 use App\Notifications\NewReview;
 use App\Notifications\ReportReceived;
 use App\Notifications\RescheduleRequested;
+use App\Notifications\JobCompletionRequested;
+use App\Notifications\JobCompletionConfirmed;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -135,6 +138,11 @@ class ClientController extends Controller
                     'status_history'=> $statusHistory,
                     'cancellation_reason' => $b->cancellation_reason,
                     'cancelled_at'  => $b->cancelled_at?->toIso8601String(),
+                    'completion_requested_by' => $b->completion_requested_by,
+                    'completion_requested_at' => $b->completion_requested_at?->toIso8601String(),
+                    'confirmed_by_worker_at' => $b->confirmed_by_worker_at?->toIso8601String(),
+                    'confirmed_by_client_at' => $b->confirmed_by_client_at?->toIso8601String(),
+                    'completion_status' => $b->getCompletionStatus(),
                 ];
             })->toArray();
     }
@@ -676,4 +684,103 @@ class ClientController extends Controller
 
         return response()->json(['success' => true, 'review' => $review]);
     }
+
+    public function markJobComplete(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) {
+            abort(403, 'This booking does not belong to you.');
+        }
+
+        if ($booking->status !== Booking::STATUS_IN_PROGRESS) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Can only mark complete jobs that are in progress.',
+            ], 422);
+        }
+
+        try {
+            $booking->markComplete(auth()->user());
+            $booking->fresh();
+            
+            // Notify worker if this was first request
+            if ($booking->completion_requested_by === auth()->id() && $booking->confirmed_by_worker_at === null) {
+                Notification::send(
+                    $booking->worker,
+                    new JobCompletionRequested($booking, auth()->user()->name, 'client')
+                );
+            } else if ($booking->confirmed_by_worker_at !== null && $booking->status === Booking::STATUS_COMPLETED) {
+                // Both confirmed - notify of full completion
+                Notification::send(
+                    $booking->worker,
+                    new JobCompletionConfirmed($booking, auth()->user()->name, 'client')
+                );
+            }
+            
+            $booking->load('worker');
+            broadcast(new JobCompletionStatusUpdated(
+                $booking,
+                'client',
+                false
+            ))->toOthers();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Job marked as complete.',
+                'booking' => $booking,
+                'completion_status' => $booking->getCompletionStatus(),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function confirmJobCompletion(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) {
+            abort(403, 'This booking does not belong to you.');
+        }
+
+        if (!$booking->isCompletionPending()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This job is not awaiting completion confirmation.',
+            ], 422);
+        }
+
+        try {
+            $booking->markComplete(auth()->user());
+            $booking->fresh();
+            $isFullyCompleted = $booking->status === Booking::STATUS_COMPLETED;
+            
+            $booking->load('worker');
+            
+            // Notify worker
+            Notification::send(
+                $booking->worker,
+                new JobCompletionConfirmed($booking, auth()->user()->name, 'client')
+            );
+            
+            broadcast(new JobCompletionStatusUpdated(
+                $booking,
+                'client',
+                $isFullyCompleted
+            ))->toOthers();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Job completion confirmed.' . ($isFullyCompleted ? ' Job is now complete!' : ''),
+                'booking' => $booking,
+                'completion_status' => $booking->getCompletionStatus(),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
 }
+

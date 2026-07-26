@@ -74,6 +74,8 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::post('/bookings/{booking}/report', [ClientController::class, 'reportWorker'])->middleware('throttle:3,1')->name('bookings.report');
     Route::post('/bookings/{booking}/reschedule', [ClientController::class, 'rescheduleRequest'])->name('bookings.reschedule');
     Route::post('/bookings/{booking}/reschedule-respond', [ClientController::class, 'respondReschedule'])->name('bookings.reschedule-respond');
+    Route::post('/bookings/{booking}/mark-complete', [ClientController::class, 'markJobComplete'])->name('bookings.mark-complete');
+    Route::post('/bookings/{booking}/confirm-complete', [ClientController::class, 'confirmJobCompletion'])->name('bookings.confirm-complete');
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
     Route::get('/messages/start', [ClientController::class, 'startConversation'])->name('messages.start');
     Route::get('/messages/poll/{conversation}', [ClientController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
@@ -129,6 +131,7 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::post('/jobs/{booking}/cancel', [WorkerDashboardController::class, 'cancelJob'])->name('jobs.cancel');
     Route::post('/jobs/{booking}/reschedule', [WorkerDashboardController::class, 'rescheduleRequest'])->name('jobs.reschedule');
     Route::post('/jobs/{booking}/reschedule-respond', [WorkerDashboardController::class, 'respondReschedule'])->name('jobs.reschedule-respond');
+    Route::post('/jobs/{booking}/confirm-complete', [WorkerDashboardController::class, 'confirmJobCompletion'])->name('jobs.confirm-complete');
     Route::put('/location', [WorkerDashboardController::class, 'updateLocation'])->name('location.update');
 });
 

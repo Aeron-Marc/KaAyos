@@ -307,17 +307,13 @@
             </li>
             <li>
                 <a href="{{ route('admin.reports.index') }}" class="{{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-file-chart-column"></i>
+                    <i class="fa-solid fa-chart-simple"></i>
                     <span>Reports</span>
                 </a>
             </li>
         </ul>
         <div class="sidebar-spacer" style="flex:1"></div>
         <div class="sidebar-footer">
-            <a href="{{ route('home') }}">
-                <i class="fa-solid fa-arrow-left"></i>
-                <span>Back to Site</span>
-            </a>
             <form method="POST" action="{{ route('logout') }}" style="display:block">
                 @csrf
                 <button type="submit" style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:8px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.95rem;font-weight:500;border:none;background:none;font-family:'Inter',sans-serif;width:100%;cursor:pointer;transition:all .18s;"
