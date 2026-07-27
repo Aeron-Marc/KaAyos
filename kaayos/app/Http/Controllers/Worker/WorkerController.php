@@ -8,6 +8,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
 use App\Models\WorkerProfile;
+use App\Models\WorkerVerification;
 use App\Events\MessageSent;
 use App\Notifications\NewMessage;
 use App\Support\WorkerDocuments;
@@ -650,10 +651,33 @@ class WorkerController extends Controller
 
         $path = $request->file('file')->store('documents', 'public');
 
+        $verification = WorkerVerification::firstOrCreate(
+            ['user_id' => $user->id],
+            ['status' => 'pending_documents']
+        );
+
+        $doc->worker_verification_id = $verification->id;
         $doc->file_path = $path;
         $doc->status = 'pending';
         $doc->verified_at = null;
+        $doc->rejection_reason = null;
         $doc->save();
+
+        $requiredTypes = collect(WorkerDocuments::types())->pluck('name');
+        $submittedTypes = WorkerDocument::where('user_id', $user->id)
+            ->whereIn('document_type', $requiredTypes)
+            ->pluck('document_type');
+
+        $allSubmitted = $requiredTypes->diff($submittedTypes)->isEmpty();
+
+        if ($allSubmitted && $verification->status === 'pending_documents') {
+            $verification->update([
+                'status'       => 'pending_review',
+                'submitted_at' => $verification->submitted_at ?? now(),
+            ]);
+        } elseif ($verification->status === 'changes_requested') {
+            $verification->update(['status' => 'pending_review']);
+        }
 
         if ($user->workerProfile) {
             $user->workerProfile->update(['government_id_verified' => false]);
