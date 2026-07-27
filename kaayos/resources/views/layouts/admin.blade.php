@@ -207,7 +207,7 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route('admin.verification.index') }}" class="{{ request()->routeIs('admin.verification.*') ? 'active' : '' }}">
+                <a href="{{ route('admin.verifications.index') }}" class="{{ request()->routeIs('admin.verifications.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-clipboard-check"></i>
                     <span>Verifications</span>
                 </a>

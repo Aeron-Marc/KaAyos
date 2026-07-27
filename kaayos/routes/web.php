@@ -174,11 +174,16 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     // Workers
     Route::get('/workers', [App\Http\Controllers\Admin\WorkerController::class, 'index'])->name('workers.index');
 
-    // Verifications
-    Route::get('/verification', [VerificationController::class, 'index'])->name('verification.index');
-    Route::get('/verification/{verification}', [VerificationController::class, 'show'])->name('verification.show');
-    Route::post('/verification/{verification}/approve', [VerificationController::class, 'approve'])->name('verification.approve');
-    Route::post('/verification/{verification}/reject', [VerificationController::class, 'reject'])->name('verification.reject');
+    // Verifications (worker-centric)
+    Route::get('/verifications', [VerificationController::class, 'index'])->name('verifications.index');
+    Route::get('/verifications/{verification}', [VerificationController::class, 'show'])->name('verifications.show');
+    Route::post('/verifications/{verification}/review', [VerificationController::class, 'startReview'])->name('verifications.review');
+    Route::post('/verifications/{verification}/documents/{document}/approve', [VerificationController::class, 'approveDocument'])->name('verifications.documents.approve');
+    Route::post('/verifications/{verification}/documents/{document}/reject', [VerificationController::class, 'rejectDocument'])->name('verifications.documents.reject');
+    Route::post('/verifications/{verification}/approve-all', [VerificationController::class, 'approveAll'])->name('verifications.approveAll');
+    Route::post('/verifications/{verification}/reject-all', [VerificationController::class, 'rejectAll'])->name('verifications.rejectAll');
+    Route::post('/verifications/{verification}/request-changes', [VerificationController::class, 'requestChanges'])->name('verifications.requestChanges');
+    Route::post('/verifications/{verification}/reject', [VerificationController::class, 'reject'])->name('verifications.reject');
 
     // Service Categories
     Route::get('/service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');
