@@ -98,8 +98,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/api/profile/avatar',            [ProfileController::class, 'uploadAvatar']);
 });
 
-// Chatbot (authenticated)
-Route::middleware('auth')->post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke']);
+// Chatbot (public + authenticated)
+Route::post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke']);
 
 // Suggestions (authenticated) — uses ML + AI for worker recommendations
 Route::middleware('auth')->post('/api/chat/suggest', [App\Http\Controllers\Api\SuggestionController::class, '__invoke']);

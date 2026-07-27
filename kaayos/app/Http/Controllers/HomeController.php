@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\ServiceCategory;
+use App\Models\Testimonial;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -28,8 +29,8 @@ class HomeController extends Controller
             $workersQuery->where('service_category', 'LIKE', "%{$category}%");
         }
 
-        $workers = $workersQuery->take(12)->get()
-            ->map(fn ($u) => [
+        $workers = $workersQuery->paginate(5)
+            ->through(fn ($u) => [
                 'id'       => $u->id,
                 'name'     => $u->name,
                 'category' => $u->service_category ?? 'General',
@@ -51,8 +52,10 @@ class HomeController extends Controller
                     'client_name' => $r->client?->name ?? 'Anonymous',
                 ])->toArray(),
             ])
-            ->toArray();
+            ->appends(request()->query());
 
-        return view('home', compact('workers', 'categories', 'category'));
+        $testimonials = Testimonial::active()->ordered()->get();
+
+        return view('home', compact('workers', 'categories', 'category', 'testimonials'));
     }
 }

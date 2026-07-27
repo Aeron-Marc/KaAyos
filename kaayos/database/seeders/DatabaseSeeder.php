@@ -13,6 +13,7 @@ use App\Models\Message;
 use App\Models\Review;
 use App\Models\WorkPortfolio;
 use App\Models\WorkerDocument;
+use App\Models\Testimonial;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -1208,6 +1209,12 @@ class DatabaseSeeder extends Seeder
         }
 
         // ═══════════════════════════════════════════════════════════
+        //  12. TESTIMONIALS
+        // ═══════════════════════════════════════════════════════════
+
+        $this->call(TestimonialSeeder::class);
+
+        // ═══════════════════════════════════════════════════════════
         //  SUMMARY
         // ═══════════════════════════════════════════════════════════
 
@@ -1216,5 +1223,6 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Admin:  admin@kaayos.com / password');
         $this->command->info('Clients: ' . User::where('role', 'client')->count() . ' users | Workers: ' . User::where('role', 'worker')->count() . ' users');
         $this->command->info('Bookings: ' . Booking::count() . ' | Reviews: ' . Review::count() . ' | Earnings: ' . Earning::count());
+        $this->command->info('Testimonials: ' . Testimonial::count());
     }
 }

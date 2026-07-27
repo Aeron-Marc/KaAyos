@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="description" content="KaAyos – Find trusted, PESO-accredited skilled workers (trabahador) in Tuy, Batangas. AI-matched plumbing, electrical, carpentry &amp; cleaning services.">
 <meta property="og:title" content="KaAyos – Trusted Home Services in Tuy, Batangas">
 <meta property="og:description" content="Find verified skilled workers near you. AI-matched, PESO-accredited, and community-rated.">
@@ -16,6 +17,12 @@
 @vite(['resources/css/landing.css'])
 </head>
 <body>
+
+<!-- PAGE LOADER -->
+<div id="pageLoader" class="page-loader">
+  <div class="loader-bg"></div>
+  <img src="/images/logo-gs-removebg-preview.png" alt="KaAyos" class="loader-logo">
+</div>
 
 <!-- MOBILE OVERLAY -->
 <div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
@@ -76,7 +83,7 @@
   </div>
 </section>
 
-<!-- SEARCH -->
+<!-- SEARCH + AI ASSISTANT -->
 <div class="search-section">
   <div class="search-label">What do you need fixed?</div>
   <div class="search-bar">
@@ -90,13 +97,7 @@
     </div>
     <button class="btn btn-primary btn-lg" onclick="doSearch()"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Find Workers</button>
   </div>
-  <div class="search-tags">
-    <button class="search-tag" onclick="searchTag(this)">Leaking Pipe</button>
-    <button class="search-tag" onclick="searchTag(this)">Cleaning</button>
-    <button class="search-tag" onclick="searchTag(this)">Painting</button>
-    <button class="search-tag" onclick="searchTag(this)">Electrical Repair</button>
-    <button class="search-tag" onclick="searchTag(this)">Aircon Cleaning</button>
-  </div>
+
 </div>
 
 <div class="section-divider" style="margin-top:48px"></div>
@@ -116,7 +117,7 @@
     @endforeach
   </div>
 
-  @if(!empty($workers))
+  @if($workers->count())
     <div class="worker-grid fade-up" id="workerGrid">
       @foreach($workers as $w)
         <a href="{{ route('workers.public.show', $w['id']) }}" class="worker-card" data-category="{{ strtolower($w['category']) }}">
@@ -173,6 +174,7 @@
         </a>
       @endforeach
     </div>
+    <div class="pagination fade-up">{{ $workers->links() }}</div>
   @else
     <div class="empty-workers fade-up">
       <i class="fa-solid fa-users-slash"></i>
@@ -187,7 +189,7 @@
 <div class="stats fade-up">
   <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num">500+</div><div class="stat-label">Active Workers</div></div>
   <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num">1,000+</div><div class="stat-label">Jobs Completed</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num">42</div><div class="stat-label">Barangays Covered</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num">22</div><div class="stat-label">Barangays Covered</div></div>
   <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num">4.8★</div><div class="stat-label">Avg Rating</div></div>
 </div>
 
@@ -242,21 +244,25 @@
     <p class="sec-sub">Real feedback from homeowners and workers in Tuy, Batangas.</p>
   </div>
   <div class="testimonials">
-    <div class="testimonial-card fade-up">
-      <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-      <p class="quote">"Na-book ko agad si Mang Jose para sa sirang gripo ko. Wala pang isang oras, nasa bahay na at naayos agad. Sobrang convenient!"</p>
-      <div class="author"><div class="author-avatar">AR</div><div class="author-info"><div class="name">Ana Reyes</div><div class="role">Homeowner, Tuy</div></div></div>
-    </div>
-    <div class="testimonial-card fade-up">
-      <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-      <p class="quote">"Dati referral lang ang kitaan. Ngayon, may regular akong booking galing sa KaAyos. Nakaipon na ako para sa bagong gamit."</p>
-      <div class="author"><div class="author-avatar">MC</div><div class="author-info"><div class="name">Mang Carlos</div><div class="role">Electrician, Tuy</div></div></div>
-    </div>
-    <div class="testimonial-card fade-up">
-      <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
-      <p class="quote">"Yung AI matching nila, hindi biro. Inirecommend agad yung tamang worker para sa painting project namin. Sulit na sulit!"</p>
-      <div class="author"><div class="author-avatar">DB</div><div class="author-info"><div class="name">Dennis B.</div><div class="role">Homeowner, Nasugbu</div></div></div>
-    </div>
+    @forelse($testimonials as $t)
+      <div class="testimonial-card fade-up">
+        <div class="stars">
+          @for($i = 0; $i < $t->rating; $i++)
+            <i class="fa-solid fa-star"></i>
+          @endfor
+        </div>
+        <p class="quote">{{ $t->content }}</p>
+        <div class="author">
+          <div class="author-avatar">{{ $t->avatar_initials }}</div>
+          <div class="author-info">
+            <div class="name">{{ $t->name }}</div>
+            <div class="role">{{ $t->role }}</div>
+          </div>
+        </div>
+      </div>
+    @empty
+      <p class="text-muted">No testimonials yet.</p>
+    @endforelse
   </div>
 </section>
 
@@ -373,6 +379,31 @@
   </div>
 </footer>
 
+<!-- AI ASSISTANT FLOATING -->
+<div id="aiFab" class="ai-fab"><i class="fa-solid fa-robot"></i></div>
+<div id="aiWindow" class="ai-window">
+  <div class="ai-header">
+    <div class="ai-header-info">
+      <div class="ai-avatar"><i class="fa-solid fa-robot"></i></div>
+      <div><div class="ai-title">KaAyos Assistant</div><div class="ai-status">Online</div></div>
+    </div>
+  </div>
+  <div class="ai-messages" id="aiMessages">
+    <div class="ai-msg bot">
+      <div class="ai-bubble"><p>Hi! I can help you find the right worker. Tell me what you need — like <em>"plumber for leaking pipe in Lumbangan"</em> or <em>"electrician near me"</em>.</p></div>
+    </div>
+  </div>
+  <div class="ai-suggestions" id="aiSuggestions">
+    <button class="ai-chip" data-text="I need a plumber for a leaking pipe">I need a plumber</button>
+    <button class="ai-chip" data-text="Looking for an electrician nearby">Looking for an electrician</button>
+    <button class="ai-chip" data-text="Need someone to clean my house">Need house cleaning</button>
+  </div>
+  <div class="ai-input-bar">
+    <input type="text" id="aiInput" class="ai-input" placeholder="Describe what you need..." maxlength="1000" autocomplete="off">
+    <button class="ai-send" id="aiSend" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
+  </div>
+</div>
+
 <script>
 function toggleMobileMenu() {
   var open = document.getElementById('mobileDrawer').classList.toggle('open');
@@ -418,22 +449,14 @@ function toggleFaq(el){
 /* CATEGORY FILTER */
 (function(){
   var pills = document.querySelectorAll('.cat-pill');
-  var cards = document.querySelectorAll('.worker-card');
   if(!pills.length) return;
   pills.forEach(function(btn){
     btn.addEventListener('click', function(){
       var cat = btn.getAttribute('data-category');
-      pills.forEach(function(p){ p.classList.remove('active'); });
-      btn.classList.add('active');
-      var visibleCount = 0;
-      cards.forEach(function(card){
-        var match = !cat || card.getAttribute('data-category') === cat;
-        card.style.display = match ? '' : 'none';
-        if(match) visibleCount++;
-      });
       var url = new URL(window.location);
       if(cat){ url.searchParams.set('category', cat); }else{ url.searchParams.delete('category'); }
-      history.replaceState(null, '', url);
+      url.searchParams.delete('page');
+      window.location.href = url;
     });
   });
 })();
@@ -506,6 +529,89 @@ function goToSignUp() {
   saveBookingIntent(_bookingWorkerId, _bookingWorkerName, _bookingCategory);
   window.location.href = '/register?intended=/client/workers/' + _bookingWorkerId;
 }
+
+window.addEventListener('load', function() {
+  setTimeout(function() { document.getElementById('pageLoader').classList.add('loaded'); }, 600);
+});
+
+/* AI FLOATING ASSISTANT */
+(function() {
+  var fab = document.getElementById('aiFab');
+  var win = document.getElementById('aiWindow');
+  var messages = document.getElementById('aiMessages');
+  var suggestions = document.getElementById('aiSuggestions');
+  var input = document.getElementById('aiInput');
+  var send = document.getElementById('aiSend');
+  var csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+  var history = [];
+  var isOpen = false;
+
+  function scrollBottom() {
+    setTimeout(function(){ messages.scrollTop = messages.scrollHeight; }, 50);
+  }
+  function addMsg(role, text) {
+    var div = document.createElement('div');
+    div.className = 'ai-msg ' + role;
+    div.innerHTML = '<div class="ai-bubble"><p>' + text.replace(/\n/g, '<br>') + '</p></div>';
+    messages.appendChild(div);
+    history.push({ role: role, content: text.replace(/<[^>]*>/g, '') });
+    scrollBottom();
+  }
+  function showTyping() {
+    var div = document.createElement('div');
+    div.className = 'ai-msg bot ai-typing'; div.id = 'aiTyping';
+    div.innerHTML = '<div class="ai-bubble"><span></span><span></span><span></span></div>';
+    messages.appendChild(div); scrollBottom();
+  }
+  function hideTyping() { var el = document.getElementById('aiTyping'); if (el) el.remove(); }
+  function setChips(chips) {
+    suggestions.innerHTML = '';
+    if (!chips || !chips.length) return;
+    chips.forEach(function(text) {
+      var btn = document.createElement('button');
+      btn.className = 'ai-chip'; btn.textContent = text;
+      btn.dataset.text = text;
+      btn.addEventListener('click', function(){ sendMsg(text); });
+      suggestions.appendChild(btn);
+    });
+  }
+  function sendMsg(text) {
+    var msg = (text || input.value).trim();
+    if (!msg) return;
+    input.value = ''; send.disabled = true;
+    setChips([]); addMsg('user', msg); showTyping();
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+      body: JSON.stringify({ message: msg, history: history.slice(-20) }),
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      hideTyping();
+      if (data.success && data.reply) { addMsg('bot', data.reply); setChips(data.suggestions || []); }
+      else { addMsg('bot', 'Sorry, I couldn\'t process that. Please try again.'); setChips(['Find a plumber', 'Find an electrician', 'House cleaning']); }
+    })
+    .catch(function() {
+      hideTyping(); addMsg('bot', 'Having trouble connecting. Try again later.');
+      setChips(['Find a plumber', 'Find an electrician', 'House cleaning']);
+    })
+    .finally(function(){ send.disabled = false; input.focus(); });
+  }
+
+  fab.addEventListener('click', function() {
+    isOpen = !isOpen;
+    win.style.display = isOpen ? 'flex' : 'none';
+    fab.innerHTML = isOpen ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-robot"></i>';
+    if (isOpen) input.focus();
+  });
+  send.addEventListener('click', function(){ sendMsg(); });
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+  });
+  document.querySelectorAll('.ai-chip').forEach(function(btn) {
+    btn.addEventListener('click', function(){ sendMsg(btn.dataset.text); });
+  });
+})();
 </script>
 </body>
 </html>
