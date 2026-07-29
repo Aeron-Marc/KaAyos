@@ -36,4 +36,28 @@ class ChatBotController extends Controller
             ], 500);
         }
     }
+
+    public function greeting(): JsonResponse
+    {
+        try {
+            $service = app(ChatBotService::class);
+            $result = $service->greeting();
+
+            return response()->json([
+                'success' => true,
+                'reply' => $result['reply'],
+                'suggestions' => $result['suggestions'],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'reply' => 'Hello! How can I help you today?',
+                'suggestions' => [
+                    'How do I book a worker?',
+                    'What areas do you serve?',
+                    'How are workers verified?',
+                ],
+            ]);
+        }
+    }
 }

@@ -89,12 +89,15 @@ Key facts about KaAyos:
 - Users can register as both client and worker with one account
 
 Guidelines:
-- Be friendly, concise, and helpful. Respond in clear, professional English only.
+- Be friendly, concise, and helpful. Respond in clear, professional English (or conversational Filipino-English if appropriate).
+- NEVER ask the user to clarify or "tell you more" — always respond with specific, actionable information
+- If the user is vague, immediately list real service examples (plumbing, electrical, cleaning, carpentry, etc.) and ask which they need
 - If you don't know something, use available tools to look it up instead of guessing
 - Do NOT make up pricing or availability — use tools to get accurate data
 - Do NOT share any user's personal information
 - Keep responses under 3 paragraphs
-- Always suggest 3 relevant follow-up questions at the end
+- Always end your response with 3 relevant follow-up suggestions
+- CRITICAL: Every reply must include specific service names, options, or next steps — never respond with just a question
 
 Safety rules — you MUST refuse any request that:
 - Is sexually explicit, lewd, or romantic in nature
@@ -113,70 +116,12 @@ PROMPT;
         $messages = [['role' => 'system', 'content' => $this->systemPrompt()]];
         $messages[] = ['role' => 'user', 'content' => $message];
 
-        $tools = $this->tools->getDefinitions();
-
         try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
-                'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
-            ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
-                'model'       => $this->model,
-                'messages'    => $messages,
-                'tools'       => $tools,
-                'temperature' => 0.7,
-                'max_tokens'  => 1000,
-            ]);
-
-            if ($response->failed()) {
-                Log::error('OpenRouter API error', ['status' => $response->status(), 'body' => $response->body()]);
-                return $this->fallbackResponse();
-            }
-
-            $data = $response->json();
-            $choice = $data['choices'][0]['message'] ?? [];
-            $reply = $choice['content'] ?? '';
-
-            if (!empty($choice['tool_calls'])) {
-                $messages[] = $choice;
-
-                foreach ($choice['tool_calls'] as $toolCall) {
-                    $functionName = $toolCall['function']['name'] ?? '';
-                    $arguments = json_decode($toolCall['function']['arguments'] ?? '{}', true);
-                    $result = $this->tools->execute($functionName, $arguments ?? []);
-
-                    $messages[] = [
-                        'role' => 'tool',
-                        'tool_call_id' => $toolCall['id'],
-                        'content' => $result,
-                    ];
-                }
-
-                $response2 = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
-                    'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
-                ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
-                    'model'       => $this->model,
-                    'messages'    => $messages,
-                    'temperature' => 0.7,
-                    'max_tokens'  => 1000,
-                ]);
-
-                if ($response2->failed()) {
-                    Log::error('OpenRouter tool response error', ['status' => $response2->status()]);
-                    return $this->fallbackResponse();
-                }
-
-                $data2 = $response2->json();
-                $reply = $data2['choices'][0]['message']['content'] ?? '';
-            }
-
+            $reply = $this->callOpenRouter($messages);
             return [
                 'reply'       => $reply,
                 'suggestions' => $this->getSuggestions($reply),
             ];
-
         } catch (\Exception $e) {
             Log::error('OpenRouter exception: ' . $e->getMessage());
             return $this->fallbackResponse();
@@ -189,23 +134,8 @@ PROMPT;
         $messages[] = ['role' => 'user', 'content' => $message];
 
         try {
-            $response = Http::withToken($this->apiKey)
-                ->timeout(30)
-                ->post('https://api.openai.com/v1/chat/completions', [
-                    'model'       => $this->model,
-                    'messages'    => $messages,
-                    'temperature' => 0.7,
-                    'max_tokens'  => 500,
-                ]);
-
-            if ($response->failed()) {
-                Log::error('OpenAI API error', ['status' => $response->status(), 'body' => $response->body()]);
-                return $this->fallbackResponse();
-            }
-
-            $data = $response->json();
-            $reply = $data['choices'][0]['message']['content'] ?? '';
-
+            $reply = $this->callOpenAI($messages);
+            if (empty($reply)) return $this->fallbackResponse();
             return [
                 'reply'       => $reply,
                 'suggestions' => $this->getSuggestions($reply),
@@ -218,28 +148,12 @@ PROMPT;
 
     protected function askGemini(string $message): array
     {
-        $contents = [['role' => 'user', 'parts' => [['text' => $message]]]];
+        $messages = [['role' => 'system', 'content' => $this->systemPrompt()]];
+        $messages[] = ['role' => 'user', 'content' => $message];
 
         try {
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
-
-            $response = Http::timeout(30)->post($url, [
-                'systemInstruction' => ['parts' => [['text' => $this->systemPrompt()]]],
-                'contents'          => $contents,
-                'generationConfig'  => [
-                    'temperature'     => 0.7,
-                    'maxOutputTokens' => 500,
-                ],
-            ]);
-
-            if ($response->failed()) {
-                Log::error('Gemini API error', ['status' => $response->status(), 'body' => $response->body()]);
-                return $this->fallbackResponse();
-            }
-
-            $data = $response->json();
-            $reply = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-
+            $reply = $this->callGemini($messages);
+            if (empty($reply)) return $this->fallbackResponse();
             return [
                 'reply'       => $reply,
                 'suggestions' => $this->getSuggestions($reply),
@@ -285,6 +199,147 @@ PROMPT;
         }
 
         return $all;
+    }
+
+    public function greeting(): array
+    {
+        if (empty($this->apiKey)) {
+            return $this->fallbackResponse();
+        }
+
+        $messages = [
+            ['role' => 'system', 'content' => $this->systemPrompt()],
+            ['role' => 'user', 'content' => 'Generate a warm welcome greeting for a new visitor to KaAyos. Introduce yourself and ask what home service they need. Keep it to 2-3 sentences.'],
+        ];
+
+        try {
+            $reply = match ($this->provider) {
+                'openrouter' => $this->callOpenRouter($messages),
+                'gemini'     => $this->callGemini($messages),
+                default      => $this->callOpenAI($messages),
+            };
+
+            return [
+                'reply'       => $reply,
+                'suggestions' => $this->getSuggestions($reply),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Greeting generation failed: ' . $e->getMessage());
+            return $this->fallbackResponse();
+        }
+    }
+
+    protected function callOpenAI(array $messages): string
+    {
+        $response = Http::withToken($this->apiKey)
+            ->timeout(30)
+            ->post('https://api.openai.com/v1/chat/completions', [
+                'model'       => $this->model,
+                'messages'    => $messages,
+                'temperature' => 0.7,
+                'max_tokens'  => 500,
+            ]);
+
+        if ($response->failed()) {
+            Log::error('OpenAI API error', ['status' => $response->status(), 'body' => $response->body()]);
+            return '';
+        }
+
+        return $response->json()['choices'][0]['message']['content'] ?? '';
+    }
+
+    protected function callGemini(array $messages): string
+    {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+        $contents = [];
+        $systemInstruction = null;
+
+        foreach ($messages as $msg) {
+            if ($msg['role'] === 'system') {
+                $systemInstruction = ['parts' => [['text' => $msg['content']]]];
+            } else {
+                $role = $msg['role'] === 'assistant' ? 'model' : 'user';
+                $contents[] = ['role' => $role, 'parts' => [['text' => $msg['content']]]];
+            }
+        }
+
+        $response = Http::timeout(30)->post($url, [
+            'systemInstruction' => $systemInstruction,
+            'contents'          => $contents,
+            'generationConfig'  => [
+                'temperature'     => 0.7,
+                'maxOutputTokens' => 500,
+            ],
+        ]);
+
+        if ($response->failed()) {
+            Log::error('Gemini API error', ['status' => $response->status(), 'body' => $response->body()]);
+            return '';
+        }
+
+        return $response->json()['candidates'][0]['content']['parts'][0]['text'] ?? '';
+    }
+
+    protected function callOpenRouter(array $messages): string
+    {
+        $tools = $this->tools->getDefinitions();
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->apiKey,
+            'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
+            'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
+        ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
+            'model'       => $this->model,
+            'messages'    => $messages,
+            'tools'       => $tools,
+            'temperature' => 0.7,
+            'max_tokens'  => 1000,
+        ]);
+
+        if ($response->failed()) {
+            Log::error('OpenRouter API error', ['status' => $response->status(), 'body' => $response->body()]);
+            return '';
+        }
+
+        $data = $response->json();
+        $choice = $data['choices'][0]['message'] ?? [];
+        $reply = $choice['content'] ?? '';
+
+        if (!empty($choice['tool_calls'])) {
+            $messages[] = $choice;
+
+            foreach ($choice['tool_calls'] as $toolCall) {
+                $functionName = $toolCall['function']['name'] ?? '';
+                $arguments = json_decode($toolCall['function']['arguments'] ?? '{}', true);
+                $result = $this->tools->execute($functionName, $arguments ?? []);
+
+                $messages[] = [
+                    'role' => 'tool',
+                    'tool_call_id' => $toolCall['id'],
+                    'content' => $result,
+                ];
+            }
+
+            $response2 = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
+                'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
+            ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
+                'model'       => $this->model,
+                'messages'    => $messages,
+                'temperature' => 0.7,
+                'max_tokens'  => 1000,
+            ]);
+
+            if ($response2->failed()) {
+                Log::error('OpenRouter tool response error', ['status' => $response2->status()]);
+                return '';
+            }
+
+            $reply = $response2->json()['choices'][0]['message']['content'] ?? '';
+        }
+
+        return $reply;
     }
 
     protected function fallbackResponse(): array

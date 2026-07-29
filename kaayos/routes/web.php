@@ -100,6 +100,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Chatbot (public + authenticated)
 Route::post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke']);
+Route::middleware('auth')->get('/api/chat/greeting', [App\Http\Controllers\Api\ChatBotController::class, 'greeting']);
 
 // Suggestions (authenticated) — uses ML + AI for worker recommendations
 Route::middleware('auth')->post('/api/chat/suggest', [App\Http\Controllers\Api\SuggestionController::class, '__invoke']);
