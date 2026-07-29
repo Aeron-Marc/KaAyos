@@ -969,6 +969,8 @@ body.loaded .ai-fab{opacity:1;visibility:visible;pointer-events:auto}
 .ai-msg.user .ai-bubble{background:var(--b6);color:#fff;border-bottom-right-radius:4px}
 .ai-bubble p{margin:0}
 .ai-bubble em{font-style:italic;color:inherit}
+.ai-bubble a{color:var(--b6);text-decoration:underline;font-weight:500}
+.ai-bubble a:hover{opacity:.8}
 .ai-typing .ai-bubble{display:flex;gap:4px;padding:14px 18px}
 .ai-typing .ai-bubble span{
   width:7px;height:7px;border-radius:50%;background:#8C97A4;

@@ -598,7 +598,7 @@ window.addEventListener('load', function() {
     fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-      body: JSON.stringify({ message: msg, history: history.slice(-20) }),
+      body: JSON.stringify({ message: msg }),
     })
     .then(function(r){ return r.json(); })
     .then(function(data) {
