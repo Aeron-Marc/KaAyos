@@ -1111,22 +1111,6 @@ class DatabaseSeeder extends Seeder
             ],
         ];
 
-        $fullProviderIndexes = [0, 1, 2, 3, 4, 5, 15];
-        $fullProviderCategories = ['Plumbing', 'Cleaning', 'Electrical', 'Carpentry', 'Painting', 'Aircon', 'Painting'];
-
-        foreach ($fullProviderIndexes as $i => $fpIdx) {
-            $profile = $workerProfiles[$fpIdx];
-            $cat = $fullProviderCategories[$i];
-            $captions = $portfolioCaptions[$cat];
-
-            foreach ($captions as $caption) {
-                $profile->portfolios()->create([
-                    'photo_path' => 'portfolios/worker-' . ($fpIdx + 1) . '-sample-' . rand(100, 999) . '.jpg',
-                    'caption'    => $caption,
-                ]);
-            }
-        }
-
         // ═══════════════════════════════════════════════════════════
         //  11. VERIFIED DOCUMENTS (7 full providers)
         // ═══════════════════════════════════════════════════════════
