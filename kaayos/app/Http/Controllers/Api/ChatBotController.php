@@ -13,17 +13,11 @@ class ChatBotController extends Controller
     {
         $validated = $request->validate([
             'message' => 'required|string|max:1000',
-            'history' => 'sometimes|array',
-            'history.*.role' => 'required|in:user,assistant',
-            'history.*.content' => 'required|string',
         ]);
 
         try {
             $service = app(ChatBotService::class);
-            $result = $service->chat(
-                $validated['message'],
-                $validated['history'] ?? []
-            );
+            $result = $service->chat($validated['message']);
 
             return response()->json([
                 'success' => true,
