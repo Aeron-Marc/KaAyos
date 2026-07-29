@@ -21,7 +21,12 @@
 <!-- PAGE LOADER -->
 <div id="pageLoader" class="page-loader">
   <div class="loader-bg"></div>
-  <img src="/images/logo-gs-removebg-preview.png" alt="KaAyos" class="loader-logo">
+  <div class="loader-logos">
+    <div class="loader-inner">
+      <img src="/images/logo-gs-removebg-preview.png" alt="KaAyos" class="loader-logo loader-primary" id="loaderPrimary">
+      <img src="/images/peso-logo-removed-bg.png" alt="PESO Tuy" class="loader-logo loader-secondary" id="loaderSecondary">
+    </div>
+  </div>
 </div>
 
 <!-- MOBILE OVERLAY -->
@@ -531,7 +536,17 @@ function goToSignUp() {
 }
 
 window.addEventListener('load', function() {
-  setTimeout(function() { document.getElementById('pageLoader').classList.add('loaded'); }, 600);
+  var loader = document.getElementById('pageLoader');
+  setTimeout(function() {
+    loader.classList.add('phase-2');
+    setTimeout(function() {
+      loader.classList.add('phase-3');
+      setTimeout(function() {
+        loader.classList.add('loaded');
+        setTimeout(function() { document.body.classList.add('loaded'); }, 500);
+      }, 1000);
+    }, 1200);
+  }, 800);
 });
 
 /* AI FLOATING ASSISTANT */
