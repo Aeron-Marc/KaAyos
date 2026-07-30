@@ -442,10 +442,12 @@ let cancelIndex = null;
 
 // ── Real-time booking notification ──
 document.addEventListener('DOMContentLoaded', function () {
+    var userId = {{ auth()->id() }};
+    var checkCount = 0;
     var checkEcho = setInterval(function () {
+        checkCount++;
         if (window.Echo) {
             clearInterval(checkEcho);
-            var userId = {{ auth()->id() }};
             window.Echo.private('user.' + userId)
                 .listen('BookingCreated', function (e) {
                     var toast = document.createElement('div');
@@ -456,6 +458,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     var badge = document.querySelector('.badge-dot');
                     if (badge) badge.style.display = '';
                 });
+        } else if (checkCount >= 50) {
+            clearInterval(checkEcho);
         }
     }, 200);
 });

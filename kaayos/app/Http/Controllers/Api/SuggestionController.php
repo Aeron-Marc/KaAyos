@@ -49,61 +49,52 @@ class SuggestionController extends Controller
 
     protected function extractIntent(string $message): array
     {
-        try {
-            $chat = app(ChatBotService::class);
+        $lower = strtolower(trim($message));
 
-            $prompt = <<<PROMPT
-Classify this user message. Reply ONLY with valid JSON, no other text.
+        $catMap = [
+            'plumber' => 'Plumbing', 'plumbing' => 'Plumbing', 'tubig' => 'Plumbing', 'pipe' => 'Plumbing',
+            'electrician' => 'Electrical', 'electrical' => 'Electrical', 'kuryente' => 'Electrical',
+            'carpenter' => 'Carpentry', 'carpentry' => 'Carpentry', 'karpintero' => 'Carpentry',
+            'painter' => 'Painting', 'painting' => 'Painting', 'pintor' => 'Painting',
+            'clean' => 'Cleaning', 'cleaning' => 'Cleaning', 'linis' => 'Cleaning',
+            'garden' => 'Gardening', 'gardening' => 'Gardening', 'halaman' => 'Gardening',
+            'welder' => 'Welding', 'welding' => 'Welding',
+            'mason' => 'Masonry', 'masonry' => 'Masonry',
+        ];
 
-User message: "{$message}"
-
-Possible intent types:
-- "greeting": user is just saying hi, hello, good morning, etc. with no service request
-- "inquiry": user is asking a general question about the platform (what services, how it works, pricing, etc.)
-- "service_request": user wants a specific service (plumber, electrician, cleaning, etc.)
-
-Respond with:
-{
-  "intent": "greeting|inquiry|service_request",
-  "category": "only if service_request, pick the best category. Otherwise empty string.",
-  "description": "brief description of what they need or are asking"
-}
-PROMPT;
-
-            $result = $chat->chat($prompt);
-            $text = $result['reply'] ?? '';
-            $text = trim($text);
-            $text = preg_replace('/^```(?:json)?\s*|\s*```$/', '', $text);
-
-            $decoded = json_decode($text, true);
-            if (is_array($decoded)) {
-                return [
-                    'intent' => $decoded['intent'] ?? 'service_request',
-                    'category' => $decoded['category'] ?? '',
-                    'description' => $decoded['description'] ?? $message,
-                ];
+        foreach ($catMap as $key => $cat) {
+            if (str_contains($lower, $key)) {
+                return ['intent' => 'service_request', 'category' => $cat, 'description' => $message];
             }
-        } catch (\Exception $e) {
-            Log::warning('AI intent extraction failed: ' . $e->getMessage());
         }
 
-        return [
-            'intent' => 'service_request',
-            'category' => '',
-            'description' => $message,
-        ];
+        $greetings = ['hello', 'hi', 'hey', 'kamusta', 'good morning', 'good afternoon', 'good evening'];
+        foreach ($greetings as $g) {
+            if (str_contains($lower, $g)) {
+                return ['intent' => 'greeting', 'category' => '', 'description' => $message];
+            }
+        }
+
+        $inquiry = ['what', 'how', 'where', 'when', 'why', 'do you', 'can i', 'is there', 'are there'];
+        foreach ($inquiry as $q) {
+            if (str_starts_with($lower, $q) || str_contains($lower, ' ' . $q)) {
+                return ['intent' => 'inquiry', 'category' => '', 'description' => $message];
+            }
+        }
+
+        return ['intent' => 'service_request', 'category' => '', 'description' => $message];
     }
 
     protected function fetchWorkers(string $category): array
     {
         $query = User::where('role', 'worker')
             ->with('workerProfile')
+            ->withCount(['bookingsAsWorker as completed_jobs_count' => fn($q) => $q->where('status', 'completed')])
             ->active()
             ->where('service_category', $category);
 
         return $query->get()->map(function ($u) {
             $profile = $u->workerProfile;
-            $completedJobs = $u->bookingsAsWorker()->where('status', 'completed')->count();
             $name = $u->name ?? '';
             $parts = explode(' ', $name, 2);
 
@@ -122,7 +113,7 @@ PROMPT;
                 'price' => (float) ($profile?->hourly_rate ?? 0),
                 'verified' => (bool) ($profile?->government_id_verified ?? false),
                 'skills' => $profile?->skills ?? [],
-                'jobs_completed' => $completedJobs,
+                'jobs_completed' => $u->completed_jobs_count,
             ];
         })->values()->toArray();
     }

@@ -477,9 +477,6 @@ function switchConversation(index) {
     var body = document.createElement('div');
     body.className = 'chat-body';
     body.id = 'chat-body';
-    convo.messages.forEach(function (msg) {
-        appendMessage(body, msg);
-    });
 
     var inputRow = document.createElement('div');
     inputRow.className = 'chat-input-row';
@@ -493,7 +490,28 @@ function switchConversation(index) {
 
     attachSendHandler(convo);
     startPolling(convo.conversation_id);
-    body.scrollTop = body.scrollHeight;
+
+    if (convo.messages && convo.messages.length > 0) {
+        convo.messages.forEach(function (msg) {
+            appendMessage(body, msg);
+        });
+        body.scrollTop = body.scrollHeight;
+    } else {
+        fetch('/client/messages/poll/' + convo.conversation_id, {
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.messages) {
+                convo.messages = data.messages;
+                data.messages.forEach(function (msg) {
+                    appendMessage(body, msg);
+                });
+                body.scrollTop = body.scrollHeight;
+            }
+        })
+        .catch(function () {});
+    }
 }
 
 function attachSendHandler(convo) {
@@ -601,7 +619,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
+    var checkCount = 0;
     var checkEcho = setInterval(function () {
+        checkCount++;
         if (window.Echo) {
             clearInterval(checkEcho);
             if (activeConversationId) {
@@ -611,6 +631,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 .listen('MessageSent', function (e) {
                     updateSidebarPreview(e.conversation_id, e.text, e.time);
                 });
+        } else if (checkCount >= 50) {
+            clearInterval(checkEcho);
         }
     }, 200);
 });
