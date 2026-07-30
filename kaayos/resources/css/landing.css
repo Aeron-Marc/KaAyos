@@ -853,7 +853,7 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
 .page-loader {
     position: fixed;
     inset: 0;
-    z-index: 10000;
+    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -867,50 +867,23 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
 }
 .loader-bg {
     position: absolute;
-    width: 260px;
-    height: 260px;
+    width: 280px;
+    height: 280px;
     background: linear-gradient(135deg, var(--b8), var(--b5));
     border-radius: 50%;
     animation: loader-float 2s ease-in-out infinite;
 }
-.loader-logos {
-    position: relative;
-    z-index: 1;
-    width: 180px;
-    height: 180px;
-    perspective: 800px;
-}
-.loader-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    transition: transform .8s ease;
-}
 .loader-logo {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    backface-visibility: hidden;
-    transform-style: preserve-3d;
-}
-.loader-primary {
-    width: 160px;
+    width: 200px;
+    z-index: 1;
     filter: brightness(0) invert(1);
-    transform: translate(-50%, -50%) rotateY(0deg);
-}
-.loader-secondary {
-    width: 120px;
-    border-radius: 50%;
-    transform: translate(-50%, -50%) rotateY(180deg);
-}
-.page-loader.phase-2 .loader-inner {
-    transform: rotateY(180deg);
-}
-.page-loader.phase-3 .loader-inner {
-    transform: rotateY(360deg);
+    animation: loader-fade-in 0.8s ease-out, loader-float 2s ease-in-out infinite 0.8s;
 }
 
+@keyframes loader-fade-in {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
+}
 @keyframes loader-float {
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-8px); }
@@ -923,12 +896,10 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
   background:var(--b6);color:#fff;border:none;cursor:pointer;
   font-size:1.3rem;box-shadow:0 4px 16px rgba(26,111,196,0.35);
   z-index:9999;display:flex;align-items:center;justify-content:center;
-  opacity:0;visibility:hidden;pointer-events:none;
-  transition:opacity .5s ease,visibility .5s ease,transform .2s,box-shadow .2s;
+  transition:transform .2s,box-shadow .2s;
   animation:aiFabFloat 2.5s ease-in-out infinite
 }
 .ai-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(26,111,196,0.45);animation:none}
-body.loaded .ai-fab{opacity:1;visibility:visible;pointer-events:auto}
 @keyframes aiFabFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .ai-window{
   position:fixed;bottom:92px;left:24px;
@@ -969,8 +940,6 @@ body.loaded .ai-fab{opacity:1;visibility:visible;pointer-events:auto}
 .ai-msg.user .ai-bubble{background:var(--b6);color:#fff;border-bottom-right-radius:4px}
 .ai-bubble p{margin:0}
 .ai-bubble em{font-style:italic;color:inherit}
-.ai-bubble a{color:var(--b6);text-decoration:underline;font-weight:500}
-.ai-bubble a:hover{opacity:.8}
 .ai-typing .ai-bubble{display:flex;gap:4px;padding:14px 18px}
 .ai-typing .ai-bubble span{
   width:7px;height:7px;border-radius:50%;background:#8C97A4;
