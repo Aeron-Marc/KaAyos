@@ -20,9 +20,20 @@
       </button>
     </div>
 
-    <div id="chat-messages" class="chat-messages"></div>
+    <div id="chat-messages" class="chat-messages">
+      <div class="chat-msg bot">
+        <div class="msg-bubble">
+          <p>Hello! 👋 I'm the KaAyos assistant. How can I help you today?</p>
+          <span class="msg-time">Just now</span>
+        </div>
+      </div>
+    </div>
 
-    <div id="chat-suggestions" class="chat-suggestions"></div>
+    <div id="chat-suggestions" class="chat-suggestions">
+      <button class="suggestion-chip" data-text="How do I book a worker?">How do I book a worker?</button>
+      <button class="suggestion-chip" data-text="What areas do you serve?">What areas do you serve?</button>
+      <button class="suggestion-chip" data-text="How are workers verified?">How are workers verified?</button>
+    </div>
 
     <div class="chat-input-bar">
       <input

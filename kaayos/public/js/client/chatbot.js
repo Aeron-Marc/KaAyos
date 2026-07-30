@@ -16,7 +16,6 @@
   };
 
   let isOpen = false;
-  let greetingLoaded = false;
   let conversationHistory = [];
 
   // ── Toggle chat ──
@@ -27,31 +26,6 @@
     elements.fabClose.style.display = 'inline';
     setTimeout(() => elements.input?.focus(), 300);
     scrollToBottom();
-    if (!greetingLoaded) fetchGreeting();
-  }
-
-  function fetchGreeting() {
-    greetingLoaded = true;
-    showTyping();
-    fetch('/api/chat/greeting', {
-      headers: { 'Accept': 'application/json' },
-    })
-    .then(r => r.json())
-    .then(data => {
-      hideTyping();
-      if (data.success && data.reply) {
-        addBotReply(data.reply);
-        setSuggestions(data.suggestions || []);
-      } else {
-        addBotReply('Hello! How can I help you today?');
-        setSuggestions(['How do I book a worker?', 'What areas do you serve?', 'How are workers verified?']);
-      }
-    })
-    .catch(() => {
-      hideTyping();
-      addBotReply('Hello! How can I help you today?');
-      setSuggestions(['How do I book a worker?', 'What areas do you serve?', 'How are workers verified?']);
-    });
   }
 
   function close() {
@@ -206,4 +180,8 @@
     }
   });
 
+  // Suggestion chips in the initial state
+  document.querySelectorAll('.suggestion-chip').forEach(btn => {
+    btn.addEventListener('click', () => sendMessage(btn.dataset.text));
+  });
 })();

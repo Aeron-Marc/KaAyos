@@ -7,7 +7,6 @@ use App\Models\Booking;
 use App\Models\Dispute;
 use App\Models\User;
 use App\Models\WorkerDocument;
-use App\Models\WorkerVerification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -28,7 +27,7 @@ class DashboardController extends Controller
         $cancelledBookings = Booking::cancelled()->count();
 
         $totalRevenue = Booking::completed()->sum('price');
-        $pendingVerifications = WorkerVerification::where('status', 'pending_review')->count();
+        $pendingVerifications = WorkerDocument::where('status', 'pending')->count();
 
         $totalDisputes = Dispute::count();
         $openDisputes = Dispute::open()->count();

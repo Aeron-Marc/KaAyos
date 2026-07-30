@@ -168,12 +168,6 @@ class AiTools
             'years_experience' => $u->workerProfile?->years_of_experience ?? 0,
             'skills' => $u->workerProfile?->skills ?? [],
             'city' => $u->city,
-            'match_percent' => round(
-                min(($u->workerProfile?->average_rating ?? 0) / 5 * 40, 40) +
-                (($u->workerProfile?->government_id_verified ?? false) ? 20 : 0) +
-                min($u->bookingsAsWorker()->where('status', 'completed')->count() / 30 * 30, 30) +
-                (!empty($u->workerProfile?->skills) ? 10 : 0)
-            ),
         ])->toArray();
     }
 

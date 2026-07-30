@@ -13,11 +13,17 @@ class ChatBotController extends Controller
     {
         $validated = $request->validate([
             'message' => 'required|string|max:1000',
+            'history' => 'sometimes|array',
+            'history.*.role' => 'required|in:user,assistant',
+            'history.*.content' => 'required|string',
         ]);
 
         try {
             $service = app(ChatBotService::class);
-            $result = $service->chat($validated['message']);
+            $result = $service->chat(
+                $validated['message'],
+                $validated['history'] ?? []
+            );
 
             return response()->json([
                 'success' => true,
@@ -34,30 +40,6 @@ class ChatBotController extends Controller
                     'Contact support',
                 ],
             ], 500);
-        }
-    }
-
-    public function greeting(): JsonResponse
-    {
-        try {
-            $service = app(ChatBotService::class);
-            $result = $service->greeting();
-
-            return response()->json([
-                'success' => true,
-                'reply' => $result['reply'],
-                'suggestions' => $result['suggestions'],
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'reply' => 'Hello! How can I help you today?',
-                'suggestions' => [
-                    'How do I book a worker?',
-                    'What areas do you serve?',
-                    'How are workers verified?',
-                ],
-            ]);
         }
     }
 }

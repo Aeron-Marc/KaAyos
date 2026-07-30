@@ -142,7 +142,7 @@
 <div class="card">
     <div class="card-title"><i class="fa-solid fa-list-check"></i> Quick Actions</div>
     <div class="page-actions">
-        <a href="{{ route('admin.verifications.index') }}" class="btn btn-primary">
+        <a href="{{ route('admin.verification.index') }}" class="btn btn-primary">
             <i class="fa-solid fa-magnifying-glass"></i> Review Pending Verifications
         </a>
         <a href="{{ route('admin.reports.index') }}" class="btn btn-secondary">

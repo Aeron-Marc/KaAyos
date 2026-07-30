@@ -106,14 +106,6 @@ PROMPT;
             $completedJobs = $u->bookingsAsWorker()->where('status', 'completed')->count();
             $name = $u->name ?? '';
             $parts = explode(' ', $name, 2);
-            $rating = (float) ($profile?->average_rating ?? 0);
-            $verified = (bool) ($profile?->government_id_verified ?? false);
-            $hasSkills = !empty($profile?->skills);
-
-            $score = min($rating / 5 * 40, 40);
-            $score += $verified ? 20 : 0;
-            $score += min($completedJobs / 30 * 30, 30);
-            $score += $hasSkills ? 10 : 0;
 
             return [
                 'id' => $u->id,
@@ -126,12 +118,11 @@ PROMPT;
                     substr($parts[0] ?? $name, 0, 1) .
                     substr($parts[1] ?? '', 0, 1)
                 ),
-                'rating' => $rating,
+                'rating' => (float) ($profile?->average_rating ?? 0),
                 'price' => (float) ($profile?->hourly_rate ?? 0),
-                'verified' => $verified,
+                'verified' => (bool) ($profile?->government_id_verified ?? false),
                 'skills' => $profile?->skills ?? [],
                 'jobs_completed' => $completedJobs,
-                'match_percent' => round($score),
             ];
         })->values()->toArray();
     }

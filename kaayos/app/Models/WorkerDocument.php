@@ -14,10 +14,8 @@ class WorkerDocument extends Model
         'status',
         'verified_at',
         'admin_notes',
-        'rejection_reason',
         'reviewed_by',
         'reviewed_at',
-        'worker_verification_id',
     ];
 
     protected $casts = [
@@ -33,11 +31,6 @@ class WorkerDocument extends Model
     public function reviewedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
-    }
-
-    public function verification(): BelongsTo
-    {
-        return $this->belongsTo(WorkerVerification::class, 'worker_verification_id');
     }
 
     public function scopePending($query)

@@ -13,7 +13,7 @@ class ApproveRejectVerificationRequest extends FormRequest
 
     public function rules(): array
     {
-        if ($this->routeIs('admin.verification.approve') || $this->routeIs('admin.verification.approveAll')) {
+        if ($this->routeIs('admin.verification.approve')) {
             return [
                 'notes' => 'nullable|string|max:1000',
             ];
