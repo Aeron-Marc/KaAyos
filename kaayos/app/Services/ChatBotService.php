@@ -445,7 +445,9 @@ PROMPT;
             }
         }
 
-        $query = User::where('role', 'worker')->whereHas('workerProfile');
+        $query = User::where('role', 'worker')
+            ->whereHas('workerProfile')
+            ->with('workerProfile');
 
         if ($category) {
             $query->where('service_category', $category);

@@ -15,11 +15,12 @@ class SearchController extends Controller
         $category = $request->input('category');
 
         $workersQuery = User::where('role', 'worker')
-            ->with(['workerProfile.portfolios', 'reviewsReceived'])
+            ->with(['workerProfile.portfolios'])
+            ->withCount('reviewsReceived')
             ->active();
 
         if ($category) {
-            $workersQuery->where('service_category', 'LIKE', "%{$category}%");
+            $workersQuery->where('service_category', $category);
         }
 
         if ($query) {
@@ -38,7 +39,7 @@ class SearchController extends Controller
                 'avatar'   => $u->avatar ? Storage::url($u->avatar) : null,
                 'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
                 'rating'   => $u->workerProfile?->average_rating ?? 0,
-                'reviews'  => $u->reviewsReceived()->count(),
+                'reviews'  => $u->reviews_received_count,
                 'distance' => 'Tuy, Batangas',
                 'price'    => $u->workerProfile?->hourly_rate ?? 0,
                 'verified' => $u->workerProfile?->government_id_verified ?? false,

@@ -200,10 +200,12 @@
 @stack('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    var userId = {{ auth()->id() }};
+    var checkCount = 0;
     var checkEcho = setInterval(function () {
+        checkCount++;
         if (window.Echo) {
             clearInterval(checkEcho);
-            var userId = {{ auth()->id() }};
             window.Echo.private('user.' + userId)
                 .listen('BookingCreated', function (e) {
                     var badge = document.querySelector('.badge-dot');
@@ -214,6 +216,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.body.appendChild(toast);
                     setTimeout(function () { toast.remove(); }, 5000);
                 });
+        } else if (checkCount >= 50) {
+            clearInterval(checkEcho);
         }
     }, 200);
 });

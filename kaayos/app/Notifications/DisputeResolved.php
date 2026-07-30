@@ -5,9 +5,10 @@ namespace App\Notifications;
 use App\Models\Dispute;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class DisputeResolved extends Notification
+class DisputeResolved extends Notification implements ShouldQueue
 {
     use Queueable;
 

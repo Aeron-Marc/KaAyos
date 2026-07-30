@@ -540,13 +540,10 @@ window.addEventListener('load', function() {
   setTimeout(function() {
     loader.classList.add('phase-2');
     setTimeout(function() {
-      loader.classList.add('phase-3');
-      setTimeout(function() {
-        loader.classList.add('loaded');
-        setTimeout(function() { document.body.classList.add('loaded'); }, 500);
-      }, 1000);
-    }, 1200);
-  }, 800);
+      loader.classList.add('loaded');
+      setTimeout(function() { document.body.classList.add('loaded'); }, 100);
+    }, 400);
+  }, 300);
 });
 
 /* AI FLOATING ASSISTANT */
