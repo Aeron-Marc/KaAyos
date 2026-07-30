@@ -67,6 +67,7 @@ class WorkerController extends Controller
         }
 
         return $query->latest()
+            ->take(50)
             ->get()
             ->map(function ($booking) {
                 $labelMap = [
@@ -121,6 +122,7 @@ class WorkerController extends Controller
             ])
             ->with('client')
             ->orderBy('scheduled_at')
+            ->take(20)
             ->get()
             ->map(function ($booking) {
                 $labelMap = [
@@ -150,6 +152,7 @@ class WorkerController extends Controller
             ->where('status', Booking::STATUS_COMPLETED)
             ->with('client')
             ->latest('completed_at')
+            ->take(20)
             ->get()
             ->map(function ($booking) {
                 return [
@@ -238,6 +241,7 @@ class WorkerController extends Controller
         $conversations = Conversation::where('worker_id', $user->id)
             ->with('client', 'messages.sender')
             ->latest('last_message_at')
+            ->take(20)
             ->get();
 
         $result = [];
@@ -289,7 +293,7 @@ class WorkerController extends Controller
         $user = auth()->user();
         $now = now();
 
-        $completed = $user->bookingsAsWorker()->completed()->get();
+        $completed = $user->bookingsAsWorker()->completed()->take(50)->get();
 
         $total = (int) ($completed->sum('price') ?? 0);
         $thisMonth = (int) ($completed->filter(function ($b) use ($now) {

@@ -26,7 +26,7 @@ class HomeController extends Controller
             ->active();
 
         if ($category) {
-            $workersQuery->where('service_category', 'LIKE', "%{$category}%");
+            $workersQuery->where('service_category', $category);
         }
 
         $workers = $workersQuery->paginate(5)
