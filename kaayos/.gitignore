@@ -40,3 +40,6 @@ __pycache__/
 # SQLite database (project uses MySQL)
 /database/database.sqlite
 /database/database.sqlite-journal
+
+# Local convenience scripts
+start-server.bat

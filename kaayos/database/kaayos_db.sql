@@ -461,7 +461,6 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `first_name`, `last_name`, `name`, `email`, `phone`, `role`, `service_category`, `city`, `email_notifications`, `language`, `avatar`, `failed_login_attempts`, `locked_until`, `suspended_at`, `suspended_reason`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`) VALUES
 (1, 'John', 'Dave Briones', 'John Dave Briones', 'johndavebriones09@gmail.com', '09165905802', 'client', 'electrical', 'Balayan, Batangas', 'All updates', 'Filipino', 'avatars/Gi8uJtmh65IhBzYK63htKEV18GsD9nU7beGLMfsj.png', 0, NULL, NULL, NULL, '2026-06-29 14:40:31', '$2y$12$/qz4XK7iFpFBd/E.SRidxuaHmOjSLf0QB6g9T8LI8ZVQFOATU5Zyy', NULL, '2026-06-17 11:58:20', '2026-06-29 14:40:31'),
-(3, 'John Dave', 'Briones', 'John Dave Briones', 'johndavebriones05@gmail.com', '09165905802', 'admin', NULL, 'Tuy, Batangas', 'All updates', 'English', NULL, 0, NULL, NULL, NULL, '2026-06-29 15:40:42', '$2y$12$gKyX/19fEWvT1ljlX5pVeODVy.FJmrT1NnGVp0wj5TsHHPABOOvtu', NULL, '2026-06-17 22:20:49', '2026-06-29 16:50:49'),
 (4, 'John Dave', 'Briones', 'John Dave Briones', '23-79211@g.batstate-u.edu.ph', '09165905802', 'worker', 'other', 'Balayan, Batangas', 'All updates', 'English', NULL, 0, NULL, NULL, NULL, '2026-06-26 15:32:10', '$2y$12$2Q9JWT096Zf3Nl1.SmIw0.ceI4HXzwC6w8mhkbN6JQcsuuPzL1JUy', NULL, '2026-06-26 15:29:48', '2026-06-30 17:33:48');
 
 -- --------------------------------------------------------
