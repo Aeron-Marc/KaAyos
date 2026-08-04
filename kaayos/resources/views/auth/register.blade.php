@@ -101,7 +101,7 @@ body{
   border-bottom:1px dashed var(--line-on-ink);
 }
 .ticket-mock-head .tag{
-  font-family:'JetBrains Mono',monospace;
+  font-family:'Inter',sans-serif;
   font-size:.65rem;font-weight:600;letter-spacing:.08em;
   color:rgba(255,255,255,.5);text-transform:uppercase;
 }
@@ -274,22 +274,20 @@ select{cursor:pointer;padding-right:38px}
       <span class="brand-name">KaAyos</span>
     </div>
 
-    <h1 class="ticket-headline" style="margin-top:0">Every fixed pipe starts as <em>one ticket</em>, matched to the right hands.</h1>
+    <h1 class="ticket-headline" style="margin-top:0">Create an account and get matched to the <em>right hands</em> faster.</h1>
     <div class="ticket-content">
-    <p class="ticket-sub">Create an account to request trusted help around the house, or get matched with jobs in your trade.</p>
+    <p class="ticket-sub">Request trusted help at home or join as a worker and start getting matched with jobs.</p>
 
     <div class="ticket-mock" aria-hidden="true">
       <div class="ticket-mock-head">
-        <span class="tag">Work Order</span>
-        <span class="ticket-mock-status"><span class="dot"></span>Matched</span>
+        <span class="tag">What you get</span>
+        <span class="ticket-mock-status"><span class="dot"></span>Simple setup</span>
       </div>
       <div class="trade-list">
-        <div class="trade-row"><i class="fa-solid fa-wrench trade-icon"></i><span>Plumbing</span><i class="fa-solid fa-check check"></i></div>
-        <div class="trade-row"><i class="fa-solid fa-bolt trade-icon"></i><span>Electrical</span><i class="fa-solid fa-check check"></i></div>
-        <div class="trade-row"><i class="fa-solid fa-hammer trade-icon"></i><span>Carpentry</span><i class="fa-solid fa-check check"></i></div>
-        <div class="trade-row"><i class="fa-solid fa-paint-roller trade-icon"></i><span>Painting</span><i class="fa-solid fa-check check"></i></div>
-        <div class="trade-row"><i class="fa-solid fa-wind trade-icon"></i><span>Aircon Services</span><i class="fa-solid fa-check check"></i></div>
-        <div class="trade-row"><i class="fa-solid fa-fire-flame-simple trade-icon"></i><span>Welding</span><i class="fa-solid fa-check check"></i></div>
+        <div class="trade-row"><i class="fa-solid fa-user-check trade-icon"></i><span>Verified profile</span><i class="fa-solid fa-check check"></i></div>
+        <div class="trade-row"><i class="fa-solid fa-bell trade-icon"></i><span>Job updates</span><i class="fa-solid fa-check check"></i></div>
+        <div class="trade-row"><i class="fa-solid fa-shield-heart trade-icon"></i><span>Safer bookings</span><i class="fa-solid fa-check check"></i></div>
+        <div class="trade-row"><i class="fa-solid fa-hammer trade-icon"></i><span>Worker or client role</span><i class="fa-solid fa-check check"></i></div>
       </div>
       <div class="ticket-stub">
         <div class="stub-item"><i class="fa-solid fa-id-card"></i>ID-verified workers</div>

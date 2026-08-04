@@ -355,7 +355,14 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
   box-shadow:var(--shadow-md);
   transform:translateY(-4px);
 }
-.pagination{display:flex;justify-content:center;align-items:center;gap:8px;padding:24px;flex-wrap:wrap}
+#workersSection .pagination{
+  position:sticky;bottom:0;z-index:5;
+  display:flex;justify-content:center;align-items:center;gap:8px;
+  padding:16px 24px;flex-wrap:wrap;
+  background:var(--warm);
+  border-top:1px solid rgba(232,236,240,.6);
+  box-shadow:0 -4px 12px rgba(4,44,83,.05);
+}
 .pagination a,.pagination span{
   display:flex;align-items:center;justify-content:center;
   min-width:36px;height:36px;padding:0 8px;

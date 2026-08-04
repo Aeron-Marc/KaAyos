@@ -28,6 +28,11 @@
     </div>
   </div>
 </div>
+<script>
+  if (new URLSearchParams(window.location.search).has('page')) {
+    document.getElementById('pageLoader').style.display = 'none';
+  }
+</script>
 
 <!-- MOBILE OVERLAY -->
 <div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
@@ -72,19 +77,16 @@
     <div class="hero-icon-f"><i class="fa-solid fa-wrench"></i></div>
     <div class="hero-icon-f"><i class="fa-solid fa-bolt"></i></div>
     <div class="hero-icon-f"><i class="fa-solid fa-paint-roller"></i></div>
-    <div class="hero-icon-f"><i class="fa-solid fa-broom"></i></div>
-    <div class="hero-icon-f"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-    <div class="hero-icon-f"><i class="fa-solid fa-hammer"></i></div>
   </div>
   <div class="peso-stamp">
     <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy Accredited">
   </div>
   <div class="hero-tag"><div class="dot"></div><span>In Partnership with PESO Tuy, Batangas</span></div>
-  <h1>Find a Trusted <em>Trabahador</em> in Minutes</h1>
-  <p class="hero-sub">KaAyos connects homeowners with verified skilled workers matched by skill, rating, and location. Every worker is PESO-accredited and verified by the Public Employment Service Office.</p>
+  <h1>Find a trusted <em>trabahador</em> in minutes</h1>
+  <p class="hero-sub">KaAyos helps homeowners book verified workers by skill, rating, and distance. Every worker is PESO-accredited and reviewed by the community.</p>
   <div class="hero-actions">
     <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Hire a Worker Now</a>
-    <a href="#join" class="btn-outline"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Join as Trabahador</a>
+    <a href="#join" class="btn-outline"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Join as Worker</a>
   </div>
 </section>
 
@@ -122,72 +124,9 @@
     @endforeach
   </div>
 
-  @if($workers->count())
-    <div class="worker-grid fade-up" id="workerGrid">
-      @foreach($workers as $w)
-        <a href="{{ route('workers.public.show', $w['id']) }}" class="worker-card" data-category="{{ strtolower($w['category']) }}">
-          <div class="w-card-top">
-            @if($w['avatar'])
-              <img src="{{ $w['avatar'] }}" alt="{{ $w['name'] }}" class="w-avatar" loading="lazy">
-            @else
-              <div class="w-avatar w-initials">{{ $w['initials'] }}</div>
-            @endif
-            <div class="w-meta">
-              <div class="w-name-row">
-                <div>
-                  <div class="w-name">{{ $w['name'] }}</div>
-                  <div class="w-trade">{{ $w['category'] }} <span class="peso-badge"><i class="fa-solid fa-certificate"></i> PESO</span></div>
-                </div>
-                <div class="w-rating">
-                  <i class="fa-solid fa-star" aria-hidden="true"></i>
-                  {{ number_format($w['rating'], 1) }}
-                </div>
-              </div>
-              <div class="w-details-row">
-                <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $w['distance'] }}</span>
-                @if($w['reviews'] > 0)
-                  <span><i class="fa-regular fa-comment"></i> {{ $w['reviews'] }}</span>
-                @endif
-                @if($w['price'] > 0)
-                  <span class="w-price">₱{{ number_format($w['price']) }}/hr</span>
-                @endif
-              </div>
-            </div>
-          </div>
-          @if(!empty($w['skills']) && count($w['skills']) > 0)
-            <div class="w-skills">
-              @foreach(array_slice($w['skills'], 0, 3) as $skill)
-                <span class="w-skill-tag">{{ $skill }}</span>
-              @endforeach
-            </div>
-          @endif
-          @if(!empty($w['works']) && count(array_filter(array_column($w['works'],'photo'))) > 0)
-            <div class="w-works">
-              <div class="w-works-row">
-                @php $photos = array_filter(array_column($w['works'],'photo')); @endphp
-                @foreach(array_slice($photos, 0, 3) as $photo)
-                  <div class="w-work-thumb" style="background-image:url('{{ $photo }}')" title="Work sample"></div>
-                @endforeach
-              </div>
-            </div>
-          @endif
-
-          <div class="w-card-actions">
-            <span class="btn-outline-card" onclick="event.stopPropagation();event.preventDefault();window.location.href='{{ route('workers.public.show', $w['id']) }}'"><i class="fa-regular fa-user" aria-hidden="true"></i> View Profile</span>
-            <span class="btn btn-solid" onclick="event.stopPropagation();event.preventDefault();showBookModal({{ $w['id'] }},'{{ addslashes($w['name']) }}','{{ addslashes($w['category']) }}')"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Book Now</span>
-          </div>
-        </a>
-      @endforeach
-    </div>
-    <div class="pagination fade-up">{{ $workers->links() }}</div>
-  @else
-    <div class="empty-workers fade-up">
-      <i class="fa-solid fa-users-slash"></i>
-      <h3>No workers found</h3>
-      <p>No workers are available in this category yet. Check back soon or browse all categories.</p>
-      <a href="/#services" class="btn btn-solid btn-lg" onclick="document.querySelector('.cat-pill.active')?.click()"><i class="fa-solid fa-arrow-left"></i> View All Workers</a>
-    </div>
-  @endif
+  <div id="workersSection">
+    @include('partials.workers-grid')
+  </div>
 </section>
 
 <!-- STATS -->
@@ -452,6 +391,17 @@ function toggleFaq(el){
 })();
 
 /* CATEGORY FILTER */
+function loadWorkers(url) {
+  return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function(r) { return r.text(); })
+    .then(function(html) {
+      var section = document.getElementById('workersSection');
+      section.innerHTML = html;
+      section.querySelectorAll('.fade-up').forEach(function(el) { el.classList.add('visible'); });
+      history.pushState(null, '', url);
+    });
+}
+
 (function(){
   var pills = document.querySelectorAll('.cat-pill');
   if(!pills.length) return;
@@ -461,7 +411,9 @@ function toggleFaq(el){
       var url = new URL(window.location);
       if(cat){ url.searchParams.set('category', cat); }else{ url.searchParams.delete('category'); }
       url.searchParams.delete('page');
-      window.location.href = url;
+      pills.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      loadWorkers(url).catch(function(){ window.location.href = url; });
     });
   });
 })();
@@ -537,6 +489,11 @@ function goToSignUp() {
 
 window.addEventListener('load', function() {
   var loader = document.getElementById('pageLoader');
+  if (new URLSearchParams(window.location.search).has('page')) {
+    loader.classList.add('loaded');
+    document.body.classList.add('loaded');
+    return;
+  }
   setTimeout(function() {
     loader.classList.add('phase-2');
     setTimeout(function() {
@@ -544,6 +501,14 @@ window.addEventListener('load', function() {
       setTimeout(function() { document.body.classList.add('loaded'); }, 100);
     }, 400);
   }, 300);
+});
+
+/* AJAX PAGINATION */
+document.addEventListener('click', function(e) {
+  var link = e.target.closest('.pagination a');
+  if (!link) return;
+  e.preventDefault();
+  loadWorkers(link.href).catch(function() { window.location.href = link.href; });
 });
 
 /* AI FLOATING ASSISTANT */

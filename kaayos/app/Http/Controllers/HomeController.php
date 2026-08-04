@@ -29,7 +29,7 @@ class HomeController extends Controller
             $workersQuery->where('service_category', $category);
         }
 
-        $workers = $workersQuery->paginate(5)
+        $workers = $workersQuery->paginate(6)
             ->through(fn ($u) => [
                 'id'       => $u->id,
                 'name'     => $u->name,
@@ -53,6 +53,10 @@ class HomeController extends Controller
                 ])->toArray(),
             ])
             ->appends(request()->query());
+
+        if ($request->ajax()) {
+            return view('partials.workers-grid', compact('workers'));
+        }
 
         $testimonials = Testimonial::active()->ordered()->get();
 
