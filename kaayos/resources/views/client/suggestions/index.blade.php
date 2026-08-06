@@ -586,29 +586,20 @@
           var pct = w.match_percent || 0;
           var color = getMarkerColor(pct);
           var approx = w.location_approximate;
-          var icon;
-          if (approx) {
-            icon = L.divIcon({
-              className: '',
-              html: '<div style="position:relative;width:34px;height:34px;">' +
-                '<div style="position:absolute;top:0;left:1px;width:32px;height:32px;border-radius:50%;border:2px dashed ' + color + ';background:rgba(' + (color==='#28a745'?'40,167,69':color=='#e6a817'?'234,168,23':'220,53,69') + ',0.15);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.15);">' +
-                '<ion-icon name="help-circle-outline" style="color:' + color + ';font-size:16px;"></ion-icon></div></div>',
-              iconSize: [34, 34],
-              iconAnchor: [17, 17],
-              popupAnchor: [0, -20],
-            });
-          } else {
-            icon = L.divIcon({
-              className: '',
-              html: '<div style="position:relative;width:34px;height:42px;">' +
-                '<div style="position:absolute;top:0;left:1px;width:32px;height:32px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3);border:2px solid #fff;">' +
-                '<ion-icon name="body-outline" style="color:#fff;font-size:18px;"></ion-icon></div>' +
-                '<div style="position:absolute;bottom:3px;left:11px;width:12px;height:12px;background:' + color + ';clip-path:polygon(50% 100%,0 0,100% 0);"></div></div>',
-              iconSize: [34, 42],
-              iconAnchor: [17, 42],
-              popupAnchor: [0, -44],
-            });
-          }
+          var approxBadge = approx
+            ? '<div style="position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#fff;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:' + color + ';box-shadow:0 1px 2px rgba(0,0,0,0.2);">~</div>'
+            : '';
+          var icon = L.divIcon({
+            className: '',
+            html: '<div style="position:relative;width:34px;height:42px;">' +
+              '<div style="position:absolute;top:0;left:1px;width:32px;height:32px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3);border:2px solid #fff;">' +
+              '<ion-icon name="body-outline" style="color:#fff;font-size:18px;"></ion-icon></div>' +
+              '<div style="position:absolute;bottom:3px;left:11px;width:12px;height:12px;background:' + color + ';clip-path:polygon(50% 100%,0 0,100% 0);"></div>' +
+              approxBadge + '</div>',
+            iconSize: [34, 42],
+            iconAnchor: [17, 42],
+            popupAnchor: [0, -44],
+          });
           var marker = L.marker([lat, lng], { icon: icon }).addTo(map);
           markers.push(marker);
           marker.bindPopup(
