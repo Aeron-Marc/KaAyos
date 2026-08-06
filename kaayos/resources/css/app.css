@@ -10,17 +10,62 @@
     --b1: #B5D4F4;
     --b0: #E6F1FB;
     --g9: #1B2430;
+    --g8: #2D3A47;
     --g7: #3D4A56;
+    --g6: #4B5563;
+    --g5: #6B7280;
     --g4: #8C97A4;
+    --g3: #9CA3AF;
+    --g2: #D1D5DB;
     --g1: #E8ECF0;
     --white: #fff;
     --off: #F7F8FA;
+    --green: #16a34a;
+    --green-light: #d1fae5;
+    --green-dark: #065f46;
+    --green-emerald: #059669;
+    --orange: #ea580c;
+    --orange-light: #fef3c7;
+    --orange-dark: #92400e;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --red-dark: #991b1b;
+    --blue: #1d4ed8;
+    --blue-light: #dbeafe;
+    --blue-dark: #1e40af;
+    --p500: #6366f1;
     --sidebar-w: 280px;
     --topbar-h: 60px;
     --radius: 12px;
     --radius-sm: 8px;
     --shadow: 0 2px 12px rgba(4, 44, 83, .06);
     --shadow-md: 0 4px 20px rgba(4, 44, 83, .1);
+
+    /* ── Calendar status colors ── */
+    --cal-new-bg: #fef3c7;
+    --cal-new-text: #92400e;
+    --cal-new-border: #fde68a;
+    --cal-new-dot: #d97706;
+    --cal-confirmed-bg: #d1fae5;
+    --cal-confirmed-text: #065f46;
+    --cal-confirmed-border: #a7f3d0;
+    --cal-confirmed-dot: #16a34a;
+    --cal-enroute-bg: #ffedd5;
+    --cal-enroute-text: #9a3412;
+    --cal-enroute-border: #fed7aa;
+    --cal-enroute-dot: #ea580c;
+    --cal-progress-bg: #dbeafe;
+    --cal-progress-text: #1e40af;
+    --cal-progress-border: #bfdbfe;
+    --cal-progress-dot: #2563eb;
+    --cal-completed-bg: #dcfce7;
+    --cal-completed-text: #166534;
+    --cal-completed-border: #bbf7d0;
+    --cal-completed-dot: #059669;
+    --cal-cancelled-bg: #fee2e2;
+    --cal-cancelled-text: #991b1b;
+    --cal-cancelled-border: #fecaca;
+    --cal-cancelled-dot: #dc2626;
 }
 
 html, body {
@@ -2483,4 +2528,466 @@ img.skeleton-loading::before {
 
 .skeleton-page .sp-chat-main {
     flex: 1;
+}
+
+/* ── Worker Schedule Calendar ── */
+.calendar-wrap {
+    background: var(--white);
+    border: 1.5px solid var(--g1);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--g1);
+    background: var(--off);
+}
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.calendar-nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--g1);
+    background: var(--white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s;
+    color: var(--g6);
+}
+
+.calendar-nav-btn:hover {
+    background: var(--b0);
+    border-color: var(--g3);
+    color: var(--g8);
+}
+
+.calendar-month-year {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--g8);
+    min-width: 160px;
+    text-align: center;
+}
+
+.calendar-today-btn {
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1.5px solid var(--g2);
+    background: var(--white);
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--g6);
+    cursor: pointer;
+    transition: all .15s;
+}
+
+.calendar-today-btn:hover {
+    background: var(--b0);
+    border-color: var(--g3);
+}
+
+.calendar-view-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--off);
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid var(--g1);
+}
+
+.calendar-view-toggle button {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--g4);
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.calendar-view-toggle button.active {
+    background: var(--white);
+    color: var(--g8);
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+
+.calendar-view-toggle button:not(.active):hover {
+    color: var(--g6);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-weekday {
+    padding: 10px 4px;
+    text-align: center;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--g4);
+    background: var(--off);
+    border-bottom: 1px solid var(--g1);
+}
+
+.calendar-day {
+    min-height: 90px;
+    border-right: 1px solid var(--g1);
+    border-bottom: 1px solid var(--g1);
+    padding: 0;
+    cursor: pointer;
+    transition: background .12s;
+    position: relative;
+}
+
+.calendar-day:nth-child(7n) {
+    border-right: none;
+}
+
+.calendar-day:hover {
+    background: var(--b0);
+}
+
+.calendar-day.other-month .day-number {
+    color: var(--g3);
+}
+
+.calendar-day.today .day-number {
+    background: var(--p500);
+    color: var(--white);
+}
+
+.calendar-day.has-jobs::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--p500);
+}
+
+.calendar-day.has-jobs.status-new::after { background: var(--cal-new-dot); }
+.calendar-day.has-jobs.status-confirmed::after { background: var(--cal-confirmed-dot); }
+.calendar-day.has-jobs.status-accepted::after { background: var(--cal-confirmed-dot); }
+.calendar-day.has-jobs.status-en_route::after { background: var(--cal-enroute-dot); }
+.calendar-day.has-jobs.status-in_progress::after { background: var(--cal-progress-dot); }
+.calendar-day.has-jobs.status-completed::after { background: var(--cal-completed-dot); }
+.calendar-day.has-jobs.status-cancelled::after { background: var(--cal-cancelled-dot); }
+
+.day-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--g7);
+    margin: 6px;
+}
+
+.day-jobs {
+    padding: 2px 5px 5px;
+}
+
+.day-job-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    margin-bottom: 3px;
+    font-size: .7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: opacity .12s;
+}
+
+.day-job-chip:hover {
+    opacity: .8;
+}
+
+.day-job-chip .chip-time {
+    flex-shrink: 0;
+    font-size: .65rem;
+    opacity: .85;
+}
+
+.day-job-chip .chip-service {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.day-job-chip.status-new {
+    background: var(--cal-new-bg);
+    color: var(--cal-new-text);
+    border: 1px solid var(--cal-new-border);
+}
+
+.day-job-chip.status-accepted,
+.day-job-chip.status-confirmed {
+    background: var(--cal-confirmed-bg);
+    color: var(--cal-confirmed-text);
+    border: 1px solid var(--cal-confirmed-border);
+}
+
+.day-job-chip.status-en_route {
+    background: var(--cal-enroute-bg);
+    color: var(--cal-enroute-text);
+    border: 1px solid var(--cal-enroute-border);
+}
+
+.day-job-chip.status-in_progress {
+    background: var(--cal-progress-bg);
+    color: var(--cal-progress-text);
+    border: 1px solid var(--cal-progress-border);
+}
+
+.day-job-chip.status-completed {
+    background: var(--cal-completed-bg);
+    color: var(--cal-completed-text);
+    border: 1px solid var(--cal-completed-border);
+}
+
+.day-job-chip.status-cancelled {
+    background: var(--cal-cancelled-bg);
+    color: var(--cal-cancelled-text);
+    border: 1px solid var(--cal-cancelled-border);
+    text-decoration: line-through;
+}
+
+.day-empty {
+    font-size: .72rem;
+    color: var(--g3);
+    text-align: center;
+    padding: 8px 4px;
+    display: none;
+}
+
+.calendar-day.empty .day-empty {
+    display: block;
+}
+
+/* Calendar Day Detail Modal */
+.calendar-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+}
+
+.calendar-modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.calendar-modal {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    transform: translateY(20px);
+    transition: transform .2s;
+}
+
+.calendar-modal-overlay.show .calendar-modal {
+    transform: translateY(0);
+}
+
+.cal-modal-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--g1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--white);
+    z-index: 1;
+}
+
+.cal-modal-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--g8);
+}
+
+.cal-modal-date {
+    font-size: .82rem;
+    color: var(--g4);
+    margin-top: 2px;
+}
+
+.cal-modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--off);
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: var(--g5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .12s;
+}
+
+.cal-modal-close:hover {
+    background: var(--g2);
+}
+
+.cal-modal-jobs {
+    padding: 12px 16px;
+}
+
+.cal-job-card {
+    border: 1.5px solid var(--g1);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all .12s;
+}
+
+.cal-job-card:last-child {
+    margin-bottom: 0;
+}
+
+.cal-job-card:hover {
+    border-color: var(--p300);
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.cal-job-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.cal-job-service {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--g8);
+}
+
+.cal-job-time {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--p600);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.cal-job-details {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.cal-job-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: .8rem;
+    color: var(--g6);
+}
+
+.cal-job-row i {
+    width: 14px;
+    color: var(--g4);
+    flex-shrink: 0;
+}
+
+.cal-job-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.cal-job-status-badge.status-new { background: var(--cal-new-bg); color: var(--cal-new-text); }
+.cal-job-status-badge.status-accepted,
+.cal-job-status-badge.status-confirmed { background: var(--cal-confirmed-bg); color: var(--cal-confirmed-text); }
+.cal-job-status-badge.status-en_route { background: var(--cal-enroute-bg); color: var(--cal-enroute-text); }
+.cal-job-status-badge.status-in_progress { background: var(--cal-progress-bg); color: var(--cal-progress-text); }
+.cal-job-status-badge.status-completed { background: var(--cal-completed-bg); color: var(--cal-completed-text); }
+.cal-job-status-badge.status-cancelled { background: var(--cal-cancelled-bg); color: var(--cal-cancelled-text); }
+
+.cal-modal-empty {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--g4);
+}
+
+.cal-modal-empty i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    display: block;
+}
+
+@media (max-width: 640px) {
+    .calendar-day {
+        min-height: 70px;
+    }
+
+    .day-job-chip {
+        font-size: .62rem;
+        padding: 2px 4px;
+    }
+
+    .day-job-chip .chip-time {
+        display: none;
+    }
+
+    .calendar-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .calendar-month-year {
+        font-size: .9rem;
+    }
 }

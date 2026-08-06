@@ -94,6 +94,59 @@
     </div>
 </div>
 
+{{-- View Toggle --}}
+<div class="view-toggle-wrap" style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;">
+    <div class="calendar-view-toggle">
+        <button type="button" id="listViewBtn" class="active" onclick="switchView('list')">
+            <i class="fa-solid fa-list"></i> List
+        </button>
+        <button type="button" id="calendarViewBtn" onclick="switchView('calendar')">
+            <i class="fa-regular fa-calendar"></i> Calendar
+        </button>
+    </div>
+</div>
+
+{{-- Calendar Section --}}
+<div id="calendarSection" class="calendar-wrap" style="display:none;margin-bottom:20px;">
+    <div class="calendar-header">
+        <div class="calendar-nav">
+            <button type="button" class="calendar-nav-btn" id="calPrevBtn" onclick="calNav(-1)">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <span class="calendar-month-year" id="calMonthYear"></span>
+            <button type="button" class="calendar-nav-btn" id="calNextBtn" onclick="calNav(1)">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button type="button" class="calendar-today-btn" id="calTodayBtn" onclick="calGoToday()">Today</button>
+        </div>
+    </div>
+    <div class="calendar-grid" id="calendarGrid">
+        <div class="calendar-weekday">Sun</div>
+        <div class="calendar-weekday">Mon</div>
+        <div class="calendar-weekday">Tue</div>
+        <div class="calendar-weekday">Wed</div>
+        <div class="calendar-weekday">Thu</div>
+        <div class="calendar-weekday">Fri</div>
+        <div class="calendar-weekday">Sat</div>
+    </div>
+</div>
+
+{{-- Calendar Day Detail Modal --}}
+<div id="calDayModal" class="calendar-modal-overlay" onclick="closeCalModal(event)">
+    <div class="calendar-modal" onclick="event.stopPropagation()">
+        <div class="cal-modal-header">
+            <div>
+                <h3 id="calModalTitle">Schedule</h3>
+                <div class="cal-modal-date" id="calModalDate"></div>
+            </div>
+            <button type="button" class="cal-modal-close" onclick="closeCalModal()">&times;</button>
+        </div>
+        <div class="cal-modal-jobs" id="calModalJobs"></div>
+    </div>
+</div>
+
 {{-- Job Cards --}}
 <div class="card-panel">
     <div class="card-panel-header">
@@ -724,6 +777,166 @@ function confirmCancel() {
             }
         }
     }
+})();
+
+// ── Calendar ──
+(function() {
+    var calYear = {{ now()->year }};
+    var calMonth = {{ now()->month }};
+    var calData = null;
+    var isLoading = false;
+
+    window.switchView = function(view) {
+        document.getElementById('listViewBtn').classList.toggle('active', view === 'list');
+        document.getElementById('calendarViewBtn').classList.toggle('active', view === 'calendar');
+        document.getElementById('calendarSection').style.display = view === 'calendar' ? 'block' : 'none';
+        document.querySelector('.card-panel').style.display = view === 'list' ? 'block' : 'none';
+        document.getElementById('jobStatusDropdown').style.display = view === 'list' ? 'flex' : 'none';
+        if (view === 'calendar') {
+            loadCalendar();
+        }
+    };
+
+    window.calNav = function(dir) {
+        if (isLoading) return;
+        calMonth += dir;
+        if (calMonth > 12) { calMonth = 1; calYear++; }
+        if (calMonth < 1) { calMonth = 12; calYear--; }
+        loadCalendar();
+    };
+
+    window.calGoToday = function() {
+        if (isLoading) return;
+        calYear = {{ now()->year }};
+        calMonth = {{ now()->month }};
+        loadCalendar();
+    };
+
+    function loadCalendar() {
+        if (isLoading) return;
+        isLoading = true;
+        var url = '/worker/calendar/data?year=' + calYear + '&month=' + calMonth;
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                calData = data;
+                renderCalendar();
+            })
+            .catch(function() { console.error('Failed to load calendar data'); })
+            .finally(function() { isLoading = false; });
+    }
+
+    function renderCalendar() {
+        var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('calMonthYear').textContent = monthNames[calMonth - 1] + ' ' + calYear;
+
+        var grid = document.getElementById('calendarGrid');
+        var firstDay = new Date(calYear, calMonth - 1, 1).getDay();
+        var daysInMonth = new Date(calYear, calMonth, 0).getDate();
+        var daysInPrevMonth = new Date(calYear, calMonth - 1, 0).getDate();
+
+        // Remove existing day cells (keep weekday headers)
+        var existingDays = grid.querySelectorAll('.calendar-day');
+        existingDays.forEach(function(d) { d.remove(); });
+
+        // Prev month trailing days
+        for (var i = firstDay - 1; i >= 0; i--) {
+            var dayEl = document.createElement('div');
+            dayEl.className = 'calendar-day other-month empty';
+            dayEl.innerHTML = '<span class="day-number">' + (daysInPrevMonth - i) + '</span><div class="day-empty">-</div>';
+            grid.appendChild(dayEl);
+        }
+
+        // Current month days
+        for (var d = 1; d <= daysInMonth; d++) {
+            var dayEl = document.createElement('div');
+            var isToday = calData && calData.today === d && calData.year === calYear && calData.month === calMonth;
+            dayEl.className = 'calendar-day';
+            if (isToday) dayEl.classList.add('today');
+            if (calData && calData.days[d] && calData.days[d].length > 0) {
+                dayEl.classList.add('has-jobs');
+                var dominantStatus = calData.days[d][0].raw_status;
+                dayEl.classList.add('status-' + dominantStatus);
+            } else {
+                dayEl.classList.add('empty');
+            }
+            dayEl.innerHTML = '<span class="day-number">' + d + '</span><div class="day-jobs"></div>';
+            dayEl.onclick = function(day) { return function() { openCalDayModal(day); }; }(d);
+            grid.appendChild(dayEl);
+
+            // Fill in job chips
+            if (calData && calData.days[d]) {
+                var jobsContainer = dayEl.querySelector('.day-jobs');
+                calData.days[d].forEach(function(job) {
+                    var chip = document.createElement('div');
+                    chip.className = 'day-job-chip status-' + job.raw_status;
+                    chip.innerHTML = '<span class="chip-time">' + job.time + '</span><span class="chip-service">' + job.service + '</span>';
+                    chip.onclick = function(e) {
+                        e.stopPropagation();
+                        openCalDayModal(day);
+                    };
+                    jobsContainer.appendChild(chip);
+                });
+            }
+        }
+
+        // Next month leading days
+        var totalCells = firstDay + daysInMonth;
+        var remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+        for (var n = 1; n <= remaining; n++) {
+            var dayEl = document.createElement('div');
+            dayEl.className = 'calendar-day other-month empty';
+            dayEl.innerHTML = '<span class="day-number">' + n + '</span><div class="day-empty">-</div>';
+            grid.appendChild(dayEl);
+        }
+    }
+
+    window.openCalDayModal = function(day) {
+        if (!calData || !calData.days[day]) return;
+        var dayJobs = calData.days[day];
+        var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('calModalTitle').textContent = 'Jobs on ' + monthNames[calData.month - 1] + ' ' + day + ', ' + calData.year;
+        document.getElementById('calModalDate').textContent = monthNames[calData.month - 1] + ' ' + day + ', ' + calData.year;
+
+        var jobsContainer = document.getElementById('calModalJobs');
+        jobsContainer.innerHTML = '';
+
+        dayJobs.forEach(function(job) {
+            var card = document.createElement('div');
+            card.className = 'cal-job-card';
+            card.onclick = function(e) {
+                e.stopPropagation();
+                closeCalModal();
+                // Fetch full job details via AJAX, then open the job modal
+                fetch('/worker/jobs/' + job.id + '/details')
+                    .then(function(r) { return r.json(); })
+                    .then(function(fullJob) {
+                        jobs.push(fullJob);
+                        openJobModal(jobs.length - 1);
+                    })
+                    .catch(function() { alert('Failed to load job details.'); });
+            };
+            card.innerHTML =
+                '<div class="cal-job-card-header">' +
+                    '<span class="cal-job-service">' + job.service + '</span>' +
+                    '<span class="cal-job-status-badge status-' + job.raw_status + '">' + job.status + '</span>' +
+                '</div>' +
+                '<div class="cal-job-details">' +
+                    '<div class="cal-job-row"><i class="fa-regular fa-clock"></i> ' + job.time + '</div>' +
+                    '<div class="cal-job-row"><i class="fa-regular fa-user"></i> ' + job.client + '</div>' +
+                    '<div class="cal-job-row"><i class="fa-solid fa-location-dot"></i> ' + (job.barangay ? job.barangay + ', ' : '') + job.location + '</div>' +
+                    '<div class="cal-job-row"><i class="fa-solid fa-peso-sign"></i> ' + Number(job.price).toLocaleString('en-PH', {minimumFractionDigits: 2}) + '</div>' +
+                '</div>';
+            jobsContainer.appendChild(card);
+        });
+
+        document.getElementById('calDayModal').classList.add('show');
+    };
+
+    window.closeCalModal = function(e) {
+        if (e && e.target !== e.currentTarget) return;
+        document.getElementById('calDayModal').classList.remove('show');
+    };
 })();
 </script>
 @endpush

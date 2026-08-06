@@ -109,6 +109,7 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::get('/dashboard/notifications', [WorkerController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
     Route::get('/schedule', [WorkerController::class, 'schedule'])->name('schedule');
+    Route::get('/calendar/data', [WorkerController::class, 'calendarData'])->name('calendar.data');
     Route::get('/messages', [WorkerController::class, 'messages'])->name('messages');
     Route::get('/messages/start', [WorkerController::class, 'startConversation'])->name('messages.start');
     Route::get('/messages/poll/{conversation}', [WorkerController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
@@ -132,6 +133,7 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::post('/jobs/{booking}/reschedule', [WorkerDashboardController::class, 'rescheduleRequest'])->name('jobs.reschedule');
     Route::post('/jobs/{booking}/reschedule-respond', [WorkerDashboardController::class, 'respondReschedule'])->name('jobs.reschedule-respond');
     Route::post('/jobs/{booking}/confirm-complete', [WorkerDashboardController::class, 'confirmJobCompletion'])->name('jobs.confirm-complete');
+    Route::get('/jobs/{booking}/details', [WorkerController::class, 'jobDetails'])->name('jobs.details');
     Route::put('/location', [WorkerDashboardController::class, 'updateLocation'])->name('location.update');
 });
 
