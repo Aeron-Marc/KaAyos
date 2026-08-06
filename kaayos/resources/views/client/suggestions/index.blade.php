@@ -4,32 +4,28 @@
 @section('page_title', 'Suggestions')
 
 @section('skeleton')
-    <div class="sp-panel" style="max-width:720px;margin:0 auto;">
-        <div class="skeleton skeleton-title" style="width:200px;margin-bottom:16px;"></div>
-        <div style="display:flex;flex-direction:column;gap:12px;padding:16px;">
-            <div style="align-self:flex-start;max-width:80%;">
+    <div style="margin:-28px;height:calc(100vh - var(--topbar-h));display:flex;flex-direction:column;gap:16px;padding:28px;background:#f8fafc;">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="align-self:flex-start;max-width:60%;">
                 <div class="skeleton" style="height:48px;border-radius:12px 12px 12px 4px;"></div>
             </div>
-            <div style="align-self:flex-end;max-width:60%;">
+            <div style="align-self:flex-end;max-width:40%;">
                 <div class="skeleton" style="height:36px;border-radius:12px 12px 4px 12px;"></div>
             </div>
-            <div style="align-self:flex-start;max-width:70%;">
+            <div style="align-self:flex-start;max-width:50%;">
                 <div class="skeleton" style="height:52px;border-radius:12px 12px 12px 4px;"></div>
             </div>
-            <div style="align-self:flex-end;max-width:50%;">
+            <div style="align-self:flex-end;max-width:35%;">
                 <div class="skeleton" style="height:36px;border-radius:12px 12px 4px 12px;"></div>
             </div>
         </div>
-        <div class="skeleton" style="height:44px;border-radius:99px;margin-top:16px;"></div>
-    </div>
-    <div class="sp-grid" style="margin-top:24px;">
-        <div class="skeleton" style="height:120px;border-radius:var(--radius);"></div>
-        <div class="skeleton" style="height:120px;border-radius:var(--radius);"></div>
+        <div class="skeleton" style="height:44px;border-radius:99px;max-width:400px;"></div>
     </div>
 @endsection
 
 @section('content')
 
+<div class="suggestion-fullwrap">
 <div id="suggestion-chat" class="suggestion-chat"
      data-csrf="{{ csrf_token() }}">
   <div class="suggestion-chat-header">
@@ -61,18 +57,24 @@
     </button>
   </div>
 </div>
+</div>
 
 @endsection
 
 @push('styles')
 <style>
+.suggestion-fullwrap {
+  margin: -28px;
+  height: calc(100vh - var(--topbar-h));
+  display: flex;
+  flex-direction: column;
+}
 .suggestion-chat {
   display: flex;
   flex-direction: column;
-  height: 600px;
-  max-height: calc(100vh - 200px);
+  height: 100%;
+  flex: 1;
   background: #fff;
-  border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.06);
   overflow: hidden;
   font-family: 'Inter', sans-serif;
@@ -334,26 +336,85 @@
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #e0e4e8;
+  position: relative;
+}
+.s-map-expand-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 500;
+  width: 30px;
+  height: 30px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid #d0d9e4;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #4a5a6e;
+  font-size: 0.9rem;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+.s-map-expand-btn:hover {
+  background: #fff;
+  color: #1A6FC4;
 }
 .s-map {
   height: 260px;
   width: 100%;
+  display: block;
+}
+.suggestion-messages.map-expanded {
+  overflow: hidden;
+}
+.suggestion-messages.map-expanded .s-msg-map {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 16px !important;
+  box-sizing: border-box;
+  animation: none;
+  position: absolute;
+  inset: 0;
+  background: #f8fafc;
+  z-index: 10;
+  overflow: hidden;
+}
+.suggestion-messages.map-expanded .s-map-wrap {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  border: 1px solid #e0e4e8;
+  overflow: hidden;
+}
+.suggestion-messages.map-expanded .s-map {
+  height: 100%;
+}
+.suggestion-messages.map-expanded .s-map-expand-btn {
+  top: 24px;
+  right: 24px;
 }
 @media(max-width:768px){
-  .suggestion-chat{
-    height: calc(100vh - 120px);
-    max-height: none;
-    border-radius: 0;
-    margin: 0 -20px;
+  .suggestion-fullwrap {
+    margin: -18px;
+    height: calc(100vh - var(--topbar-h));
+  }
+  .suggestion-chat {
+    height: 100%;
+    box-shadow: none;
   }
   .s-msg{max-width:92%}
   .s-chip{font-size:.8rem;padding:6px 12px}
   .s-worker-card{padding:12px}
-}
-@media(max-width:480px){
-  .suggestion-chat{margin: 0 -16px}
-  .suggestion-chat-header{padding:12px 16px}
-  .suggestion-messages{padding:12px 16px}
+  .suggestion-messages.map-expanded .s-msg-map {
+    padding: 10px;
+  }
+  .suggestion-messages.map-expanded .s-map-expand-btn {
+    top: 18px;
+    right: 18px;
+  }
 }
 </style>
 @endpush
@@ -465,7 +526,7 @@
       html += '<div class="s-worker-avatar">' + avatar + '</div>';
       html += '<div class="s-worker-info">';
       html += '<div class="s-worker-name">' + sanitize(w.name) + '</div>';
-      html += '<div class="s-worker-meta">' + sanitize(w.category) + ' &middot; \u20B1' + (w.price || 0) + '/hr</div>';
+      html += '<div class="s-worker-meta">' + sanitize(w.category) + ' &middot; \u20B1' + (w.price || 0) + '/hr &middot; ' + sanitize(w.distance || '') + (w.location_approximate ? ' <span style="color:#9aa4b2;font-size:.65rem;">~ approximate</span>' : '') + '</div>';
       html += '<div class="s-worker-footer">';
       html += '<span class="s-worker-rating"><i class="fa-solid fa-star"></i> ' + (w.rating || '0').toFixed(1) + '</span>';
       html += '<span class="s-worker-match ' + pctClass + '">' + pct + '% match</span>';
@@ -508,6 +569,7 @@
 
         var TUY = [13.9581, 120.7278];
         var map = L.map(mapId, { zoomControl: false }).setView(TUY, 12);
+        container._mapInstance = map;
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 18,
           attribution: '&copy; OpenStreetMap',
@@ -523,22 +585,37 @@
           if (!lat || !lng) return;
           var pct = w.match_percent || 0;
           var color = getMarkerColor(pct);
-          var icon = L.divIcon({
-            className: '',
-            html: '<div style="position:relative;width:34px;height:42px;">' +
-              '<div style="position:absolute;top:0;left:1px;width:32px;height:32px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3);border:2px solid #fff;">' +
-              '<ion-icon name="body-outline" style="color:#fff;font-size:18px;"></ion-icon></div>' +
-              '<div style="position:absolute;bottom:3px;left:11px;width:12px;height:12px;background:' + color + ';clip-path:polygon(50% 100%,0 0,100% 0);"></div></div>',
-            iconSize: [34, 42],
-            iconAnchor: [17, 42],
-            popupAnchor: [0, -44],
-          });
+          var approx = w.location_approximate;
+          var icon;
+          if (approx) {
+            icon = L.divIcon({
+              className: '',
+              html: '<div style="position:relative;width:34px;height:34px;">' +
+                '<div style="position:absolute;top:0;left:1px;width:32px;height:32px;border-radius:50%;border:2px dashed ' + color + ';background:rgba(' + (color==='#28a745'?'40,167,69':color=='#e6a817'?'234,168,23':'220,53,69') + ',0.15);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.15);">' +
+                '<ion-icon name="help-circle-outline" style="color:' + color + ';font-size:16px;"></ion-icon></div></div>',
+              iconSize: [34, 34],
+              iconAnchor: [17, 17],
+              popupAnchor: [0, -20],
+            });
+          } else {
+            icon = L.divIcon({
+              className: '',
+              html: '<div style="position:relative;width:34px;height:42px;">' +
+                '<div style="position:absolute;top:0;left:1px;width:32px;height:32px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3);border:2px solid #fff;">' +
+                '<ion-icon name="body-outline" style="color:#fff;font-size:18px;"></ion-icon></div>' +
+                '<div style="position:absolute;bottom:3px;left:11px;width:12px;height:12px;background:' + color + ';clip-path:polygon(50% 100%,0 0,100% 0);"></div></div>',
+              iconSize: [34, 42],
+              iconAnchor: [17, 42],
+              popupAnchor: [0, -44],
+            });
+          }
           var marker = L.marker([lat, lng], { icon: icon }).addTo(map);
           markers.push(marker);
           marker.bindPopup(
             '<div style="font-family:Inter,sans-serif;font-size:13px;line-height:1.5;">' +
             '<strong>' + sanitize(w.name) + '</strong><br>' +
             sanitize(w.category) + ' &middot; \u20B1' + (w.price || 0) + '/hr<br>' +
+            (w.distance ? sanitize(w.distance) + (approx ? ' <span style="color:#9aa4b2;font-size:11px;">(~ approximate location)</span><br>' : '<br>') : '') +
             '\u2605 ' + (w.rating || '0').toFixed(1) + ' &middot; <span style="color:' + color + ';font-weight:600;">' + pct + '% match</span><br>' +
             '<a href="/client/workers/' + w.id + '" style="color:#1A6FC4;font-size:12px;">View Profile &rarr;</a>' +
             '</div>'
@@ -546,7 +623,8 @@
         });
 
         if (markers.length > 1) {
-          map.fitBounds(L.featureGroup(markers).getBounds().pad(0.15));
+          map._lastFitBounds = L.featureGroup(markers).getBounds().pad(0.15);
+          map.fitBounds(map._lastFitBounds);
         }
         setTimeout(function () { map.invalidateSize(); }, 100);
       } catch (e) {
@@ -559,7 +637,12 @@
     if (!workers || workers.length === 0) return '';
     var mapId = 's-map-' + Date.now();
     var data = JSON.stringify(workers.slice(0, 10));
-    var html = '<div class="s-map-wrap"><div id="' + mapId + '" class="s-map" data-workers=\'' + data + '\'></div></div>';
+    var html = '<div class="s-map-wrap" id="s-map-wrap-' + mapId + '">' +
+      '<button class="s-map-expand-btn" title="Expand map" aria-label="Expand map">' +
+        '<ion-icon name="expand-outline"></ion-icon>' +
+      '</button>' +
+      '<div id="' + mapId + '" class="s-map" data-workers=\'' + data + '\'></div>' +
+    '</div>';
 
     setTimeout(function () {
       addMapToMessages(mapId);
@@ -619,6 +702,31 @@
     'Best rated workers near me',
     'How do I book?',
   ]);
+
+  el.messages.addEventListener('click', function (e) {
+    var btn = e.target.closest('.s-map-expand-btn');
+    if (!btn) return;
+    e.stopPropagation();
+    var wrap = btn.closest('.s-map-wrap');
+    el.messages.classList.toggle('map-expanded');
+    var expanded = el.messages.classList.contains('map-expanded');
+    var icon = btn.querySelector('ion-icon');
+    icon.setAttribute('name', expanded ? 'contract-outline' : 'expand-outline');
+    btn.setAttribute('title', expanded ? 'Collapse map' : 'Expand map');
+    btn.setAttribute('aria-label', expanded ? 'Collapse map' : 'Expand map');
+    var mapEl = wrap.querySelector('.s-map');
+    if (mapEl && mapEl._mapInstance) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var map = mapEl._mapInstance;
+          map.invalidateSize();
+          if (expanded && map._lastFitBounds) {
+            map.fitBounds(map._lastFitBounds);
+          }
+        });
+      });
+    }
+  });
 })();
 </script>
 @endpush

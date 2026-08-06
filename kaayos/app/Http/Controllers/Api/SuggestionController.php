@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\ChatBotService;
+use App\Support\TuyBarangays;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +28,7 @@ class SuggestionController extends Controller
             $workers = [];
             $intent = $this->extractIntent($validated['message']);
             if ($intent['intent'] === 'service_request' && !empty($intent['category'])) {
-                $workers = $this->fetchWorkers($intent['category']);
+                $workers = $this->fetchWorkers($intent['category'], $validated['message']);
             }
 
             return response()->json([
@@ -85,7 +86,7 @@ class SuggestionController extends Controller
         return ['intent' => 'service_request', 'category' => '', 'description' => $message];
     }
 
-    protected function fetchWorkers(string $category): array
+    protected function fetchWorkers(string $category, string $userMessage = ''): array
     {
         $query = User::where('role', 'worker')
             ->with('workerProfile')
@@ -93,10 +94,39 @@ class SuggestionController extends Controller
             ->active()
             ->where('service_category', $category);
 
-        return $query->get()->map(function ($u) {
+        $workers = $query->get()->map(function ($u) use ($userMessage) {
             $profile = $u->workerProfile;
             $name = $u->name ?? '';
             $parts = explode(' ', $name, 2);
+
+            $existingLat = $profile?->current_latitude;
+            $existingLng = $profile?->current_longitude;
+
+            if ($existingLat !== null && $existingLng !== null) {
+                $lat = (float) $existingLat;
+                $lng = (float) $existingLng;
+            } else {
+                $barangay = $u->barangay
+                    ?? TuyBarangays::residenceFor($u->id);
+                [$lat, $lng] = TuyBarangays::pointFor($barangay, $u->id);
+
+                $profile?->update([
+                    'current_latitude'  => $lat,
+                    'current_longitude' => $lng,
+                    'service_zone'     => ['barangay' => $barangay],
+                    'location_is_approximate' => true,
+                ]);
+            }
+
+            $rating = (float) ($profile?->average_rating ?? 0);
+            $completedJobs = $u->completed_jobs_count ?? 0;
+            $verified = (bool) ($profile?->government_id_verified ?? false);
+            $yearsExp = (int) ($profile?->years_of_experience ?? 0);
+            $skills = $profile?->skills ?? [];
+
+            $matchPercent = $this->computeMatchPercent(
+                $rating, $completedJobs, $verified, $yearsExp, $skills, $userMessage
+            );
 
             return [
                 'id' => $u->id,
@@ -109,12 +139,59 @@ class SuggestionController extends Controller
                     substr($parts[0] ?? $name, 0, 1) .
                     substr($parts[1] ?? '', 0, 1)
                 ),
-                'rating' => (float) ($profile?->average_rating ?? 0),
+                'rating' => $rating,
                 'price' => (float) ($profile?->hourly_rate ?? 0),
-                'verified' => (bool) ($profile?->government_id_verified ?? false),
-                'skills' => $profile?->skills ?? [],
-                'jobs_completed' => $u->completed_jobs_count,
+                'distance' => $u->residence,
+                'verified' => $verified,
+                'skills' => $skills,
+                'jobs_completed' => $completedJobs,
+                'latitude'  => $lat,
+                'longitude' => $lng,
+                'location_approximate' => (bool) ($profile?->location_is_approximate ?? true),
+                'match_percent' => $matchPercent,
             ];
         })->values()->toArray();
+
+        usort($workers, fn($a, $b) => $b['match_percent'] <=> $a['match_percent']);
+
+        return $workers;
+    }
+
+    protected function computeMatchPercent(
+        float $rating,
+        int $completedJobs,
+        bool $verified,
+        int $yearsExperience,
+        array $skills,
+        string $userMessage
+    ): int {
+        $score = 0;
+
+        $score += ($rating / 5.0) * 35;
+
+        $score += (min($completedJobs, 10) / 10.0) * 25;
+
+        $score += $verified ? 20.0 : 10.0;
+
+        $score += (min($yearsExperience, 15) / 15.0) * 20;
+
+        if ($userMessage !== '') {
+            $keywords = preg_split('/\s+/', strtolower($userMessage));
+            $skillsLower = array_map('strtolower', $skills);
+            foreach ($keywords as $keyword) {
+                $keyword = preg_replace('/[^a-z0-9]/', '', $keyword);
+                if (strlen($keyword) < 3) {
+                    continue;
+                }
+                foreach ($skillsLower as $skill) {
+                    if (str_contains($skill, $keyword)) {
+                        $score += 5;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        return min(100, max(0, (int) round($score)));
     }
 }
