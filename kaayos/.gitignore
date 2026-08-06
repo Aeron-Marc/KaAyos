@@ -25,7 +25,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
-kaayos_db
 
 # Compiled views
 /storage/framework/views/
