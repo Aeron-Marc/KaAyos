@@ -92,37 +92,48 @@
                         <span>{{ $workerProfile->years_of_experience }} years</span>
                     </div>
                 @endif
+                @if($worker->residence)
+                    <div style="display:flex;justify-content:space-between;font-size:.88rem;">
+                        <span style="color:var(--g5);">Location</span>
+                        <span style="font-weight:500;">{{ $worker->residence }}</span>
+                    </div>
+                @endif
                 @php
                     $availDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
                     $dayShort = ['Monday'=>'Mon','Tuesday'=>'Tue','Wednesday'=>'Wed','Thursday'=>'Thu','Friday'=>'Fri','Saturday'=>'Sat','Sunday'=>'Sun'];
                     $availMap = [];
+                    $hasAnyActive = false;
                     if ($workerProfile && $workerProfile->availability) {
                         foreach ($workerProfile->availability as $a) {
                             $availMap[$a['day']] = $a;
+                            if ($a['active'] ?? false) $hasAnyActive = true;
                         }
                     }
+                    $hasAvailabilitySet = $workerProfile && $workerProfile->availability && count($workerProfile->availability) > 0;
                 @endphp
-                @if($workerProfile && $workerProfile->availability)
                     <div style="font-size:.82rem;">
                         <div style="color:var(--g5);font-weight:500;margin-bottom:6px;">Availability</div>
-                        @foreach($availDays as $day)
-                            @php
-                                $a = $availMap[$day] ?? null;
-                                $active = $a && ($a['active'] ?? false);
-                            @endphp
-                            <div style="display:flex;justify-content:space-between;padding:3px 0;{{ !$active ? 'opacity:.5;' : '' }}">
-                                <span>{{ $dayShort[$day] ?? $day }}</span>
-                                <span>
-                                    @if($active)
-                                        {{ \Carbon\Carbon::createFromFormat('H:i', $a['start'])->format('g:i A') }} – {{ \Carbon\Carbon::createFromFormat('H:i', $a['end'])->format('g:i A') }}
-                                    @else
-                                        <span style="color:var(--g4);">Unavailable</span>
-                                    @endif
-                                </span>
-                            </div>
-                        @endforeach
+                        @if($hasAvailabilitySet)
+                            @foreach($availDays as $day)
+                                @php
+                                    $a = $availMap[$day] ?? null;
+                                    $active = $a && ($a['active'] ?? false);
+                                @endphp
+                                <div style="display:flex;justify-content:space-between;padding:3px 0;{{ !$active ? 'opacity:.5;' : '' }}">
+                                    <span>{{ $dayShort[$day] ?? $day }}</span>
+                                    <span>
+                                        @if($active)
+                                            {{ \Carbon\Carbon::createFromFormat('H:i', $a['start'])->format('g:i A') }} – {{ \Carbon\Carbon::createFromFormat('H:i', $a['end'])->format('g:i A') }}
+                                        @else
+                                            <span style="color:var(--g4);">Unavailable</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @endforeach
+                        @else
+                            <div style="color:var(--g4);font-style:italic;padding:4px 0;">Not yet set</div>
+                        @endif
                     </div>
-                @endif
                 @if($worker->phone)
                     <div style="display:flex;justify-content:space-between;font-size:.88rem;">
                         <span style="color:var(--g5);">Contact</span>
@@ -137,9 +148,15 @@
                     <i class="fa-regular fa-comment" aria-hidden="true"></i> Send Message
                 </a>
             @endif
+            @if($hasAnyActive)
             <button type="button" class="btn btn-solid" onclick="openBookModal()" style="width:100%;justify-content:center;{{ $canMessage ? 'margin-top:8px;' : '' }}">
                 <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Book Now
             </button>
+            @else
+            <button type="button" class="btn btn-solid" disabled title="Worker hasn't set their availability yet" style="width:100%;justify-content:center;opacity:.55;cursor:not-allowed;{{ $canMessage ? 'margin-top:8px;' : '' }}">
+                <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Not Available
+            </button>
+            @endif
         </div>
     </div>
 
@@ -419,8 +436,9 @@ function validateSchedule() {
     const warningText = document.getElementById('schedule-warning-text');
 
     if (!input.value || WORKER_AVAILABILITY.length === 0) {
-        warning.style.display = 'none';
-        btn.disabled = false;
+        warningText.textContent = 'This worker hasn\u2019t set their availability yet. Booking is currently unavailable.';
+        warning.style.display = 'flex';
+        btn.disabled = true;
         return;
     }
 

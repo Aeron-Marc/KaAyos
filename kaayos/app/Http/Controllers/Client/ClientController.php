@@ -100,7 +100,7 @@ class ClientController extends Controller
                 'initials'         => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
                 'rating'           => $u->workerProfile?->average_rating ?? 0,
                 'reviews'          => $u->reviews_received_count,
-                'distance'         => config('kaayos.default_location'),
+                'distance'         => $u->residence,
                 'price'            => $u->workerProfile?->hourly_rate ?? 0,
                 'verified'         => $u->workerProfile?->government_id_verified ?? false,
                 'skills'           => $u->workerProfile?->skills ?? [],
@@ -620,6 +620,12 @@ class ClientController extends Controller
 
         if ($worker->suspended_at) {
             return response()->json(['success' => false, 'message' => 'This worker is currently unavailable.'], 422);
+        }
+
+        $availability = $worker->workerProfile?->availability;
+        $hasActiveDay = is_array($availability) && collect($availability)->contains('active', true);
+        if (!$hasActiveDay) {
+            return response()->json(['success' => false, 'message' => "This worker hasn't set their availability yet. Booking is currently unavailable."], 422);
         }
 
         $overlap = Booking::where('worker_id', $worker->id)

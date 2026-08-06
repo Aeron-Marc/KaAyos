@@ -38,7 +38,7 @@ class HomeController extends Controller
                 'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
                 'rating'   => (float) ($u->reviews_received_avg_rating ?? $u->workerProfile?->average_rating ?? 0),
                 'reviews'  => (int) ($u->reviews_received_count ?? 0),
-                'distance' => 'Tuy, Batangas',
+                'distance' => $u->residence,
                 'price'    => $u->workerProfile?->hourly_rate ?? 0,
                 'verified' => $u->workerProfile?->government_id_verified ?? false,
                 'skills'   => $u->workerProfile?->skills ?? [],

@@ -25,6 +25,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'role',
         'service_category',
         'city',
+        'barangay',
         'email_notifications',
         'language',
         'avatar',
@@ -86,6 +87,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    public function getResidenceAttribute(): string
+    {
+        if ($this->barangay && $this->city) {
+            return "Brgy. {$this->barangay}, {$this->city}";
+        }
+
+        return $this->city ?: (string) config('kaayos.default_location');
     }
 
     public function isAdmin(): bool

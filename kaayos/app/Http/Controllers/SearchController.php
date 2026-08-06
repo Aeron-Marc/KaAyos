@@ -17,10 +17,13 @@ class SearchController extends Controller
         $workersQuery = User::where('role', 'worker')
             ->with(['workerProfile.portfolios'])
             ->withCount('reviewsReceived')
-            ->active();
+            ->active()
+            ->whereHas('workerProfile', function ($q) {
+                $q->where('availability', 'like', '%"active":true%');
+            });
 
         if ($category) {
-            $workersQuery->where('service_category', $category);
+            $workersQuery->where('service_category', 'LIKE', $category);
         }
 
         if ($query) {
@@ -40,7 +43,7 @@ class SearchController extends Controller
                 'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
                 'rating'   => $u->workerProfile?->average_rating ?? 0,
                 'reviews'  => $u->reviews_received_count,
-                'distance' => 'Tuy, Batangas',
+                'distance' => $u->residence,
                 'price'    => $u->workerProfile?->hourly_rate ?? 0,
                 'verified' => $u->workerProfile?->government_id_verified ?? false,
                 'skills'   => $u->workerProfile?->skills ?? [],
