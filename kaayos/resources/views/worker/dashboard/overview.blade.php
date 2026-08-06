@@ -61,6 +61,12 @@
     $firstName = explode(' ', auth()->user()->name ?? 'there')[0];
     $hour = (int) now()->format('H');
     $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
+
+    $profile = auth()->user()->workerProfile;
+    $needsLocation = !$profile
+        || $profile->current_latitude === null
+        || $profile->current_longitude === null
+        || $profile->location_is_approximate === true;
 @endphp
 
 <div class="welcome-banner">
@@ -74,6 +80,53 @@
     <p>Manage your jobs, track your earnings, and keep your clients happy — all in one place.</p>
     <div id="locMsg" style="display:none;margin-top:8px;font-size:.82rem;"></div>
 </div>
+
+{{-- Location onboarding popup — shown only when worker has no real GPS coordinates --}}
+@if($needsLocation)
+<div id="locationPromptModal" class="modal-overlay" style="display:flex;">
+    <div class="modal-box" style="max-width:420px;" onclick="event.stopPropagation()">
+        <div class="modal-header" style="background:var(--b0);border-bottom:1px solid var(--g1);">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#185FA5,#378ADD);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fa-solid fa-map-location-dot" style="color:#fff;font-size:1.1rem;"></i>
+                </div>
+                <div>
+                    <h3 style="font-size:.95rem;font-weight:700;color:var(--g9);margin:0;">Set your location</h3>
+                    <p style="font-size:.75rem;color:var(--g4);margin:2px 0 0;">Appear on client maps</p>
+                </div>
+            </div>
+            <button type="button" class="modal-close" onclick="dismissLocationPrompt()">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:20px 22px;">
+            <p style="font-size:.85rem;color:var(--g7);line-height:1.6;margin:0 0 16px;">
+                KaAyos uses your location to help nearby clients find you through the AI suggestion system. When you share your real GPS location, your pin appears accurately on the client's map — making it easier for them to book you.
+            </p>
+            <div style="background:var(--off);border:1px solid var(--g1);border-radius:10px;padding:14px;">
+                <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+                    <i class="fa-solid fa-check-circle" style="color:var(--green,#16a34a);margin-top:2px;flex-shrink:0;"></i>
+                    <span style="font-size:.8rem;color:var(--g7);">Your pin shows accurately on client maps</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+                    <i class="fa-solid fa-check-circle" style="color:var(--green,#16a34a);margin-top:2px;flex-shrink:0;"></i>
+                    <span style="font-size:.8rem;color:var(--g7);">Clients nearby can discover your services</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <i class="fa-solid fa-check-circle" style="color:var(--green,#16a34a);margin-top:2px;flex-shrink:0;"></i>
+                    <span style="font-size:.8rem;color:var(--g7);">Your location is never shared publicly</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="padding:14px 22px;border-top:1px solid var(--g1);display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" class="btn btn-ghost" onclick="dismissLocationPrompt()" style="font-size:.82rem;">
+                Maybe later
+            </button>
+            <button type="button" class="btn btn-solid" id="locationPromptShareBtn" onclick="triggerLocationShare()" style="font-size:.82rem;">
+                <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Share My Location
+            </button>
+        </div>
+    </div>
+</div>
+@endif
 
 <div class="stats-grid">
     @foreach($stats as $stat)
@@ -160,6 +213,7 @@
 (function(){
     var btn = document.getElementById('shareLocationBtn');
     var msg = document.getElementById('locMsg');
+    var promptModal = document.getElementById('locationPromptModal');
     if (!btn) return;
 
     function showMsg(text, isError) {
@@ -171,6 +225,20 @@
             setTimeout(function(){ msg.style.display = 'none'; }, 5000);
         }
     }
+
+    function dismissLocationPrompt() {
+        if (promptModal) {
+            promptModal.style.display = 'none';
+        }
+    }
+
+    function triggerLocationShare() {
+        dismissLocationPrompt();
+        btn.click();
+    }
+
+    // When location is shared successfully, also close the prompt modal
+    var _originalBtnListener = null;
 
     btn.addEventListener('click', function() {
         if (!navigator.geolocation) {
@@ -200,6 +268,7 @@
                 })
                 .then(function(r){ return r.json(); })
                 .then(function(data) {
+                    dismissLocationPrompt();
                     if (data.latitude && data.longitude) {
                         showMsg('Location shared successfully! Your pin now shows on the map.', false);
                         var residence = document.getElementById('displayedResidence');
