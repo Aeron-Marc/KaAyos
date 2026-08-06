@@ -301,6 +301,7 @@ class WorkerDashboardController extends Controller
         $profile->update([
             'current_latitude'  => $validated['latitude'],
             'current_longitude' => $validated['longitude'],
+            'location_is_approximate' => false,
         ]);
 
         if ($request->expectsJson()) {

@@ -202,6 +202,16 @@
     </div>
 @endif
 
+@if(!$workerProfile || !$workerProfile->availability || !collect($workerProfile->availability)->contains('active', true))
+    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:.875rem;display:flex;align-items:flex-start;gap:10px;color:#856404;">
+        <i class="fa-solid fa-triangle-exclamation" style="margin-top:1px;flex-shrink:0;" aria-hidden="true"></i>
+        <div>
+            <strong>You won't appear bookable until you set your availability.</strong>
+            Scroll down to the <strong>Availability</strong> section, check the days you're available, set your hours, and save your profile.
+        </div>
+    </div>
+@endif
+
 <div class="profile-grid">
 
     <aside>

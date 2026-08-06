@@ -64,9 +64,15 @@
 @endphp
 
 <div class="welcome-banner">
-    <p class="welcome-location"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Tuy, Batangas</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <p class="welcome-location"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span id="displayedResidence">{{ auth()->user()->residence }}</span></p>
+        <button type="button" class="btn btn-ghost btn-sm" id="shareLocationBtn" style="font-size:.78rem;padding:6px 14px;">
+            <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Share My Location
+        </button>
+    </div>
     <h2>{{ $greeting }}, {{ $firstName }} 👋</h2>
     <p>Manage your jobs, track your earnings, and keep your clients happy — all in one place.</p>
+    <div id="locMsg" style="display:none;margin-top:8px;font-size:.82rem;"></div>
 </div>
 
 <div class="stats-grid">
@@ -148,5 +154,86 @@
         </div>
     @endforelse
 </div>
+
+@push('scripts')
+<script>
+(function(){
+    var btn = document.getElementById('shareLocationBtn');
+    var msg = document.getElementById('locMsg');
+    if (!btn) return;
+
+    function showMsg(text, isError) {
+        if (!msg) return;
+        msg.textContent = text;
+        msg.style.display = 'block';
+        msg.style.color = isError ? 'var(--red,#dc3545)' : 'var(--green,#16a34a)';
+        if (!isError) {
+            setTimeout(function(){ msg.style.display = 'none'; }, 5000);
+        }
+    }
+
+    btn.addEventListener('click', function() {
+        if (!navigator.geolocation) {
+            showMsg('Your browser does not support location sharing.', true);
+            return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Sharing…';
+        showMsg('');
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                var lat = parseFloat(position.coords.latitude.toFixed(7));
+                var lng = parseFloat(position.coords.longitude.toFixed(7));
+
+                var csrf = document.querySelector('meta[name=csrf-token]');
+                csrf = csrf ? csrf.content : (document.querySelector('input[name=_token]') ? document.querySelector('input[name=_token]').value : '');
+
+                fetch('/worker/location', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ latitude: lat, longitude: lng }),
+                })
+                .then(function(r){ return r.json(); })
+                .then(function(data) {
+                    if (data.latitude && data.longitude) {
+                        showMsg('Location shared successfully! Your pin now shows on the map.', false);
+                        var residence = document.getElementById('displayedResidence');
+                        if (residence) {
+                            var brgyMatch = residence.textContent.match(/^Brgy\.\s*([^,]+)/);
+                            if (brgyMatch) {
+                                residence.textContent = 'Brgy. ' + brgyMatch[1] + ', Tuy, Batangas';
+                            }
+                        }
+                    } else {
+                        showMsg('Location saved. It will appear on client maps shortly.', false);
+                    }
+                })
+                .catch(function() {
+                    showMsg('Failed to share location. Please try again.', true);
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Share My Location';
+                });
+            },
+            function(err) {
+                var txt = 'Could not get your location.';
+                if (err.code === 1) txt = 'Location permission denied. Please allow location access in your browser settings.';
+                if (err.code === 2) txt = 'Location unavailable. Make sure GPS is enabled.';
+                showMsg(txt, true);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Share My Location';
+            },
+            { timeout: 10000, maximumAge: 0 }
+        );
+    });
+})();
+</script>
+@endpush
 
 @endsection
