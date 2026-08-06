@@ -311,7 +311,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 450, 'years_exp' => 10, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9581, 'lng' => 120.7278, 'verified' => true, 'rating' => 4.8, 'full' => true,
+                'verified' => true, 'rating' => 4.8, 'full' => true,
             ],
             // ── Full Provider 1: Cherry Gil Pascual — Cleaning ────
             [
@@ -321,7 +321,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 300, 'years_exp' => 8, 'radius_km' => 12,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9550, 'lng' => 120.7300, 'verified' => true, 'rating' => 4.7, 'full' => true,
+                'verified' => true, 'rating' => 4.7, 'full' => true,
             ],
             // ── Full Provider 2: Ferdinand Ocampo — Electrical ────
             [
@@ -331,7 +331,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 600, 'years_exp' => 12, 'radius_km' => 20,
                 'days' => 'All Week', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9600, 'lng' => 120.7250, 'verified' => true, 'rating' => 4.9, 'full' => true,
+                'verified' => true, 'rating' => 4.9, 'full' => true,
             ],
             // ── Full Provider 3: Roberto Castro — Carpentry ───────
             [
@@ -341,7 +341,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 500, 'years_exp' => 15, 'radius_km' => 18,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9560, 'lng' => 120.7350, 'verified' => true, 'rating' => 4.8, 'full' => true,
+                'verified' => true, 'rating' => 4.8, 'full' => true,
             ],
             // ── Full Provider 4: Nene Aguilar — Painting ──────────
             [
@@ -351,7 +351,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino'],
                 'hourly_rate' => 400, 'years_exp' => 9, 'radius_km' => 12,
                 'days' => 'Monday — Saturday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9520, 'lng' => 120.7200, 'verified' => true, 'rating' => 4.5, 'full' => true,
+                'verified' => true, 'rating' => 4.5, 'full' => true,
             ],
             // ── Full Provider 5: Angelo Tolentino — Aircon ────────
             [
@@ -361,7 +361,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 550, 'years_exp' => 7, 'radius_km' => 20,
                 'days' => 'All Week', 'hours' => 'Full Day (8 AM — 6 PM)',
-                'lat' => 13.9620, 'lng' => 120.7300, 'verified' => true, 'rating' => 4.6, 'full' => true,
+                'verified' => true, 'rating' => 4.6, 'full' => true,
             ],
             // ── Basic+ Provider 6: Grace Padilla — Landscaping ────
             [
@@ -371,7 +371,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 350, 'years_exp' => 5, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9500, 'lng' => 120.7220, 'verified' => true, 'rating' => 4.3, 'full' => false,
+                'verified' => true, 'rating' => 4.3, 'full' => false,
             ],
             // ── Basic+ Provider 7: Christian Alonzo — Laundry ─────
             [
@@ -381,7 +381,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 200, 'years_exp' => 4, 'radius_km' => 10,
                 'days' => 'Monday — Friday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9530, 'lng' => 120.7180, 'verified' => true, 'rating' => 4.2, 'full' => false,
+                'verified' => true, 'rating' => 4.2, 'full' => false,
             ],
             // ── Basic+ Provider 8: Princess Joy David — Pest Control ──
             [
@@ -391,7 +391,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 400, 'years_exp' => 6, 'radius_km' => 18,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9480, 'lng' => 120.7280, 'verified' => true, 'rating' => 4.4, 'full' => false,
+                'verified' => true, 'rating' => 4.4, 'full' => false,
             ],
             // ── Basic+ Provider 9: Reynaldo Navarro — Appliance Repair ──
             [
@@ -401,7 +401,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino'],
                 'hourly_rate' => 350, 'years_exp' => 8, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9580, 'lng' => 120.7320, 'verified' => true, 'rating' => 4.1, 'full' => false,
+                'verified' => true, 'rating' => 4.1, 'full' => false,
             ],
             // ── Basic+ Provider 10: Jasmine Torres — Masonry ──────
             [
@@ -411,7 +411,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 450, 'years_exp' => 7, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9540, 'lng' => 120.7260, 'verified' => true, 'rating' => 4.3, 'full' => false,
+                'verified' => true, 'rating' => 4.3, 'full' => false,
             ],
             // ── Basic+ Provider 11: Vincent Dizon — Personal Care ──
             [
@@ -421,7 +421,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 300, 'years_exp' => 5, 'radius_km' => 10,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9510, 'lng' => 120.7240, 'verified' => true, 'rating' => 4.5, 'full' => false,
+                'verified' => true, 'rating' => 4.5, 'full' => false,
             ],
             // ── Basic+ Provider 12: Fatima Sotto — Moving Services ──
             [
@@ -431,7 +431,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 350, 'years_exp' => 6, 'radius_km' => 20,
                 'days' => 'All Week', 'hours' => 'Full Day (8 AM — 6 PM)',
-                'lat' => 13.9570, 'lng' => 120.7290, 'verified' => true, 'rating' => 4.0, 'full' => false,
+                'verified' => true, 'rating' => 4.0, 'full' => false,
             ],
             // ── Basic+ Provider 13: Edgar Soriano — Plumbing ──────
             [
@@ -441,7 +441,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 400, 'years_exp' => 6, 'radius_km' => 12,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9590, 'lng' => 120.7310, 'verified' => true, 'rating' => 4.2, 'full' => false,
+                'verified' => true, 'rating' => 4.2, 'full' => false,
             ],
             // ── Basic+ Provider 14: Mary Grace Valenzuela — Cleaning ──
             [
@@ -451,7 +451,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 320, 'years_exp' => 5, 'radius_km' => 12,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9490, 'lng' => 120.7210, 'verified' => true, 'rating' => 4.1, 'full' => false,
+                'verified' => true, 'rating' => 4.1, 'full' => false,
             ],
             // ── Full Provider 15: Sofia Gomez — Painting ───────────
             [
@@ -461,7 +461,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 400, 'years_exp' => 6, 'radius_km' => 12,
                 'days' => 'Monday — Saturday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9520, 'lng' => 120.7200, 'verified' => true, 'rating' => 4.7, 'full' => true,
+                'verified' => true, 'rating' => 4.7, 'full' => true,
             ],
             // ── Basic+ Provider 16: Malaya Dimaculangan — Plumbing ──
             [
@@ -471,7 +471,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 400, 'years_exp' => 5, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9561, 'lng' => 120.7281, 'verified' => true, 'rating' => 4.3, 'full' => false,
+                'verified' => true, 'rating' => 4.3, 'full' => false,
             ],
             // ── Basic+ Provider 17: Alab Macalintal — Electrical ──
             [
@@ -481,7 +481,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 500, 'years_exp' => 6, 'radius_km' => 18,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9582, 'lng' => 120.7262, 'verified' => true, 'rating' => 4.2, 'full' => false,
+                'verified' => true, 'rating' => 4.2, 'full' => false,
             ],
             // ── Basic+ Provider 18: Tala Catacutan — Cleaning ──
             [
@@ -491,7 +491,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 280, 'years_exp' => 4, 'radius_km' => 12,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9533, 'lng' => 120.7293, 'verified' => true, 'rating' => 4.1, 'full' => false,
+                'verified' => true, 'rating' => 4.1, 'full' => false,
             ],
             // ── Basic+ Provider 19: Kidlat Panganiban — Carpentry ──
             [
@@ -501,7 +501,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino'],
                 'hourly_rate' => 450, 'years_exp' => 7, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9554, 'lng' => 120.7314, 'verified' => true, 'rating' => 4.4, 'full' => false,
+                'verified' => true, 'rating' => 4.4, 'full' => false,
             ],
             // ── Basic+ Provider 20: Mutya Magbanua — Painting ──
             [
@@ -511,7 +511,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 380, 'years_exp' => 5, 'radius_km' => 12,
                 'days' => 'Monday — Saturday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9515, 'lng' => 120.7225, 'verified' => true, 'rating' => 4.0, 'full' => false,
+                'verified' => true, 'rating' => 4.0, 'full' => false,
             ],
             // ── Basic+ Provider 21: Lakan Dalisay — Plumbing ──
             [
@@ -521,7 +521,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 420, 'years_exp' => 6, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9576, 'lng' => 120.7276, 'verified' => true, 'rating' => 4.5, 'full' => false,
+                'verified' => true, 'rating' => 4.5, 'full' => false,
             ],
             // ── Basic+ Provider 22: Dakila Manalo — Electrical ──
             [
@@ -531,7 +531,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino'],
                 'hourly_rate' => 550, 'years_exp' => 7, 'radius_km' => 20,
                 'days' => 'All Week', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9597, 'lng' => 120.7247, 'verified' => true, 'rating' => 4.6, 'full' => false,
+                'verified' => true, 'rating' => 4.6, 'full' => false,
             ],
             // ── Basic+ Provider 23: Hiraya Ilagan — Cleaning ──
             [
@@ -541,7 +541,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 320, 'years_exp' => 5, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9548, 'lng' => 120.7308, 'verified' => true, 'rating' => 4.3, 'full' => false,
+                'verified' => true, 'rating' => 4.3, 'full' => false,
             ],
             // ── Basic+ Provider 24: Bituin Lualhati — Carpentry ──
             [
@@ -551,7 +551,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 400, 'years_exp' => 4, 'radius_km' => 12,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9529, 'lng' => 120.7339, 'verified' => true, 'rating' => 4.0, 'full' => false,
+                'verified' => true, 'rating' => 4.0, 'full' => false,
             ],
             // ── Basic+ Provider 25: Isagani Bayani — Painting ──
             [
@@ -561,7 +561,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino'],
                 'hourly_rate' => 350, 'years_exp' => 6, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9530, 'lng' => 120.7210, 'verified' => true, 'rating' => 4.2, 'full' => false,
+                'verified' => true, 'rating' => 4.2, 'full' => false,
             ],
             // ── Basic+ Provider 26: Makisig Dimagiba — Aircon ──
             [
@@ -571,7 +571,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 480, 'years_exp' => 5, 'radius_km' => 18,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9611, 'lng' => 120.7311, 'verified' => true, 'rating' => 4.4, 'full' => false,
+                'verified' => true, 'rating' => 4.4, 'full' => false,
             ],
             // ── Basic+ Provider 27: Amihan Batumbakal — Landscaping ──
             [
@@ -581,7 +581,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino'],
                 'hourly_rate' => 300, 'years_exp' => 4, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9492, 'lng' => 120.7232, 'verified' => true, 'rating' => 4.1, 'full' => false,
+                'verified' => true, 'rating' => 4.1, 'full' => false,
             ],
             // ── Basic+ Provider 28: Mithi Agbayani — Laundry ──
             [
@@ -591,7 +591,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 180, 'years_exp' => 3, 'radius_km' => 10,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9523, 'lng' => 120.7193, 'verified' => true, 'rating' => 4.0, 'full' => false,
+                'verified' => true, 'rating' => 4.0, 'full' => false,
             ],
             // ── Basic+ Provider 29: Sinag Mabini — Pest Control ──
             [
@@ -601,7 +601,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 380, 'years_exp' => 5, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9474, 'lng' => 120.7274, 'verified' => true, 'rating' => 4.3, 'full' => false,
+                'verified' => true, 'rating' => 4.3, 'full' => false,
             ],
             // ── Basic+ Provider 30: Alon Silang — Appliance Repair ──
             [
@@ -611,7 +611,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 350, 'years_exp' => 6, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9585, 'lng' => 120.7335, 'verified' => true, 'rating' => 4.2, 'full' => false,
+                'verified' => true, 'rating' => 4.2, 'full' => false,
             ],
             // ── Basic+ Provider 31: Bagwis Balagtas — Masonry ──
             [
@@ -621,7 +621,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 420, 'years_exp' => 7, 'radius_km' => 18,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9546, 'lng' => 120.7256, 'verified' => true, 'rating' => 4.4, 'full' => false,
+                'verified' => true, 'rating' => 4.4, 'full' => false,
             ],
             // ── Basic+ Provider 32: Kislap Tolosa — Personal Care ──
             [
@@ -631,7 +631,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 280, 'years_exp' => 4, 'radius_km' => 10,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9507, 'lng' => 120.7237, 'verified' => true, 'rating' => 4.5, 'full' => false,
+                'verified' => true, 'rating' => 4.5, 'full' => false,
             ],
             // ── Basic+ Provider 33: Marikit Alcantara — Moving Services ──
             [
@@ -641,7 +641,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 320, 'years_exp' => 4, 'radius_km' => 20,
                 'days' => 'All Week', 'hours' => 'Full Day (8 AM — 6 PM)',
-                'lat' => 13.9568, 'lng' => 120.7288, 'verified' => true, 'rating' => 4.1, 'full' => false,
+                'verified' => true, 'rating' => 4.1, 'full' => false,
             ],
             // ── Basic+ Provider 34: Alaya Gatchalian — Plumbing ──
             [
@@ -651,7 +651,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino'],
                 'hourly_rate' => 380, 'years_exp' => 5, 'radius_km' => 12,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9579, 'lng' => 120.7269, 'verified' => true, 'rating' => 4.2, 'full' => false,
+                'verified' => true, 'rating' => 4.2, 'full' => false,
             ],
             // ── Basic+ Provider 35: Datu Macaraig — Electrical ──
             [
@@ -661,7 +661,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 520, 'years_exp' => 6, 'radius_km' => 18,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9603, 'lng' => 120.7253, 'verified' => true, 'rating' => 4.3, 'full' => false,
+                'verified' => true, 'rating' => 4.3, 'full' => false,
             ],
             // ── Basic+ Provider 36: Magiting Magsaysay — Cleaning ──
             [
@@ -671,7 +671,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 300, 'years_exp' => 5, 'radius_km' => 12,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9537, 'lng' => 120.7307, 'verified' => true, 'rating' => 4.0, 'full' => false,
+                'verified' => true, 'rating' => 4.0, 'full' => false,
             ],
             // ── Basic+ Provider 37: Tadhana Pangilinan — Carpentry ──
             [
@@ -681,7 +681,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino'],
                 'hourly_rate' => 480, 'years_exp' => 6, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9563, 'lng' => 120.7343, 'verified' => true, 'rating' => 4.5, 'full' => false,
+                'verified' => true, 'rating' => 4.5, 'full' => false,
             ],
             // ── Basic+ Provider 38: Luningning Tupaz — Painting ──
             [
@@ -691,7 +691,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 370, 'years_exp' => 4, 'radius_km' => 12,
                 'days' => 'Monday — Saturday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9524, 'lng' => 120.7214, 'verified' => true, 'rating' => 4.1, 'full' => false,
+                'verified' => true, 'rating' => 4.1, 'full' => false,
             ],
             // ── Basic+ Provider 39: Diwa Velasco — Aircon ──
             [
@@ -701,7 +701,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 500, 'years_exp' => 5, 'radius_km' => 18,
                 'days' => 'All Week', 'hours' => 'Full Day (8 AM — 6 PM)',
-                'lat' => 13.9615, 'lng' => 120.7315, 'verified' => true, 'rating' => 4.4, 'full' => false,
+                'verified' => true, 'rating' => 4.4, 'full' => false,
             ],
             // ── Basic+ Provider 40: Sampaguita Yuzon — Landscaping ──
             [
@@ -711,7 +711,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 350, 'years_exp' => 6, 'radius_km' => 18,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9506, 'lng' => 120.7226, 'verified' => true, 'rating' => 4.3, 'full' => false,
+                'verified' => true, 'rating' => 4.3, 'full' => false,
             ],
             // ── Basic+ Provider 41: Ligaya Zapanta — Laundry ──
             [
@@ -721,7 +721,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino'],
                 'hourly_rate' => 170, 'years_exp' => 3, 'radius_km' => 10,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9527, 'lng' => 120.7197, 'verified' => true, 'rating' => 3.9, 'full' => false,
+                'verified' => true, 'rating' => 3.9, 'full' => false,
             ],
             // ── Basic+ Provider 42: Biyaya Halili — Pest Control ──
             [
@@ -731,7 +731,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 400, 'years_exp' => 5, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9478, 'lng' => 120.7278, 'verified' => true, 'rating' => 4.2, 'full' => false,
+                'verified' => true, 'rating' => 4.2, 'full' => false,
             ],
             // ── Basic+ Provider 43: Liwanag Manansala — Appliance Repair ──
             [
@@ -741,7 +741,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 380, 'years_exp' => 5, 'radius_km' => 15,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9589, 'lng' => 120.7339, 'verified' => true, 'rating' => 4.1, 'full' => false,
+                'verified' => true, 'rating' => 4.1, 'full' => false,
             ],
             // ── Basic+ Provider 44: Dalisay Polistico — Masonry ──
             [
@@ -751,7 +751,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 430, 'years_exp' => 6, 'radius_km' => 18,
                 'days' => 'Monday — Saturday', 'hours' => 'Full Day (8 AM — 5 PM)',
-                'lat' => 13.9549, 'lng' => 120.7259, 'verified' => true, 'rating' => 4.3, 'full' => false,
+                'verified' => true, 'rating' => 4.3, 'full' => false,
             ],
             // ── Basic+ Provider 45: Yumi Sumulong — Personal Care ──
             [
@@ -761,7 +761,7 @@ class DatabaseSeeder extends Seeder
                 'languages' => ['Filipino', 'English'],
                 'hourly_rate' => 300, 'years_exp' => 4, 'radius_km' => 12,
                 'days' => 'Monday — Friday', 'hours' => 'Morning (8 AM — 12 PM)',
-                'lat' => 13.9511, 'lng' => 120.7241, 'verified' => true, 'rating' => 4.4, 'full' => false,
+                'verified' => true, 'rating' => 4.4, 'full' => false,
             ],
         ];
 
@@ -777,6 +777,7 @@ class DatabaseSeeder extends Seeder
                 'role'             => 'worker',
                 'service_category' => $data['category'],
                 'city'             => 'Tuy, Batangas',
+                'barangay'         => $barangays[array_rand($barangays)],
                 'language'         => 'English',
                 'email_verified_at' => now(),
             ]);
@@ -789,13 +790,20 @@ class DatabaseSeeder extends Seeder
                 'hourly_rate'            => $data['hourly_rate'],
                 'available_days'         => $data['days'],
                 'preferred_hours'        => $data['hours'],
+                'availability'           => [
+                    ['day' => 'Monday',    'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Tuesday',   'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Wednesday', 'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Thursday',  'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Friday',    'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Saturday',  'active' => false, 'start' => null,    'end' => null],
+                    ['day' => 'Sunday',    'active' => false, 'start' => null,    'end' => null],
+                ],
                 'service_areas'          => $barangays,
                 'years_of_experience'    => $data['years_exp'],
                 'service_radius_km'      => $data['radius_km'],
                 'government_id_verified' => $data['verified'],
                 'average_rating'         => $data['rating'],
-                'current_latitude'       => $data['lat'],
-                'current_longitude'      => $data['lng'],
             ]);
 
             $workerUsers[] = $user;
