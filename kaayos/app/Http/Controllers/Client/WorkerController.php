@@ -23,16 +23,14 @@ class WorkerController extends Controller
 
     protected function getAreas(): array
     {
-        $areas = [];
-        foreach (\App\Models\WorkerProfile::whereNotNull('service_areas')->get(['service_areas']) as $p) {
-            $arr = $p->service_areas;
-            if (is_array($arr)) {
-                $areas = array_merge($areas, $arr);
-            }
-        }
-        $areas = array_values(array_unique(array_filter($areas)));
-        sort($areas);
-        return $areas;
+        return User::where('role', 'worker')
+            ->whereNotNull('barangay')
+            ->where('barangay', '!=', '')
+            ->distinct()
+            ->pluck('barangay')
+            ->sort()
+            ->values()
+            ->toArray();
     }
 
     protected function sortWorkers(array $workers, string $sort): array
@@ -72,9 +70,7 @@ class WorkerController extends Controller
         }
 
         if ($area = $request->query('area')) {
-            $query->whereHas('workerProfile', function ($q) use ($area) {
-                $q->where('service_areas', 'like', '%"' . $area . '"%');
-            });
+            $query->where('barangay', $area);
         }
 
         $workers = $query->get()->map(fn ($u) => [
