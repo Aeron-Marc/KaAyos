@@ -27,6 +27,22 @@ class BookingTest extends TestCase
         $this->worker = User::factory()->create(['role' => 'worker']);
     }
 
+    protected function createWorkerWithAvailability(): void
+    {
+        WorkerProfile::create([
+            'user_id'      => $this->worker->id,
+            'availability' => [
+                ['day' => 'Monday', 'active' => true, 'start' => '08:00', 'end' => '17:00'],
+                ['day' => 'Tuesday', 'active' => true, 'start' => '08:00', 'end' => '17:00'],
+                ['day' => 'Wednesday', 'active' => true, 'start' => '08:00', 'end' => '17:00'],
+                ['day' => 'Thursday', 'active' => true, 'start' => '08:00', 'end' => '17:00'],
+                ['day' => 'Friday', 'active' => true, 'start' => '08:00', 'end' => '17:00'],
+                ['day' => 'Saturday', 'active' => false, 'start' => null, 'end' => null],
+                ['day' => 'Sunday', 'active' => false, 'start' => null, 'end' => null],
+            ],
+        ]);
+    }
+
     protected function validBookingData(array $overrides = []): array
     {
         return array_merge([
@@ -52,6 +68,8 @@ class BookingTest extends TestCase
         Notification::fake();
         Event::fake();
 
+        $this->createWorkerWithAvailability();
+
         $response = $this->actingAs($this->client)
             ->postJson(route('client.bookings.store'), $this->validBookingData());
 
@@ -73,6 +91,8 @@ class BookingTest extends TestCase
 
     public function test_booking_creates_initial_history_entry(): void
     {
+        $this->createWorkerWithAvailability();
+
         $response = $this->actingAs($this->client)
             ->postJson(route('client.bookings.store'), $this->validBookingData());
 
@@ -88,6 +108,7 @@ class BookingTest extends TestCase
 
     public function test_client_cannot_book_suspended_worker(): void
     {
+        $this->createWorkerWithAvailability();
         $this->worker->update(['suspended_at' => now()]);
 
         $response = $this->actingAs($this->client)
@@ -99,6 +120,8 @@ class BookingTest extends TestCase
 
     public function test_client_cannot_book_nonexistent_worker(): void
     {
+        $this->createWorkerWithAvailability();
+
         $response = $this->actingAs($this->client)
             ->postJson(route('client.bookings.store'), $this->validBookingData([
                 'worker_id' => 99999,
@@ -199,6 +222,8 @@ class BookingTest extends TestCase
 
     public function test_client_cannot_book_overlapping_slot(): void
     {
+        $this->createWorkerWithAvailability();
+
         $scheduledAt = now()->addDay()->format('Y-m-d H:i:s');
 
         Booking::create([
@@ -223,6 +248,8 @@ class BookingTest extends TestCase
 
     public function test_booking_price_defaults_to_zero(): void
     {
+        $this->createWorkerWithAvailability();
+
         $response = $this->actingAs($this->client)
             ->postJson(route('client.bookings.store'), $this->validBookingData([
                 'price' => null,
