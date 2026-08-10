@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+defaults:
+  run:
+    working-directory: kaayos
+
 jobs:
   build:
     name: Build Frontend
@@ -19,6 +23,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: 'kaayos/package-lock.json'
 
       - name: Install JS dependencies
         run: npm ci
