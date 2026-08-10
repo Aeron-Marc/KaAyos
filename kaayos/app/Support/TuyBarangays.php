@@ -55,6 +55,20 @@ class TuyBarangays
         ];
     }
 
+    public static function pointForStatic(string $barangay): array
+    {
+        if (!isset(self::CENTERS[$barangay])) {
+            $barangay = 'Luna';
+        }
+
+        [$lat, $lng] = self::CENTERS[$barangay];
+
+        return [
+            round($lat, 6),
+            round($lng, 6),
+        ];
+    }
+
     public static function allBarangays(): array
     {
         return array_keys(self::CENTERS);

@@ -16,6 +16,8 @@ class ChatBotService
     protected string $apiKey;
     protected string $model;
     protected AiTools $tools;
+    protected array $history = [];
+    protected ?User $user = null;
 
     public function __construct()
     {
@@ -25,8 +27,12 @@ class ChatBotService
         $this->tools = app(AiTools::class);
     }
 
-    public function chat(string $message): array
+    public function chat(string $message, array $history = [], ?User $user = null): array
     {
+        $this->history = $this->normalizeHistory($history);
+        $this->user = $user;
+        $this->tools->setUser($user);
+
         $intent = $this->detectIntent($message);
 
         if ($intent !== 'default') {
@@ -71,9 +77,17 @@ class ChatBotService
         $catCount = ServiceCategory::where('is_active', true)->count();
         $workerCount = User::where('role', 'worker')->count();
 
+        $userLocationBlock = '';
+        if ($this->user !== null && $this->user->barangay) {
+            $city = $this->user->city ?? 'Tuy, Batangas';
+            $userLocationBlock = "\nUser location: The current user is logged in and located in Brgy. {$this->user->barangay}, {$city}. When they ask for workers \"near me\", \"nearby\", \"close to me\", or any proximity-based request, use search_workers with their barangay to find and rank workers by distance. Mention their barangay in your reply so they know the search was personalized.\n";
+        } else {
+            $userLocationBlock = "\nUser location: The user is not logged in (guest). If they ask about nearby workers, politely ask which barangay they are in (e.g., \"What barangay are you located in so I can find the closest workers?\") and then call search_workers with their barangay. Do NOT guess their location.\n";
+        }
+
         return <<<PROMPT
 You are KaAyos AI Assistant — a helpful support chatbot for KaAyos, a home service marketplace in Tuy, Batangas, Philippines.
-        Your role is to assist clients (homeowners) with finding and booking skilled workers ("workers").
+        Your role is to assist clients (homeowners) with finding, evaluating, and booking skilled workers ("workers").
 
 Key facts about KaAyos:
 - Has {$catCount} service categories and {$workerCount} registered workers
@@ -87,30 +101,35 @@ Key facts about KaAyos:
 - A 10% platform fee applies to completed jobs
 - Clients must be logged in to book a worker
 - Users can register as both client and worker with one account
-
-Guidelines:
+{$userLocationBlock}
+How to behave:
 - Be friendly, concise, and helpful. Respond in clear, professional English only.
-- If you don't know something, use available tools to look it up instead of guessing
-- Do NOT make up pricing or availability — use tools to get accurate data
-- Do NOT share any user's personal information
-- Keep responses under 3 paragraphs
-- Always suggest 3 relevant follow-up questions at the end
+- Keep responses under 3 paragraphs unless listing workers/services.
+- You MAY recommend, rank, compare, and give opinions about workers, services, pricing, and booking options. This is your core job — please do it confidently.
+- When a user asks you to recommend, find, rank, or compare workers or services, CALL the appropriate tool first (get_categories, search_workers, get_worker_detail, check_worker_bookings) and base your answer on the returned data.
+- When recommending workers, briefly explain why based on real tool data (rating, reviews, verified status, experience, skills, distance).
+- If a follow-up question refers to "him", "the first one", "that worker", or similar pronouns, use the conversation history to resolve who the user means and use get_worker_detail if you need more info.
+- Always suggest 3 relevant follow-up questions at the end.
 
-Safety rules — you MUST refuse any request that:
-- Is sexually explicit, lewd, or romantic in nature
-- Promotes violence, self-harm, or illegal activity
-- Asks you to bypass security, impersonate someone, or hack
-- Is unrelated to KaAyos (home services, booking workers, etc.)
-- Asks for personal information about workers or clients
-If you must refuse, politely explain that you can only answer questions about KaAyos home services.
+When to refuse (only these cases):
+- Requests that are sexually explicit, lewd, or romantic in nature
+- Requests that promote violence, self-harm, or illegal activity
+- Requests to bypass security, impersonate someone, or hack
+- Requests for a specific user's personal information (phone, address, ID numbers, password)
+- Questions that are CLEARLY unrelated to KaAyos home services (e.g., coding help, medical advice, homework, news, politics). Politely explain you can only help with KaAyos home services and suggest a relevant KaAyos topic instead.
 
-You have tools available to query categories, services, workers, and bookings. When a user asks for information, use the appropriate tool instead of making up data.
+Casual small talk, greetings, and brief personal remarks are fine and do NOT require refusal — just steer them back to KaAyos topics naturally.
+Do NOT share any user's personal information.
+You have tools available to query categories, services, workers, and bookings. When a user asks for information or recommendations, use the appropriate tool instead of making up data.
 PROMPT;
     }
 
     protected function askWithTools(string $message): array
     {
         $messages = [['role' => 'system', 'content' => $this->systemPrompt()]];
+        foreach ($this->history as $entry) {
+            $messages[] = ['role' => $entry['role'], 'content' => $entry['content']];
+        }
         $messages[] = ['role' => 'user', 'content' => $message];
 
         $tools = $this->tools->getDefinitions();
@@ -186,6 +205,9 @@ PROMPT;
     protected function askOpenAI(string $message): array
     {
         $messages = [['role' => 'system', 'content' => $this->systemPrompt()]];
+        foreach ($this->history as $entry) {
+            $messages[] = ['role' => $entry['role'], 'content' => $entry['content']];
+        }
         $messages[] = ['role' => 'user', 'content' => $message];
 
         try {
@@ -218,7 +240,12 @@ PROMPT;
 
     protected function askGemini(string $message): array
     {
-        $contents = [['role' => 'user', 'parts' => [['text' => $message]]]];
+        $contents = [];
+        foreach ($this->history as $entry) {
+            $role = $entry['role'] === 'assistant' ? 'model' : 'user';
+            $contents[] = ['role' => $role, 'parts' => [['text' => $entry['content']]]];
+        }
+        $contents[] = ['role' => 'user', 'parts' => [['text' => $message]]];
 
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
@@ -299,23 +326,51 @@ PROMPT;
         ];
     }
 
+    protected function normalizeHistory(array $history): array
+    {
+        $normalized = [];
+        $count = 0;
+        foreach ($history as $entry) {
+            if ($count >= 20) {
+                break;
+            }
+            $role = $entry['role'] ?? '';
+            $content = $entry['content'] ?? '';
+
+            if ($role === 'bot' || $role === 'assistant') {
+                $role = 'assistant';
+            } elseif ($role === 'user') {
+                $role = 'user';
+            } else {
+                continue;
+            }
+
+            if (!is_string($content) || trim($content) === '') {
+                continue;
+            }
+
+            $normalized[] = [
+                'role'    => $role,
+                'content' => mb_substr($content, 0, 1000),
+            ];
+            $count++;
+        }
+
+        return $normalized;
+    }
+
+    protected function containsWord(string $haystack, string $needle): bool
+    {
+        $pattern = '/(?:^|[\s,.!?])' . preg_quote($needle, '/') . '(?:$|[\s,.!?])/i';
+        return preg_match($pattern, $haystack) === 1;
+    }
+
     protected function detectIntent(string $message): string
     {
         $lower = strtolower(trim($message));
 
-        $trades = ['plumber', 'plumbing', 'tubig', 'pipe', 'electrician', 'electrical', 'kuryente',
-                   'carpenter', 'carpentry', 'karpintero', 'painter', 'painting', 'pintor',
-                   'cleaner', 'cleaning', 'linis', 'welder', 'welding', 'mason', 'masonry',
-                   'gardener', 'gardening', 'halaman'];
-        foreach ($trades as $trade) {
-            if (str_contains($lower, $trade)) {
-                return 'workers';
-            }
-        }
-
         $phrasePatterns = [
             'services' => ['ano-ano', 'anong serbisyo', 'ano ang serbisyo', 'what services', 'service categories', 'are available'],
-            'workers'  => ['registered in', 'registered here', 'under the', 'who are registered', 'in this category', 'under this category', 'workers under'],
             'greeting' => ['good morning', 'good afternoon', 'good evening', 'magandang umaga', 'magandang hapon'],
             'booking'  => ['how do i book', 'how to book', 'how to hire', 'how does booking', 'paano mag-book'],
             'areas'    => ['what areas', 'where do you', 'saan kayo', 'what barangays', 'list of barangays', '22 barangays'],
@@ -332,19 +387,18 @@ PROMPT;
 
         $keywordPatterns = [
             'booking'  => ['paano', 'mag-book', 'appointment', 'schedule'],
-            'areas'    => ['barangay', 'tuy', 'batangas', 'location'],
+            'areas'    => ['tuy', 'batangas'],
             'verify'   => ['verify', 'verified', 'verification', 'document', 'clearance', 'badge', 'background'],
             'pricing'  => ['magkano', 'presyo', 'bayad', 'fee', 'payment', 'price', 'cost'],
-            'review'   => ['review', 'rating', 'feedback', 'star', 'testimonial'],
+            'review'   => ['review', 'rating', 'feedback', 'testimonial'],
             'cancel'   => ['cancel', 'refund', 'reschedule', 'modify'],
-            'greeting' => ['hello', 'hi', 'hey', 'kamusta'],
+            'greeting' => ['hello', 'kamusta'],
             'contact'  => ['contact', 'email', 'support', 'complain', 'report'],
-            'workers'  => ['worker', 'trabahador', 'manggagawa', 'hanap', 'kailangan'],
             'services' => ['category', 'categories'],
         ];
         foreach ($keywordPatterns as $intent => $keywords) {
             foreach ($keywords as $keyword) {
-                if (str_contains($lower, $keyword)) {
+                if ($this->containsWord($lower, $keyword)) {
                     return $intent;
                 }
             }

@@ -29,7 +29,7 @@ class ProfileController extends Controller
             'first_name' => $firstName,
             'last_name'  => $lastName,
             'phone'      => $data['phone'] ?? null,
-            'city'       => $data['barangay'] ?? null,
+            'barangay'   => $data['barangay'] ?? null,
         ]);
 
         return response()->json([
@@ -37,7 +37,7 @@ class ProfileController extends Controller
             'fullName' => $user->name,
             'email'    => $user->email,
             'phone'    => $user->phone,
-            'barangay' => $user->city,
+            'barangay' => $user->barangay,
         ]);
     }
 

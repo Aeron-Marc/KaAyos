@@ -448,6 +448,27 @@
                                value="{{ old('service_zone', $workerProfile->service_zone ? implode(', ', $workerProfile->service_zone) : '') }}">
                     </div>
                 </div>
+
+                <div style="margin-top:16px;padding:12px;background:var(--g0);border-radius:8px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                        <div>
+                            <p style="font-size:.82rem;font-weight:600;margin-bottom:2px;">Your Base Location</p>
+                            @if($workerProfile->current_latitude && $workerProfile->current_longitude)
+                                @if($workerProfile->location_is_approximate)
+                                    <p style="font-size:.78rem;color:var(--g5);">Approximate &bull; {{ number_format($workerProfile->current_latitude, 4) }}, {{ number_format($workerProfile->current_longitude, 4) }}</p>
+                                @else
+                                    <p style="font-size:.78rem;color:var(--g5);">Precise (GPS) &bull; {{ number_format($workerProfile->current_latitude, 4) }}, {{ number_format($workerProfile->current_longitude, 4) }}</p>
+                                @endif
+                            @else
+                                <p style="font-size:.78rem;color:var(--g5);">Not set — workers without a precise location rank lower in client searches.</p>
+                            @endif
+                        </div>
+                        <button type="button" class="btn btn-outline btn-sm" id="setLocationBtn" style="font-size:.78rem;padding:6px 14px;white-space:nowrap;">
+                            <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Set My Location
+                        </button>
+                    </div>
+                    <div id="locStatusMsg" style="display:none;margin-top:8px;font-size:.78rem;"></div>
+                </div>
             </div>
 
             <div style="display:flex;gap:10px;margin-top:20px;">
@@ -1353,5 +1374,69 @@ document.querySelectorAll('.tag-input-wrap').forEach(initTagInput);
         })
         .catch(function () { alert('Something went wrong.'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Remove'; });
     };
+
+    // ── Set My Location (worker profile page) ──
+    (function () {
+        var btn = document.getElementById('setLocationBtn');
+        var statusMsg = document.getElementById('locStatusMsg');
+        if (!btn) return;
+
+        function showLocMsg(txt, isError) {
+            if (!statusMsg) return;
+            statusMsg.textContent = txt;
+            statusMsg.style.color = isError ? 'var(--r5,#c62828)' : 'var(--g6,#2e7d32)';
+            statusMsg.style.display = 'block';
+            if (!isError) {
+                setTimeout(function () { statusMsg.style.display = 'none'; }, 5000);
+            }
+        }
+
+        btn.addEventListener('click', function () {
+            if (!navigator.geolocation) {
+                showLocMsg('Your browser does not support location sharing.', true);
+                return;
+            }
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Getting location…';
+            showLocMsg('');
+
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    var lat = parseFloat(position.coords.latitude.toFixed(7));
+                    var lng = parseFloat(position.coords.longitude.toFixed(7));
+
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('PUT', '/worker/location', true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name=csrf-token]')?.content || '');
+                    xhr.setRequestHeader('Accept', 'application/json');
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                var data = JSON.parse(xhr.responseText);
+                                showLocMsg('Location set! Clients will now see your precise location in searches.', false);
+                                // Refresh to show updated coords
+                                setTimeout(function () { location.reload(); }, 1500);
+                            } else {
+                                showLocMsg('Failed to save location. Please try again.', true);
+                                btn.disabled = false;
+                                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Set My Location';
+                            }
+                        }
+                    };
+                    xhr.send(JSON.stringify({ latitude: lat, longitude: lng }));
+                },
+                function (err) {
+                    var txt = 'Could not get your location.';
+                    if (err.code === 1) txt = 'Location permission denied. Please allow location access in your browser settings.';
+                    if (err.code === 2) txt = 'Location unavailable. Make sure GPS is enabled.';
+                    showLocMsg(txt, true);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Set My Location';
+                },
+                { timeout: 10000, maximumAge: 0 }
+            );
+        });
+    })();
 </script>
 @endpush

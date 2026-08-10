@@ -68,7 +68,7 @@
                         <select id="barangaySelect" name="barangay">
                             <option value="">Select barangay...</option>
                             @foreach($barangays as $b)
-                                <option value="{{ $b }}" {{ ($user->city == $b) ? 'selected' : '' }}>{{ $b }}</option>
+                                <option value="{{ $b }}" {{ ($user->barangay == $b) ? 'selected' : '' }}>{{ $b }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -343,20 +343,27 @@
         btn.textContent = 'Saving…';
 
         var formData = new FormData();
+        formData.append('_method', 'PUT');
         formData.append('fullName', document.getElementById('fullName').value);
         formData.append('phone', phone);
         formData.append('barangay', document.getElementById('barangaySelect').value);
 
-        fetch('/api/profile', { method: 'PUT', headers: getHeaders(), body: formData })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
+        fetch('/api/profile', { method: 'POST', headers: getHeaders(), body: formData })
+            .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+            .then(function (result) {
+                if (!result.ok) {
+                    var msg = result.data.message || 'Failed to save.';
+                    showToast('error', msg);
+                    return;
+                }
+                var data = result.data;
                 if (!data.message) throw new Error(data.message || 'Failed to save.');
-                origFullName = data.fullName;
+                origFullName = data.fullName || origFullName;
                 origPhone = data.phone || '';
                 origBarangay = data.barangay || '';
-                document.getElementById('sidebarName').textContent = data.fullName;
-                document.getElementById('sidebarEmail').textContent = data.email;
-                document.getElementById('currentEmailDisplay').textContent = data.email;
+                if (data.fullName) document.getElementById('sidebarName').textContent = data.fullName;
+                if (data.email) document.getElementById('sidebarEmail').textContent = data.email;
+                if (data.email) document.getElementById('currentEmailDisplay').textContent = data.email;
                 checkPersonalDirty();
                 showToast('success', data.message);
             })
@@ -418,10 +425,11 @@
         btn.textContent = 'Saving…';
 
         var formData = new FormData();
+        formData.append('_method', 'PUT');
         formData.append('emailNotifications', document.getElementById('emailNotificationsSelect').value);
         formData.append('language', document.getElementById('languageSelect').value);
 
-        fetch('/api/preferences', { method: 'PUT', headers: getHeaders(), body: formData })
+        fetch('/api/preferences', { method: 'POST', headers: getHeaders(), body: formData })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (!data.message) throw new Error(data.message || 'Failed to save.');

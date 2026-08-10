@@ -23,7 +23,7 @@ class SuggestionController extends Controller
 
         try {
             $chat = app(ChatBotService::class);
-            $result = $chat->chat($validated['message'], $validated['history'] ?? []);
+            $result = $chat->chat($validated['message'], $validated['history'] ?? [], auth()->user());
 
             $workers = [];
             $intent = $this->extractIntent($validated['message']);
