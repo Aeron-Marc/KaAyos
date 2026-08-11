@@ -6,6 +6,7 @@ use App\Exceptions\BookingStateException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Conversation;
+use App\Models\Earning;
 use App\Models\Message;
 use App\Models\Review;
 use App\Models\WorkerProfile;
@@ -787,7 +788,26 @@ class ClientController extends Controller
         }
 
         try {
-            $booking->markComplete(auth()->user());
+            $afterSave = function (Booking $fresh) {
+                if ($fresh->status === Booking::STATUS_COMPLETED) {
+                    $platformFeePercent = config('kaayos.platform_fee_percent', 10);
+                    $gross = $fresh->price ?? 0;
+                    $fee = round($gross * ($platformFeePercent / 100), 2);
+                    $net = $gross - $fee;
+
+                    Earning::updateOrCreate(
+                        ['booking_id' => $fresh->id],
+                        [
+                            'worker_id'    => $fresh->worker_id,
+                            'gross_amount' => $gross,
+                            'platform_fee' => $fee,
+                            'net_amount'   => $net,
+                        ]
+                    );
+                }
+            };
+
+            $booking->markComplete(auth()->user(), $afterSave);
             $booking->fresh();
             $isFullyCompleted = $booking->status === Booking::STATUS_COMPLETED;
             

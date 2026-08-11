@@ -128,6 +128,12 @@ class WorkerDashboardController extends Controller
             } else if ($validated['status'] === Booking::STATUS_ACCEPTED) {
                 $booking->update(['agreed_by_worker_at' => now()]);
                 $booking->transitionTo($validated['status'], auth()->id());
+                $booking->load('client');
+                Notification::send($booking->client, new BookingStatusChanged($booking, $oldStatus));
+            } else if ($validated['status'] === Booking::STATUS_CANCELLED) {
+                $booking->cancel($request->input('reason', 'Cancelled by worker'), auth()->id());
+                $booking->load('client');
+                Notification::send($booking->client, new BookingCancelled($booking, $user->name));
             } else {
                 $booking->transitionTo($validated['status'], auth()->id());
             }

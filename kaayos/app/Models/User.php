@@ -59,24 +59,20 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    private static ?int $systemUserId = null;
-
     public static function getSystemUserId(): int
     {
-        if (self::$systemUserId === null) {
-            $user = self::firstOrCreate(
-                ['email' => 'system@kaayos.app'],
-                [
-                    'name'       => 'KaAyos',
-                    'first_name' => 'KaAyos',
-                    'last_name'  => 'System',
-                    'role'       => 'admin',
-                    'password'   => \Hash::make(\Str::random(32)),
-                ]
-            );
-            self::$systemUserId = $user->id;
-        }
-        return self::$systemUserId;
+        $user = self::firstOrCreate(
+            ['email' => 'system@kaayos.app'],
+            [
+                'name'       => 'KaAyos',
+                'first_name' => 'KaAyos',
+                'last_name'  => 'System',
+                'role'       => 'admin',
+                'password'   => \Hash::make(\Str::random(32)),
+            ]
+        );
+
+        return $user->id;
     }
 
     public function sendPasswordResetNotification($token): void
