@@ -116,6 +116,26 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->city ?: (string) config('kaayos.default_location');
     }
 
+    public function locationContext(): array
+    {
+        $barangay     = $this->barangay;
+        $municipality = $this->city_municipality ?: $this->city;
+        $province     = $this->province;
+
+        $full = implode(', ', array_filter([$barangay, $municipality, $province]))
+            ?: (string) config('kaayos.default_location');
+
+        return [
+            'barangay'     => $barangay,
+            'municipality' => $municipality,
+            'province'     => $province,
+            'latitude'     => $this->latitude,
+            'longitude'    => $this->longitude,
+            'full'         => $full,
+            'source'       => $this->location_source,
+        ];
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
