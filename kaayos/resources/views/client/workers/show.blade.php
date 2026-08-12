@@ -371,8 +371,11 @@
 
                 <div class="form-group">
                     <label for="notes">Notes <small>(optional)</small></label>
-                    <textarea id="notes" name="notes" class="form-control book-textarea"
-                              placeholder="Describe what you need done…"></textarea>
+                    <div class="notes-textarea-wrap">
+                        <textarea id="notes" name="notes" class="form-control"
+                                  placeholder="Describe what you need done…" maxlength="2000"></textarea>
+                        <span class="notes-counter">0 / 2000</span>
+                    </div>
                 </div>
 
                 @if($worker->workerProfile && $worker->workerProfile->hourly_rate)
@@ -479,6 +482,14 @@ function updateAgreementSummary() {
     document.getElementById('agree-price').textContent    = pr ? '₱' + Number(pr).toLocaleString() : '—';
 }
 
+function updateNotesCounter() {
+    const textarea = document.getElementById('notes');
+    const counter = document.querySelector('.notes-counter');
+    if (textarea && counter) {
+        counter.textContent = textarea.value.length + ' / 2000';
+    }
+}
+
 function submitBooking(e) {
     e.preventDefault();
     if (!document.getElementById('agree-terms').checked) {
@@ -545,6 +556,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelector('#book-form').addEventListener('input', updateAgreementSummary);
     document.querySelector('#book-form').addEventListener('change', updateAgreementSummary);
+
+    const notesInput = document.getElementById('notes');
+    if (notesInput) {
+        notesInput.addEventListener('input', updateNotesCounter);
+        updateNotesCounter();
+    }
 });
 </script>
 @endpush
@@ -608,8 +625,10 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .modal-close:hover { color: var(--g8); }
 .modal-body { padding: 16px 22px; max-height: 60vh; overflow-y: auto; }
-.book-textarea { resize: none; min-height: 80px; width: 100%; box-sizing: border-box; }
 #book-form .form-control { width: 100%; box-sizing: border-box; }
+#book-form .notes-textarea-wrap { position: relative; background: #f8fafc; border: 1px solid var(--g1); border-radius: 8px; padding: 10px 14px; }
+#book-form .notes-textarea-wrap textarea { border: none; background: transparent; padding-bottom: 24px; resize: vertical; min-height: 80px; }
+.notes-counter { position: absolute; bottom: 8px; right: 10px; font-size: .8rem; color: var(--g4); pointer-events: none; }
 .modal-footer {
     display: flex; gap: 10px; justify-content: flex-end;
     padding: 0 22px 18px;
