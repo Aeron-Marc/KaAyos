@@ -311,7 +311,12 @@ class WorkerDashboardController extends Controller
         );
 
         $user = auth()->user();
-        $user->update(['barangay' => $barangay]);
+        $user->update([
+            'latitude'        => $validated['latitude'],
+            'longitude'       => $validated['longitude'],
+            'barangay'        => $barangay,
+            'location_source' => 'gps',
+        ]);
 
         if ($request->expectsJson()) {
             return response()->json([
