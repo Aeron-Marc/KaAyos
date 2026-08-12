@@ -60,6 +60,11 @@ class TuyBarangays
         return array_keys(self::CENTERS);
     }
 
+    public static function isValidBarangay(?string $barangay): bool
+    {
+        return $barangay !== null && isset(self::CENTERS[$barangay]);
+    }
+
     public static function barangayFor(float $lat, float $lng): string
     {
         $best = null;

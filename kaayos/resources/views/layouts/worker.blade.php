@@ -152,6 +152,8 @@
             </div>
         </main>
 
+        <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
         @push('scripts')
         <script>
         (function() {

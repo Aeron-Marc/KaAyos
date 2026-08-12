@@ -14,6 +14,7 @@ use App\Http\Controllers\Worker\WorkerController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
 use App\Http\Controllers\Api\PasswordOtpController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VerificationController;
@@ -96,6 +97,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/api/profile',                    [ProfileController::class, 'updateProfile']);
     Route::put('/api/preferences',                [ProfileController::class, 'updatePreferences']);
     Route::post('/api/profile/avatar',            [ProfileController::class, 'uploadAvatar']);
+    Route::post('/api/location/reverse',          [LocationController::class, 'reverseGeocode']);
+    Route::post('/api/location',                  [LocationController::class, 'store']);
 });
 
 // Chatbot (public + authenticated)

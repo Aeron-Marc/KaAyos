@@ -302,11 +302,6 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="city">City / Municipality</label>
-                        <input type="text" id="city" name="city"
-                               value="{{ old('city', auth()->user()->city) }}" placeholder="e.g. Tuy, Batangas">
-                    </div>
-                    <div class="form-group">
                         <label for="language">Language Preference</label>
                         <select id="language" name="language">
                             <option value="English" {{ auth()->user()->language === 'English' ? 'selected' : '' }}>English</option>
@@ -315,6 +310,8 @@
                     </div>
                 </div>
             </div>
+
+            @include('partials.location-picker')
 
             <div class="form-section">
                 <h3>Professional Information</h3>

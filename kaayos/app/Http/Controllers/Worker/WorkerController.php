@@ -638,15 +638,20 @@ class WorkerController extends Controller
             'service_zone'       => ['nullable', 'string'],
         ]);
 
-        $user->update([
+        $updates = [
             'first_name'       => $data['first_name'],
             'last_name'        => $data['last_name'],
             'name'             => $data['first_name'] . ' ' . $data['last_name'],
             'phone'            => $data['phone'] ?? null,
-            'city'             => $data['city'] ?? null,
             'language'         => $data['language'],
             'service_category' => $data['service_category'] ?? null,
-        ]);
+        ];
+
+        if (!empty($data['city'])) {
+            $updates['city'] = $data['city'];
+        }
+
+        $user->update($updates);
 
         $profile = $user->workerProfile ?? new WorkerProfile(['user_id' => $user->id]);
 
