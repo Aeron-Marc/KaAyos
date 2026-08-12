@@ -16,6 +16,7 @@ class ChatBotService
     protected string $apiKey;
     protected string $model;
     protected AiTools $tools;
+    protected array $clientLocation = [];
 
     public function __construct()
     {
@@ -25,8 +26,10 @@ class ChatBotService
         $this->tools = app(AiTools::class);
     }
 
-    public function chat(string $message): array
+    public function chat(string $message, array $context = []): array
     {
+        $this->clientLocation = $context['client'] ?? [];
+
         $intent = $this->detectIntent($message);
 
         if ($intent !== 'default') {
@@ -71,7 +74,7 @@ class ChatBotService
         $catCount = ServiceCategory::where('is_active', true)->count();
         $workerCount = User::where('role', 'worker')->count();
 
-        return <<<PROMPT
+        $prompt = <<<PROMPT
 You are KaAyos AI Assistant — a helpful support chatbot for KaAyos, a home service marketplace in Tuy, Batangas, Philippines.
         Your role is to assist clients (homeowners) with finding and booking skilled workers ("workers").
 
@@ -106,6 +109,24 @@ If you must refuse, politely explain that you can only answer questions about Ka
 
 You have tools available to query categories, services, workers, and bookings. When a user asks for information, use the appropriate tool instead of making up data.
 PROMPT;
+
+        if (!empty($this->clientLocation)) {
+            $loc = $this->clientLocation;
+            $prompt .= "\n\nClient Location (source of truth for location-based suggestions):\n";
+            $prompt .= 'Barangay: ' . ($loc['barangay'] ?? '') . "\n";
+            $prompt .= 'Municipality: ' . ($loc['municipality'] ?? '') . "\n";
+            $prompt .= 'Province: ' . ($loc['province'] ?? '') . "\n";
+            $prompt .= 'Full Location: ' . ($loc['full'] ?? '') . "\n";
+            if (!empty($loc['latitude'])) {
+                $prompt .= 'Latitude: ' . $loc['latitude'] . "\n";
+            }
+            if (!empty($loc['longitude'])) {
+                $prompt .= 'Longitude: ' . $loc['longitude'] . "\n";
+            }
+            $prompt .= "\nWhen listing workers, reference the client's Full Location above (e.g. \"near {$loc['full']}\"). Never invent, guess, or substitute a different location.";
+        }
+
+        return $prompt;
     }
 
     protected function askWithTools(string $message): array
@@ -468,9 +489,10 @@ PROMPT;
             ];
         }
 
+        $loc = $this->clientLocation['full'] ?? (string) config('kaayos.default_location');
         $intro = $category
-            ? "Here are some <strong>{$category}</strong> workers available in Tuy, Batangas:"
-            : "Here are some of our verified workers in Tuy, Batangas:";
+            ? "Here are some <strong>{$category}</strong> workers available near {$loc}:"
+            : "Here are some of our verified workers near {$loc}:";
 
         $lines = $workers->map(function ($w) {
             $rate = $w->workerProfile?->hourly_rate ? '₱' . number_format($w->workerProfile->hourly_rate) . '/hr' : 'Negotiable';
