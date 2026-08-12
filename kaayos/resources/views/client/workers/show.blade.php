@@ -168,7 +168,7 @@
             || !empty($workerProfile->spoken_languages)
             || ($workerProfile->portfolios && $workerProfile->portfolios->count() > 0)
         );
-        $profileHasContent = $profileHasContent || ($documents && $documents->count() > 0);
+        $profileHasContent = $profileHasContent || ($documents && count($documents) > 0);
     @endphp
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;">
         @if($profileHasContent)
@@ -211,20 +211,20 @@
             @endif
 
             {{-- Documents --}}
-            @if($documents && $documents->count() > 0)
+            @if($documents && count($documents) > 0)
                 <div class="card-panel">
                     <div class="card-panel-header">
-                        <h3 class="section-title">Documents</h3>
+                        <h3 class="section-title">Worker Documents</h3>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
                         @foreach($documents as $doc)
                             <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--g0);border-radius:8px;font-size:.85rem;">
-                                <i class="fa-solid fa-file-lines" style="color:var(--b5);" aria-hidden="true"></i>
-                                <span style="flex:1;">{{ $doc->document_type }}</span>
-                                @if($doc->status === 'verified')
+                                <i class="fa-solid {{ $doc['icon'] }}" style="color:var(--b5);" aria-hidden="true"></i>
+                                <span style="flex:1;">{{ $doc['name'] }}</span>
+                                @if($doc['status'] === 'Verified')
                                     <span style="color:#166534;font-size:.78rem;"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified</span>
                                 @else
-                                    <span style="color:var(--g4);font-size:.78rem;">{{ ucfirst($doc->status) }}</span>
+                                    <span style="color:var(--g4);font-size:.78rem;">{{ $doc['status'] }}</span>
                                 @endif
                             </div>
                         @endforeach
