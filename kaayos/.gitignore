@@ -39,3 +39,4 @@ __pycache__/
 # SQLite database (project uses MySQL)
 /database/database.sqlite
 /database/database.sqlite-journal
+/kaayos_test
