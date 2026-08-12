@@ -15,6 +15,7 @@ use App\Notifications\JobCompletionRequested;
 use App\Notifications\JobCompletionConfirmed;
 use App\Notifications\RescheduleRequested;
 use App\Services\BookingMessageService;
+use App\Support\TuyBarangays;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -310,11 +311,25 @@ class WorkerDashboardController extends Controller
             'location_is_approximate' => false,
         ]);
 
+        $barangay = TuyBarangays::barangayFor(
+            (float) $validated['latitude'],
+            (float) $validated['longitude']
+        );
+
+        $user = auth()->user();
+        $user->update([
+            'latitude'        => $validated['latitude'],
+            'longitude'       => $validated['longitude'],
+            'barangay'        => $barangay,
+            'location_source' => 'gps',
+        ]);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Location updated successfully.',
                 'latitude'  => $profile->current_latitude,
                 'longitude' => $profile->current_longitude,
+                'barangay' => $barangay,
             ]);
         }
 

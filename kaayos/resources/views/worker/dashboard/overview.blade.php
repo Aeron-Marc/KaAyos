@@ -61,6 +61,12 @@
     $firstName = explode(' ', auth()->user()->name ?? 'there')[0];
     $hour = (int) now()->format('H');
     $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
+
+    $profile = auth()->user()->workerProfile;
+    $needsLocation = !$profile
+        || $profile->current_latitude === null
+        || $profile->current_longitude === null
+        || $profile->location_is_approximate === true;
 @endphp
 
 <div class="welcome-banner">
@@ -74,6 +80,57 @@
     <p>Manage your jobs, track your earnings, and keep your clients happy — all in one place.</p>
     <div id="locMsg" style="display:none;margin-top:8px;font-size:.82rem;"></div>
 </div>
+
+{{-- Location onboarding popup — shown only when worker has no real GPS coordinates --}}
+@if($needsLocation)
+<div id="locationPromptModal" class="modal-overlay" style="display:flex;">
+    <div class="modal-box" style="max-width:440px;" onclick="event.stopPropagation()">
+        <div class="modal-header" style="background:var(--b0);border-bottom:1px solid var(--g1);">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#185FA5,#378ADD);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fa-solid fa-map-location-dot" style="color:#fff;font-size:1.1rem;"></i>
+                </div>
+                <div>
+                    <h3 style="font-size:.95rem;font-weight:700;color:var(--g9);margin:0;">Set your location</h3>
+                    <p style="font-size:.75rem;color:var(--g4);margin:2px 0 0;">Appear on client maps</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-body" style="padding:20px 22px;">
+            <p style="font-size:.85rem;color:var(--g7);line-height:1.6;margin:0 0 14px;">
+                KaAyos uses your location to help nearby clients find you through the AI suggestion system. When you share your real GPS location, your pin appears accurately on the client's map — making it easier for them to book you.
+            </p>
+            <div style="background:var(--off);border:1px solid var(--g1);border-radius:10px;padding:13px 14px;margin-bottom:14px;">
+                <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
+                    <i class="fa-solid fa-check-circle" style="color:var(--green,#16a34a);margin-top:2px;flex-shrink:0;"></i>
+                    <span style="font-size:.8rem;color:var(--g7);">Your pin shows accurately on client maps</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
+                    <i class="fa-solid fa-check-circle" style="color:var(--green,#16a34a);margin-top:2px;flex-shrink:0;"></i>
+                    <span style="font-size:.8rem;color:var(--g7);">Clients nearby can discover your services</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <i class="fa-solid fa-check-circle" style="color:var(--green,#16a34a);margin-top:2px;flex-shrink:0;"></i>
+                    <span style="font-size:.8rem;color:var(--g7);">Your location is never shared publicly</span>
+                </div>
+            </div>
+            <div id="locationPromptMsg" style="display:none;padding:10px 12px;border-radius:8px;font-size:.8rem;margin-bottom:4px;"></div>
+            <p style="font-size:.75rem;color:var(--g4);margin:0;">
+                <i class="fa-solid fa-info-circle" aria-hidden="true"></i>
+                Location sharing requires HTTPS. If the button below doesn't work, you can also set your location manually in your profile settings.
+            </p>
+        </div>
+        <div class="modal-footer" style="padding:14px 22px;border-top:1px solid var(--g1);display:flex;gap:10px;justify-content:space-between;align-items:center;">
+            <button type="button" class="btn btn-ghost" onclick="dismissLocationPrompt()" style="font-size:.82rem;color:var(--g5);">
+                Maybe later
+            </button>
+            <button type="button" class="btn btn-solid" id="locationPromptShareBtn" onclick="triggerLocationShare()" style="font-size:.82rem;">
+                <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Share My Location
+            </button>
+        </div>
+    </div>
+</div>
+@endif
 
 <div class="stats-grid">
     @foreach($stats as $stat)
@@ -160,6 +217,7 @@
 (function(){
     var btn = document.getElementById('shareLocationBtn');
     var msg = document.getElementById('locMsg');
+    var promptModal = document.getElementById('locationPromptModal');
     if (!btn) return;
 
     function showMsg(text, isError) {
@@ -170,6 +228,101 @@
         if (!isError) {
             setTimeout(function(){ msg.style.display = 'none'; }, 5000);
         }
+    }
+
+    window.dismissLocationPrompt = function() {
+        if (promptModal) {
+            promptModal.style.display = 'none';
+        }
+    };
+
+    window.triggerLocationShare = function() {
+        if (!navigator.geolocation) {
+            showPromptMsg('Your browser does not support location sharing.', true);
+            return;
+        }
+
+        var promptMsgEl = document.getElementById('locationPromptMsg');
+        var promptBtn = document.getElementById('locationPromptShareBtn');
+
+        function showPromptMsg(text, isError) {
+            if (!promptMsgEl) return;
+            promptMsgEl.textContent = text;
+            promptMsgEl.style.display = 'block';
+            promptMsgEl.style.color = isError ? '#dc2626' : '#16a34a';
+            promptMsgEl.style.background = isError ? '#fee2e2' : '#dcfce7';
+            promptMsgEl.style.border = '1px solid ' + (isError ? '#fecaca' : '#bbf7d0');
+        }
+
+        function resetPromptBtn() {
+            if (!promptBtn) return;
+            promptBtn.disabled = false;
+            promptBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Share My Location';
+        }
+
+        promptBtn.disabled = true;
+        promptBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Sharing…';
+        showPromptMsg('', false);
+
+        var geocodeTimeout = setTimeout(function() {
+            showPromptMsg('Location request timed out. Make sure HTTPS is enabled and GPS is working.', true);
+            resetPromptBtn();
+        }, 15000);
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                clearTimeout(geocodeTimeout);
+                var lat = parseFloat(position.coords.latitude.toFixed(7));
+                var lng = parseFloat(position.coords.longitude.toFixed(7));
+
+                var csrf = document.querySelector('meta[name=csrf-token]');
+                csrf = csrf ? csrf.content : (document.querySelector('input[name=_token]') ? document.querySelector('input[name=_token]').value : '');
+
+                fetch('/worker/location', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ latitude: lat, longitude: lng }),
+                })
+                .then(function(r){ return r.json(); })
+                .then(function(data) {
+                    if (data.latitude && data.longitude) {
+                        showPromptMsg('Location shared successfully! Your pin now shows on the map.', false);
+                        var residence = document.getElementById('displayedResidence');
+                        if (residence) {
+                            if (data.barangay) {
+                                residence.textContent = 'Brgy. ' + data.barangay + ', Tuy, Batangas';
+                            } else {
+                                var brgyMatch = residence.textContent.match(/^Brgy\.\s*([^,]+)/);
+                                if (brgyMatch) {
+                                    residence.textContent = 'Brgy. ' + brgyMatch[1] + ', Tuy, Batangas';
+                                }
+                            }
+                        }
+                        setTimeout(dismissLocationPrompt, 2000);
+                    } else {
+                        showPromptMsg('Location saved. It will appear on client maps shortly.', false);
+                        setTimeout(dismissLocationPrompt, 2000);
+                    }
+                })
+                .catch(function() {
+                    showPromptMsg('Failed to save location. Please try again.', true);
+                    resetPromptBtn();
+                });
+            },
+            function(err) {
+                clearTimeout(geocodeTimeout);
+                var txt = 'Could not get your location.';
+                if (err.code === 1) txt = 'Location permission denied. Please allow location access in your browser settings, then try again.';
+                if (err.code === 2) txt = 'Location unavailable. Make sure GPS is enabled, then try again.';
+                showPromptMsg(txt, true);
+                resetPromptBtn();
+            },
+            { timeout: 12000, maximumAge: 0 }
+        );
     }
 
     btn.addEventListener('click', function() {
@@ -204,9 +357,13 @@
                         showMsg('Location shared successfully! Your pin now shows on the map.', false);
                         var residence = document.getElementById('displayedResidence');
                         if (residence) {
-                            var brgyMatch = residence.textContent.match(/^Brgy\.\s*([^,]+)/);
-                            if (brgyMatch) {
-                                residence.textContent = 'Brgy. ' + brgyMatch[1] + ', Tuy, Batangas';
+                            if (data.barangay) {
+                                residence.textContent = 'Brgy. ' + data.barangay + ', Tuy, Batangas';
+                            } else {
+                                var brgyMatch = residence.textContent.match(/^Brgy\.\s*([^,]+)/);
+                                if (brgyMatch) {
+                                    residence.textContent = 'Brgy. ' + brgyMatch[1] + ', Tuy, Batangas';
+                                }
                             }
                         }
                     } else {
@@ -229,7 +386,7 @@
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Share My Location';
             },
-            { timeout: 10000, maximumAge: 0 }
+            { timeout: 12000, maximumAge: 0 }
         );
     });
 })();

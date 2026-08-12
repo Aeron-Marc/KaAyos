@@ -73,4 +73,37 @@ class TuyBarangays
     {
         return array_keys(self::CENTERS);
     }
+
+    public static function isValidBarangay(?string $barangay): bool
+    {
+        return $barangay !== null && isset(self::CENTERS[$barangay]);
+    }
+
+    public static function barangayFor(float $lat, float $lng): string
+    {
+        $best = null;
+        $bestDist = PHP_FLOAT_MAX;
+
+        foreach (self::CENTERS as $name => $center) {
+            $dist = self::haversine($lat, $lng, $center[0], $center[1]);
+            if ($dist < $bestDist) {
+                $bestDist = $dist;
+                $best = $name;
+            }
+        }
+
+        return $best ?? 'Luna';
+    }
+
+    private static function haversine(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadius = 6371;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) ** 2
+           + cos(deg2rad($lat1)) * cos(deg2rad($lat2))
+           * sin($dLng / 2) ** 2;
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c;
+    }
 }

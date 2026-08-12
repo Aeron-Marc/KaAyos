@@ -25,19 +25,26 @@ class ProfileController extends Controller
         $firstName = $nameParts[0];
         $lastName  = $nameParts[1] ?? '';
 
-        $user->update([
+        $updates = [
             'first_name' => $firstName,
             'last_name'  => $lastName,
             'phone'      => $data['phone'] ?? null,
-            'barangay'   => $data['barangay'] ?? null,
-        ]);
+        ];
+
+        if (!empty($data['barangay'])) {
+            $updates['barangay'] = $data['barangay'];
+            $updates['city'] = $data['barangay'];
+            $updates['location_source'] = 'manual';
+        }
+
+        $user->update($updates);
 
         return response()->json([
             'message'  => 'Personal information saved.',
             'fullName' => $user->name,
             'email'    => $user->email,
             'phone'    => $user->phone,
-            'barangay' => $user->barangay,
+            'barangay' => $user->barangay ?: $user->city,
         ]);
     }
 

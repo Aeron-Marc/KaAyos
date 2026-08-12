@@ -1140,11 +1140,10 @@ class DatabaseSeeder extends Seeder
         // ═══════════════════════════════════════════════════════════
 
         $docConfigs = [
-            ['type' => 'Government-Issued ID',       'status' => 'verified'],
-            ['type' => 'NBI Clearance',               'status' => 'verified'],
-            ['type' => 'Barangay Clearance',          'status' => 'verified'],
-            ['type' => 'Proof of Competency',         'status' => 'verified'],
-            ['type' => 'Professional License',        'status' => 'verified'],
+            ['type' => 'Government-Issued ID',            'status' => 'verified'],
+            ['type' => 'National Police or NBI Clearance', 'status' => 'verified'],
+            ['type' => 'Barangay Clearance',               'status' => 'verified'],
+            ['type' => 'Proof of Competency',              'status' => 'verified'],
         ];
 
         foreach ($fullProviderIndexes as $fpIdx) {

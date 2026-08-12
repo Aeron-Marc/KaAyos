@@ -169,6 +169,107 @@ class WorkerController extends Controller
             ->toArray();
     }
 
+    public function calendarData(Request $request): JsonResponse
+    {
+        $year = $request->query('year', now()->year);
+        $month = $request->query('month', now()->month);
+
+        $start = \Carbon\Carbon::create($year, $month, 1)->startOfMonth();
+        $end = $start->copy()->endOfMonth();
+
+        $bookings = auth()->user()->bookingsAsWorker()
+            ->with('client')
+            ->whereBetween('scheduled_at', [$start, $end])
+            ->orderBy('scheduled_at')
+            ->get();
+
+        $labelMap = [
+            Booking::STATUS_NEW        => 'Pending',
+            Booking::STATUS_ACCEPTED   => 'Confirmed',
+            Booking::STATUS_EN_ROUTE   => 'En Route',
+            Booking::STATUS_IN_PROGRESS => 'In Progress',
+            Booking::STATUS_COMPLETED  => 'Completed',
+            Booking::STATUS_CANCELLED  => 'Cancelled',
+        ];
+
+        $days = [];
+        foreach ($bookings as $booking) {
+            $day = $booking->scheduled_at->day;
+            if (!isset($days[$day])) {
+                $days[$day] = [];
+            }
+            $days[$day][] = [
+                'id'          => $booking->id,
+                'client'      => $booking->client->name ?? 'Unknown',
+                'client_phone'=> $booking->client->phone ?? '',
+                'service'     => $booking->service_category,
+                'time'        => $booking->scheduled_at->format('g:i A'),
+                'time_24'     => $booking->scheduled_at->format('H:i'),
+                'location'    => $booking->address,
+                'barangay'    => $booking->barangay,
+                'status'      => $labelMap[$booking->status] ?? ucfirst($booking->status),
+                'raw_status'  => $booking->status,
+                'price'       => $booking->price ?? 0,
+                'booking_ref' => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
+            ];
+        }
+
+        return response()->json([
+            'year'   => (int) $year,
+            'month'  => (int) $month,
+            'days'   => $days,
+            'today'  => now()->year === (int) $year && now()->month === (int) $month ? now()->day : null,
+        ]);
+    }
+
+    public function jobDetails(Booking $booking): JsonResponse
+    {
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $labelMap = [
+            Booking::STATUS_NEW        => 'New',
+            Booking::STATUS_ACCEPTED   => 'Accepted',
+            Booking::STATUS_EN_ROUTE   => 'En Route',
+            Booking::STATUS_IN_PROGRESS => 'In Progress',
+            Booking::STATUS_COMPLETED  => 'Completed',
+        ];
+
+        $booking->load('client', 'history');
+
+        $statusHistory = [];
+        foreach ($booking->history as $h) {
+            $statusHistory[$h->new_status] = $h->created_at->toIso8601String();
+        }
+        if (!isset($statusHistory['new'])) {
+            $statusHistory['new'] = $booking->created_at->toIso8601String();
+        }
+
+        return response()->json([
+            'id'                  => $booking->id,
+            'client'              => $booking->client->name ?? 'Unknown',
+            'client_phone'        => $booking->client->phone ?? 'N/A',
+            'client_email'        => $booking->client->email ?? 'N/A',
+            'service'             => $booking->service_category,
+            'description'         => $booking->notes ?? 'No details provided.',
+            'date'                => $booking->scheduled_at->format('M d, Y · h:i A'),
+            'month'               => $booking->scheduled_at->format('M'),
+            'day'                 => $booking->scheduled_at->format('d'),
+            'time'                => $booking->scheduled_at->format('g:i A'),
+            'location'            => $booking->address,
+            'barangay'            => $booking->barangay,
+            'status'              => $labelMap[$booking->status] ?? ucfirst($booking->status),
+            'raw_status'          => $booking->status,
+            'price'               => $booking->price ?? 0,
+            'created'             => $booking->created_at->format('M d, Y · h:i A'),
+            'booking_ref'         => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
+            'status_history'      => $statusHistory,
+            'cancellation_reason'=> $booking->cancellation_reason,
+            'cancelled_at'        => $booking->cancelled_at?->toIso8601String(),
+        ]);
+    }
+
     protected function getNotifications(): array
     {
         return auth()->user()->notifications
@@ -537,15 +638,20 @@ class WorkerController extends Controller
             'service_zone'       => ['nullable', 'string'],
         ]);
 
-        $user->update([
+        $updates = [
             'first_name'       => $data['first_name'],
             'last_name'        => $data['last_name'],
             'name'             => $data['first_name'] . ' ' . $data['last_name'],
             'phone'            => $data['phone'] ?? null,
-            'city'             => $data['city'] ?? null,
             'language'         => $data['language'],
             'service_category' => $data['service_category'] ?? null,
-        ]);
+        ];
+
+        if (!empty($data['city'])) {
+            $updates['city'] = $data['city'];
+        }
+
+        $user->update($updates);
 
         $profile = $user->workerProfile ?? new WorkerProfile(['user_id' => $user->id]);
 

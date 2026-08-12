@@ -7,7 +7,6 @@
 
 @php
     $user = auth()->user();
-    $barangays = ['Acle','Bayudbud','Bolbok','Burgos','Dalima','Dao','Guinhawa','Lumbangan','Luna','Luntal','Magahis','Malibu','Mataywanac','Palincaro','Putol','Rillo','Rizal','Sabang','San Jose','Talon','Toong','Tuyon-Tuyon'];
     $notificationOptions = ['All updates','Bookings only','Messages only','None'];
     $languageOptions = ['Filipino','English'];
 @endphp
@@ -62,23 +61,14 @@
                         <p class="field-error" id="phoneError" style="display:none"></p>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="barangaySelect">Barangay</label>
-                        <select id="barangaySelect" name="barangay">
-                            <option value="">Select barangay...</option>
-                            @foreach($barangays as $b)
-                                <option value="{{ $b }}" {{ ($user->barangay == $b) ? 'selected' : '' }}>{{ $b }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-solid" id="personalSaveBtn">Save changes</button>
                     <button type="button" class="btn btn-ghost" id="personalDiscardBtn" disabled>Discard</button>
                 </div>
             </form>
         </div>
+
+        @include('partials.location-picker')
 
         {{-- Email Address --}}
         <div class="form-section" id="emailSection">
@@ -304,24 +294,20 @@
     // ── Personal info: track dirty + save ─────────────────────────
     var origFullName = document.getElementById('fullName').value;
     var origPhone = document.getElementById('phone').value;
-    var origBarangay = document.getElementById('barangaySelect').value;
 
     function checkPersonalDirty() {
         var dirty = document.getElementById('fullName').value !== origFullName ||
-                    document.getElementById('phone').value !== origPhone ||
-                    document.getElementById('barangaySelect').value !== origBarangay;
+                    document.getElementById('phone').value !== origPhone;
         document.getElementById('personalUnsavedDot').style.display = dirty ? 'inline' : 'none';
         document.getElementById('personalDiscardBtn').disabled = !dirty;
     }
 
     document.getElementById('fullName').addEventListener('input', checkPersonalDirty);
     document.getElementById('phone').addEventListener('input', checkPersonalDirty);
-    document.getElementById('barangaySelect').addEventListener('change', checkPersonalDirty);
 
     document.getElementById('personalDiscardBtn').addEventListener('click', function () {
         document.getElementById('fullName').value = origFullName;
         document.getElementById('phone').value = origPhone;
-        document.getElementById('barangaySelect').value = origBarangay;
         document.getElementById('phoneError').style.display = 'none';
         checkPersonalDirty();
     });
@@ -346,7 +332,6 @@
         formData.append('_method', 'PUT');
         formData.append('fullName', document.getElementById('fullName').value);
         formData.append('phone', phone);
-        formData.append('barangay', document.getElementById('barangaySelect').value);
 
         fetch('/api/profile', { method: 'POST', headers: getHeaders(), body: formData })
             .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
@@ -360,10 +345,9 @@
                 if (!data.message) throw new Error(data.message || 'Failed to save.');
                 origFullName = data.fullName || origFullName;
                 origPhone = data.phone || '';
-                origBarangay = data.barangay || '';
-                if (data.fullName) document.getElementById('sidebarName').textContent = data.fullName;
-                if (data.email) document.getElementById('sidebarEmail').textContent = data.email;
-                if (data.email) document.getElementById('currentEmailDisplay').textContent = data.email;
+                document.getElementById('sidebarName').textContent = data.fullName;
+                document.getElementById('sidebarEmail').textContent = data.email;
+                document.getElementById('currentEmailDisplay').textContent = data.email;
                 checkPersonalDirty();
                 showToast('success', data.message);
             })

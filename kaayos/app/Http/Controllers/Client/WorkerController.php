@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\ServiceCategory;
 use App\Models\User;
+use App\Support\WorkerDocuments;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -45,6 +46,30 @@ class WorkerController extends Controller
 
         usort($workers, $sorters[$sort] ?? $sorters['rating']);
         return $workers;
+    }
+
+    protected function getDocuments(User $worker): array
+    {
+        $types = WorkerDocuments::types();
+        $userDocs = $worker->workerDocuments->keyBy('document_type');
+
+        return array_map(function ($type) use ($userDocs) {
+            $userDoc = $userDocs->get($type['name']);
+
+            return [
+                'name'        => $type['name'],
+                'description' => $type['description'],
+                'icon'        => $type['icon'],
+                'status'      => $userDoc
+                    ? ($userDoc->status === 'verified' ? 'Verified'
+                        : ($userDoc->status === 'pending' ? 'Pending' : 'Not Submitted'))
+                    : 'Not Submitted',
+                'file'        => $userDoc?->file_path
+                    ? basename($userDoc->file_path)
+                    : null,
+                'id'          => $userDoc?->id,
+            ];
+        }, $types);
     }
 
     public function index(Request $request): View
@@ -137,7 +162,7 @@ class WorkerController extends Controller
         return view('client.workers.show', [
             'worker'              => $worker,
             'workerProfile'       => $worker->workerProfile,
-            'documents'           => $worker->workerDocuments,
+            'documents'           => $this->getDocuments($worker),
             'reviews'             => $reviews,
             'canMessage'          => (bool) $existingBooking,
             'workerServices'      => $workerServices,
