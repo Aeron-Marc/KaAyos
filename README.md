@@ -5,7 +5,7 @@ A home services marketplace platform connecting clients with verified workers in
 ## Tech Stack
 
 - **Backend:** Laravel 13, PHP ^8.3
-- **Frontend:** React 19 (client SPA), Blade + vanilla JS (worker & admin dashboards)
+- **Frontend:** Blade + vanilla JS (client, worker & admin dashboards)
 - **Styling:** Tailwind CSS 4 (via Vite)
 - **Database:** SQLite (default) / MySQL
 - **Auth:** Laravel Sanctum (API), session-based (web)
@@ -13,7 +13,42 @@ A home services marketplace platform connecting clients with verified workers in
 - **Queues & Cache:** Database driver
 - **Build:** Vite 8, concurrently
 - **ML Microservice:** Python FastAPI (scikit-learn for geospatial clustering & worker matching)
-- **AI Chatbot:** OpenAI / Gemini-powered assistant (`/api/chat`)
+- **AI Chatbot:** OpenRouter-powered assistant (`/api/chat`)
+
+## Project Structure
+
+```
+KaAyos/
+├── kaayos/                        # Laravel application
+│   ├── app/
+│   ├── bootstrap/
+│   ├── config/
+│   ├── database/
+│   │   ├── backups/               # SQL backups (kaayos_db.sql)
+│   │   ├── migrations/
+│   │   ├── seeders/
+│   │   └── database.sqlite
+│   ├── public/
+│   ├── resources/
+│   │   ├── js/
+│   │   │   ├── chatbot.js         # AI chatbot (Vite entry)
+│   │   │   └── echo.js
+│   │   ├── css/
+│   │   └── views/
+│   ├── routes/
+│   ├── storage/
+│   └── vite.config.js
+├── ml_service/                    # Python FastAPI microservice (project root)
+│   ├── main.py
+│   ├── test_ml.py
+│   ├── requirements.txt
+│   ├── run.bat
+│   ├── .venv/                     # Python virtual environment (local)
+│   └── models/                    # Trained ML models
+├── composer.json
+├── package.json
+└── README.md
+```
 
 ## Architecture
 
@@ -22,7 +57,7 @@ Three user roles, each with a dedicated dashboard:
 | Role   | Dashboard Tech | Description                                                  |
 | ------ | -------------- | ------------------------------------------------------------ |
 | Admin  | Blade          | Manage users, workers, verifications, service categories, services, bookings, disputes, and reports |
-| Client | React SPA      | Browse/search workers, book services, message workers, leave reviews, manage account |
+| Client | Blade + vanilla JS | Browse/search workers, book services, message workers, leave reviews, manage account |
 | Worker | Blade          | View/update job status, manage schedule, track earnings, upload documents & portfolio, manage profile |
 
 ## Requirements
@@ -81,9 +116,10 @@ Additional custom config variables (add to `.env` as needed):
 | `KAAYOS_BOOKING_EXPIRY_HOURS` | `24`             | Hours before unaccepted bookings expire   |
 | `KAAYOS_MAX_CONCURRENT_JOBS`  | `3`              | Max active jobs per worker                |
 | `KAAYOS_NO_SHOW_MINUTES`      | `60`             | Minutes before worker is marked no-show   |
-| `CHATBOT_PROVIDER`            | `openai`         | AI provider (`openai` or `gemini`)        |
+| `CHATBOT_PROVIDER`            | `openrouter`     | AI provider (currently OpenRouter)        |
 | `CHATBOT_API_KEY`             | —                | API key for chatbot provider              |
-| `CHATBOT_MODEL`               | `gpt-4o-mini`    | Model for chatbot                         |
+| `CHATBOT_MODEL`               | `openai/gpt-4o-mini` | Model for chatbot                         |
+| `ML_SERVICE_URL`              | `http://127.0.0.1:8001` | ML microservice base URL              |
 
 ### 4. Generate app key
 
@@ -112,7 +148,7 @@ php artisan serve
 
 Visit `http://localhost:8000` in your browser.
 
-## Quick Start (all-in-one dev command)
+## Quick Start (all-in-one Laravel dev command)
 
 ```bash
 composer run dev
@@ -125,6 +161,8 @@ This concurrently runs:
 - `npm run dev` (Vite HMR)
 
 Available at `http://localhost:8000`.
+
+> **Note:** The ML microservice must be started separately. See **ML Microservice** below.
 
 ## Test Accounts
 
@@ -201,20 +239,24 @@ php artisan reverb:start --port=8080 --host=0.0.0.0
 
 ## AI Chatbot
 
-An AI assistant is available at `POST /api/chat` (authenticated). Configurable via `CHATBOT_PROVIDER`, `CHATBOT_API_KEY`, and `CHATBOT_MODEL` env vars. Supports OpenAI and Gemini backends.
+An AI assistant is available at `POST /api/chat` (authenticated). Configurable via `CHATBOT_PROVIDER`, `CHATBOT_API_KEY`, and `CHATBOT_MODEL` env vars. Currently configured for OpenRouter.
 
 ## ML Microservice
 
-Located in `ml_service/` — a FastAPI-based Python microservice providing:
+Located in `ml_service/` at the project root — a FastAPI-based Python microservice providing:
 - **Geospatial clustering** (DBSCAN) of workers by location
 - **Worker matching** (Random Forest) using distance, rating, completion rate, and experience
 - **Model retraining** endpoint
 
+Ensure `ML_SERVICE_URL` in `kaayos/.env` matches the service port (default `http://127.0.0.1:8001`).
+
 ```bash
 cd ml_service
 pip install -r requirements.txt
-uvicorn main:app --port 8000
+uvicorn main:app --host 127.0.0.1 --port 8001 --reload
 ```
+
+API docs available at `http://127.0.0.1:8001/docs`.
 
 ## Routes
 
