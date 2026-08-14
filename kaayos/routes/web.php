@@ -44,7 +44,7 @@ RateLimiter::for('email-otp-verify', function (Request $request) {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/workers/{worker}', [App\Http\Controllers\Workers\PublicWorkerController::class, 'show'])->name('workers.public.show');
+Route::get('/workers/{worker}', [App\Http\Controllers\Worker\PublicWorkerController::class, 'show'])->name('workers.public.show');
 
 Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search');
 

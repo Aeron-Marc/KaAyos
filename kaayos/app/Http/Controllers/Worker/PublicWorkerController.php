@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Workers;
+namespace App\Http\Controllers\Worker;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -21,7 +21,7 @@ class PublicWorkerController extends Controller
             ? (float) round((float) $reviews->avg('rating'), 1)
             : 0.0;
 
-        return view('workers.public-show', [
+        return view('worker.public-show', [
             'worker'        => $worker,
             'workerProfile' => $worker->workerProfile,
             'documents'     => $worker->workerDocuments,
