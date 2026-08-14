@@ -17,7 +17,7 @@ from main import app, _model, _label_encoder, _model_metadata, _train_model_from
 from fastapi.testclient import TestClient
 
 if _model is None:
-    DATASET_PATH = Path(__file__).resolve().parent.parent / "database" / "data" / "kaayos_dataset.csv"
+    DATASET_PATH = Path(__file__).resolve().parent.parent / "kaayos" / "storage" / "app" / "data" / "kaayos_dataset.csv"
     if DATASET_PATH.exists():
         import pandas as pd
         df = pd.read_csv(DATASET_PATH)
@@ -275,7 +275,7 @@ for i, p in enumerate(payloads_bad):
 # ---------------------------------------------------------------------------
 section("10. POST /retrain — from default dataset")
 
-r = client.post("/retrain", json={"dataset_path": "../database/data/kaayos_dataset.csv"})
+r = client.post("/retrain", json={"dataset_path": "../kaayos/storage/app/data/kaayos_dataset.csv"})
 check("status code", r.status_code, 200)
 data = r.json()
 check("status = success", data["status"], "success")

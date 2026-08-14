@@ -32,7 +32,7 @@ app.add_middleware(
 
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / "models"
-DATASET_PATH = BASE_DIR.parent / "database" / "data" / "kaayos_dataset.csv"
+DATASET_PATH = BASE_DIR.parent / "kaayos" / "storage" / "app" / "data" / "kaayos_dataset.csv"
 MODEL_PATH = MODELS_DIR / "matching_model.pkl"
 LABEL_ENCODER_PATH = MODELS_DIR / "category_encoder.pkl"
 MODEL_METADATA_PATH = MODELS_DIR / "model_metadata.pkl"

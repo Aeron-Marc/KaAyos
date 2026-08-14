@@ -9,6 +9,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/landing.css',
                 'resources/js/echo.js',
+                'resources/js/chatbot.js',
             ],
             refresh: true,
             fonts: [
