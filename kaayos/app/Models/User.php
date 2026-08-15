@@ -28,6 +28,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_notifications',
         'language',
         'avatar',
+        'failed_login_attempts',
+        'locked_until',
         'suspended_at',
         'suspended_reason',
         'pending_email',
