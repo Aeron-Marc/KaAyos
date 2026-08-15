@@ -331,6 +331,7 @@
       <div class="ai-avatar"><i class="fa-solid fa-robot"></i></div>
       <div><div class="ai-title">KaAyos Assistant</div><div class="ai-status">Online</div></div>
     </div>
+    <button id="aiExpand" class="ai-expand" aria-label="Expand chat"><i class="fa-solid fa-expand"></i></button>
   </div>
   <div class="ai-messages" id="aiMessages">
     <div class="ai-msg bot">
@@ -519,6 +520,7 @@ document.addEventListener('click', function(e) {
   var suggestions = document.getElementById('aiSuggestions');
   var input = document.getElementById('aiInput');
   var send = document.getElementById('aiSend');
+  var expand = document.getElementById('aiExpand');
   var csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
   var history = [];
   var isOpen = false;
@@ -526,10 +528,21 @@ document.addEventListener('click', function(e) {
   function scrollBottom() {
     setTimeout(function(){ messages.scrollTop = messages.scrollHeight; }, 50);
   }
+  function formatBotReply(text) {
+    var t = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    var lines = String(t).split(/\n/);
+    for (var i = 0; i < lines.length; i++) {
+      lines[i] = lines[i].replace(/^\s*[*\-•]\s+/, '• ');
+      lines[i] = lines[i].replace(/^\s*\d+[.)]\s+/, '• ');
+      lines[i] = lines[i].replace(/\*/g, '');
+    }
+    return lines.join('<br>');
+  }
   function addMsg(role, text) {
     var div = document.createElement('div');
     div.className = 'ai-msg ' + role;
-    div.innerHTML = '<div class="ai-bubble"><p>' + text.replace(/\n/g, '<br>') + '</p></div>';
+    var body = role === 'bot' ? formatBotReply(text) : text.replace(/\n/g, '<br>');
+    div.innerHTML = '<div class="ai-bubble"><p>' + body + '</p></div>';
     messages.appendChild(div);
     history.push({ role: role, content: text.replace(/<[^>]*>/g, '') });
     scrollBottom();
@@ -582,6 +595,12 @@ document.addEventListener('click', function(e) {
     if (isOpen) input.focus();
   });
   send.addEventListener('click', function(){ sendMsg(); });
+  expand.addEventListener('click', function() {
+    var isExpanded = win.classList.toggle('expanded');
+    expand.innerHTML = isExpanded ? '<i class="fa-solid fa-compress"></i>' : '<i class="fa-solid fa-expand"></i>';
+    expand.setAttribute('aria-label', isExpanded ? 'Shrink chat' : 'Expand chat');
+    input.focus();
+  });
   input.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
   });

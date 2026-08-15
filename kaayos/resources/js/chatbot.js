@@ -169,16 +169,24 @@
   }
 
   // ── Event listeners ──
-  elements.fab.addEventListener('click', toggle);
-  elements.minimize.addEventListener('click', close);
+  if (elements.fab) {
+    elements.fab.addEventListener('click', toggle);
+  }
+  if (elements.minimize) {
+    elements.minimize.addEventListener('click', close);
+  }
 
-  elements.send.addEventListener('click', () => sendMessage());
-  elements.input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
+  if (elements.send) {
+    elements.send.addEventListener('click', () => sendMessage());
+  }
+  if (elements.input) {
+    elements.input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
 
   // Suggestion chips in the initial state
   document.querySelectorAll('.suggestion-chip').forEach(btn => {

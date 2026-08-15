@@ -2,9 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Booking;
 use App\Models\Review;
-use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
@@ -13,11 +11,17 @@ use Illuminate\Support\Facades\Log;
 class ChatBotService
 {
     protected string $provider;
+
     protected string $apiKey;
+
     protected string $model;
+
     protected AiTools $tools;
+
     protected array $history = [];
+
     protected ?User $user = null;
+
     protected array $clientLocation = [];
 
     public function __construct()
@@ -39,16 +43,16 @@ class ChatBotService
 
         if ($intent !== 'default') {
             return match ($intent) {
-                'greeting'   => $this->greeting(),
-                'services'   => $this->askServices(),
-                'workers'    => $this->askWorkers($message),
-                'booking'    => $this->askBooking(),
-                'areas'      => $this->askAreas(),
-                'verify'     => $this->askVerification(),
-                'pricing'    => $this->askPricing(),
-                'review'     => $this->askReview(),
-                'cancel'     => $this->askCancel(),
-                'contact'    => $this->askContact(),
+                'greeting' => $this->greeting(),
+                'services' => $this->askServices(),
+                'workers' => $this->askWorkers($message),
+                'booking' => $this->askBooking(),
+                'areas' => $this->askAreas(),
+                'verify' => $this->askVerification(),
+                'pricing' => $this->askPricing(),
+                'review' => $this->askReview(),
+                'cancel' => $this->askCancel(),
+                'contact' => $this->askContact(),
             };
         }
 
@@ -63,11 +67,11 @@ class ChatBotService
             ];
         }
 
-        if (!empty($this->apiKey)) {
+        if (! empty($this->apiKey)) {
             return match ($this->provider) {
                 'openrouter' => $this->askWithTools($message),
-                'gemini'     => $this->askGemini($message),
-                default      => $this->askOpenAI($message),
+                'gemini' => $this->askGemini($message),
+                default => $this->askOpenAI($message),
             };
         }
 
@@ -100,7 +104,6 @@ Key facts about KaAyos:
 - Bookings go through statuses: new → accepted → en_route → in_progress → completed
 - Workers can be cancelled only when status is "new" or "accepted"
 - Pricing is agreed between client and worker (hourly or fixed)
-- A 10% platform fee applies to completed jobs
 - Clients must be logged in to book a worker
 - Users can register as both client and worker with one account
 {$userLocationBlock}
@@ -125,18 +128,18 @@ Do NOT share any user's personal information.
 You have tools available to query categories, services, workers, and bookings. When a user asks for information or recommendations, use the appropriate tool instead of making up data.
 PROMPT;
 
-        if (!empty($this->clientLocation)) {
+        if (! empty($this->clientLocation)) {
             $loc = $this->clientLocation;
             $prompt .= "\n\nClient Location (source of truth for location-based suggestions):\n";
-            $prompt .= 'Barangay: ' . ($loc['barangay'] ?? '') . "\n";
-            $prompt .= 'Municipality: ' . ($loc['municipality'] ?? '') . "\n";
-            $prompt .= 'Province: ' . ($loc['province'] ?? '') . "\n";
-            $prompt .= 'Full Location: ' . ($loc['full'] ?? '') . "\n";
-            if (!empty($loc['latitude'])) {
-                $prompt .= 'Latitude: ' . $loc['latitude'] . "\n";
+            $prompt .= 'Barangay: '.($loc['barangay'] ?? '')."\n";
+            $prompt .= 'Municipality: '.($loc['municipality'] ?? '')."\n";
+            $prompt .= 'Province: '.($loc['province'] ?? '')."\n";
+            $prompt .= 'Full Location: '.($loc['full'] ?? '')."\n";
+            if (! empty($loc['latitude'])) {
+                $prompt .= 'Latitude: '.$loc['latitude']."\n";
             }
-            if (!empty($loc['longitude'])) {
-                $prompt .= 'Longitude: ' . $loc['longitude'] . "\n";
+            if (! empty($loc['longitude'])) {
+                $prompt .= 'Longitude: '.$loc['longitude']."\n";
             }
             $prompt .= "\nWhen listing workers, reference the client's Full Location above (e.g. \"near {$loc['full']}\"). Never invent, guess, or substitute a different location.";
         }
@@ -156,19 +159,20 @@ PROMPT;
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
-                'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
+                'Authorization' => 'Bearer '.$this->apiKey,
+                'HTTP-Referer' => config('kaayos.openrouter_site', ''),
+                'X-Title' => config('kaayos.openrouter_name', 'KaAyos'),
             ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
-                'model'       => $this->model,
-                'messages'    => $messages,
-                'tools'       => $tools,
+                'model' => $this->model,
+                'messages' => $messages,
+                'tools' => $tools,
                 'temperature' => 0.7,
-                'max_tokens'  => 1000,
+                'max_tokens' => 1000,
             ]);
 
             if ($response->failed()) {
                 Log::error('OpenRouter API error', ['status' => $response->status(), 'body' => $response->body()]);
+
                 return $this->fallbackResponse();
             }
 
@@ -176,7 +180,10 @@ PROMPT;
             $choice = $data['choices'][0]['message'] ?? [];
             $reply = $choice['content'] ?? '';
 
-            if (!empty($choice['tool_calls'])) {
+            $maxToolRounds = 5;
+            $round = 0;
+
+            while (! empty($choice['tool_calls']) && $round < $maxToolRounds) {
                 $messages[] = $choice;
 
                 foreach ($choice['tool_calls'] as $toolCall) {
@@ -192,32 +199,40 @@ PROMPT;
                 }
 
                 $response2 = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'HTTP-Referer'  => config('kaayos.openrouter_site', ''),
-                    'X-Title'       => config('kaayos.openrouter_name', 'KaAyos'),
+                    'Authorization' => 'Bearer '.$this->apiKey,
+                    'HTTP-Referer' => config('kaayos.openrouter_site', ''),
+                    'X-Title' => config('kaayos.openrouter_name', 'KaAyos'),
                 ])->timeout(30)->post('https://openrouter.ai/api/v1/chat/completions', [
-                    'model'       => $this->model,
-                    'messages'    => $messages,
+                    'model' => $this->model,
+                    'messages' => $messages,
                     'temperature' => 0.7,
-                    'max_tokens'  => 1000,
+                    'max_tokens' => 1000,
                 ]);
 
                 if ($response2->failed()) {
                     Log::error('OpenRouter tool response error', ['status' => $response2->status()]);
+
                     return $this->fallbackResponse();
                 }
 
                 $data2 = $response2->json();
-                $reply = $data2['choices'][0]['message']['content'] ?? '';
+                $choice = $data2['choices'][0]['message'] ?? [];
+                $reply = $choice['content'] ?? '';
+                $round++;
+            }
+
+            if (trim($reply) === '') {
+                return $this->fallbackResponse();
             }
 
             return [
-                'reply'       => $reply,
+                'reply' => $reply,
                 'suggestions' => $this->getSuggestions($reply),
             ];
 
         } catch (\Exception $e) {
-            Log::error('OpenRouter exception: ' . $e->getMessage());
+            Log::error('OpenRouter exception: '.$e->getMessage());
+
             return $this->fallbackResponse();
         }
     }
@@ -234,26 +249,32 @@ PROMPT;
             $response = Http::withToken($this->apiKey)
                 ->timeout(30)
                 ->post('https://api.openai.com/v1/chat/completions', [
-                    'model'       => $this->model,
-                    'messages'    => $messages,
+                    'model' => $this->model,
+                    'messages' => $messages,
                     'temperature' => 0.7,
-                    'max_tokens'  => 500,
+                    'max_tokens' => 500,
                 ]);
 
             if ($response->failed()) {
                 Log::error('OpenAI API error', ['status' => $response->status(), 'body' => $response->body()]);
+
                 return $this->fallbackResponse();
             }
 
             $data = $response->json();
             $reply = $data['choices'][0]['message']['content'] ?? '';
 
+            if (trim($reply) === '') {
+                return $this->fallbackResponse();
+            }
+
             return [
-                'reply'       => $reply,
+                'reply' => $reply,
                 'suggestions' => $this->getSuggestions($reply),
             ];
         } catch (\Exception $e) {
-            Log::error('OpenAI exception: ' . $e->getMessage());
+            Log::error('OpenAI exception: '.$e->getMessage());
+
             return $this->fallbackResponse();
         }
     }
@@ -272,27 +293,33 @@ PROMPT;
 
             $response = Http::timeout(30)->post($url, [
                 'systemInstruction' => ['parts' => [['text' => $this->systemPrompt()]]],
-                'contents'          => $contents,
-                'generationConfig'  => [
-                    'temperature'     => 0.7,
+                'contents' => $contents,
+                'generationConfig' => [
+                    'temperature' => 0.7,
                     'maxOutputTokens' => 500,
                 ],
             ]);
 
             if ($response->failed()) {
                 Log::error('Gemini API error', ['status' => $response->status(), 'body' => $response->body()]);
+
                 return $this->fallbackResponse();
             }
 
             $data = $response->json();
             $reply = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
 
+            if (trim($reply) === '') {
+                return $this->fallbackResponse();
+            }
+
             return [
-                'reply'       => $reply,
+                'reply' => $reply,
                 'suggestions' => $this->getSuggestions($reply),
             ];
         } catch (\Exception $e) {
-            Log::error('Gemini exception: ' . $e->getMessage());
+            Log::error('Gemini exception: '.$e->getMessage());
+
             return $this->fallbackResponse();
         }
     }
@@ -308,7 +335,9 @@ PROMPT;
             'How do I leave a review?',
         ];
 
-        if (empty($reply)) return $all;
+        if (empty($reply)) {
+            return $all;
+        }
 
         $lower = strtolower($reply);
 
@@ -325,7 +354,7 @@ PROMPT;
             return ['Can I reschedule?', 'How do I contact the worker?', 'What is the refund policy?'];
         }
         if (str_contains($lower, 'price') || str_contains($lower, 'cost') || str_contains($lower, 'fee') || str_contains($lower, 'pay')) {
-            return ['Are there any hidden fees?', 'How do I pay the worker?', 'Can I negotiate the price?'];
+            return ['How do I pay the worker?', 'Can I negotiate the price?', 'How do I book a worker?'];
         }
         if (str_contains($lower, 'review') || str_contains($lower, 'rate') || str_contains($lower, 'feedback')) {
             return ['Can I edit my review?', 'How do ratings work?', 'Can I see reviews before booking?'];
@@ -365,12 +394,12 @@ PROMPT;
                 continue;
             }
 
-            if (!is_string($content) || trim($content) === '') {
+            if (! is_string($content) || trim($content) === '') {
                 continue;
             }
 
             $normalized[] = [
-                'role'    => $role,
+                'role' => $role,
                 'content' => mb_substr($content, 0, 1000),
             ];
             $count++;
@@ -381,7 +410,8 @@ PROMPT;
 
     protected function containsWord(string $haystack, string $needle): bool
     {
-        $pattern = '/(?:^|[\s,.!?])' . preg_quote($needle, '/') . '(?:$|[\s,.!?])/i';
+        $pattern = '/(?:^|[\s,.!?])'.preg_quote($needle, '/').'(?:$|[\s,.!?])/i';
+
         return preg_match($pattern, $haystack) === 1;
     }
 
@@ -392,10 +422,10 @@ PROMPT;
         $phrasePatterns = [
             'services' => ['ano-ano', 'anong serbisyo', 'ano ang serbisyo', 'what services', 'service categories', 'are available'],
             'greeting' => ['good morning', 'good afternoon', 'good evening', 'magandang umaga', 'magandang hapon'],
-            'booking'  => ['how do i book', 'how to book', 'how to hire', 'how does booking', 'paano mag-book'],
-            'areas'    => ['what areas', 'where do you', 'saan kayo', 'what barangays', 'list of barangays', '22 barangays'],
-            'verify'   => ['how are workers verified', 'how do you verify', 'document requirements', 'requirements to', 'paano mag-verify'],
-            'contact'  => ['contact support', 'customer support', 'technical support'],
+            'booking' => ['how do i book', 'how to book', 'how to hire', 'how does booking', 'paano mag-book'],
+            'areas' => ['what areas', 'where do you', 'saan kayo', 'what barangays', 'list of barangays', '22 barangays'],
+            'verify' => ['how are workers verified', 'how do you verify', 'document requirements', 'requirements to', 'paano mag-verify'],
+            'contact' => ['contact support', 'customer support', 'technical support'],
         ];
         foreach ($phrasePatterns as $intent => $phrases) {
             foreach ($phrases as $phrase) {
@@ -406,14 +436,14 @@ PROMPT;
         }
 
         $keywordPatterns = [
-            'booking'  => ['paano', 'mag-book', 'appointment', 'schedule'],
-            'areas'    => ['tuy', 'batangas'],
-            'verify'   => ['verify', 'verified', 'verification', 'document', 'clearance', 'badge', 'background'],
-            'pricing'  => ['magkano', 'presyo', 'bayad', 'fee', 'payment', 'price', 'cost'],
-            'review'   => ['review', 'rating', 'feedback', 'testimonial'],
-            'cancel'   => ['cancel', 'refund', 'reschedule', 'modify'],
+            'booking' => ['paano', 'mag-book', 'appointment', 'schedule'],
+            'areas' => ['tuy', 'batangas'],
+            'verify' => ['verify', 'verified', 'verification', 'document', 'clearance', 'badge', 'background'],
+            'pricing' => ['magkano', 'presyo', 'bayad', 'fee', 'payment', 'price', 'cost'],
+            'review' => ['review', 'rating', 'feedback', 'testimonial'],
+            'cancel' => ['cancel', 'refund', 'reschedule', 'modify'],
             'greeting' => ['hello', 'kamusta'],
-            'contact'  => ['contact', 'email', 'support', 'complain', 'report'],
+            'contact' => ['contact', 'email', 'support', 'complain', 'report'],
             'services' => ['category', 'categories'],
         ];
         foreach ($keywordPatterns as $intent => $keywords) {
@@ -468,21 +498,34 @@ PROMPT;
 
     protected function askServices(): array
     {
-        $categories = ServiceCategory::withCount('services')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $categories = $this->tools->getCategories();
 
-        if ($categories->isEmpty()) {
+        if (empty($categories)) {
             return $this->askHelp('');
         }
 
-        $lines = $categories->map(fn($c) => "• <strong>{$c->name}</strong> — {$c->services_count} services available")->join("\n");
-        $totalServices = $categories->sum('services_count');
+        $lines = collect($categories)->map(function ($c) {
+            $catLine = "<strong>{$c['name']}</strong>";
+            if (!empty($c['description'])) {
+                $catLine .= " — {$c['description']}";
+            }
+
+            $serviceLines = '';
+            if (!empty($c['services'])) {
+                $servicesList = collect($c['services'])
+                    ->map(fn ($s) => "&nbsp;&nbsp;&nbsp;• {$s['name']}" . (!empty($s['base_price']) ? " <em>(from ₱" . number_format($s['base_price']) . ")</em>" : ''))
+                    ->join('<br>');
+                $serviceLines = "<br>{$servicesList}";
+            }
+
+            return "• {$catLine}{$serviceLines}";
+        })->join("\n\n");
+
+        $totalServices = collect($categories)->sum('service_count');
 
         return [
             'reply' => "Here are the service categories we offer:\n\n{$lines}\n\nWe have a total of <strong>{$totalServices} services</strong> across all categories. Would you like to know more about a specific category?",
-            'suggestions' => $categories->take(4)->map(fn($c) => "Tell me about {$c->name} services")->values()->toArray(),
+            'suggestions' => collect($categories)->take(4)->map(fn ($c) => "Tell me about {$c['name']} services")->values()->toArray(),
         ];
     }
 
@@ -509,7 +552,7 @@ PROMPT;
             }
         }
 
-        if (!$category) {
+        if (! $category) {
             $dbCategories = ServiceCategory::where('is_active', true)->pluck('name');
             foreach ($dbCategories as $dbCat) {
                 if (str_contains($lower, strtolower($dbCat))) {
@@ -519,21 +562,20 @@ PROMPT;
             }
         }
 
-        $query = User::where('role', 'worker')
-            ->whereHas('workerProfile')
-            ->with('workerProfile');
+        $workersData = $this->tools->searchWorkers(
+            $category,
+            null,
+            5,
+            $this->user?->barangay,
+            $this->clientLocation['latitude'] ?? null,
+            $this->clientLocation['longitude'] ?? null,
+        );
 
-        if ($category) {
-            $query->where('service_category', $category);
-            $workers = $query->inRandomOrder()->take(5)->get();
-        } else {
-            $workers = $query->inRandomOrder()->take(5)->get();
-        }
-
-        if ($workers->isEmpty()) {
+        if (empty($workersData)) {
             $msg = $category
                 ? "There are currently <strong>no workers registered</strong> under the <strong>{$category}</strong> category. This category might be new or workers haven't signed up yet. Try browsing other available categories."
                 : "I couldn't find any workers matching your search. Try browsing our <a href=\"/#services\">service categories</a> to see available workers.";
+
             return [
                 'reply' => $msg,
                 'suggestions' => $category
@@ -547,10 +589,11 @@ PROMPT;
             ? "Here are some <strong>{$category}</strong> workers available near {$loc}:"
             : "Here are some of our verified workers near {$loc}:";
 
-        $lines = $workers->map(function ($w) {
-            $rate = $w->workerProfile?->hourly_rate ? '₱' . number_format($w->workerProfile->hourly_rate) . '/hr' : 'Negotiable';
-            $rating = $w->workerProfile?->average_rating ? number_format($w->workerProfile->average_rating, 1) . '★' : 'New';
-            return "• <strong>{$w->name}</strong> — {$rating} — {$rate}";
+        $lines = collect($workersData)->map(function ($w) {
+            $rate = ! empty($w['hourly_rate']) ? '₱'.number_format($w['hourly_rate']).'/hr' : 'Negotiable';
+            $rating = ! empty($w['rating']) ? number_format($w['rating'], 1).'★' : 'New';
+
+            return "• <strong>{$w['name']}</strong> — {$rating} — {$rate}";
         })->join("\n");
 
         $totalWorkers = User::where('role', 'worker')->whereHas('workerProfile')->count();
@@ -559,7 +602,7 @@ PROMPT;
             : $totalWorkers;
 
         return [
-            'reply' => "{$intro}\n\n{$lines}\n\nWe have <strong>{$catCount} workers</strong> available" . ($category ? " in {$category}" : '') . ". Visit their profiles to see reviews and book them directly!",
+            'reply' => "{$intro}\n\n{$lines}\n\nWe have <strong>{$catCount} workers</strong> available".($category ? " in {$category}" : '').'. Visit their profiles to see reviews and book them directly!',
             'suggestions' => [
                 'How do I book a worker?',
                 'Tell me about Plumbing services',
@@ -571,7 +614,7 @@ PROMPT;
     protected function askBooking(): array
     {
         return [
-            'reply' => "Booking a worker on KaAyos is easy! Here's how:\n\n<strong>1. Browse</strong> — Find workers by category on our <a href=\"/\">homepage</a>.\n<strong>2. View Profile</strong> — Check their skills, reviews, and rates.\n<strong>3. Book</strong> — Click \"Book Now\" on their profile (you'll need to <a href=\"/login\">sign in</a> first).\n<strong>4. Chat & Confirm</strong> — Message the worker to agree on schedule and pricing.\n<strong>5. Done!</strong> — After the job, leave a review to help the community.\n\nBookings go through these statuses: <em>New → Accepted → En Route → In Progress → Completed</em>.\n\nA 10% platform fee applies to completed jobs to keep the platform running.",
+            'reply' => "Booking a worker on KaAyos is easy! Here's how:\n\n<strong>1. Browse</strong> — Find workers by category on our <a href=\"/\">homepage</a>.\n<strong>2. View Profile</strong> — Check their skills, reviews, and rates.\n<strong>3. Book</strong> — Click \"Book Now\" on their profile (you'll need to <a href=\"/login\">sign in</a> first).\n<strong>4. Chat & Confirm</strong> — Message the worker to agree on schedule and pricing.\n<strong>5. Done!</strong> — After the job, leave a review to help the community.\n\nBookings go through these statuses: <em>New → Accepted → En Route → In Progress → Completed</em>.",
             'suggestions' => [
                 'How are workers verified?',
                 'Can I cancel a booking?',
@@ -595,7 +638,7 @@ PROMPT;
     protected function askVerification(): array
     {
         $verifiedCount = User::where('role', 'worker')
-            ->whereHas('workerDocuments', fn($q) => $q->where('status', 'verified'))
+            ->whereHas('workerDocuments', fn ($q) => $q->where('status', 'verified'))
             ->count();
 
         return [
@@ -611,11 +654,11 @@ PROMPT;
     protected function askPricing(): array
     {
         return [
-            'reply' => "Here's how pricing works on KaAyos:\n\n<strong>For Clients:</strong>\n• Browse and book workers for free — no upfront payment needed\n• Pricing is agreed between you and the worker (hourly rate or fixed price)\n• A <strong>10% platform fee</strong> is added to completed jobs to support KaAyos\n\n<strong>For Workers:</strong>\n• Set your own hourly rate in your profile\n• You receive your full rate; the 10% fee is charged to the client\n\nYou can discuss and negotiate pricing directly with the worker through our in-app chat before confirming the booking.",
+            'reply' => "Here's how pricing works on KaAyos:\n\n<strong>For Clients:</strong>\n• Browse and book workers for free — no upfront payment needed\n• Pricing is agreed between you and the worker (hourly rate or fixed price)\n\n<strong>For Workers:</strong>\n• Set your own hourly rate in your profile\n\nYou can discuss and negotiate pricing directly with the worker through our in-app chat before confirming the booking.",
             'suggestions' => [
                 'How do I book a worker?',
-                'Are there any hidden fees?',
                 'Can I negotiate the price?',
+                'How do I contact the worker?',
             ],
         ];
     }
@@ -626,7 +669,7 @@ PROMPT;
         $reviewCount = Review::count();
 
         return [
-            'reply' => "Reviews help our community! Here's how they work:\n\n• After a job is completed, you can rate the worker from 1–5 stars\n• Leave a comment to help others know what to expect\n• Workers build their reputation through honest feedback\n\nOur platform has <strong>{$reviewCount} reviews</strong> with an average rating of <strong>" . number_format($avgRating, 1) . "★</strong>.\n\nYou can read reviews on each worker's profile before booking to make an informed decision.",
+            'reply' => "Reviews help our community! Here's how they work:\n\n• After a job is completed, you can rate the worker from 1–5 stars\n• Leave a comment to help others know what to expect\n• Workers build their reputation through honest feedback\n\nOur platform has <strong>{$reviewCount} reviews</strong> with an average rating of <strong>".number_format($avgRating, 1)."★</strong>.\n\nYou can read reviews on each worker's profile before booking to make an informed decision.",
             'suggestions' => [
                 'How do I find the right worker?',
                 'How are workers verified?',
@@ -662,7 +705,7 @@ PROMPT;
     protected function askHelp(string $message): array
     {
         return [
-            'reply' => "I'm not sure I understood that. Let me help you with what I know!\n\nI can answer questions about:\n• <strong>Services</strong> — What categories and workers are available\n• <strong>Booking</strong> — How to hire a worker step-by-step\n• <strong>Areas</strong> — Where we operate (Tuy, Batangas)\n• <strong>Verification</strong> — How workers are vetted\n• <strong>Pricing</strong> — Costs, fees, and payments\n• <strong>Cancellation</strong> — Modifying or cancelling bookings\n\nOr you can browse our <a href=\"/#faq\">FAQ</a> for more information.\n\nHow can I help you?",
+            'reply' => "I'm not sure I understood that. Let me help you with what I know!\n\nI can answer questions about:\n• <strong>Services</strong> — What categories and workers are available\n• <strong>Booking</strong> — How to hire a worker step-by-step\n• <strong>Areas</strong> — Where we operate (Tuy, Batangas)\n• <strong>Verification</strong> — How workers are vetted\n• <strong>Pricing</strong> — Costs and payments\n• <strong>Cancellation</strong> — Modifying or cancelling bookings\n\nOr you can browse our <a href=\"/#faq\">FAQ</a> for more information.\n\nHow can I help you?",
             'suggestions' => [
                 'What services are available?',
                 'How do I book a worker?',

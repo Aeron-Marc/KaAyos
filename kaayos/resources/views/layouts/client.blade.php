@@ -188,7 +188,7 @@
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 @unless(request()->routeIs('client.suggestions'))
-@include('client.partials.chat-widget')
+{{-- @include('client.partials.chat-widget') --}}
 @endunless
 
 <script>

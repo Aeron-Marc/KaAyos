@@ -21,13 +21,31 @@ class SuggestionController extends Controller
             'history.*.content' => 'required|string',
         ]);
 
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'reply' => 'Please log in to get personalized suggestions.',
+                'suggestions' => [],
+                'workers' => [],
+            ], 401);
+        }
+
         try {
+            $clientLocation = [];
+            try {
+                $clientLocation = ['client' => $user->locationContext()];
+            } catch (\Throwable $e) {
+                Log::warning('Location context failed', ['error' => $e->getMessage()]);
+            }
+
             $chat = app(ChatBotService::class);
             $result = $chat->chat(
                 $validated['message'],
                 $validated['history'] ?? [],
-                auth()->user(),
-                ['client' => auth()->user()->locationContext()]
+                $user,
+                $clientLocation
             );
 
             $workers = [];
@@ -43,7 +61,7 @@ class SuggestionController extends Controller
                 'workers' => $workers,
             ]);
         } catch (\Exception $e) {
-            Log::error('Suggestion error: ' . $e->getMessage());
+            Log::error('Suggestion error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json([
                 'success' => false,
                 'reply' => 'I\'m sorry, something went wrong. Please try again.',
