@@ -4,7 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ExportReportRequest extends FormRequest
+class PrintReportRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,7 +15,6 @@ class ExportReportRequest extends FormRequest
     {
         return [
             'type' => 'required|in:bookings,revenue,users,worker_performance,verifications,disputes,service_popularity,reviews',
-            'format' => 'required|in:csv,xlsx',
             'date_from' => 'required|date',
             'date_to' => 'required|date|after_or_equal:date_from',
         ];

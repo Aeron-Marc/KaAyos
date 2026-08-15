@@ -230,6 +230,19 @@
             .form-row{grid-template-columns:1fr}
             th,td{padding:12px}
         }
+        @media print{
+            .sidebar,.admin-topbar,.sidebar-overlay,.skeleton-page,.filters-bar,.rpt-bar,.rpt-section,.header-right,.btn,.pagination,.actions-cell,.rpt-export-row{display:none!important}
+            body{background:#fff}
+            .main-content{margin-left:0;padding:0}
+            .header{display:block;margin-bottom:16px}
+            .header-left p{color:#555}
+            .card,.metric-card,.table-container{box-shadow:none;border:1px solid #CBD5E1;border-radius:0;overflow:visible}
+            .table-container,.card{overflow-x:visible}
+            table{width:100%}
+            thead{display:table-header-group}
+            tbody tr{page-break-inside:avoid;break-inside:avoid}
+            .status-badge,.metric-card,.metric-card.accent-blue,.metric-card.accent-green,.metric-card.accent-orange,.metric-card.accent-red,.metric-card.accent-purple{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        }
     </style>
     @stack('styles')
 </head>
