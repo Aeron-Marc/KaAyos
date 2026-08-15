@@ -4,144 +4,128 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ExportReportRequest;
-use App\Models\Booking;
-use App\Models\User;
-use App\Models\WorkerDocument;
+use App\Http\Requests\Admin\PrintReportRequest;
+use App\Services\ReportService;
+use App\Services\XlsxWriter;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    public const PRESETS = [
+        'today' => 'Today',
+        '7d' => 'Last 7 Days',
+        '30d' => 'Last 30 Days',
+        'this_month' => 'This Month',
+        'last_month' => 'Last Month',
+        'this_year' => 'This Year',
+        'all' => 'All Time',
+    ];
+
+    public function __construct(private ReportService $reports) {}
+
     public function index(Request $request)
     {
-        $reportData = null;
-        $reportType = $request->input('type', 'bookings');
-        $dateFrom = $request->input('date_from', now()->startOfMonth()->format('Y-m-d'));
-        $dateTo = $request->input('date_to', now()->format('Y-m-d'));
+        $type = $request->input('type');
+        $type = $type && in_array($type, ReportService::REPORT_KEYS, true) ? $type : null;
 
-        if ($request->anyFilled(['type', 'date_from', 'date_to'])) {
-            $reportData = match ($reportType) {
-                'bookings' => $this->bookingsReport($dateFrom, $dateTo),
-                'payments' => $this->paymentsReport($dateFrom, $dateTo),
-                'verifications' => $this->verificationsReport($dateFrom, $dateTo),
-                default => null,
-            };
+        [$from, $to, $preset] = $this->resolveRange($request);
+
+        $preview = null;
+        if ($type) {
+            $preview = $this->reports->build($type, $from, $to, 100);
         }
 
-        return view('admin.reports.index', compact('reportData', 'reportType', 'dateFrom', 'dateTo'));
+        return view('admin.reports.index', [
+            'groups' => $this->reports->groups(),
+            'presets' => self::PRESETS,
+            'type' => $type,
+            'preset' => $preset,
+            'from' => $from,
+            'to' => $to,
+            'preview' => $preview,
+            'meta' => $type ? $this->reports->catalog()[$type] : null,
+        ]);
     }
 
     public function export(ExportReportRequest $request)
     {
         $type = $request->input('type');
-        $dateFrom = $request->input('date_from');
-        $dateTo = $request->input('date_to');
+        $format = $request->input('format', 'csv');
+        $from = $request->input('date_from');
+        $to = $request->input('date_to');
 
-        $data = match ($type) {
-            'bookings' => $this->bookingsReport($dateFrom, $dateTo),
-            'payments' => $this->paymentsReport($dateFrom, $dateTo),
-            'verifications' => $this->verificationsReport($dateFrom, $dateTo),
-            default => [],
-        };
+        $data = $this->reports->build($type, $from, $to);
 
-        $fileName = "{$type}_report_{$dateFrom}_to_{$dateTo}.csv";
+        $fileName = str_replace('_', '-', $type)."_report_{$from}_to_{$to}.{$format}";
 
-        return response()->streamDownload(function () use ($data, $type) {
+        if ($format === 'xlsx') {
+            $label = $this->reports->catalog()[$type]['label'];
+
+            $binary = XlsxWriter::binary($label, $data['columns'], $data['rows'], [
+                'title' => $label,
+                'period' => "{$from} to {$to}",
+            ]);
+
+            return response()->streamDownload(function () use ($binary) {
+                echo $binary;
+            }, $fileName, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]);
+        }
+
+        return response()->streamDownload(function () use ($data) {
             $output = fopen('php://output', 'w');
-
-            if ($type === 'bookings' && isset($data['rows'])) {
-                fputcsv($output, ['ID', 'Client', 'Worker', 'Service', 'Status', 'Price', 'Scheduled', 'Created']);
-                foreach ($data['rows'] as $row) {
-                    fputcsv($output, $row);
-                }
-            } elseif ($type === 'payments' && isset($data['rows'])) {
-                fputcsv($output, ['Booking ID', 'Client', 'Worker', 'Price', 'Completed At']);
-                foreach ($data['rows'] as $row) {
-                    fputcsv($output, $row);
-                }
-            } elseif ($type === 'verifications' && isset($data['rows'])) {
-                fputcsv($output, ['Provider', 'Email', 'Document Type', 'Status', 'Reviewed At']);
-                foreach ($data['rows'] as $row) {
-                    fputcsv($output, $row);
-                }
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, $data['columns']);
+            foreach ($data['rows'] as $row) {
+                fputcsv($output, array_map(fn ($value) => $value === null ? '' : $value, $row));
             }
-
             fclose($output);
-        }, $fileName, ['Content-Type' => 'text/csv']);
+        }, $fileName, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    private function bookingsReport($dateFrom, $dateTo): array
+    public function print(PrintReportRequest $request)
     {
-        $bookings = Booking::with(['client', 'worker'])
-            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
-            ->latest()
-            ->get();
+        $type = $request->input('type');
+        $from = $request->input('date_from');
+        $to = $request->input('date_to');
 
-        return [
-            'summary' => [
-                'total' => $bookings->count(),
-                'completed' => $bookings->where('status', 'completed')->count(),
-                'cancelled' => $bookings->where('status', 'cancelled')->count(),
-                'active' => $bookings->whereIn('status', ['pending', 'confirmed', 'in_progress'])->count(),
-            ],
-            'rows' => $bookings->map(fn ($b) => [
-                'ID'        => $b->id,
-                'Client'    => $b->client->name ?? 'N/A',
-                'Worker'    => $b->worker->name ?? 'N/A',
-                'Service'   => $b->service_category,
-                'Status'    => $b->status,
-                'Price'     => number_format((float) $b->price, 2),
-                'Scheduled' => $b->scheduled_at?->format('Y-m-d H:i'),
-                'Created'   => $b->created_at->format('Y-m-d H:i'),
-            ])->toArray(),
-        ];
+        $data = $this->reports->build($type, $from, $to);
+
+        return view('admin.reports.print', [
+            'catalog' => $this->reports->catalog()[$type],
+            'type' => $type,
+            'from' => $from,
+            'to' => $to,
+            'data' => $data,
+            'generated_at' => now()->format('F d, Y h:i A'),
+        ]);
     }
 
-    private function paymentsReport($dateFrom, $dateTo): array
+    private function resolveRange(Request $request): array
     {
-        $completed = Booking::with(['client', 'worker'])
-            ->where('status', 'completed')
-            ->whereBetween('completed_at', [$dateFrom, $dateTo . ' 23:59:59'])
-            ->latest()
-            ->get();
+        $preset = $request->input('preset');
+        if ($preset && array_key_exists($preset, self::PRESETS)) {
+            return array_merge($this->rangeForPreset($preset), [$preset]);
+        }
 
-        return [
-            'summary' => [
-                'total_completed' => $completed->count(),
-                'total_revenue' => $completed->sum('price'),
-                'average_booking_value' => $completed->avg('price'),
-            ],
-            'rows' => $completed->map(fn ($b) => [
-                'Booking ID'    => $b->id,
-                'Client'        => $b->client->name ?? 'N/A',
-                'Worker'        => $b->worker->name ?? 'N/A',
-                'Price'         => number_format((float) $b->price, 2),
-                'Completed At'  => $b->completed_at?->format('Y-m-d H:i'),
-            ])->toArray(),
-        ];
+        $from = $request->input('date_from', now()->startOfMonth()->format('Y-m-d'));
+        $to = $request->input('date_to', now()->format('Y-m-d'));
+
+        return [$from, $to, null];
     }
 
-    private function verificationsReport($dateFrom, $dateTo): array
+    private function rangeForPreset(string $preset): array
     {
-        $docs = WorkerDocument::with(['user', 'reviewedBy'])
-            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
-            ->latest()
-            ->get();
-
-        return [
-            'summary' => [
-                'total' => $docs->count(),
-                'pending' => $docs->where('status', 'pending')->count(),
-                'verified' => $docs->where('status', 'verified')->count(),
-                'rejected' => $docs->where('status', 'rejected')->count(),
-            ],
-            'rows' => $docs->map(fn ($d) => [
-                'Provider'      => $d->user->name ?? 'N/A',
-                'Email'         => $d->user->email ?? 'N/A',
-                'Document Type' => $d->document_type,
-                'Status'        => $d->status,
-                'Reviewed At'   => $d->reviewed_at?->format('Y-m-d H:i'),
-            ])->toArray(),
-        ];
+        return match ($preset) {
+            'today' => [now()->format('Y-m-d'), now()->format('Y-m-d')],
+            '7d' => [now()->subDays(6)->format('Y-m-d'), now()->format('Y-m-d')],
+            '30d' => [now()->subDays(29)->format('Y-m-d'), now()->format('Y-m-d')],
+            'this_month' => [now()->startOfMonth()->format('Y-m-d'), now()->format('Y-m-d')],
+            'last_month' => [now()->subMonth()->startOfMonth()->format('Y-m-d'), now()->subMonth()->endOfMonth()->format('Y-m-d')],
+            'this_year' => [now()->startOfYear()->format('Y-m-d'), now()->format('Y-m-d')],
+            'all' => ['2000-01-01', now()->format('Y-m-d')],
+            default => [now()->startOfMonth()->format('Y-m-d'), now()->format('Y-m-d')],
+        };
     }
 }
