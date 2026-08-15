@@ -7,7 +7,7 @@ A home services marketplace platform connecting clients with verified workers in
 - **Backend:** Laravel 13, PHP ^8.3
 - **Frontend:** Blade + vanilla JS (client, worker & admin dashboards)
 - **Styling:** Tailwind CSS 4 (via Vite)
-- **Database:** SQLite (default) / MySQL
+- **Database:** MySQL
 - **Auth:** Laravel Sanctum (API), session-based (web)
 - **Realtime:** Laravel Reverb (WebSockets for chat & notifications)
 - **Queues & Cache:** Database driver
@@ -89,23 +89,28 @@ composer install
 cp .env.example .env
 ```
 
-Edit `.env` — at minimum configure your database and mail settings:
+Edit `.env` — at minimum configure your database, mail, and application settings:
 
 ```ini
-DB_CONNECTION=sqlite
-# or for MySQL:
-# DB_CONNECTION=mysql
-# DB_HOST=127.0.0.1
-# DB_PORT=3306
-# DB_DATABASE=kaayos
-# DB_USERNAME=root
-# DB_PASSWORD=
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain.com
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=kaayos
+DB_USERNAME=kaayos_user
+DB_PASSWORD=
 
 MAIL_MAILER=smtp
-MAIL_HOST=smtp.gmail.com
+MAIL_HOST=smtp.mailtrap.io
 MAIL_PORT=587
-MAIL_USERNAME=your@email.com
-MAIL_PASSWORD=your-app-password
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="no-reply@your-domain.com"
+MAIL_FROM_NAME="${APP_NAME}"
 ```
 
 Additional custom config variables (add to `.env` as needed):
@@ -271,3 +276,7 @@ php artisan queue:listen --tries=1 --timeout=0
 ```
 
 This is included automatically in `composer run dev`.
+
+## Production Deployment
+
+See [PRODUCTION.md](PRODUCTION.md) for the complete production deployment guide, including server requirements, environment configuration, database setup, queue workers, scheduler, mail configuration, Reverb/WebSocket setup, and verification steps.
