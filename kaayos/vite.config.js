@@ -1,16 +1,15 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import react from '@vitejs/plugin-react';
 import { bunny } from 'laravel-vite-plugin/fonts';
 
 export default defineConfig({
     plugins: [
         laravel({
             input: [
-                'resources/css/client.css',
+                'resources/css/app.css',
                 'resources/css/landing.css',
                 'resources/js/echo.js',
-                'resources/js/client/account.jsx',
+                'resources/js/chatbot.js',
             ],
             refresh: true,
             fonts: [
@@ -19,7 +18,6 @@ export default defineConfig({
                 }),
             ],
         }),
-        react(),
     ],
     server: {
         watch: {

@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    @vite(['resources/css/client.css', 'resources/js/echo.js'])
+    @vite(['resources/css/app.css', 'resources/js/echo.js'])
     @stack('styles')
 </head>
 <body>
@@ -152,6 +152,8 @@
             </div>
         </main>
 
+        <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
         @push('scripts')
         <script>
         (function() {
@@ -200,10 +202,12 @@
 @stack('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    var userId = {{ auth()->id() }};
+    var checkCount = 0;
     var checkEcho = setInterval(function () {
+        checkCount++;
         if (window.Echo) {
             clearInterval(checkEcho);
-            var userId = {{ auth()->id() }};
             window.Echo.private('user.' + userId)
                 .listen('BookingCreated', function (e) {
                     var badge = document.querySelector('.badge-dot');
@@ -214,6 +218,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.body.appendChild(toast);
                     setTimeout(function () { toast.remove(); }, 5000);
                 });
+        } else if (checkCount >= 50) {
+            clearInterval(checkEcho);
         }
     }, 200);
 });

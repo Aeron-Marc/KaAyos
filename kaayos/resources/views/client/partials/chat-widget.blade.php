@@ -310,5 +310,4 @@
 @endpush
 
 @push('scripts')
-<script src="{{ asset('js/client/chatbot.js') }}"></script>
 @endpush

@@ -14,6 +14,7 @@ use App\Http\Controllers\Worker\WorkerController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
 use App\Http\Controllers\Api\PasswordOtpController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VerificationController;
@@ -43,7 +44,7 @@ RateLimiter::for('email-otp-verify', function (Request $request) {
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/workers/{worker}', [App\Http\Controllers\Workers\PublicWorkerController::class, 'show'])->name('workers.public.show');
+Route::get('/workers/{worker}', [App\Http\Controllers\Worker\PublicWorkerController::class, 'show'])->name('workers.public.show');
 
 Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search');
 
@@ -96,10 +97,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/api/profile',                    [ProfileController::class, 'updateProfile']);
     Route::put('/api/preferences',                [ProfileController::class, 'updatePreferences']);
     Route::post('/api/profile/avatar',            [ProfileController::class, 'uploadAvatar']);
+    Route::post('/api/location/reverse',          [LocationController::class, 'reverseGeocode']);
+    Route::post('/api/location',                  [LocationController::class, 'store']);
 });
 
-// Chatbot (authenticated)
-Route::middleware('auth')->post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke']);
+// Chatbot (public + authenticated)
+Route::post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke']);
 
 // Suggestions (authenticated) — uses ML + AI for worker recommendations
 Route::middleware('auth')->post('/api/chat/suggest', [App\Http\Controllers\Api\SuggestionController::class, '__invoke']);
@@ -109,6 +112,7 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::get('/dashboard/notifications', [WorkerController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
     Route::get('/schedule', [WorkerController::class, 'schedule'])->name('schedule');
+    Route::get('/calendar/data', [WorkerController::class, 'calendarData'])->name('calendar.data');
     Route::get('/messages', [WorkerController::class, 'messages'])->name('messages');
     Route::get('/messages/start', [WorkerController::class, 'startConversation'])->name('messages.start');
     Route::get('/messages/poll/{conversation}', [WorkerController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
@@ -132,6 +136,7 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::post('/jobs/{booking}/reschedule', [WorkerDashboardController::class, 'rescheduleRequest'])->name('jobs.reschedule');
     Route::post('/jobs/{booking}/reschedule-respond', [WorkerDashboardController::class, 'respondReschedule'])->name('jobs.reschedule-respond');
     Route::post('/jobs/{booking}/confirm-complete', [WorkerDashboardController::class, 'confirmJobCompletion'])->name('jobs.confirm-complete');
+    Route::get('/jobs/{booking}/details', [WorkerController::class, 'jobDetails'])->name('jobs.details');
     Route::put('/location', [WorkerDashboardController::class, 'updateLocation'])->name('location.update');
 });
 

@@ -92,37 +92,48 @@
                         <span>{{ $workerProfile->years_of_experience }} years</span>
                     </div>
                 @endif
+                @if($worker->residence)
+                    <div style="display:flex;justify-content:space-between;font-size:.88rem;">
+                        <span style="color:var(--g5);">Location</span>
+                        <span style="font-weight:500;">{{ $worker->residence }}</span>
+                    </div>
+                @endif
                 @php
                     $availDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
                     $dayShort = ['Monday'=>'Mon','Tuesday'=>'Tue','Wednesday'=>'Wed','Thursday'=>'Thu','Friday'=>'Fri','Saturday'=>'Sat','Sunday'=>'Sun'];
                     $availMap = [];
+                    $hasAnyActive = false;
                     if ($workerProfile && $workerProfile->availability) {
                         foreach ($workerProfile->availability as $a) {
                             $availMap[$a['day']] = $a;
+                            if ($a['active'] ?? false) $hasAnyActive = true;
                         }
                     }
+                    $hasAvailabilitySet = $workerProfile && $workerProfile->availability && count($workerProfile->availability) > 0;
                 @endphp
-                @if($workerProfile && $workerProfile->availability)
                     <div style="font-size:.82rem;">
                         <div style="color:var(--g5);font-weight:500;margin-bottom:6px;">Availability</div>
-                        @foreach($availDays as $day)
-                            @php
-                                $a = $availMap[$day] ?? null;
-                                $active = $a && ($a['active'] ?? false);
-                            @endphp
-                            <div style="display:flex;justify-content:space-between;padding:3px 0;{{ !$active ? 'opacity:.5;' : '' }}">
-                                <span>{{ $dayShort[$day] ?? $day }}</span>
-                                <span>
-                                    @if($active)
-                                        {{ \Carbon\Carbon::createFromFormat('H:i', $a['start'])->format('g:i A') }} – {{ \Carbon\Carbon::createFromFormat('H:i', $a['end'])->format('g:i A') }}
-                                    @else
-                                        <span style="color:var(--g4);">Unavailable</span>
-                                    @endif
-                                </span>
-                            </div>
-                        @endforeach
+                        @if($hasAvailabilitySet)
+                            @foreach($availDays as $day)
+                                @php
+                                    $a = $availMap[$day] ?? null;
+                                    $active = $a && ($a['active'] ?? false);
+                                @endphp
+                                <div style="display:flex;justify-content:space-between;padding:3px 0;{{ !$active ? 'opacity:.5;' : '' }}">
+                                    <span>{{ $dayShort[$day] ?? $day }}</span>
+                                    <span>
+                                        @if($active)
+                                            {{ \Carbon\Carbon::createFromFormat('H:i', $a['start'])->format('g:i A') }} – {{ \Carbon\Carbon::createFromFormat('H:i', $a['end'])->format('g:i A') }}
+                                        @else
+                                            <span style="color:var(--g4);">Unavailable</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @endforeach
+                        @else
+                            <div style="color:var(--g4);font-style:italic;padding:4px 0;">Not yet set</div>
+                        @endif
                     </div>
-                @endif
                 @if($worker->phone)
                     <div style="display:flex;justify-content:space-between;font-size:.88rem;">
                         <span style="color:var(--g5);">Contact</span>
@@ -137,9 +148,15 @@
                     <i class="fa-regular fa-comment" aria-hidden="true"></i> Send Message
                 </a>
             @endif
+            @if($hasAnyActive)
             <button type="button" class="btn btn-solid" onclick="openBookModal()" style="width:100%;justify-content:center;{{ $canMessage ? 'margin-top:8px;' : '' }}">
                 <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Book Now
             </button>
+            @else
+            <button type="button" class="btn btn-solid" disabled title="Worker hasn't set their availability yet" style="width:100%;justify-content:center;opacity:.55;cursor:not-allowed;{{ $canMessage ? 'margin-top:8px;' : '' }}">
+                <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Not Available
+            </button>
+            @endif
         </div>
     </div>
 
@@ -151,7 +168,7 @@
             || !empty($workerProfile->spoken_languages)
             || ($workerProfile->portfolios && $workerProfile->portfolios->count() > 0)
         );
-        $profileHasContent = $profileHasContent || ($documents && $documents->count() > 0);
+        $profileHasContent = $profileHasContent || ($documents && count($documents) > 0);
     @endphp
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;">
         @if($profileHasContent)
@@ -194,20 +211,20 @@
             @endif
 
             {{-- Documents --}}
-            @if($documents && $documents->count() > 0)
+            @if($documents && count($documents) > 0)
                 <div class="card-panel">
                     <div class="card-panel-header">
-                        <h3 class="section-title">Documents</h3>
+                        <h3 class="section-title">Worker Documents</h3>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
                         @foreach($documents as $doc)
                             <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--g0);border-radius:8px;font-size:.85rem;">
-                                <i class="fa-solid fa-file-lines" style="color:var(--b5);" aria-hidden="true"></i>
-                                <span style="flex:1;">{{ $doc->document_type }}</span>
-                                @if($doc->status === 'verified')
+                                <i class="fa-solid {{ $doc['icon'] }}" style="color:var(--b5);" aria-hidden="true"></i>
+                                <span style="flex:1;">{{ $doc['name'] }}</span>
+                                @if($doc['status'] === 'Verified')
                                     <span style="color:#166534;font-size:.78rem;"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified</span>
                                 @else
-                                    <span style="color:var(--g4);font-size:.78rem;">{{ ucfirst($doc->status) }}</span>
+                                    <span style="color:var(--g4);font-size:.78rem;">{{ $doc['status'] }}</span>
                                 @endif
                             </div>
                         @endforeach
@@ -354,8 +371,11 @@
 
                 <div class="form-group">
                     <label for="notes">Notes <small>(optional)</small></label>
-                    <textarea id="notes" name="notes" class="form-control book-textarea"
-                              placeholder="Describe what you need done…"></textarea>
+                    <div class="notes-textarea-wrap">
+                        <textarea id="notes" name="notes" class="form-control"
+                                  placeholder="Describe what you need done…" maxlength="2000"></textarea>
+                        <span class="notes-counter">0 / 2000</span>
+                    </div>
                 </div>
 
                 @if($worker->workerProfile && $worker->workerProfile->hourly_rate)
@@ -419,8 +439,9 @@ function validateSchedule() {
     const warningText = document.getElementById('schedule-warning-text');
 
     if (!input.value || WORKER_AVAILABILITY.length === 0) {
-        warning.style.display = 'none';
-        btn.disabled = false;
+        warningText.textContent = 'This worker hasn\u2019t set their availability yet. Booking is currently unavailable.';
+        warning.style.display = 'flex';
+        btn.disabled = true;
         return;
     }
 
@@ -459,6 +480,14 @@ function updateAgreementSummary() {
     document.getElementById('agree-date').textContent     = dt ? new Date(dt).toLocaleString('en-PH',{dateStyle:'long',timeStyle:'short'}) : '—';
     document.getElementById('agree-location').textContent = addr;
     document.getElementById('agree-price').textContent    = pr ? '₱' + Number(pr).toLocaleString() : '—';
+}
+
+function updateNotesCounter() {
+    const textarea = document.getElementById('notes');
+    const counter = document.querySelector('.notes-counter');
+    if (textarea && counter) {
+        counter.textContent = textarea.value.length + ' / 2000';
+    }
 }
 
 function submitBooking(e) {
@@ -527,6 +556,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelector('#book-form').addEventListener('input', updateAgreementSummary);
     document.querySelector('#book-form').addEventListener('change', updateAgreementSummary);
+
+    const notesInput = document.getElementById('notes');
+    if (notesInput) {
+        notesInput.addEventListener('input', updateNotesCounter);
+        updateNotesCounter();
+    }
 });
 </script>
 @endpush
@@ -590,8 +625,10 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .modal-close:hover { color: var(--g8); }
 .modal-body { padding: 16px 22px; max-height: 60vh; overflow-y: auto; }
-.book-textarea { resize: none; min-height: 80px; width: 100%; box-sizing: border-box; }
 #book-form .form-control { width: 100%; box-sizing: border-box; }
+#book-form .notes-textarea-wrap { position: relative; background: #f8fafc; border: 1px solid var(--g1); border-radius: 8px; padding: 10px 14px; }
+#book-form .notes-textarea-wrap textarea { border: none; background: transparent; padding-bottom: 24px; resize: vertical; min-height: 80px; }
+.notes-counter { position: absolute; bottom: 8px; right: 10px; font-size: .8rem; color: var(--g4); pointer-events: none; }
 .modal-footer {
     display: flex; gap: 10px; justify-content: flex-end;
     padding: 0 22px 18px;

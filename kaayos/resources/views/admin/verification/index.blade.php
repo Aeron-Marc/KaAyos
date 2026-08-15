@@ -8,7 +8,7 @@
         <p>Review and approve pending service provider applications</p>
     </div>
     <div class="header-right">
-        <span class="status-badge status-pending"><i class="fa-solid fa-hourglass-half"></i> {{ $documents->where('status', 'pending')->count() }} pending</span>
+        <span class="status-badge status-pending"><i class="fa-solid fa-hourglass-half"></i> {{ $pendingCount }} pending</span>
     </div>
 </div>
 
@@ -24,65 +24,83 @@
         </select>
     </div>
     <div class="filter-group" style="margin-left: auto;">
-        <input type="text" name="search" placeholder="Search provider name..." value="{{ request('search') }}" style="width: 200px;">
+        <input type="text" name="search" placeholder="Search provider name or email..." value="{{ request('search') }}" style="width: 220px;">
     </div>
     <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-search"></i></button>
 </form>
 
 <div class="table-container">
-    @if($documents->count())
+    @if($workers->count())
         <table>
             <thead>
                 <tr>
                     <th>Provider Name</th>
-                    <th>Document Type</th>
+                    <th>Documents</th>
                     <th>Date Submitted</th>
                     <th>Status</th>
                     <th style="text-align: center;">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($documents as $doc)
+                @foreach($workers as $worker)
+                @php
+                    $docs = $worker->workerDocuments;
+                    $status = $docs->isEmpty()
+                        ? 'not_submitted'
+                        : ($docs->contains('status', 'pending') ? 'pending'
+                            : ($docs->contains('status', 'rejected') ? 'rejected' : 'verified'));
+                    $reviewDoc = $docs->firstWhere('status', 'pending') ?? $docs->first();
+                @endphp
                 <tr>
                     <td>
                         <div class="user-cell">
                             <div class="user-initials" style="background: linear-gradient(135deg, var(--b4), var(--b6));">
-                                {{ strtoupper(substr($doc->user->first_name ?? 'U', 0, 1)) }}{{ strtoupper(substr($doc->user->last_name ?? 'N', 0, 1)) }}
+                                {{ strtoupper(substr($worker->first_name ?? 'U', 0, 1)) }}{{ strtoupper(substr($worker->last_name ?? 'N', 0, 1)) }}
                             </div>
                             <div class="user-cell-info">
-                                <div class="user-cell-name">{{ $doc->user->name ?? 'Unknown' }}</div>
-                                <div class="user-cell-email">{{ $doc->user->email }}</div>
+                                <div class="user-cell-name">{{ $worker->name }}</div>
+                                <div class="user-cell-email">{{ $worker->email ?? 'N/A' }}</div>
                             </div>
                         </div>
                     </td>
-                    <td>{{ str_replace('_', ' ', ucfirst($doc->document_type)) }}</td>
-                    <td class="text-sm text-muted">{{ $doc->created_at->format('M d, Y H:i') }}</td>
+                    <td class="text-sm text-muted">
+                        {{ $docs->count() ? $docs->count() . ' doc' . ($docs->count() > 1 ? 's' : '') . ' / ' . count(\App\Support\WorkerDocuments::types()) . ' required' : '—' }}
+                    </td>
+                    <td class="text-sm text-muted">
+                        {{ $docs->count() ? $docs->first()->created_at->format('M d, Y H:i') : ($worker->created_at ? $worker->created_at->format('M d, Y H:i') : 'N/A') }}
+                    </td>
                     <td>
-                        <span class="status-badge status-{{ $doc->status === 'verified' ? 'approved' : $doc->status }}">
-                            @if($doc->status === 'pending')<i class="fa-solid fa-hourglass-half"></i>
-                            @elseif($doc->status === 'verified')<i class="fa-solid fa-check-circle"></i>
-                            @elseif($doc->status === 'rejected')<i class="fa-solid fa-x-circle"></i>
+                        <span class="status-badge status-{{ $status === 'verified' ? 'approved' : $status }}">
+                            @if($status === 'pending')<i class="fa-solid fa-hourglass-half"></i>
+                            @elseif($status === 'verified')<i class="fa-solid fa-check-circle"></i>
+                            @elseif($status === 'rejected')<i class="fa-solid fa-x-circle"></i>
                             @else<i class="fa-solid fa-circle"></i>
                             @endif
-                            {{ ucfirst(str_replace('_', ' ', $doc->status)) }}
+                            {{ ucfirst(str_replace('_', ' ', $status)) }}
                         </span>
                     </td>
                     <td style="text-align: center;">
-                        <a href="{{ route('admin.verification.show', $doc) }}" class="btn btn-primary btn-sm">
-                            <i class="fa-solid fa-magnifying-glass"></i> Review
-                        </a>
+                        @if($reviewDoc)
+                            <a href="{{ route('admin.verification.show', $reviewDoc) }}" class="btn btn-primary btn-sm">
+                                <i class="fa-solid fa-magnifying-glass"></i> Review
+                            </a>
+                        @else
+                            <a href="{{ route('admin.users.show', $worker) }}" class="btn btn-secondary btn-sm">
+                                <i class="fa-regular fa-user"></i> View Worker
+                            </a>
+                        @endif
                     </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
         <div class="pagination">
-            {{ $documents->links() }}
+            {{ $workers->links() }}
         </div>
     @else
         <div class="empty-state">
             <div class="empty-state-icon"><i class="fa-solid fa-clipboard-check"></i></div>
-            <div class="empty-state-title">No verification documents found</div>
+            <div class="empty-state-title">No workers found</div>
             <div class="empty-state-subtitle">Try adjusting your search or filter criteria.</div>
         </div>
     @endif

@@ -15,6 +15,7 @@ use App\Notifications\JobCompletionRequested;
 use App\Notifications\JobCompletionConfirmed;
 use App\Notifications\RescheduleRequested;
 use App\Services\BookingMessageService;
+use App\Support\TuyBarangays;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -128,6 +129,12 @@ class WorkerDashboardController extends Controller
             } else if ($validated['status'] === Booking::STATUS_ACCEPTED) {
                 $booking->update(['agreed_by_worker_at' => now()]);
                 $booking->transitionTo($validated['status'], auth()->id());
+                $booking->load('client');
+                Notification::send($booking->client, new BookingStatusChanged($booking, $oldStatus));
+            } else if ($validated['status'] === Booking::STATUS_CANCELLED) {
+                $booking->cancel($request->input('reason', 'Cancelled by worker'), auth()->id());
+                $booking->load('client');
+                Notification::send($booking->client, new BookingCancelled($booking, $user->name));
             } else {
                 $booking->transitionTo($validated['status'], auth()->id());
             }
@@ -301,6 +308,20 @@ class WorkerDashboardController extends Controller
         $profile->update([
             'current_latitude'  => $validated['latitude'],
             'current_longitude' => $validated['longitude'],
+            'location_is_approximate' => false,
+        ]);
+
+        $barangay = TuyBarangays::barangayFor(
+            (float) $validated['latitude'],
+            (float) $validated['longitude']
+        );
+
+        $user = auth()->user();
+        $user->update([
+            'latitude'        => $validated['latitude'],
+            'longitude'       => $validated['longitude'],
+            'barangay'        => $barangay,
+            'location_source' => 'gps',
         ]);
 
         if ($request->expectsJson()) {
@@ -308,6 +329,7 @@ class WorkerDashboardController extends Controller
                 'message' => 'Location updated successfully.',
                 'latitude'  => $profile->current_latitude,
                 'longitude' => $profile->current_longitude,
+                'barangay' => $barangay,
             ]);
         }
 

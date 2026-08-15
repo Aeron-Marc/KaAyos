@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\ChatBotService;
 use App\Services\MLService;
+use App\Support\TuyBarangays;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +24,12 @@ class SuggestionController extends Controller
 
         try {
             $chat = app(ChatBotService::class);
-            $result = $chat->chat($validated['message'], $validated['history'] ?? []);
+            $result = $chat->chat(
+                $validated['message'],
+                $validated['history'] ?? [],
+                auth()->user(),
+                ['client' => auth()->user()->locationContext()]
+            );
 
             $workers = [];
             $intent = $this->extractIntent($validated['message']);
@@ -60,49 +66,40 @@ class SuggestionController extends Controller
 
     protected function extractIntent(string $message): array
     {
-        try {
-            $chat = app(ChatBotService::class);
+        $lower = strtolower(trim($message));
 
-            $prompt = <<<PROMPT
-Classify this user message. Reply ONLY with valid JSON, no other text.
+        $catMap = [
+            'plumber' => 'Plumbing', 'plumbing' => 'Plumbing', 'tubig' => 'Plumbing', 'pipe' => 'Plumbing',
+            'electrician' => 'Electrical', 'electrical' => 'Electrical', 'kuryente' => 'Electrical',
+            'carpenter' => 'Carpentry', 'carpentry' => 'Carpentry', 'karpintero' => 'Carpentry',
+            'painter' => 'Painting', 'painting' => 'Painting', 'pintor' => 'Painting',
+            'clean' => 'Cleaning', 'cleaning' => 'Cleaning', 'linis' => 'Cleaning',
+            'garden' => 'Gardening', 'gardening' => 'Gardening', 'halaman' => 'Gardening',
+            'welder' => 'Welding', 'welding' => 'Welding',
+            'mason' => 'Masonry', 'masonry' => 'Masonry',
+        ];
 
-User message: "{$message}"
-
-Possible intent types:
-- "greeting": user is just saying hi, hello, good morning, etc. with no service request
-- "inquiry": user is asking a general question about the platform (what services, how it works, pricing, etc.)
-- "service_request": user wants a specific service (plumber, electrician, cleaning, etc.)
-
-Respond with:
-{
-  "intent": "greeting|inquiry|service_request",
-  "category": "only if service_request, pick the best category. Otherwise empty string.",
-  "description": "brief description of what they need or are asking"
-}
-PROMPT;
-
-            $result = $chat->chat($prompt);
-            $text = $result['reply'] ?? '';
-            $text = trim($text);
-            $text = preg_replace('/^```(?:json)?\s*|\s*```$/', '', $text);
-
-            $decoded = json_decode($text, true);
-            if (is_array($decoded)) {
-                return [
-                    'intent' => $decoded['intent'] ?? 'service_request',
-                    'category' => $decoded['category'] ?? '',
-                    'description' => $decoded['description'] ?? $message,
-                ];
+        foreach ($catMap as $key => $cat) {
+            if (str_contains($lower, $key)) {
+                return ['intent' => 'service_request', 'category' => $cat, 'description' => $message];
             }
-        } catch (\Exception $e) {
-            Log::warning('AI intent extraction failed: ' . $e->getMessage());
         }
 
-        return [
-            'intent' => 'service_request',
-            'category' => '',
-            'description' => $message,
-        ];
+        $greetings = ['hello', 'hi', 'hey', 'kamusta', 'good morning', 'good afternoon', 'good evening'];
+        foreach ($greetings as $g) {
+            if (str_contains($lower, $g)) {
+                return ['intent' => 'greeting', 'category' => '', 'description' => $message];
+            }
+        }
+
+        $inquiry = ['what', 'how', 'where', 'when', 'why', 'do you', 'can i', 'is there', 'are there'];
+        foreach ($inquiry as $q) {
+            if (str_starts_with($lower, $q) || str_contains($lower, ' ' . $q)) {
+                return ['intent' => 'inquiry', 'category' => '', 'description' => $message];
+            }
+        }
+
+        return ['intent' => 'service_request', 'category' => '', 'description' => $message];
     }
 
     protected function contextualIntro(array $workers, string $userMessage): ?string
@@ -148,15 +145,47 @@ PROMPT;
     {
         $query = User::where('role', 'worker')
             ->with('workerProfile')
+            ->withCount([
+                'bookingsAsWorker as completed_jobs_count' => fn($q) => $q->where('status', 'completed'),
+                'bookingsAsWorker as total_jobs_count',
+            ])
             ->active()
             ->where('service_category', $category);
 
-        $rawWorkers = $query->get()->map(function ($u) {
+        $rawWorkers = $query->get()->map(function ($u) use ($userMessage) {
             $profile = $u->workerProfile;
-            $completedJobs = $u->bookingsAsWorker()->where('status', 'completed')->count();
-            $totalJobs = $u->bookingsAsWorker()->count();
             $name = $u->name ?? '';
             $parts = explode(' ', $name, 2);
+
+            $existingLat = $profile?->current_latitude;
+            $existingLng = $profile?->current_longitude;
+
+            if ($existingLat !== null && $existingLng !== null) {
+                $lat = (float) $existingLat;
+                $lng = (float) $existingLng;
+            } else {
+                $barangay = $u->barangay
+                    ?? TuyBarangays::residenceFor($u->id);
+                [$lat, $lng] = TuyBarangays::pointFor($barangay, $u->id);
+
+                $profile?->update([
+                    'current_latitude'  => $lat,
+                    'current_longitude' => $lng,
+                    'service_zone'     => ['barangay' => $barangay],
+                    'location_is_approximate' => true,
+                ]);
+            }
+
+            $rating = (float) ($profile?->average_rating ?? 0);
+            $completedJobs = $u->completed_jobs_count ?? 0;
+            $totalJobs = $u->total_jobs_count ?? 0;
+            $verified = (bool) ($profile?->government_id_verified ?? false);
+            $yearsExp = (int) ($profile?->years_of_experience ?? 0);
+            $skills = $profile?->skills ?? [];
+
+            $matchPercent = $this->computeMatchPercent(
+                $rating, $completedJobs, $verified, $yearsExp, $skills, $userMessage
+            );
 
             return [
                 'id' => $u->id,
@@ -169,15 +198,18 @@ PROMPT;
                     substr($parts[0] ?? $name, 0, 1) .
                     substr($parts[1] ?? '', 0, 1)
                 ),
-                'rating' => (float) ($profile?->average_rating ?? 0),
+                'rating' => $rating,
                 'price' => (float) ($profile?->hourly_rate ?? 0),
-                'verified' => (bool) ($profile?->government_id_verified ?? false),
-                'skills' => $profile?->skills ?? [],
-                'years_experience' => $profile?->years_of_experience ?? 0,
+                'distance' => $u->residence,
+                'verified' => $verified,
+                'skills' => $skills,
+                'years_experience' => $yearsExp,
                 'jobs_completed' => $completedJobs,
                 'total_jobs' => $totalJobs,
-                'latitude' => $profile?->current_latitude,
-                'longitude' => $profile?->current_longitude,
+                'latitude'  => $lat,
+                'longitude' => $lng,
+                'location_approximate' => (bool) ($profile?->location_is_approximate ?? true),
+                'match_percent' => $matchPercent,
             ];
         })->values()->toArray();
 
@@ -185,46 +217,87 @@ PROMPT;
             return $rawWorkers;
         }
 
-        $mlWorkers = array_map(function ($w) {
-            $totalJobs = $w['total_jobs'];
-            $completionRate = $totalJobs > 0 ? round(($w['jobs_completed'] / $totalJobs) * 100) : 50;
-            return [
-                'worker_id' => $w['id'],
-                'service_category' => $w['category'],
-                'distance_km' => 1.0,
-                'worker_avg_rating' => $w['rating'],
-                'worker_completion_rate' => $completionRate,
-                'jobs_completed_in_category' => $w['jobs_completed'],
-                'is_new_worker' => $w['jobs_completed'] < 3 ? 1 : 0,
-            ];
-        }, $rawWorkers);
+        $workers = $this->rankWithML($rawWorkers);
 
-        $ml = app(MLService::class);
-        $result = $ml->predict($mlWorkers);
+        usort($workers, fn($a, $b) => $b['match_percent'] <=> $a['match_percent']);
 
-        $workers = $rawWorkers;
-        if ($result && isset($result['rankings'])) {
-            $predMap = [];
-            foreach ($result['rankings'] as $pred) {
-                if (isset($pred['worker_id'], $pred['probability'])) {
-                    $predMap[$pred['worker_id']] = min(100, max(0, (int) round($pred['probability'] * 100)));
+        return $workers;
+    }
+
+    protected function rankWithML(array $workers): array
+    {
+        try {
+            $mlWorkers = array_map(function ($w) {
+                $totalJobs = $w['total_jobs'];
+                $completionRate = $totalJobs > 0 ? round(($w['jobs_completed'] / $totalJobs) * 100) : 50;
+                return [
+                    'worker_id' => $w['id'],
+                    'service_category' => $w['category'],
+                    'distance_km' => 1.0,
+                    'worker_avg_rating' => $w['rating'],
+                    'worker_completion_rate' => $completionRate,
+                    'jobs_completed_in_category' => $w['jobs_completed'],
+                    'is_new_worker' => $w['jobs_completed'] < 3 ? 1 : 0,
+                ];
+            }, $workers);
+
+            $ml = app(MLService::class);
+            $result = $ml->predict($mlWorkers);
+
+            if ($result && isset($result['rankings'])) {
+                $predMap = [];
+                foreach ($result['rankings'] as $pred) {
+                    if (isset($pred['worker_id'], $pred['probability'])) {
+                        $predMap[$pred['worker_id']] = min(100, max(0, (int) round($pred['probability'] * 100)));
+                    }
                 }
+                foreach ($workers as &$w) {
+                    $w['match_percent'] = $predMap[$w['id']] ?? $w['match_percent'];
+                }
+                unset($w);
             }
-            foreach ($workers as &$w) {
-                $w['match_percent'] = $predMap[$w['id']] ?? 50;
-            }
-        } else {
-            foreach ($workers as &$w) {
-                $score = ($w['rating'] / 5) * 40
-                       + min($w['jobs_completed'], 50) / 50 * 25
-                       + min($w['years_experience'], 10) / 10 * 25
-                       + ($w['verified'] ? 10 : 0);
-                $w['match_percent'] = min(100, max(0, (int) round($score)));
+        } catch (\Exception $e) {
+            Log::warning('ML ranking failed, falling back to heuristic: ' . $e->getMessage());
+        }
+
+        return $workers;
+    }
+
+    protected function computeMatchPercent(
+        float $rating,
+        int $completedJobs,
+        bool $verified,
+        int $yearsExperience,
+        array $skills,
+        string $userMessage
+    ): int {
+        $score = 0;
+
+        $score += ($rating / 5.0) * 35;
+
+        $score += (min($completedJobs, 10) / 10.0) * 25;
+
+        $score += $verified ? 20.0 : 10.0;
+
+        $score += (min($yearsExperience, 15) / 15.0) * 20;
+
+        if ($userMessage !== '') {
+            $keywords = preg_split('/\s+/', strtolower($userMessage));
+            $skillsLower = array_map('strtolower', $skills);
+            foreach ($keywords as $keyword) {
+                $keyword = preg_replace('/[^a-z0-9]/', '', $keyword);
+                if (strlen($keyword) < 3) {
+                    continue;
+                }
+                foreach ($skillsLower as $skill) {
+                    if (str_contains($skill, $keyword)) {
+                        $score += 5;
+                        break 2;
+                    }
+                }
             }
         }
 
-        usort($workers, fn($a, $b) => $b['match_percent'] - $a['match_percent']);
-
-        return $workers;
+        return min(100, max(0, (int) round($score)));
     }
 }

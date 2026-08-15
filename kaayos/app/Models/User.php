@@ -25,6 +25,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'role',
         'service_category',
         'city',
+        'barangay',
+        'latitude',
+        'longitude',
+        'region',
+        'province',
+        'city_municipality',
+        'street_address',
+        'location_source',
         'email_notifications',
         'language',
         'avatar',
@@ -57,27 +65,25 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_updated_at'  => 'datetime',
             'pending_email'     => 'string',
             'password'          => 'hashed',
+            'latitude'          => 'decimal:7',
+            'longitude'         => 'decimal:7',
         ];
     }
 
-    private static ?int $systemUserId = null;
-
     public static function getSystemUserId(): int
     {
-        if (self::$systemUserId === null) {
-            $user = self::firstOrCreate(
-                ['email' => 'system@kaayos.app'],
-                [
-                    'name'       => 'KaAyos',
-                    'first_name' => 'KaAyos',
-                    'last_name'  => 'System',
-                    'role'       => 'admin',
-                    'password'   => \Hash::make(\Str::random(32)),
-                ]
-            );
-            self::$systemUserId = $user->id;
-        }
-        return self::$systemUserId;
+        $user = self::firstOrCreate(
+            ['email' => 'system@kaayos.app'],
+            [
+                'name'       => 'KaAyos',
+                'first_name' => 'KaAyos',
+                'last_name'  => 'System',
+                'role'       => 'admin',
+                'password'   => \Hash::make(\Str::random(32)),
+            ]
+        );
+
+        return $user->id;
     }
 
     public function sendPasswordResetNotification($token): void
@@ -88,6 +94,44 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    public function getResidenceAttribute(): string
+    {
+        if ($this->street_address && $this->barangay) {
+            $municipality = $this->city_municipality ?: 'Tuy';
+            return trim("{$this->street_address}, Brgy. {$this->barangay}, {$municipality}");
+        }
+
+        if ($this->barangay && $this->city_municipality) {
+            return "Brgy. {$this->barangay}, {$this->city_municipality}";
+        }
+
+        if ($this->barangay && $this->city) {
+            return "Brgy. {$this->barangay}, {$this->city}";
+        }
+
+        return $this->city ?: (string) config('kaayos.default_location');
+    }
+
+    public function locationContext(): array
+    {
+        $barangay     = $this->barangay;
+        $municipality = $this->city_municipality ?: $this->city;
+        $province     = $this->province;
+
+        $full = implode(', ', array_filter([$barangay, $municipality, $province]))
+            ?: (string) config('kaayos.default_location');
+
+        return [
+            'barangay'     => $barangay,
+            'municipality' => $municipality,
+            'province'     => $province,
+            'latitude'     => $this->latitude,
+            'longitude'    => $this->longitude,
+            'full'         => $full,
+            'source'       => $this->location_source,
+        ];
     }
 
     public function isAdmin(): bool

@@ -6,6 +6,7 @@ use App\Exceptions\BookingStateException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Conversation;
+use App\Models\Earning;
 use App\Models\Message;
 use App\Models\Review;
 use App\Models\WorkerProfile;
@@ -35,19 +36,26 @@ use Illuminate\View\View;
 
 class ClientController extends Controller
 {
-    protected function shared(): array
+    protected function shared(array $only = []): array
     {
-        $user = auth()->user();
-
-        return [
-            'categories'    => $this->getCategories(),
-            'workers'       => $this->getWorkers(),
-            'bookings'      => $this->getBookings(),
-            'notifications' => $this->getNotifications(),
-            'conversations' => $this->getConversations(),
-            'reviews'       => $this->getReviews(),
-            'stats'         => $this->getStats(),
+        $all = [
+            'categories'    => fn() => $this->getCategories(),
+            'workers'       => fn() => $this->getWorkers(),
+            'bookings'      => fn() => $this->getBookings(),
+            'notifications' => fn() => $this->getNotifications(),
+            'conversations' => fn() => $this->getConversations(),
+            'reviews'       => fn() => $this->getReviews(),
+            'stats'         => fn() => $this->getStats(),
         ];
+
+        $keys = $only ?: array_keys($all);
+        $data = [];
+        foreach ($keys as $key) {
+            if (isset($all[$key])) {
+                $data[$key] = $all[$key]();
+            }
+        }
+        return $data;
     }
 
     private static function previewText(string $message): string
@@ -81,7 +89,9 @@ class ClientController extends Controller
     {
         return User::where('role', 'worker')
             ->with('workerProfile.portfolios')
+            ->withCount('reviewsReceived')
             ->active()
+            ->take(50)
             ->get()
             ->map(fn ($u) => [
                 'id'               => $u->id,
@@ -90,8 +100,8 @@ class ClientController extends Controller
                 'avatar'           => $u->avatar ? \Storage::url($u->avatar) : null,
                 'initials'         => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
                 'rating'           => $u->workerProfile?->average_rating ?? 0,
-                'reviews'          => $u->reviewsReceived()->count(),
-                'distance'         => config('kaayos.default_location'),
+                'reviews'          => $u->reviews_received_count,
+                'distance'         => $u->residence,
                 'price'            => $u->workerProfile?->hourly_rate ?? 0,
                 'verified'         => $u->workerProfile?->government_id_verified ?? false,
                 'skills'           => $u->workerProfile?->skills ?? [],
@@ -109,6 +119,7 @@ class ClientController extends Controller
         return auth()->user()->bookingsAsClient()
             ->with('worker', 'history')
             ->latest()
+            ->take(20)
             ->get()
             ->map(function ($b) {
                 $statusHistory = [];
@@ -211,15 +222,15 @@ class ClientController extends Controller
         $systemUserId = User::getSystemUserId();
 
         $conversations = Conversation::where('client_id', $userId)
-            ->with('worker', 'messages')
+            ->with('worker', 'latestMessage')
             ->latest('last_message_at')
+            ->take(20)
             ->get();
 
         $result = [];
 
         foreach ($conversations as $convo) {
-            $messages = $convo->messages->sortBy('created_at');
-            $lastMsg = $messages->last();
+            $lastMsg = $convo->latestMessage;
             $other = $convo->worker;
 
             $result[] = [
@@ -236,19 +247,25 @@ class ClientController extends Controller
                                     ?? $convo->last_message_at?->diffForHumans()
                                     ?? $convo->created_at->diffForHumans(),
                 'active'          => false,
-                'messages'        => $messages->map(fn ($m) => [
+                'messages'        => [],
+            ];
+        }
+
+        if (!empty($result)) {
+            $result[0]['active'] = true;
+
+            $firstMessages = Message::where('conversation_id', $result[0]['conversation_id'])
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn ($m) => [
                     'id'        => $m->id,
                     'from'      => $m->sender_id === $systemUserId ? 'system' : ($m->sender_id === $userId ? 'me' : 'them'),
                     'text'      => $m->message,
                     'time'      => $m->created_at->diffForHumans(),
                     'is_system' => $m->sender_id === $systemUserId,
                     'read_at'   => $m->read_at?->diffForHumans(),
-                ])->values()->toArray(),
-            ];
-        }
-
-        if (!empty($result)) {
-            $result[0]['active'] = true;
+                ])->values()->toArray();
+            $result[0]['messages'] = $firstMessages;
         }
 
         return $result;
@@ -261,6 +278,8 @@ class ClientController extends Controller
         $pending = $user->bookingsAsClient()
             ->where('status', Booking::STATUS_COMPLETED)
             ->whereDoesntHave('review')
+            ->with('worker')
+            ->take(20)
             ->get()
             ->map(fn ($b) => [
                 'worker'  => $b->worker->name ?? 'Unknown',
@@ -271,7 +290,7 @@ class ClientController extends Controller
 
         return [
             'pending' => $pending,
-            'past'    => $user->reviews()->with('worker')->latest()->get()->map(fn ($r) => [
+            'past'    => $user->reviews()->with('worker', 'booking')->latest()->take(20)->get()->map(fn ($r) => [
                 'worker'    => $r->worker->name ?? 'Unknown',
                 'service'   => $r->booking->service_category ?? '',
                 'date'      => $r->created_at->format('M d, Y'),
@@ -313,39 +332,51 @@ class ClientController extends Controller
 
     public function dashboard(): View
     {
-        return view('client.dashboard.overview', $this->shared());
+        return view('client.dashboard.overview', $this->shared([
+            'stats', 'categories', 'workers', 'bookings', 'notifications',
+        ]));
     }
 
     public function notifications(): View
     {
-        $data = $this->shared();
-        $data['notifications'] = $this->getNotifications();  // refresh
-        return view('client.dashboard.notifications', $data);
+        return view('client.dashboard.notifications', $this->shared([
+            'notifications',
+        ]));
     }
 
     public function bookings(): View
     {
-        return view('client.bookings.index', $this->shared());
+        return view('client.bookings.index', $this->shared([
+            'bookings', 'notifications',
+        ]));
     }
 
     public function messages(): View
     {
-        return view('client.messages.index', $this->shared());
+        return view('client.messages.index', $this->shared([
+            'conversations', 'notifications',
+        ]));
     }
 
     public function reviews(): View
     {
-        return view('client.reviews.index', $this->shared());
+        return view('client.reviews.index', $this->shared([
+            'reviews', 'notifications',
+        ]));
     }
 
     public function profile(): View
     {
-        return view('client.account.profile', $this->shared());
+        return view('client.account.profile', $this->shared([
+            'notifications',
+        ]));
     }
 
     public function suggestions(): View
     {
-        return view('client.suggestions.index', $this->shared());
+        return view('client.suggestions.index', $this->shared([
+            'notifications',
+        ]));
     }
 
     public function rescheduleRequest(Request $request, Booking $booking): JsonResponse
@@ -592,6 +623,12 @@ class ClientController extends Controller
             return response()->json(['success' => false, 'message' => 'This worker is currently unavailable.'], 422);
         }
 
+        $availability = $worker->workerProfile?->availability;
+        $hasActiveDay = is_array($availability) && collect($availability)->contains('active', true);
+        if (!$hasActiveDay) {
+            return response()->json(['success' => false, 'message' => "This worker hasn't set their availability yet. Booking is currently unavailable."], 422);
+        }
+
         $overlap = Booking::where('worker_id', $worker->id)
             ->whereNotIn('status', [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED])
             ->where('scheduled_at', $validated['scheduled_at'])
@@ -751,7 +788,26 @@ class ClientController extends Controller
         }
 
         try {
-            $booking->markComplete(auth()->user());
+            $afterSave = function (Booking $fresh) {
+                if ($fresh->status === Booking::STATUS_COMPLETED) {
+                    $platformFeePercent = config('kaayos.platform_fee_percent', 10);
+                    $gross = $fresh->price ?? 0;
+                    $fee = round($gross * ($platformFeePercent / 100), 2);
+                    $net = $gross - $fee;
+
+                    Earning::updateOrCreate(
+                        ['booking_id' => $fresh->id],
+                        [
+                            'worker_id'    => $fresh->worker_id,
+                            'gross_amount' => $gross,
+                            'platform_fee' => $fee,
+                            'net_amount'   => $net,
+                        ]
+                    );
+                }
+            };
+
+            $booking->markComplete(auth()->user(), $afterSave);
             $booking->fresh();
             $isFullyCompleted = $booking->status === Booking::STATUS_COMPLETED;
             

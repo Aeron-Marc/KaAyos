@@ -78,7 +78,7 @@ body{
   padding:14px 18px;border-bottom:1px dashed var(--line-on-ink);
 }
 .ticket-mock-head .tag{
-  font-family:'JetBrains Mono',monospace;font-size:.65rem;
+  font-family:'Inter',sans-serif;font-size:.65rem;
   font-weight:600;letter-spacing:.08em;
   color:rgba(255,255,255,.5);text-transform:uppercase;
 }
@@ -221,20 +221,19 @@ input::placeholder{color:#A8AFB8}
       <span class="brand-name">KaAyos</span>
     </div>
 
-    <h1 class="ticket-headline" style="margin-top:0">Your next trusted worker is just <em>a sign-in away</em>.</h1>
+    <h1 class="ticket-headline" style="margin-top:0">Sign in to keep your home jobs moving <em>without friction</em>.</h1>
     <div class="ticket-content">
-    <p class="ticket-sub">Sign in to book verified workers, track jobs, and manage your home service needs all in one place.</p>
+    <p class="ticket-sub">Book verified workers, track requests, and return to pending jobs in one place.</p>
 
     <div class="ticket-mock" aria-hidden="true">
       <div class="ticket-mock-head">
-        <span class="tag">Active Session</span>
+        <span class="tag">Quick access</span>
         <span class="ticket-mock-status"><span class="dot"></span>Ready</span>
       </div>
       <div class="trade-list">
-        <div class="trade-row"><i class="fa-solid fa-wrench trade-icon"></i><span>Plumbing</span><i class="fa-solid fa-check check"></i></div>
-        <div class="trade-row"><i class="fa-solid fa-bolt trade-icon"></i><span>Electrical</span><i class="fa-solid fa-check check"></i></div>
-        <div class="trade-row"><i class="fa-solid fa-hammer trade-icon"></i><span>Carpentry</span><i class="fa-solid fa-check check"></i></div>
-        <div class="trade-row"><i class="fa-solid fa-paint-roller trade-icon"></i><span>Painting</span><i class="fa-solid fa-check check"></i></div>
+        <div class="trade-row"><i class="fa-solid fa-calendar-check trade-icon"></i><span>Resume bookings</span><i class="fa-solid fa-check check"></i></div>
+        <div class="trade-row"><i class="fa-solid fa-comment-dots trade-icon"></i><span>Continue conversations</span><i class="fa-solid fa-check check"></i></div>
+        <div class="trade-row"><i class="fa-solid fa-star trade-icon"></i><span>Review completed work</span><i class="fa-solid fa-check check"></i></div>
       </div>
       <div class="ticket-stub">
         <div class="stub-item"><i class="fa-solid fa-id-card"></i>ID-verified workers</div>

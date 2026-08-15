@@ -1,2 +1,5 @@
 .vscode/
 *.docx
+.venv/
+.kilo/
+.opencode/

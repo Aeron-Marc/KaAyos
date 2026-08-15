@@ -5,6 +5,8 @@
 .env.production
 .phpactor.json
 .phpunit.result.cache
+.opencode/
+/.kilo/
 /.codex
 /.cursor/
 /.idea
@@ -25,8 +27,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
-kaayos_db
-
 # Compiled views
 /storage/framework/views/
 
@@ -40,3 +40,4 @@ __pycache__/
 # SQLite database (project uses MySQL)
 /database/database.sqlite
 /database/database.sqlite-journal
+/kaayos_test

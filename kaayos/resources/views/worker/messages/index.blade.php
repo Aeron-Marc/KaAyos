@@ -592,7 +592,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
+    var checkCount = 0;
     var checkEcho = setInterval(function () {
+        checkCount++;
         if (window.Echo) {
             clearInterval(checkEcho);
             if (activeConversationId) {
@@ -602,6 +604,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 .listen('MessageSent', function (e) {
                     updateSidebarPreview(e.conversation_id, e.text, e.time);
                 });
+        } else if (checkCount >= 50) {
+            clearInterval(checkEcho);
         }
     }, 200);
 });

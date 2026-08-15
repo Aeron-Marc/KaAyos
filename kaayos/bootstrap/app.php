@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             '/api/*',
             '/password-otp/*',
             '/email-otp/*',
+            '/client/bookings*',
+            '/client/messages*',
+            '/worker/jobs*',
+            '/worker/messages*',
         ]);
 
         $middleware->alias([

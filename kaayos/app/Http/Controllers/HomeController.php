@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\ServiceCategory;
+use App\Models\Testimonial;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,11 +26,11 @@ class HomeController extends Controller
             ->active();
 
         if ($category) {
-            $workersQuery->where('service_category', 'LIKE', "%{$category}%");
+            $workersQuery->where('service_category', $category);
         }
 
-        $workers = $workersQuery->take(12)->get()
-            ->map(fn ($u) => [
+        $workers = $workersQuery->paginate(6)
+            ->through(fn ($u) => [
                 'id'       => $u->id,
                 'name'     => $u->name,
                 'category' => $u->service_category ?? 'General',
@@ -37,7 +38,7 @@ class HomeController extends Controller
                 'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
                 'rating'   => (float) ($u->reviews_received_avg_rating ?? $u->workerProfile?->average_rating ?? 0),
                 'reviews'  => (int) ($u->reviews_received_count ?? 0),
-                'distance' => 'Tuy, Batangas',
+                'distance' => $u->residence,
                 'price'    => $u->workerProfile?->hourly_rate ?? 0,
                 'verified' => $u->workerProfile?->government_id_verified ?? false,
                 'skills'   => $u->workerProfile?->skills ?? [],
@@ -51,8 +52,14 @@ class HomeController extends Controller
                     'client_name' => $r->client?->name ?? 'Anonymous',
                 ])->toArray(),
             ])
-            ->toArray();
+            ->appends(request()->query());
 
-        return view('home', compact('workers', 'categories', 'category'));
+        if ($request->ajax()) {
+            return view('partials.workers-grid', compact('workers'));
+        }
+
+        $testimonials = Testimonial::active()->ordered()->get();
+
+        return view('home', compact('workers', 'categories', 'category', 'testimonials'));
     }
 }

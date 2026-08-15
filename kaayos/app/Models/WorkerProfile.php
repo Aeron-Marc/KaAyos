@@ -27,6 +27,7 @@ class WorkerProfile extends Model
         'average_rating',
         'current_latitude',
         'current_longitude',
+        'location_is_approximate',
     ];
 
     protected $casts = [
@@ -43,6 +44,7 @@ class WorkerProfile extends Model
         'average_rating'        => 'decimal:2',
         'current_latitude'      => 'decimal:7',
         'current_longitude'     => 'decimal:7',
+        'location_is_approximate'=> 'boolean',
     ];
 
     public function user(): BelongsTo

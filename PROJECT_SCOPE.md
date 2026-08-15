@@ -38,10 +38,10 @@ Configurable percentage (default: 10%) deducted from worker earnings.
 
 ### Accessibility
 
-- **Client Dashboard** — React SPA
+- **Client Dashboard** — Blade + vanilla JS
 - **Worker Dashboard** — Blade + vanilla JS
 - **Admin Dashboard** — Blade
-- **Marketing Pages** — Vue 3 (home, about, contact, privacy, terms, safety)
+- **Marketing Pages** — Blade + vanilla JS (home, about, contact, privacy, terms, safety)
 
 ---
 

@@ -14,34 +14,60 @@ class VerificationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = WorkerDocument::with('user.workerProfile');
+        $query = User::query()
+            ->where('role', 'worker')
+            ->with(['workerDocuments' => fn ($q) => $q->latest(), 'workerProfile']);
 
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
+        switch ($request->input('status')) {
+            case 'not_submitted':
+                $query->whereDoesntHave('workerDocuments');
+                break;
+            case 'pending':
+                $query->whereHas('workerDocuments', fn ($q) => $q->where('status', 'pending'));
+                break;
+            case 'rejected':
+                $query->whereHas('workerDocuments', fn ($q) => $q->where('status', 'rejected'))
+                      ->whereDoesntHave('workerDocuments', fn ($q) => $q->where('status', 'pending'));
+                break;
+            case 'verified':
+                $query->whereHas('workerDocuments')
+                      ->whereDoesntHave('workerDocuments', fn ($q) => $q->whereIn('status', ['pending', 'rejected']));
+                break;
         }
 
         if ($search = $request->input('search')) {
-            $query->whereHas('user', function ($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%");
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        $documents = $query->latest()->paginate(20)->withQueryString();
+        $workers = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+        $pendingCount = WorkerDocument::pending()->count();
 
-        return view('admin.verification.index', compact('documents'));
+        return view('admin.verification.index', compact('workers', 'pendingCount'));
     }
 
     public function show(WorkerDocument $verification)
     {
         $verification->load('user.workerProfile', 'reviewedBy');
-        $documents = WorkerDocument::where('user_id', $verification->user_id)
+        $types    = collect(WorkerDocuments::types());
+        $userDocs = WorkerDocument::where('user_id', $verification->user_id)
             ->latest()
-            ->get();
+            ->get()
+            ->keyBy('document_type');
+
+        $slots = $types->map(fn ($type) => [
+            'name'        => $type['name'],
+            'description' => $type['description'],
+            'icon'        => $type['icon'],
+            'doc'         => $userDocs->get($type['name']),
+        ]);
 
         return view('admin.verification.show', [
             'verification' => $verification,
-            'documents'    => $documents,
+            'slots'        => $slots,
         ]);
     }
 
@@ -59,15 +85,18 @@ class VerificationController extends Controller
         $this->checkWorkerVerification($user);
         $user->notify(new \App\Notifications\VerificationApproved($user));
 
-        return redirect()->route('admin.verification.index')
+        return redirect()->back()
             ->with('success', "Verification for {$user->name} has been approved.");
     }
 
     public function reject(ApproveRejectVerificationRequest $request, WorkerDocument $verification)
     {
+        $reason = (string) $request->input('rejection_reason');
+        $notes  = (string) $request->input('notes');
+
         $verification->update([
             'status'      => 'rejected',
-            'admin_notes' => $request->input('rejection_reason'),
+            'admin_notes' => trim($notes ? "{$reason}\n\nPrivate notes: {$notes}" : $reason),
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
         ]);
@@ -78,7 +107,7 @@ class VerificationController extends Controller
         }
         $user->notify(new \App\Notifications\VerificationRejected($user, $request->input('rejection_reason')));
 
-        return redirect()->route('admin.verification.index')
+        return redirect()->back()
             ->with('error', "Verification for {$user->name} has been rejected.");
     }
 

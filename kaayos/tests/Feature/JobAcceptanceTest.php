@@ -133,10 +133,16 @@ class JobAcceptanceTest extends TestCase
 
         $booking = $this->createBooking(Booking::STATUS_IN_PROGRESS);
 
-        $response = $this->actingAs($this->worker)
+        // Worker initiates completion (status remains in_progress pending client confirmation).
+        $this->actingAs($this->worker)
             ->patchJson("/worker/jobs/{$booking->id}/status", [
                 'status' => Booking::STATUS_COMPLETED,
-            ]);
+            ])
+            ->assertOk();
+
+        // Client confirms completion -> status transitions to completed and earning is recorded.
+        $response = $this->actingAs($this->client)
+            ->postJson("/client/bookings/{$booking->id}/confirm-complete");
 
         $response->assertOk();
 

@@ -254,7 +254,7 @@ a{text-decoration:none;color:inherit}
                 <div class="w-works-row">
                   @for($i = 0; $i < min(3, count($w['works'])); $i++)
                     @if($w['works'][$i]['photo'])
-                      <div class="w-work-thumb" style="background-image:url('{{ $w['works'][$i]['photo'] }}')" title="{{ $w['works'][$i]['caption'] ?? '' }}"></div>
+                      <div class="w-work-thumb" style="background-image:url('{{ $w["works"][$i]["photo"] }}')" title="{{ $w['works'][$i]['caption'] ?? '' }}"></div>
                     @else
                       <div class="w-work-thumb w-work-sample"><i class="fa-solid fa-camera"></i></div>
                     @endif
@@ -263,7 +263,7 @@ a{text-decoration:none;color:inherit}
               </div>
             @endif
             <div class="w-card-actions">
-              <span class="btn btn-outline" onclick="event.stopPropagation();event.preventDefault();window.location.href='{{ route('workers.public.show', $w['id']) }}'"><i class="fa-regular fa-user" aria-hidden="true"></i> View Profile</span>
+              <span class="btn btn-outline" data-href="{{ route('workers.public.show', $w['id']) }}" onclick="event.stopPropagation();event.preventDefault();window.location.href=this.dataset.href"><i class="fa-regular fa-user" aria-hidden="true"></i> View Profile</span>
             </div>
           </a>
         @endforeach
@@ -277,7 +277,7 @@ a{text-decoration:none;color:inherit}
         <i class="fa-solid fa-user-slash"></i>
         <h3>No workers found</h3>
         <p>Try adjusting your search or category filter to find available workers.</p>
-        <a href="/search" class="btn btn-primary" style="margin-top:16px;display:inline-flex"><i class="fa-solid fa-rotate-left"></i> Reset Filters</a>
+        <a href="{{ url('/search') }}" class="btn btn-primary" style="margin-top: 16px; display: inline-flex;"><i class="fa-solid fa-rotate-left"></i> Reset Filters</a>
       </div>
     @endif
   </div>

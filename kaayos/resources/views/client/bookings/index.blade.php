@@ -475,10 +475,12 @@ const statusLabelMap = {
 
 // ── Real-time status update ──
 document.addEventListener('DOMContentLoaded', function () {
+    var userId = {{ auth()->id() }};
+    var checkCount = 0;
     var checkEcho = setInterval(function () {
+        checkCount++;
         if (window.Echo) {
             clearInterval(checkEcho);
-            var userId = {{ auth()->id() }};
             window.Echo.private('user.' + userId)
                 .listen('BookingStatusUpdated', function (e) {
                     var cards = document.querySelectorAll('.booking-card');
@@ -496,6 +498,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     });
                 });
+        } else if (checkCount >= 50) {
+            clearInterval(checkEcho);
         }
     }, 200);
 });
