@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\TuyBarangays;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,9 @@ class RegisterController extends Controller
 {
     public function create(): View
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'barangays' => TuyBarangays::allBarangays(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -36,7 +39,7 @@ class RegisterController extends Controller
 
         if ($request->input('role') === 'worker') {
             $rules['service_category'] = ['required', 'string'];
-            $rules['city']             = ['required', 'string', 'max:100'];
+            $rules['barangay']         = ['required', Rule::in(TuyBarangays::allBarangays())];
         }
 
         $validated = $request->validate($rules);
@@ -53,7 +56,9 @@ class RegisterController extends Controller
                 'password'         => Hash::make($validated['password']),
                 'role'             => $role,
                 'service_category' => $validated['service_category'] ?? null,
-                'city'             => $validated['city'] ?? null,
+                'barangay'         => $validated['barangay'] ?? null,
+                'city'             => $role === 'worker' ? 'Tuy' : null,
+                'city_municipality'=> $role === 'worker' ? 'Tuy' : null,
             ]);
         } catch (\Throwable $e) {
             Log::error('Registration failed for email: ' . $validated['email'] . ' — ' . $e->getMessage());

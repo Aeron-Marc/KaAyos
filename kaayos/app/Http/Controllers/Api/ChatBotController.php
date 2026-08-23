@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\ChatBotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ChatBotController extends Controller
 {
@@ -28,6 +29,12 @@ class ChatBotController extends Controller
                 'suggestions' => $result['suggestions'],
             ]);
         } catch (\Exception $e) {
+            Log::error('Chatbot request failed', [
+                'message' => $e->getMessage(),
+                'class'   => get_class($e),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'reply' => 'I\'m sorry, something went wrong. Please try again or visit our Contact page for assistance.',

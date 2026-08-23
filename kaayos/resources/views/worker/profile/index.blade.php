@@ -483,7 +483,7 @@
 
             <div class="portfolio-grid">
                 @forelse($portfolios as $i => $item)
-                    @php $photoUrl = \Illuminate\Support\Facades\Storage::url($item->photo_path); @endphp
+                    @php $photoUrl = \App\Support\PortfolioPhoto::url($item->photo_path, $item->id); @endphp
                     <div class="portfolio-card">
                         <img src="{{ $photoUrl }}" alt="Work photo" class="port-clickable" data-index="{{ $i }}" style="cursor:pointer">
                         @if($item->caption)
@@ -701,7 +701,7 @@
 
 @php
 $portraitPhotos = $portfolios->map(fn($p) => [
-    'url'     => \Illuminate\Support\Facades\Storage::url($p->photo_path),
+    'url'     => \App\Support\PortfolioPhoto::url($p->photo_path, $p->id),
     'caption' => $p->caption,
 ])->values()->toArray();
 @endphp

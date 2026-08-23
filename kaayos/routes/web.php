@@ -54,7 +54,7 @@ Route::get('/login',  [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store'])
     ->middleware('throttle:login');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
-Route::get('/register', function () { return view('auth.register'); })->name('register');
+Route::get('/register', [RegisterController::class, 'create'])->name('register');
 Route::post('/register', [RegisterController::class, 'store'])
     ->middleware('throttle:register');
 

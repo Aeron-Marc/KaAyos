@@ -51,6 +51,46 @@ CHATBOT_API_KEY=your-openrouter-key
 ML_SERVICE_URL=http://127.0.0.1:8001
 ```
 
+### MySQL (standalone Windows service)
+
+The project uses MySQL 8.4.3, installed via Laragon at
+`C:\laragon\bin\mysql\mysql-8.4.3-winx64`, but it runs 
+(no license needed). The `kaayos` and `kaayos_test` databases already exist in
+`C:\laragon\data\mysql-8.4`.
+
+**Install the service (one-time, elevated):**
+
+1. Open an **elevated** (Run as Administrator) Command Prompt or PowerShell.
+2. Register the service using the existing `my.ini` (datadir/port already correct):
+
+   ```
+   "C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysqld.exe" --install KaAyosMySQL --defaults-file="C:\laragon\bin\mysql\mysql-8.4.3-winx64\my.ini"
+   ```
+
+3. Start it:
+
+   ```
+   net start KaAyosMySQL
+   ```
+
+The service starts automatically on boot. `.env` is already configured as above
+(`DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_DATABASE=kaayos`, `DB_USERNAME=root`, no password).
+
+**Verify:**
+
+```
+netstat -ano | findstr ":3306"                     # expect LISTENING
+"C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -e "SHOW DATABASES;"
+php artisan migrate:status
+```
+
+**Troubleshooting:**
+
+- **Stale pid file blocks startup** — if `mysqld` fails to start after an unclean shutdown,
+  delete `C:\laragon\data\mysql-8.4\Dave.pid` and run `net start KaAyosMySQL` again.
+- **Uninstall the service** — `net stop KaAyosMySQL` then
+  `"C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysqld.exe" --remove KaAyosMySQL` (admin).
+
 Then finish the setup:
 
 ```bash

@@ -20,7 +20,17 @@
 
 <!-- PAGE LOADER -->
 <div id="pageLoader" class="page-loader">
-  <div class="loader-bg"></div>
+  <div class="loader-shapes">
+    <span class="ls-shape ls-circle ls-main"></span>
+    <span class="ls-shape ls-square ls-main"></span>
+    <span class="ls-shape ls-triangle ls-main"></span>
+    <span class="ls-shape ls-ring ls-main"></span>
+    <span class="ls-shape ls-diamond ls-main"></span>
+    <span class="ls-shape ls-circle ls-tiny"></span>
+    <span class="ls-shape ls-square ls-tiny"></span>
+    <span class="ls-shape ls-ring ls-tiny"></span>
+    <span class="ls-shape ls-triangle ls-tiny"></span>
+  </div>
   <div class="loader-logos">
     <div class="loader-inner">
       <img src="/images/logo-gs-removebg-preview.png" alt="KaAyos" class="loader-logo loader-primary" id="loaderPrimary">
@@ -96,15 +106,21 @@
   <div class="search-bar">
     <div class="input-wrap">
       <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-      <input type="text" id="searchQuery" placeholder="e.g. leaking pipe, broken circuit, painting…" aria-label="Service type">
+      <input type="text" id="searchQuery" placeholder="e.g. leaking pipe, broken circuit, painting…" aria-label="Service type" autocomplete="off">
     </div>
     <div class="input-wrap loc-input">
       <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-      <input type="text" id="searchLocation" placeholder="Your barangay" aria-label="Location">
+      <input type="text" id="searchLocation" list="barangayList" placeholder="Your barangay (e.g. Luna, Bolbok…)" aria-label="Location" autocomplete="off">
     </div>
-    <button class="btn btn-primary btn-lg" onclick="doSearch()"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Find Workers</button>
+    <button class="btn btn-primary btn-lg" id="searchButton" onclick="doSearch()"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Find Workers</button>
   </div>
-
+  <div class="search-error" id="searchError" role="alert" style="display:none;"></div>
+  <datalist id="barangayList">
+    @foreach(\App\Support\TuyBarangays::allBarangays() as $barangayName)
+      <option value="{{ $barangayName }}"></option>
+    @endforeach
+    <option value="Tuy, Batangas"></option>
+  </datalist>
 </div>
 
 <div class="section-divider" style="margin-top:48px"></div>
@@ -426,13 +442,43 @@ function searchTag(el) {
 }
 
 function doSearch() {
+  var btn = document.getElementById('searchButton');
+  var err = document.getElementById('searchError');
   var q = document.getElementById('searchQuery').value.trim();
   var loc = document.getElementById('searchLocation').value.trim();
+
+  if (!q && !loc) {
+    if (err) {
+      err.textContent = 'Please enter a service (e.g. Plumbing, Cleaning) or your barangay (e.g. Luna, Bolbok).';
+      err.style.display = 'block';
+    }
+    document.getElementById('searchQuery').focus();
+    return;
+  }
+
+  if (err) err.style.display = 'none';
+  if (btn && !btn.disabled) btn.disabled = true;
+
   var params = new URLSearchParams();
-  if(q) params.set('q', q);
-  if(loc) params.set('location', loc);
+  if (q) params.set('q', q);
+  if (loc) params.set('location', loc);
   window.location.href = '/search' + (params.toString() ? '?' + params.toString() : '');
 }
+
+(function() {
+  var ids = ['searchQuery', 'searchLocation'];
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+    });
+    el.addEventListener('input', function() {
+      var err = document.getElementById('searchError');
+      if (err) err.style.display = 'none';
+    });
+  });
+})();
 
 /* ESC key closes modal + mobile menu */
 document.addEventListener('keydown', function(e) {
@@ -488,21 +534,42 @@ function goToSignUp() {
   window.location.href = '/register?intended=/client/workers/' + _bookingWorkerId;
 }
 
-window.addEventListener('load', function() {
+(function() {
   var loader = document.getElementById('pageLoader');
+  if (!loader) return;
   if (new URLSearchParams(window.location.search).has('page')) {
     loader.classList.add('loaded');
     document.body.classList.add('loaded');
     return;
   }
-  setTimeout(function() {
-    loader.classList.add('phase-2');
+
+  var MIN_SHOW_MS = 1200;
+  var start = Date.now();
+  var finished = false;
+
+  function finish() {
+    if (finished) return;
+    finished = true;
+    loader.classList.add('phase-3');
     setTimeout(function() {
       loader.classList.add('loaded');
       setTimeout(function() { document.body.classList.add('loaded'); }, 100);
-    }, 400);
-  }, 300);
-});
+    }, 500);
+  }
+
+  setTimeout(function() { loader.classList.add('phase-2'); }, 300);
+
+  function onLoaded() {
+    var elapsed = Date.now() - start;
+    setTimeout(finish, Math.max(0, MIN_SHOW_MS - elapsed));
+  }
+
+  if (document.readyState === 'complete') {
+    onLoaded();
+  } else {
+    window.addEventListener('load', onLoaded);
+  }
+})();
 
 /* AJAX PAGINATION */
 document.addEventListener('click', function(e) {

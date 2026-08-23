@@ -421,10 +421,16 @@ select{cursor:pointer;padding-right:38px}
               </div>
             </div>
             <div class="field">
-              <label for="city">City / Municipality</label>
+              <label for="barangay">Barangay <span style="font-weight:500;color:var(--slate)">(Tuy, Batangas)</span></label>
               <div class="input-wrap">
                 <i class="fa-solid fa-location-dot icon"></i>
-                <input type="text" id="city" name="city" placeholder="e.g. Quezon City">
+                <select id="barangay" name="barangay">
+                  <option value="" disabled selected>Select your barangay</option>
+                  @foreach($barangays as $barangay)
+                    <option value="{{ $barangay }}">{{ $barangay }}</option>
+                  @endforeach
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
               </div>
             </div>
           </div>
