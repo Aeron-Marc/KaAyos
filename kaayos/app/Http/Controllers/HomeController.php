@@ -51,6 +51,10 @@ class HomeController extends Controller
                     'comment'    => $r->comment,
                     'client_name' => $r->client?->name ?? 'Anonymous',
                 ])->toArray(),
+                'latitude'  => $u->latitude ?? $u->workerProfile?->current_latitude
+                    ?? (\App\Support\TuyBarangays::pointForStatic($u->barangay ?? 'Luna')[0]),
+                'longitude' => $u->longitude ?? $u->workerProfile?->current_longitude
+                    ?? (\App\Support\TuyBarangays::pointForStatic($u->barangay ?? 'Luna')[1]),
             ])
             ->appends(request()->query());
 

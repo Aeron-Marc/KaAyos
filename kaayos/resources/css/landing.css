@@ -451,6 +451,85 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
 .empty-workers h3{font-size:1.1rem;font-weight:600;color:var(--g7);margin-bottom:6px}
 .empty-workers p{font-size:.9rem;color:var(--g4);margin-bottom:20px}
 
+/* ── VIEW TOGGLE ── */
+.view-toggle-wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.view-toggle{display:inline-flex;background:var(--white);border:1.5px solid var(--g1);border-radius:10px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.view-toggle button{
+  padding:8px 18px;font-size:.84rem;font-weight:600;font-family:inherit;
+  border:none;cursor:pointer;transition:all .2s;
+  display:inline-flex;align-items:center;gap:6px;
+  background:transparent;color:var(--g4);
+}
+.view-toggle button:hover{color:var(--b6);background:var(--b0)}
+.view-toggle button.active{background:var(--b6);color:#fff}
+.view-toggle button i{font-size:.82rem}
+.workers-count{font-size:.84rem;color:var(--g4);font-weight:500}
+
+/* ── WORKER MAP ── */
+.workers-map-container{
+  width:100%;height:500px;border-radius:var(--radius-lg);
+  border:1.5px solid var(--g1);overflow:hidden;
+  display:none;box-shadow:var(--shadow);
+}
+.workers-map-container.map-active{display:block}
+
+/* Custom marker */
+.worker-marker-icon{background:none!important;border:none!important}
+.worker-marker-pin{
+  width:36px;height:44px;position:relative;
+  display:flex;align-items:flex-start;justify-content:center;
+}
+.worker-marker-pin::before{
+  content:'';position:absolute;top:0;left:0;
+  width:36px;height:36px;border-radius:50% 50% 50% 0;
+  background:var(--b6);transform:rotate(-45deg);
+  box-shadow:0 2px 8px rgba(26,111,196,.35);
+}
+.worker-marker-pin i{
+  position:relative;z-index:1;
+  color:#fff;font-size:.9rem;margin-top:7px;
+}
+
+/* Popup styles */
+.worker-map-popup{font-family:'Inter',sans-serif;min-width:200px}
+.popup-header{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.popup-avatar{width:44px;height:44px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--b0)}
+.popup-avatar img{width:100%;height:100%;object-fit:cover}
+.popup-initials{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;font-weight:700;color:var(--b6);
+}
+.popup-name{font-size:.92rem;font-weight:700;color:var(--b9);display:flex;align-items:center;gap:4px}
+.popup-verified{color:#16a34a;font-size:.78rem}
+.popup-category{font-size:.78rem;color:var(--b6);font-weight:500}
+.popup-rating{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:.78rem}
+.popup-stars{color:#f59e0b;font-size:.72rem}
+.popup-rating-num{font-weight:600;color:var(--g9)}
+.popup-reviews{color:var(--g4)}
+.popup-details{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:.78rem;color:var(--g4);margin-bottom:10px;gap:8px;
+}
+.popup-location i{margin-right:3px}
+.popup-rate{font-weight:600;color:var(--b7)}
+.popup-btn{
+  display:flex;width:100%;padding:8px 0;text-align:center;
+  background:transparent;color:var(--b6);
+  border:1.5px solid var(--b4);border-radius:8px;
+  font-size:.84rem;font-weight:600;text-decoration:none;
+  transition:all .2s;font-family:inherit;
+  align-items:center;justify-content:center;gap:6px;
+}
+.popup-btn:hover{background:var(--b0)}
+.popup-btn i{font-size:.75rem}
+
+.map-error{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;color:var(--g4);gap:12px;text-align:center;padding:24px;
+}
+.map-error i{font-size:2.5rem;color:var(--b1)}
+.map-error p{font-size:.9rem}
+
 /* ── SECTION DIVIDER ── */
 .section-divider{height:1px;background:linear-gradient(to right,transparent,var(--g1),transparent);max-width:900px;margin:0 auto}
 
@@ -767,6 +846,7 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
   .testimonials{gap:16px}
   .hero-icons-floating{display:none}
   .peso-stamp{width:60px;height:60px}
+  .workers-map-container{height:400px}
 }
 @media(max-width:480px){
   .footer-grid{grid-template-columns:1fr}
@@ -775,6 +855,8 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
   .peso-stamp{display:none}
   .worker-grid{grid-template-columns:1fr}
   .nav-cta .btn-ghost{display:none}
+  .workers-map-container{height:320px}
+  .view-toggle button{padding:7px 12px;font-size:.8rem}
 }
 
 /* ══════════════════════════════════════════════

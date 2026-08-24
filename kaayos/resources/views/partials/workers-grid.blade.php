@@ -1,7 +1,7 @@
 @if($workers->count())
     <div class="worker-grid fade-up" id="workerGrid">
       @foreach($workers as $w)
-        <a href="{{ route('workers.public.show', $w['id']) }}" class="worker-card" data-category="{{ strtolower($w['category']) }}">
+        <a href="{{ route('workers.public.show', $w['id']) }}" class="worker-card" data-category="{{ strtolower($w['category']) }}" data-lat="{{ $w['latitude'] }}" data-lng="{{ $w['longitude'] }}" data-name="{{ $w['name'] }}" data-rating="{{ $w['rating'] }}" data-reviews="{{ $w['reviews'] }}" data-price="{{ $w['price'] }}" data-avatar="{{ $w['avatar'] ?? '' }}" data-initials="{{ $w['initials'] }}" data-verified="{{ $w['verified'] ? '1' : '0' }}">
           <div class="w-card-top">
             @if($w['avatar'])
               <img src="{{ $w['avatar'] }}" alt="{{ $w['name'] }}" class="w-avatar" loading="lazy">

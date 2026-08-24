@@ -140,9 +140,19 @@
     @endforeach
   </div>
 
+  <div class="view-toggle-wrap fade-up">
+    <div class="view-toggle">
+      <button class="active" id="viewGridBtn" onclick="switchView('grid')"><i class="fa-solid fa-grip"></i> Grid</button>
+      <button id="viewMapBtn" onclick="switchView('map')"><i class="fa-solid fa-map-location-dot"></i> Map</button>
+    </div>
+    <span class="workers-count">{{ $workers->total() }} worker{{ $workers->total() !== 1 ? 's' : '' }}</span>
+  </div>
+
   <div id="workersSection">
     @include('partials.workers-grid')
   </div>
+
+  @include('partials.workers-map')
 </section>
 
 <!-- STATS -->
@@ -430,7 +440,9 @@ function loadWorkers(url) {
       url.searchParams.delete('page');
       pills.forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
-      loadWorkers(url).catch(function(){ window.location.href = url; });
+      loadWorkers(url).then(function() {
+        if (_currentView === 'map') refreshMapFromSection();
+      }).catch(function(){ window.location.href = url; });
     });
   });
 })();
@@ -571,13 +583,78 @@ function goToSignUp() {
   }
 })();
 
+/* VIEW TOGGLE (Grid / Map) */
+var _currentView = 'grid';
+var _mapInitialized = false;
+
+function switchView(view) {
+  _currentView = view;
+  var gridSection = document.getElementById('workersSection');
+  var mapContainer = document.getElementById('workersMap');
+  var gridBtn = document.getElementById('viewGridBtn');
+  var mapBtn = document.getElementById('viewMapBtn');
+
+  if (view === 'map') {
+    gridSection.style.display = 'none';
+    mapContainer.classList.add('map-active');
+    gridBtn.classList.remove('active');
+    mapBtn.classList.add('active');
+    if (!_mapInitialized) {
+      if (typeof initWorkerMap === 'function') initWorkerMap();
+      _mapInitialized = true;
+    } else if (typeof initWorkerMap === 'function') {
+      initWorkerMap();
+    }
+  } else {
+    gridSection.style.display = '';
+    mapContainer.classList.remove('map-active');
+    gridBtn.classList.add('active');
+    mapBtn.classList.remove('active');
+  }
+}
+
 /* AJAX PAGINATION */
 document.addEventListener('click', function(e) {
   var link = e.target.closest('.pagination a');
   if (!link) return;
   e.preventDefault();
-  loadWorkers(link.href).catch(function() { window.location.href = link.href; });
+  loadWorkers(link.href).then(function() {
+    if (_currentView === 'map') {
+      refreshMapFromSection();
+    }
+  }).catch(function() { window.location.href = link.href; });
 });
+
+function refreshMapFromSection() {
+  var section = document.getElementById('workersSection');
+  if (!section) return;
+  var cards = section.querySelectorAll('.worker-card');
+  var workers = [];
+  cards.forEach(function(card) {
+    var href = card.getAttribute('href') || '';
+    var idMatch = href.match(/\/workers\/(\d+)/);
+    if (!idMatch) return;
+    workers.push({
+      id: parseInt(idMatch[1]),
+      name: card.dataset.name || '',
+      category: card.querySelector('.w-trade') ? card.querySelector('.w-trade').childNodes[0].textContent.trim() : '',
+      rating: parseFloat(card.dataset.rating) || 0,
+      reviews: parseInt(card.dataset.reviews) || 0,
+      price: parseInt(card.dataset.price) || 0,
+      avatar: card.dataset.avatar || null,
+      initials: card.dataset.initials || '',
+      distance: '',
+      verified: card.dataset.verified === '1',
+      skills: [],
+      works: [],
+      latitude: parseFloat(card.dataset.lat) || 14.02,
+      longitude: parseFloat(card.dataset.lng) || 120.73
+    });
+  });
+  if (typeof updateWorkerMap === 'function' && workers.length > 0) {
+    updateWorkerMap(workers);
+  }
+}
 
 /* AI FLOATING ASSISTANT */
 (function() {
