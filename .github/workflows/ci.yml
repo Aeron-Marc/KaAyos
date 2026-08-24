@@ -75,6 +75,9 @@ jobs:
         run: |
           cp .env.example .env 2>/dev/null || true
           php artisan key:generate --force
+          mkdir -p storage/framework/{views,cache,sessions}
+          mkdir -p storage/logs
+          mkdir -p bootstrap/cache
 
       - name: Run migrations
         run: php artisan migrate:fresh --force
