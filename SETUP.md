@@ -10,10 +10,10 @@ Step-by-step commands to set up and run the full KaAyos system. Each service run
 
 | Tool            | Version / Notes                              |
 | --------------- | -------------------------------------------- |
-| PHP             | ^8.3                                          |
+| PHP             | ^8.3 with extensions: mbstring, xml, ctype, json, bcmath, pdo, pdo_mysql |
 | Composer        | latest                                        |
 | Node.js         | 18+                                           |
-| MySQL or SQLite | DB of choice                                  |
+| MySQL           | 8.0+ (recommended) or SQLite for simple testing |
 | Python          | 3.10+ (only needed for the ML microservice)   |
 
 ---
@@ -23,6 +23,7 @@ Step-by-step commands to set up and run the full KaAyos system. Each service run
 ```bash
 cd kaayos
 composer install
+npm install
 ```
 
 Create your environment file and configure it:
@@ -36,6 +37,8 @@ Edit `.env` and at minimum set:
 ```ini
 # Database — pick ONE
 DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
 DB_DATABASE=kaayos
 DB_USERNAME=root
 DB_PASSWORD=
@@ -51,52 +54,27 @@ CHATBOT_API_KEY=your-openrouter-key
 ML_SERVICE_URL=http://127.0.0.1:8001
 ```
 
-### MySQL (standalone Windows service)
+### MySQL setup
 
-The project uses MySQL 8.4.3, installed via Laragon at
-`C:\laragon\bin\mysql\mysql-8.4.3-winx64`, but it runs 
-(no license needed). The `kaayos` and `kaayos_test` databases already exist in
-`C:\laragon\data\mysql-8.4`.
+1. Install MySQL 8.0+ and ensure it is running.
+2. Create the databases:
 
-**Install the service (one-time, elevated):**
-
-1. Open an **elevated** (Run as Administrator) Command Prompt or PowerShell.
-2. Register the service using the existing `my.ini` (datadir/port already correct):
-
-   ```
-   "C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysqld.exe" --install KaAyosMySQL --defaults-file="C:\laragon\bin\mysql\mysql-8.4.3-winx64\my.ini"
-   ```
-
-3. Start it:
-
-   ```
-   net start KaAyosMySQL
-   ```
-
-The service starts automatically on boot. `.env` is already configured as above
-(`DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_DATABASE=kaayos`, `DB_USERNAME=root`, no password).
-
-**Verify:**
-
+```sql
+CREATE DATABASE kaayos;
+CREATE DATABASE kaayos_test;
 ```
-netstat -ano | findstr ":3306"                     # expect LISTENING
-"C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" -u root -e "SHOW DATABASES;"
+
+3. Verify the connection:
+
+```bash
 php artisan migrate:status
 ```
-
-**Troubleshooting:**
-
-- **Stale pid file blocks startup** — if `mysqld` fails to start after an unclean shutdown,
-  delete `C:\laragon\data\mysql-8.4\Dave.pid` and run `net start KaAyosMySQL` again.
-- **Uninstall the service** — `net stop KaAyosMySQL` then
-  `"C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysqld.exe" --remove KaAyosMySQL` (admin).
 
 Then finish the setup:
 
 ```bash
 php artisan key:generate
 php artisan migrate --seed
-npm install
 php artisan storage:link    # required so uploaded files / avatars display
 ```
 
@@ -192,6 +170,7 @@ After running `php artisan migrate --seed`, log in with any of these (password i
 | `http://localhost:8000`                | KaAyos landing page loads                |
 | `http://127.0.0.1:8001/health`         | ML service reports healthy               |
 | Chat with the bot on the homepage      | Guest chatbot replies                    |
+| Click "Map" toggle on landing page     | Leaflet map with worker markers loads    |
 | Log in as a worker, upload a document  | Image/file appears (needs storage:link)  |
 
 ---
@@ -203,3 +182,4 @@ After running `php artisan migrate --seed`, log in with any of these (password i
 - **Chatbot always errors** — check `CHATBOT_API_KEY` / network; without a key it falls back to scripted replies.
 - **Config changes not applied** — `php artisan config:clear` and restart the server.
 - **ML endpoints fail** — make sure Terminal 1 is running on the same port as `ML_SERVICE_URL`.
+- **"Please provide a valid cache path"** — run `mkdir -p storage/framework/{views,cache,sessions}` to create missing directories.

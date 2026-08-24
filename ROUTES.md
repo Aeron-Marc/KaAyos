@@ -10,7 +10,7 @@ All web routes require authentication via session (Laravel web middleware). API 
 | ------ | -------------------------- | -------------------- |
 | GET    | `/`                        | Home page            |
 | GET    | `/search`                  | Search workers       |
-| GET    | `/services`                | Services listing     |
+| GET    | `/services`                | Services listing (redirects to `/#services`) |
 | GET    | `/workers/{worker}`        | Worker public profile|
 | GET    | `/login`                   | Login page           |
 | POST   | `/login`                   | Login action         |
@@ -18,9 +18,15 @@ All web routes require authentication via session (Laravel web middleware). API 
 | GET    | `/register`                | Registration page    |
 | POST   | `/register`                | Registration action  |
 | GET    | `/forgot-password`         | Forgot password page |
+| POST   | `/forgot-password`         | Send reset link      |
 | GET    | `/reset-password/{token}`  | Reset password page  |
+| POST   | `/reset-password`          | Update password      |
+| GET    | `/email/verify`            | Email verification notice |
+| GET    | `/email/verify/{id}/{hash}` | Verify email (signed) |
+| POST   | `/email/verification-notification` | Resend verification |
 | GET    | `/about`                   | About us page        |
 | GET    | `/contact`                 | Contact page         |
+| POST   | `/contact`                 | Submit contact form  |
 | GET    | `/privacy`                 | Privacy policy       |
 | GET    | `/terms`                   | Terms of service     |
 | GET    | `/safety`                  | Safety guidelines    |
@@ -42,73 +48,73 @@ All web routes require authentication via session (Laravel web middleware). API 
 | PUT    | `/api/profile`                       | Update profile                    |
 | PUT    | `/api/preferences`                   | Update preferences                |
 | POST   | `/api/profile/avatar`                | Upload avatar                     |
-| GET    | `/api/categories`                    | List service categories           |
-| GET    | `/api/workers`                       | Browse workers                    |
-| GET    | `/api/workers/{id}`                  | Worker detail                     |
-| GET    | `/api/bookings`                      | List user bookings                |
-| POST   | `/api/bookings`                      | Create booking                    |
-| POST   | `/api/bookings/{booking}/cancel`     | Cancel booking                    |
-| POST   | `/api/bookings/{booking}/review`     | Submit review                     |
-| POST   | `/api/bookings/{booking}/reschedule` | Request reschedule                |
-| GET    | `/api/conversations`                 | List conversations                |
-| GET    | `/api/conversations/{conv}/messages` | Poll messages                     |
-| POST   | `/api/conversations/{conv}/messages` | Send message                      |
-| POST   | `/api/conversations/{conv}/messages/read` | Mark messages read          |
+| POST   | `/api/location`                      | Save worker location              |
+| POST   | `/api/location/reverse`              | Reverse geocode coordinates       |
+| POST   | `/api/chat`                          | AI chatbot (public + authenticated) |
+| POST   | `/api/chat/suggest`                  | AI worker suggestions (authenticated) |
 
 ---
 
 ## Client Web (auth, verified)
 
-| Method | URI                               | Description               |
-| ------ | --------------------------------- | ------------------------- |
-| GET    | `/client/dashboard`               | Client dashboard          |
-| GET    | `/client/dashboard/notifications` | Dashboard notifications   |
-| GET    | `/client/workers`                 | Browse workers            |
-| GET    | `/client/workers/{worker}`        | Worker detail/profile     |
-| GET    | `/client/bookings`                | Manage bookings           |
-| POST   | `/client/bookings`                | Create a booking          |
-| POST   | `/client/bookings/{booking}/cancel`    | Cancel a booking      |
-| POST   | `/client/bookings/{booking}/review`    | Submit review         |
-| POST   | `/client/bookings/{booking}/reschedule` | Request reschedule    |
-| POST   | `/client/bookings/{booking}/reschedule-respond` | Respond to reschedule |
-| POST   | `/client/bookings/{booking}/report`     | Report a worker       |
-| GET    | `/client/messages`                | Messages page             |
-| GET    | `/client/messages/poll/{conv}`    | Poll messages             |
-| POST   | `/client/messages/send`           | Send a message            |
-| POST   | `/client/messages/{conv}/read`    | Mark messages read        |
-| GET    | `/client/reviews`                 | My reviews                |
-| GET    | `/client/account/profile`         | Account settings          |
+| Method | URI                                            | Description               |
+| ------ | ---------------------------------------------- | ------------------------- |
+| GET    | `/client/dashboard`                            | Client dashboard          |
+| GET    | `/client/dashboard/notifications`              | Dashboard notifications   |
+| GET    | `/client/workers`                              | Browse workers            |
+| GET    | `/client/workers/{worker}`                     | Worker detail/profile     |
+| GET    | `/client/bookings`                             | Manage bookings           |
+| POST   | `/client/bookings`                             | Create a booking          |
+| POST   | `/client/bookings/{booking}/cancel`            | Cancel a booking          |
+| POST   | `/client/bookings/{booking}/review`            | Submit review             |
+| POST   | `/client/bookings/{booking}/report`            | Report a worker           |
+| POST   | `/client/bookings/{booking}/reschedule`        | Request reschedule        |
+| POST   | `/client/bookings/{booking}/reschedule-respond`| Respond to reschedule     |
+| POST   | `/client/bookings/{booking}/mark-complete`     | Mark job complete         |
+| POST   | `/client/bookings/{booking}/confirm-complete`  | Confirm job completion    |
+| GET    | `/client/messages`                             | Messages page             |
+| GET    | `/client/messages/start`                       | Start a conversation      |
+| GET    | `/client/messages/poll/{conversation}`          | Poll messages             |
+| POST   | `/client/messages/send`                        | Send a message            |
+| POST   | `/client/messages/{conversation}/read`          | Mark messages read        |
+| GET    | `/client/reviews`                              | My reviews                |
+| GET    | `/client/suggestions`                          | Worker suggestions        |
+| GET    | `/client/account/profile`                      | Account settings          |
 
 ---
 
 ## Worker Web (auth, verified, worker)
 
-| Method | URI                                     | Description              |
-| ------ | --------------------------------------- | ------------------------ |
-| GET    | `/worker/dashboard`                     | Worker dashboard         |
-| GET    | `/worker/dashboard/notifications`       | Dashboard notifications  |
-| GET    | `/worker/dashboard/data`                | Dashboard JSON data      |
-| GET    | `/worker/jobs`                          | Job listings             |
-| GET    | `/worker/schedule`                      | Schedule calendar        |
-| PATCH  | `/worker/jobs/{booking}/status`         | Update job status        |
-| POST   | `/worker/jobs/{booking}/photo`          | Upload job photo         |
-| POST   | `/worker/jobs/{booking}/cancel`         | Cancel a job             |
-| POST   | `/worker/jobs/{booking}/reschedule`      | Request reschedule       |
-| POST   | `/worker/jobs/{booking}/reschedule-respond` | Respond to reschedule |
-| GET    | `/worker/messages`                      | Messages                 |
-| GET    | `/worker/messages/poll/{conv}`          | Poll messages            |
-| POST   | `/worker/messages/send`                 | Send a message           |
-| POST   | `/worker/messages/{conv}/read`          | Mark messages read       |
-| GET    | `/worker/earnings`                      | Earnings report          |
-| GET    | `/worker/earnings/export`               | Export earnings          |
-| GET    | `/worker/profile`                       | Profile page             |
-| PUT    | `/worker/profile`                       | Update profile           |
-| POST   | `/worker/profile/avatar`                | Upload avatar            |
-| POST   | `/worker/profile/portfolio`             | Upload portfolio image   |
-| DELETE | `/worker/profile/portfolio/{id}`        | Delete portfolio image   |
-| POST   | `/worker/profile/document`              | Upload verification doc  |
-| GET    | `/worker/documents`                     | Documents page           |
-| PUT    | `/worker/location`                      | Update current location  |
+| Method | URI                                                 | Description              |
+| ------ | --------------------------------------------------- | ------------------------ |
+| GET    | `/worker/dashboard`                                 | Worker dashboard         |
+| GET    | `/worker/dashboard/notifications`                   | Dashboard notifications  |
+| GET    | `/worker/dashboard/data`                            | Dashboard JSON data      |
+| GET    | `/worker/jobs`                                      | Job listings             |
+| GET    | `/worker/jobs/{booking}/details`                    | Job details              |
+| PATCH  | `/worker/jobs/{booking}/status`                     | Update job status        |
+| POST   | `/worker/jobs/{booking}/photo`                      | Upload job photo         |
+| POST   | `/worker/jobs/{booking}/cancel`                     | Cancel a job             |
+| POST   | `/worker/jobs/{booking}/reschedule`                 | Request reschedule       |
+| POST   | `/worker/jobs/{booking}/reschedule-respond`         | Respond to reschedule    |
+| POST   | `/worker/jobs/{booking}/confirm-complete`           | Confirm job completion   |
+| GET    | `/worker/schedule`                                  | Schedule calendar        |
+| GET    | `/worker/calendar/data`                             | Calendar JSON data       |
+| GET    | `/worker/messages`                                  | Messages                 |
+| GET    | `/worker/messages/start`                            | Start a conversation     |
+| GET    | `/worker/messages/poll/{conversation}`               | Poll messages            |
+| POST   | `/worker/messages/send`                             | Send a message           |
+| POST   | `/worker/messages/{conversation}/read`               | Mark messages read       |
+| GET    | `/worker/earnings`                                  | Earnings report          |
+| GET    | `/worker/earnings/export`                           | Export earnings          |
+| GET    | `/worker/profile`                                   | Profile page             |
+| PUT    | `/worker/profile`                                   | Update profile           |
+| POST   | `/worker/profile/avatar`                            | Upload avatar            |
+| POST   | `/worker/profile/portfolio`                         | Upload portfolio image   |
+| DELETE | `/worker/profile/portfolio/{id}`                    | Delete portfolio image   |
+| POST   | `/worker/profile/document`                          | Upload verification doc  |
+| GET    | `/worker/documents`                                 | Documents page           |
+| PUT    | `/worker/location`                                  | Update current location  |
 
 ---
 
@@ -146,7 +152,8 @@ All web routes require authentication via session (Laravel web middleware). API 
 | GET    | `/admin/disputes/{dispute}`                      | Dispute detail                |
 | PUT    | `/admin/disputes/{dispute}`                      | Update dispute                |
 | GET    | `/admin/reports`                                 | Reports & analytics           |
-| GET    | `/admin/reports/export`                          | Export reports                |
+| GET    | `/admin/reports/export`                          | Export reports (CSV/XLSX)     |
+| GET    | `/admin/reports/print`                           | Print report preview          |
 
 ---
 

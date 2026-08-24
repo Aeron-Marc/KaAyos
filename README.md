@@ -11,13 +11,14 @@ Installation, running each service (Laravel server, queue worker, Vite, ML micro
 - **Backend:** Laravel 13, PHP ^8.3
 - **Frontend:** Blade + vanilla JS (client, worker & admin dashboards)
 - **Styling:** Tailwind CSS 4 (via Vite)
-- **Database:** SQLite (default) / MySQL
+- **Database:** MySQL (default) / SQLite
 - **Auth:** Laravel Sanctum (API), session-based (web)
 - **Realtime:** Laravel Reverb (WebSockets for chat & notifications)
 - **Queues & Cache:** Database driver
 - **Build:** Vite 8, concurrently
 - **ML Microservice:** Python FastAPI (scikit-learn for geospatial clustering & worker matching)
 - **AI Chatbot:** OpenRouter-powered assistant (`/api/chat`)
+- **Maps:** Leaflet 1.9.4 (OpenStreetMap) for worker map view on landing page
 
 ## Project Structure
 
@@ -25,32 +26,43 @@ Installation, running each service (Laravel server, queue worker, Vite, ML micro
 KaAyos/
 ├── kaayos/                        # Laravel application
 │   ├── app/
+│   │   ├── Console/Commands/      # Artisan commands (e.g. CancelExpiredBookings)
+│   │   ├── Events/                # Booking, message events
+│   │   ├── Http/
+│   │   │   ├── Controllers/       # Admin, Auth, Client, Worker, Api controllers
+│   │   │   ├── Middleware/         # Role checks, cache headers
+│   │   │   └── Requests/          # Form request validation
+│   │   ├── Mail/                  # OTP & email-change mails
+│   │   ├── Models/                # 17 Eloquent models
+│   │   ├── Notifications/         # 13 notification classes
+│   │   ├── Providers/             # Service providers
+│   │   ├── Services/              # ReportService, ChatBotService, MLService, XlsxWriter
+│   │   └── Support/               # TuyBarangays, PortfolioPhoto helpers
 │   ├── bootstrap/
 │   ├── config/
 │   ├── database/
 │   │   ├── backups/               # SQL backups (kaayos_db.sql)
-│   │   ├── migrations/
-│   │   ├── seeders/
-│   │   └── database.sqlite
+│   │   ├── factories/
+│   │   ├── migrations/            # 49 migration files
+│   │   └── seeders/
 │   ├── public/
+│   │   ├── build/                 # Vite compiled assets
+│   │   └── images/                # Logos, stock photos
 │   ├── resources/
-│   │   ├── js/
-│   │   │   ├── chatbot.js         # AI chatbot (Vite entry)
-│   │   │   └── echo.js
-│   │   ├── css/
-│   │   └── views/
-│   ├── routes/
+│   │   ├── css/                   # app.css, landing.css
+│   │   ├── js/                    # chatbot.js, echo.js
+│   │   └── views/                 # Blade templates (admin, auth, client, worker, partials)
+│   ├── routes/                    # web.php, api.php
 │   ├── storage/
+│   ├── tests/                     # Feature tests (4 test files)
 │   └── vite.config.js
-├── ml_service/                    # Python FastAPI microservice (project root)
+├── ml_service/                    # Python FastAPI microservice
 │   ├── main.py
-│   ├── test_ml.py
 │   ├── requirements.txt
 │   ├── run.bat
-│   ├── .venv/                     # Python virtual environment (local)
-│   └── models/                    # Trained ML models
-├── composer.json
-├── package.json
+│   ├── models/                    # Trained ML models (.pkl)
+│   └── ml_testing/                # Testing dashboard
+├── .github/workflows/ci.yml      # GitHub Actions CI (MySQL tests)
 └── README.md
 ```
 
@@ -108,9 +120,23 @@ Workers must upload the following for admin approval:
 
 Statuses: `pending` → `approved` | `rejected`
 
+## Landing Page Features
+
+- **Interactive Map View** — Leaflet-powered map showing worker locations across Tuy's 22 barangays with Grid/Map toggle
+- **AI Chatbot** — Floating assistant on the homepage for guest worker search
+- **Worker Search** — Filter by service category and barangay location
+- **Worker Profiles** — Public profiles with ratings, reviews, skills, and portfolio
+
 ## AI Chatbot
 
 An AI assistant is available on the homepage (guest) and at `POST /api/chat` (client area). Configurable via `CHATBOT_PROVIDER`, `CHATBOT_API_KEY`, and `CHATBOT_MODEL` env vars. Currently configured for OpenRouter.
+
+## Admin Reports
+
+The admin dashboard includes a reporting section with:
+- **8 report types** — bookings, revenue, users, worker performance, verifications, disputes, service popularity, reviews
+- **Export** — CSV and XLSX formats with letterhead and KPI summaries
+- **Print** — Browser-native print preview with A4 landscape layout
 
 ## ML Microservice
 

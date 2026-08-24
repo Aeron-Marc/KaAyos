@@ -28,6 +28,19 @@ A home services marketplace platform connecting clients with verified workers in
 - **Profile Management** — Avatar, contact info, barangay, preferences
 - **Password & Email Change** — OTP-verified via email
 
+### Landing Page Features
+
+- **Worker Map View** — Interactive Leaflet map with markers for each worker's location across Tuy's 22 barangays
+- **AI Chatbot** — Floating assistant for guest worker search and recommendations
+- **Worker Search & Filter** — Filter by service category and barangay location
+- **Worker Profiles** — Public profiles with ratings, reviews, skills, and portfolio
+
+### Admin Reports
+
+- **8 report types** — Bookings, revenue, users, worker performance, verifications, disputes, service popularity, reviews
+- **Export** — CSV and XLSX with letterhead and KPI summaries
+- **Print** — Browser-native print preview with A4 landscape layout
+
 ### Booking Statuses
 
 `new` → `accepted` → `en_route` → `in_progress` → `completed` | `cancelled`
@@ -53,7 +66,6 @@ Configurable percentage (default: 10%) deducted from worker earnings.
 - Multi-language i18n beyond Filipino/English
 - Public API for external developers
 - Automated worker scheduling/assignment
-- Geolocation-based worker matching beyond barangay filter
 - Subscription or membership tiers
 
 ---
