@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+from contextlib import asynccontextmanager
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -36,10 +37,22 @@ def verify_api_key(key: str = Security(_api_key_header)):
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    meta = _load_or_train_model()
+    if meta:
+        logger.info("Model loaded. Accuracy: %s", meta.get('accuracy', 'N/A'))
+    else:
+        logger.warning("No dataset found. Train a model via POST /retrain before using /predict.")
+    yield
+
+
 app = FastAPI(
     title="KaAyos ML Microservice",
     description="Geospatial clustering & AI worker matching for KaAyos marketplace",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -217,16 +230,6 @@ def _load_or_train_model() -> dict:
     return {}
 
 
-@app.on_event("startup")
-def startup():
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    meta = _load_or_train_model()
-    if meta:
-        logger.info("Model loaded. Accuracy: %s", meta.get('accuracy', 'N/A'))
-    else:
-        logger.warning("No dataset found. Train a model via POST /retrain before using /predict.")
-
-
 def _predict_worker_proba(workers: List[WorkerMatch]) -> List[RankedWorker]:
     if _model is None or _label_encoder is None:
         raise HTTPException(status_code=503, detail="Model not trained yet. Call POST /retrain first.")
@@ -267,7 +270,6 @@ def health():
     return {
         "status": "ok",
         "model_loaded": _model is not None,
-        "model_accuracy": _model_metadata.get("accuracy") if _model_metadata else None,
     }
 
 
