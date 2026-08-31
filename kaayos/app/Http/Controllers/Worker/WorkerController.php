@@ -16,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -534,9 +535,24 @@ class WorkerController extends Controller
 
         $recipient = $conversation->client;
         if ($recipient) {
-            Notification::send($recipient, new NewMessage($msg));
+            try {
+                Notification::send($recipient, new NewMessage($msg));
+            } catch (\Exception $e) {
+                Log::warning('Failed to send new message notification', [
+                    'message_id' => $msg->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
         }
-        broadcast(new MessageSent($msg))->toOthers();
+
+        try {
+            broadcast(new MessageSent($msg))->toOthers();
+        } catch (\Exception $e) {
+            Log::warning('Failed to broadcast message', [
+                'message_id' => $msg->id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,

@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class WorkerDashboardController extends Controller
@@ -305,24 +306,37 @@ class WorkerDashboardController extends Controller
             abort(404, 'Worker profile not found. Please complete your profile first.');
         }
 
-        $profile->update([
-            'current_latitude'  => $validated['latitude'],
-            'current_longitude' => $validated['longitude'],
-            'location_is_approximate' => false,
-        ]);
+        try {
+            $profile->update([
+                'current_latitude'  => $validated['latitude'],
+                'current_longitude' => $validated['longitude'],
+                'location_is_approximate' => false,
+            ]);
 
-        $barangay = TuyBarangays::barangayFor(
-            (float) $validated['latitude'],
-            (float) $validated['longitude']
-        );
+            $barangay = TuyBarangays::barangayFor(
+                (float) $validated['latitude'],
+                (float) $validated['longitude']
+            );
 
-        $user = auth()->user();
-        $user->update([
-            'latitude'        => $validated['latitude'],
-            'longitude'       => $validated['longitude'],
-            'barangay'        => $barangay,
-            'location_source' => 'gps',
-        ]);
+            $user = auth()->user();
+            $user->update([
+                'latitude'        => $validated['latitude'],
+                'longitude'       => $validated['longitude'],
+                'barangay'        => $barangay,
+                'location_source' => 'gps',
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Failed to update worker location', [
+                'user_id' => auth()->id(),
+                'error'   => $e->getMessage(),
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Failed to update location.'], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to update location.');
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\UpdateDisputeRequest;
 use App\Models\Booking;
 use App\Models\Dispute;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class DisputeController extends Controller
 {
@@ -50,16 +51,25 @@ class DisputeController extends Controller
         if ($request->input('status') === 'resolved') {
             $data['resolved_at'] = now();
             $data['resolved_by'] = $request->user()->id;
-
-            $dispute->booking->client->notify(
-                new \App\Notifications\DisputeResolved($dispute, $dispute->booking->client)
-            );
-            $dispute->booking->worker->notify(
-                new \App\Notifications\DisputeResolved($dispute, $dispute->booking->worker)
-            );
         }
 
         $dispute->update($data);
+
+        if ($request->input('status') === 'resolved') {
+            try {
+                $dispute->booking->client->notify(
+                    new \App\Notifications\DisputeResolved($dispute, $dispute->booking->client)
+                );
+                $dispute->booking->worker->notify(
+                    new \App\Notifications\DisputeResolved($dispute, $dispute->booking->worker)
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to send dispute resolved notification', [
+                    'dispute_id' => $dispute->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+        }
 
         return redirect()->route('admin.disputes.index')
             ->with('success', "Dispute #{$dispute->id} has been updated to '{$dispute->status}'.");
