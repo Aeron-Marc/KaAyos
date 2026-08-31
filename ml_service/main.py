@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -19,6 +20,13 @@ import joblib
 
 ML_API_KEY = os.getenv("ML_API_KEY", "")
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+logger = logging.getLogger("kaayos-ml")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 
 def verify_api_key(key: str = Security(_api_key_header)):
@@ -214,9 +222,9 @@ def startup():
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     meta = _load_or_train_model()
     if meta:
-        print(f"Model loaded. Accuracy: {meta.get('accuracy', 'N/A')}")
+        logger.info("Model loaded. Accuracy: %s", meta.get('accuracy', 'N/A'))
     else:
-        print("WARNING: No dataset found. Train a model via POST /retrain before using /predict.")
+        logger.warning("No dataset found. Train a model via POST /retrain before using /predict.")
 
 
 def _predict_worker_proba(workers: List[WorkerMatch]) -> List[RankedWorker]:
