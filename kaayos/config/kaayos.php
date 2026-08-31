@@ -20,5 +20,6 @@ return [
     /*
     | ML Service (Python microservice for worker matching)
     */
-    'ml_service_url' => env('ML_SERVICE_URL', 'http://127.0.0.1:5000'),
+    'ml_service_url' => env('ML_SERVICE_URL', 'http://127.0.0.1:8001'),
+    'ml_api_key'     => env('ML_API_KEY', ''),
 ];

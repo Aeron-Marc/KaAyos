@@ -42,6 +42,10 @@ RateLimiter::for('email-otp-verify', function (Request $request) {
     return Limit::perHour(5)->by($request->user()->id);
 });
 
+RateLimiter::for('chatbot', function (Request $request) {
+    return Limit::perMinute(20)->by($request->ip());
+});
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/workers/{worker}', [App\Http\Controllers\Worker\PublicWorkerController::class, 'show'])->name('workers.public.show');
@@ -102,7 +106,8 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Chatbot (public + authenticated)
-Route::post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke']);
+Route::post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke'])
+    ->middleware('throttle:chatbot');
 
 // Suggestions (authenticated) — uses ML + AI for worker recommendations
 Route::middleware('auth')->post('/api/chat/suggest', [App\Http\Controllers\Api\SuggestionController::class, '__invoke']);
