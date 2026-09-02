@@ -171,6 +171,16 @@
                 </span>
                 <span class="attention-count">{{ number_format($pendingVerifications) }}</span>
             </a>
+            @if($pendingTestimonials > 0)
+            <a href="{{ route('admin.testimonials.index') }}?status=pending" class="attention-row">
+                <span class="attention-icon" style="background:rgba(139,92,246,.12);color:#7C3AED;"><i class="fa-solid fa-quote-left"></i></span>
+                <span class="attention-body">
+                    <span class="attention-name">Pending Testimonials</span>
+                    <span class="attention-desc">Testimonials awaiting approval</span>
+                </span>
+                <span class="attention-count">{{ number_format($pendingTestimonials) }}</span>
+            </a>
+            @endif
             <a href="{{ route('admin.disputes.index') }}" class="attention-row">
                 <span class="attention-icon danger"><i class="fa-solid fa-scale-balanced"></i></span>
                 <span class="attention-body">

@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\ProviderServiceController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\DisputeController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\TestimonialController;
 
 RateLimiter::for('login', function (Request $request) {
     return Limit::perMinute(5)->by($request->input('email') . '|' . $request->ip());
@@ -89,6 +90,13 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::get('/reviews', [ClientController::class, 'reviews'])->name('reviews');
     Route::get('/suggestions', [ClientController::class, 'suggestions'])->name('suggestions');
     Route::get('/account/profile', [ClientController::class, 'profile'])->name('account.profile');
+});
+
+// Testimonials (shared between client and worker)
+Route::middleware(['auth', 'verified', 'no-cache'])->prefix('testimonials')->name('testimonials.')->group(function () {
+    Route::get('/', [TestimonialController::class, 'index'])->name('index');
+    Route::get('/create', [TestimonialController::class, 'create'])->name('create');
+    Route::post('/', [TestimonialController::class, 'store'])->name('store');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -226,4 +234,10 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/reports/print', [ReportController::class, 'print'])->name('reports.print');
+
+    // Testimonials
+    Route::get('/testimonials', [\App\Http\Controllers\Admin\TestimonialController::class, 'index'])->name('testimonials.index');
+    Route::get('/testimonials/{testimonial}', [\App\Http\Controllers\Admin\TestimonialController::class, 'show'])->name('testimonials.show');
+    Route::post('/testimonials/{testimonial}/approve', [\App\Http\Controllers\Admin\TestimonialController::class, 'approve'])->name('testimonials.approve');
+    Route::post('/testimonials/{testimonial}/reject', [\App\Http\Controllers\Admin\TestimonialController::class, 'reject'])->name('testimonials.reject');
 });

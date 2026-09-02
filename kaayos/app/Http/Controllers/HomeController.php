@@ -62,7 +62,7 @@ class HomeController extends Controller
             return view('partials.workers-grid', compact('workers'));
         }
 
-        $testimonials = Testimonial::active()->ordered()->get();
+        $testimonials = Testimonial::active()->approved()->ordered()->get();
 
         return view('home', compact('workers', 'categories', 'category', 'testimonials'));
     }

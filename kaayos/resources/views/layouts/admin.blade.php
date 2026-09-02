@@ -319,6 +319,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('admin.testimonials.index') }}" class="{{ request()->routeIs('admin.testimonials.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-quote-left"></i>
+                    <span>Testimonials</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('admin.reports.index') }}" class="{{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-chart-simple"></i>
                     <span>Reports</span>

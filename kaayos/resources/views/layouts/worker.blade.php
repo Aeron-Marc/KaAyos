@@ -65,6 +65,12 @@
                 {{ __('nav.documents') }}
             </a>
 
+            <a href="{{ route('testimonials.index') }}"
+               class="nav-item {{ request()->routeIs('testimonials.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-quote-left nav-icon" aria-hidden="true"></i>
+                {{ __('nav.testimonials') }}
+            </a>
+
         </nav>
 
         <div class="sidebar-spacer"></div>
