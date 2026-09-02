@@ -40,6 +40,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'suspended_reason',
         'pending_email',
         'email_updated_at',
+        'failed_login_attempts',
+        'locked_until',
     ];
 
     protected static function booted(): void
@@ -61,6 +63,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'email_updated_at'  => 'datetime',
+            'locked_until'      => 'datetime',
             'pending_email'     => 'string',
             'password'          => 'hashed',
             'latitude'          => 'decimal:7',
