@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\EmailOtpController;
 use App\Http\Controllers\HomeController;
@@ -26,26 +23,6 @@ use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\DisputeController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\TestimonialController;
-
-RateLimiter::for('login', function (Request $request) {
-    return Limit::perMinute(5)->by($request->input('email') . '|' . $request->ip());
-});
-
-RateLimiter::for('register', function (Request $request) {
-    return Limit::perHour(3)->by($request->ip());
-});
-
-RateLimiter::for('email-otp-send', function (Request $request) {
-    return Limit::perHour(3)->by($request->user()->id);
-});
-
-RateLimiter::for('email-otp-verify', function (Request $request) {
-    return Limit::perHour(5)->by($request->user()->id);
-});
-
-RateLimiter::for('chatbot', function (Request $request) {
-    return Limit::perMinute(20)->by($request->ip());
-});
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
