@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\Auth;
 
 class TestimonialController extends Controller
 {
+    private function viewPath(): string
+    {
+        return Auth::user()->role === 'worker' ? 'worker.testimonials' : 'client.testimonials';
+    }
+
     public function index()
     {
         $testimonials = Testimonial::where('user_id', Auth::id())
@@ -17,14 +22,14 @@ class TestimonialController extends Controller
         $pendingCount = Testimonial::where('user_id', Auth::id())->pending()->count();
         $approvedCount = Testimonial::where('user_id', Auth::id())->approved()->count();
 
-        return view('testimonials.index', compact('testimonials', 'pendingCount', 'approvedCount'));
+        return view($this->viewPath() . '.index', compact('testimonials', 'pendingCount', 'approvedCount'));
     }
 
     public function create()
     {
         $hasExisting = Testimonial::where('user_id', Auth::id())->exists();
 
-        return view('testimonials.create', compact('hasExisting'));
+        return view($this->viewPath() . '.create', compact('hasExisting'));
     }
 
     public function store(Request $request)
@@ -50,7 +55,7 @@ class TestimonialController extends Controller
             'status'           => 'pending',
         ]);
 
-        return redirect()->route('testimonials.index')
+        return redirect()->route(auth()->user()->role === 'worker' ? 'worker.testimonials.index' : 'client.testimonials.index')
             ->with('success', 'Your testimonial has been submitted and is awaiting admin approval.');
     }
 }

@@ -1,8 +1,4 @@
-@if(auth()->user()->role === 'worker')
-    @extends('layouts.worker')
-@else
-    @extends('layouts.client')
-@endif
+@extends('layouts.worker')
 
 @section('title', 'Share Your Testimonial')
 @section('page_title', 'Share Your Testimonial')
@@ -54,7 +50,7 @@
         <p class="form-subtitle">Tell others about your experience with KaAyos. Your testimonial will appear on the landing page after admin approval.</p>
     </div>
 
-    <form method="POST" action="{{ route('testimonials.store') }}" id="testimonialForm">
+    <form method="POST" action="{{ route('worker.testimonials.store') }}" id="testimonialForm">
         @csrf
 
         <div class="form-group">
@@ -79,7 +75,7 @@
                 class="form-textarea"
                 rows="5"
                 maxlength="1000"
-                placeholder="What did you like about KaAyos? How has it helped you as a homeowner or worker?"
+                placeholder="What did you like about KaAyos? How has it helped you as a worker?"
                 required
             >{{ old('content') }}</textarea>
             <div class="char-count"><span id="charCount">0</span>/1000</div>
@@ -97,14 +93,14 @@
                     <div class="author-avatar">{{ strtoupper(substr(auth()->user()->first_name ?? '', 0, 1) . substr(auth()->user()->last_name ?? '', 0, 1)) ?: strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}</div>
                     <div class="author-info">
                         <div class="name">{{ auth()->user()->name }}</div>
-                        <div class="role">{{ auth()->user()->role === 'worker' ? 'Trabahador' : 'Homeowner' }}, {{ auth()->user()->barangay ?? 'Tuy' }}</div>
+                        <div class="role">Trabahador, {{ auth()->user()->barangay ?? 'Tuy' }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="form-actions">
-            <a href="{{ route('testimonials.index') }}" class="btn-cancel">My Testimonials</a>
+            <a href="{{ route('worker.testimonials.index') }}" class="btn-cancel">My Testimonials</a>
             <button type="submit" class="btn-submit" id="submitBtn">
                 <i class="fa-solid fa-paper-plane"></i> Submit Testimonial
             </button>

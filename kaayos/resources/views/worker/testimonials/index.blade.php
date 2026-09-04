@@ -1,8 +1,4 @@
-@if(auth()->user()->role === 'worker')
-    @extends('layouts.worker')
-@else
-    @extends('layouts.client')
-@endif
+@extends('layouts.worker')
 
 @section('title', 'My Testimonials')
 @section('page_title', 'My Testimonials')
@@ -36,7 +32,7 @@
         <div class="stat-pill"><i class="fa-solid fa-clock"></i> {{ $pendingCount }} Pending</div>
         <div class="stat-pill approved"><i class="fa-solid fa-circle-check"></i> {{ $approvedCount }} Approved</div>
     </div>
-    <a href="{{ route('testimonials.create') }}" class="btn-new-testimonial">
+    <a href="{{ route('worker.testimonials.create') }}" class="btn-new-testimonial">
         <i class="fa-solid fa-plus"></i> New Testimonial
     </a>
 </div>
@@ -85,7 +81,7 @@
         <div style="font-size:3rem;color:var(--g4);margin-bottom:16px;"><i class="fa-solid fa-quote-left"></i></div>
         <div style="font-size:1.1rem;font-weight:600;color:var(--g9);margin-bottom:8px;">No testimonials yet</div>
         <div style="font-size:.9rem;color:var(--g4);margin-bottom:24px;">Share your experience with KaAyos and help others discover the platform.</div>
-        <a href="{{ route('testimonials.create') }}" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;background:var(--b6);color:#fff;text-decoration:none;font-size:.9rem;font-weight:600;transition:all .18s;">
+        <a href="{{ route('worker.testimonials.create') }}" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;background:var(--b6);color:#fff;text-decoration:none;font-size:.9rem;font-weight:600;transition:all .18s;">
             <i class="fa-solid fa-plus"></i> Write Your First Testimonial
         </a>
     </div>

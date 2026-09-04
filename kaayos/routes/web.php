@@ -67,13 +67,10 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::get('/reviews', [ClientController::class, 'reviews'])->name('reviews');
     Route::get('/suggestions', [ClientController::class, 'suggestions'])->name('suggestions');
     Route::get('/account/profile', [ClientController::class, 'profile'])->name('account.profile');
-});
 
-// Testimonials (shared between client and worker)
-Route::middleware(['auth', 'verified', 'no-cache'])->prefix('testimonials')->name('testimonials.')->group(function () {
-    Route::get('/', [TestimonialController::class, 'index'])->name('index');
-    Route::get('/create', [TestimonialController::class, 'create'])->name('create');
-    Route::post('/', [TestimonialController::class, 'store'])->name('store');
+    Route::get('/testimonials', [TestimonialController::class, 'index'])->name('testimonials.index');
+    Route::get('/testimonials/create', [TestimonialController::class, 'create'])->name('testimonials.create');
+    Route::post('/testimonials', [TestimonialController::class, 'store'])->name('testimonials.store');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -128,6 +125,10 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::post('/jobs/{booking}/confirm-complete', [WorkerDashboardController::class, 'confirmJobCompletion'])->name('jobs.confirm-complete');
     Route::get('/jobs/{booking}/details', [WorkerController::class, 'jobDetails'])->name('jobs.details');
     Route::put('/location', [WorkerDashboardController::class, 'updateLocation'])->name('location.update');
+
+    Route::get('/testimonials', [TestimonialController::class, 'index'])->name('testimonials.index');
+    Route::get('/testimonials/create', [TestimonialController::class, 'create'])->name('testimonials.create');
+    Route::post('/testimonials', [TestimonialController::class, 'store'])->name('testimonials.store');
 });
 
 Route::get('/email/verify', function () {

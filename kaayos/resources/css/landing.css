@@ -470,8 +470,13 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
   width:100%;height:500px;border-radius:var(--radius-lg);
   border:1.5px solid var(--g1);overflow:hidden;
   display:none;box-shadow:var(--shadow);
+  position:relative;z-index:1;
 }
 .workers-map-container.map-active{display:block}
+.workers-map-container .leaflet-top,
+.workers-map-container .leaflet-bottom{z-index:2!important}
+.workers-map-container .leaflet-pane{z-index:1!important}
+.workers-map-container .leaflet-control{z-index:2!important}
 
 /* Custom marker */
 .worker-marker-icon{background:none!important;border:none!important}

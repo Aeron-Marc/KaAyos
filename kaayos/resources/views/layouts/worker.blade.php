@@ -65,8 +65,8 @@
                 {{ __('nav.documents') }}
             </a>
 
-            <a href="{{ route('testimonials.index') }}"
-               class="nav-item {{ request()->routeIs('testimonials.*') ? 'active' : '' }}">
+            <a href="{{ route('worker.testimonials.index') }}"
+               class="nav-item {{ request()->routeIs('worker.testimonials.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-quote-left nav-icon" aria-hidden="true"></i>
                 {{ __('nav.testimonials') }}
             </a>
