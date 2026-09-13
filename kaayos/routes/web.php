@@ -1,38 +1,48 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\EmailOtpController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Client\ClientController;
-use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
-use App\Http\Controllers\Worker\WorkerController;
-use App\Http\Controllers\Worker\WorkerDashboardController;
-use App\Http\Controllers\Api\PasswordOtpController;
-use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DisputeController;
+use App\Http\Controllers\Admin\ProviderServiceController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\ServiceCategoryController;
+use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VerificationController;
-use App\Http\Controllers\Admin\ServiceCategoryController;
 use App\Http\Controllers\Admin\WorkerController as AdminWorkerController;
-use App\Http\Controllers\Admin\ServiceController;
-use App\Http\Controllers\Admin\ProviderServiceController;
-use App\Http\Controllers\Admin\BookingController;
-use App\Http\Controllers\Admin\DisputeController;
-use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Api\ChatBotController;
+use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\PasswordOtpController;
+use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SuggestionController;
+use App\Http\Controllers\Auth\EmailOtpController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Client\ClientController;
+use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\Worker\PublicWorkerController;
+use App\Http\Controllers\Worker\WorkerController;
+use App\Http\Controllers\Worker\WorkerDashboardController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/workers/{worker}', [App\Http\Controllers\Worker\PublicWorkerController::class, 'show'])->name('workers.public.show');
+Route::get('/workers/{worker}', [PublicWorkerController::class, 'show'])->name('workers.public.show');
 
-Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search');
+Route::get('/search', [SearchController::class, 'index'])->name('search');
 
-Route::get('/services', function () { return redirect('/#services'); })->name('services.index');
+Route::get('/services', function () {
+    return redirect('/#services');
+})->name('services.index');
 
-Route::get('/login',  [LoginController::class, 'create'])->name('login');
+Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store'])
     ->middleware('throttle:login');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
@@ -40,10 +50,10 @@ Route::get('/register', [RegisterController::class, 'create'])->name('register')
 Route::post('/register', [RegisterController::class, 'store'])
     ->middleware('throttle:register');
 
-Route::get('/forgot-password', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'create'])->name('password.request');
-Route::post('/forgot-password', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'store'])->name('password.email');
-Route::get('/reset-password/{token}', [\App\Http\Controllers\Auth\ResetPasswordController::class, 'create'])->name('password.reset');
-Route::post('/reset-password', [\App\Http\Controllers\Auth\ResetPasswordController::class, 'store'])->name('password.update');
+Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->name('password.email');
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'store'])->name('password.update');
 
 Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('client.')->group(function () {
     Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('dashboard');
@@ -74,25 +84,25 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
 });
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/password-otp/send',            [PasswordOtpController::class, 'send']);
-    Route::post('/password-otp/verify',          [PasswordOtpController::class, 'verify']);
-    Route::post('/email-otp/send',               [EmailOtpController::class, 'sendOtp'])
+    Route::post('/password-otp/send', [PasswordOtpController::class, 'send']);
+    Route::post('/password-otp/verify', [PasswordOtpController::class, 'verify']);
+    Route::post('/email-otp/send', [EmailOtpController::class, 'sendOtp'])
         ->middleware('throttle:email-otp-send');
-    Route::post('/email-otp/verify',             [EmailOtpController::class, 'verifyOtp'])
+    Route::post('/email-otp/verify', [EmailOtpController::class, 'verifyOtp'])
         ->middleware('throttle:email-otp-verify');
-    Route::put('/api/profile',                    [ProfileController::class, 'updateProfile']);
-    Route::put('/api/preferences',                [ProfileController::class, 'updatePreferences']);
-    Route::post('/api/profile/avatar',            [ProfileController::class, 'uploadAvatar']);
-    Route::post('/api/location/reverse',          [LocationController::class, 'reverseGeocode']);
-    Route::post('/api/location',                  [LocationController::class, 'store']);
+    Route::put('/api/profile', [ProfileController::class, 'updateProfile']);
+    Route::put('/api/preferences', [ProfileController::class, 'updatePreferences']);
+    Route::post('/api/profile/avatar', [ProfileController::class, 'uploadAvatar']);
+    Route::post('/api/location/reverse', [LocationController::class, 'reverseGeocode']);
+    Route::post('/api/location', [LocationController::class, 'store']);
 });
 
 // Chatbot (public + authenticated)
-Route::post('/api/chat', [App\Http\Controllers\Api\ChatBotController::class, '__invoke'])
+Route::post('/api/chat', [ChatBotController::class, '__invoke'])
     ->middleware('throttle:chatbot');
 
 // Suggestions (authenticated) — uses ML + AI for worker recommendations
-Route::middleware('auth')->post('/api/chat/suggest', [App\Http\Controllers\Api\SuggestionController::class, '__invoke']);
+Route::middleware('auth')->post('/api/chat/suggest', [SuggestionController::class, '__invoke']);
 
 Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')->name('worker.')->group(function () {
     Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
@@ -120,6 +130,7 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::patch('/jobs/{booking}/status', [WorkerDashboardController::class, 'updateJobStatus'])->name('jobs.status');
     Route::post('/jobs/{booking}/photo', [WorkerDashboardController::class, 'uploadPhoto'])->name('jobs.photo');
     Route::post('/jobs/{booking}/cancel', [WorkerDashboardController::class, 'cancelJob'])->name('jobs.cancel');
+    Route::post('/jobs/{booking}/decline', [WorkerDashboardController::class, 'declineJob'])->name('jobs.decline');
     Route::post('/jobs/{booking}/reschedule', [WorkerDashboardController::class, 'rescheduleRequest'])->name('jobs.reschedule');
     Route::post('/jobs/{booking}/reschedule-respond', [WorkerDashboardController::class, 'respondReschedule'])->name('jobs.reschedule-respond');
     Route::post('/jobs/{booking}/confirm-complete', [WorkerDashboardController::class, 'confirmJobCompletion'])->name('jobs.confirm-complete');
@@ -135,7 +146,7 @@ Route::get('/email/verify', function () {
     return view('auth.verify-email');
 })->middleware(['auth', 'no-cache'])->name('verification.notice');
 
-Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\EmailVerificationRequest $request) {
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
 
     $role = $request->user()->role;
@@ -150,15 +161,18 @@ Route::post('/email/verification-notification', function (Request $request) {
     return back()->with('message', 'Verification link sent!');
 })->middleware(['auth', 'throttle:6,1', 'no-cache'])->name('verification.send');
 
-Route::get('/about',   [App\Http\Controllers\PageController::class, 'about'])->name('about');
-Route::get('/contact', [App\Http\Controllers\PageController::class, 'contact'])->name('contact');
-Route::post('/contact', function (\Illuminate\Http\Request $request) {
+Route::get('/about', [PageController::class, 'about'])->name('about');
+Route::get('/contact', [PageController::class, 'contact'])->name('contact');
+Route::post('/contact', function (Illuminate\Http\Request $request) {
     $request->validate(['name' => 'required', 'email' => 'required|email', 'message' => 'required']);
+
     return redirect()->route('contact')->with('success', 'Thank you for your message! We will get back to you within 24 hours.');
 });
-Route::get('/privacy', [App\Http\Controllers\PageController::class, 'privacy'])->name('privacy');
-Route::get('/terms',   function () { return view('pages.terms'); })->name('terms');
-Route::get('/safety',  [App\Http\Controllers\PageController::class, 'safety'])->name('safety');
+Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
+Route::get('/terms', function () {
+    return view('pages.terms');
+})->name('terms');
+Route::get('/safety', [PageController::class, 'safety'])->name('safety');
 
 // Admin Routes
 Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->name('admin.')->group(function () {
@@ -171,7 +185,7 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::post('/users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
 
     // Workers
-    Route::get('/workers', [App\Http\Controllers\Admin\WorkerController::class, 'index'])->name('workers.index');
+    Route::get('/workers', [AdminWorkerController::class, 'index'])->name('workers.index');
 
     // Verifications
     Route::get('/verification', [VerificationController::class, 'index'])->name('verification.index');
@@ -214,8 +228,8 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::get('/reports/print', [ReportController::class, 'print'])->name('reports.print');
 
     // Testimonials
-    Route::get('/testimonials', [\App\Http\Controllers\Admin\TestimonialController::class, 'index'])->name('testimonials.index');
-    Route::get('/testimonials/{testimonial}', [\App\Http\Controllers\Admin\TestimonialController::class, 'show'])->name('testimonials.show');
-    Route::post('/testimonials/{testimonial}/approve', [\App\Http\Controllers\Admin\TestimonialController::class, 'approve'])->name('testimonials.approve');
-    Route::post('/testimonials/{testimonial}/reject', [\App\Http\Controllers\Admin\TestimonialController::class, 'reject'])->name('testimonials.reject');
+    Route::get('/testimonials', [App\Http\Controllers\Admin\TestimonialController::class, 'index'])->name('testimonials.index');
+    Route::get('/testimonials/{testimonial}', [App\Http\Controllers\Admin\TestimonialController::class, 'show'])->name('testimonials.show');
+    Route::post('/testimonials/{testimonial}/approve', [App\Http\Controllers\Admin\TestimonialController::class, 'approve'])->name('testimonials.approve');
+    Route::post('/testimonials/{testimonial}/reject', [App\Http\Controllers\Admin\TestimonialController::class, 'reject'])->name('testimonials.reject');
 });

@@ -138,7 +138,7 @@
     @foreach($categories as $cat)
       <button class="cat-pill {{ $category === $cat->slug ? 'active' : '' }}" data-category="{{ $cat->slug }}"><i class="fa-solid {{ $cat->icon ?: 'fa-wrench' }}"></i> {{ $cat->name }}</button>
     @endforeach
-  </div>
+</div>
 
   <div class="view-toggle-wrap fade-up">
     <div class="view-toggle">
