@@ -80,6 +80,9 @@ All web routes require authentication via session (Laravel web middleware). API 
 | GET    | `/client/reviews`                              | My reviews                |
 | GET    | `/client/suggestions`                          | Worker suggestions        |
 | GET    | `/client/account/profile`                      | Account settings          |
+| GET    | `/client/testimonials`                         | My testimonials           |
+| GET    | `/client/testimonials/create`                  | Submit testimonial form   |
+| POST   | `/client/testimonials`                         | Submit testimonial        |
 
 ---
 
@@ -115,6 +118,17 @@ All web routes require authentication via session (Laravel web middleware). API 
 | POST   | `/worker/profile/document`                          | Upload verification doc  |
 | GET    | `/worker/documents`                                 | Documents page           |
 | PUT    | `/worker/location`                                  | Update current location  |
+| GET    | `/worker/dashboard/data`                            | Dashboard JSON data      |
+| GET    | `/worker/jobs/{booking}/details`                    | Job details              |
+| PATCH  | `/worker/jobs/{booking}/status`                     | Update job status        |
+| POST   | `/worker/jobs/{booking}/photo`                      | Upload job photo         |
+| POST   | `/worker/jobs/{booking}/cancel`                     | Cancel a job             |
+| POST   | `/worker/jobs/{booking}/reschedule`                 | Request reschedule       |
+| POST   | `/worker/jobs/{booking}/reschedule-respond`         | Respond to reschedule    |
+| POST   | `/worker/jobs/{booking}/confirm-complete`           | Confirm job completion   |
+| GET    | `/worker/testimonials`                             | My testimonials          |
+| GET    | `/worker/testimonials/create`                      | Submit testimonial form  |
+| POST   | `/worker/testimonials`                             | Submit testimonial       |
 
 ---
 
@@ -154,6 +168,10 @@ All web routes require authentication via session (Laravel web middleware). API 
 | GET    | `/admin/reports`                                 | Reports & analytics           |
 | GET    | `/admin/reports/export`                          | Export reports (CSV/XLSX)     |
 | GET    | `/admin/reports/print`                           | Print report preview          |
+| GET    | `/admin/testimonials`                            | Testimonial management        |
+| GET    | `/admin/testimonials/{testimonial}`              | Testimonial detail            |
+| POST   | `/admin/testimonials/{testimonial}/approve`      | Approve testimonial           |
+| POST   | `/admin/testimonials/{testimonial}/reject`       | Reject testimonial            |
 
 ---
 
@@ -168,3 +186,4 @@ All web routes require authentication via session (Laravel web middleware). API 
 | Client Booking Create | 10/min             |
 | Worker Report         | 3/min per user      |
 | Message Polling       | 30/min             |
+| AI Chatbot            | 20/min per IP      |

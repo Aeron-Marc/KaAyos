@@ -72,7 +72,7 @@ Three user roles, each with a dedicated dashboard:
 
 | Role   | Dashboard Tech | Description                                                  |
 | ------ | -------------- | ------------------------------------------------------------ |
-| Admin  | Blade          | Manage users, workers, verifications, service categories, services, bookings, disputes, and reports |
+| Admin  | Blade          | Manage users, workers, verifications, service categories, services, bookings, disputes, testimonials, and reports |
 | Client | Blade + vanilla JS | Browse/search workers, book services, message workers, leave reviews, manage account |
 | Worker | Blade          | View/update job status, manage schedule, track earnings, upload documents & portfolio, manage profile |
 
@@ -126,6 +126,7 @@ Statuses: `pending` → `approved` | `rejected`
 - **AI Chatbot** — Floating assistant on the homepage for guest worker search
 - **Worker Search** — Filter by service category and barangay location
 - **Worker Profiles** — Public profiles with ratings, reviews, skills, and portfolio
+- **Testimonials** — User-submitted testimonials displayed after admin approval
 
 ## AI Chatbot
 

@@ -10,9 +10,9 @@ A home services marketplace platform connecting clients with verified workers in
 
 | Role   | Capabilities |
 |--------|-------------|
-| Admin  | Manage users, workers, verifications, service categories, services, bookings, disputes, and reports |
-| Client | Browse/search workers, book services, message workers, leave reviews, manage account |
-| Worker | View/update job status, manage schedule, track earnings, upload documents & portfolio, manage profile |
+| Admin  | Manage users, workers, verifications, service categories, services, bookings, disputes, testimonials, and reports |
+| Client | Browse/search workers, book services, message workers, leave reviews, submit testimonials, manage account |
+| Worker | View/update job status, manage schedule, track earnings, upload documents & portfolio, submit testimonials, manage profile |
 
 ### Core Flows
 
@@ -23,6 +23,7 @@ A home services marketplace platform connecting clients with verified workers in
 - **Worker Reporting** — Clients can report workers after completed bookings; stored as disputes of type `worker_report`
 - **Realtime Chat** — Client-worker messaging via Laravel Reverb
 - **Realtime Notifications** — Booking updates, messages, verification status
+- **Testimonials** — Users submit testimonials; admin approves/rejects; approved testimonials appear on landing page
 - **Dispute Resolution** — Admin-mediated dispute handling for booking disputes and worker reports
 - **Earnings Tracking** — Worker earnings report with export
 - **Profile Management** — Avatar, contact info, barangay, preferences
@@ -34,6 +35,7 @@ A home services marketplace platform connecting clients with verified workers in
 - **AI Chatbot** — Floating assistant for guest worker search and recommendations
 - **Worker Search & Filter** — Filter by service category and barangay location
 - **Worker Profiles** — Public profiles with ratings, reviews, skills, and portfolio
+- **Testimonials** — User-submitted testimonials displayed after admin approval
 
 ### Admin Reports
 
