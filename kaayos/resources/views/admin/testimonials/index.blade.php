@@ -25,28 +25,11 @@
 
 <div class="filters-bar">
     <div class="filter-group">
-        <label>Status</label>
-        <select onchange="window.location.href='{{ route('admin.testimonials.index') }}?status='+this.value">
-            <option value="">All</option>
-            <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-            <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>Approved</option>
-            <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
-        </select>
-    </div>
-    <div class="filter-group">
         <form method="GET" action="{{ route('admin.testimonials.index') }}" style="display:flex;gap:8px;align-items:center;">
-            @if(request('status'))
-                <input type="hidden" name="status" value="{{ request('status') }}">
-            @endif
             <input type="text" name="search" placeholder="Search testimonials..." value="{{ request('search') }}" style="min-width:220px;">
             <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-search"></i> Search</button>
         </form>
     </div>
-    @if($pendingCount > 0)
-        <div style="margin-left:auto;">
-            <span class="status-badge status-pending"><i class="fa-solid fa-clock"></i> {{ $pendingCount }} Pending</span>
-        </div>
-    @endif
 </div>
 
 <div class="table-container">
@@ -109,12 +92,6 @@
                                 <a href="{{ route('admin.testimonials.show', $testimonial) }}" class="btn btn-secondary btn-sm">
                                     <i class="fa-solid fa-eye"></i> View
                                 </a>
-                                @if($testimonial->status === 'pending')
-                                    <form method="POST" action="{{ route('admin.testimonials.approve', $testimonial) }}" style="display:inline;">
-                                        @csrf
-                                        <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> Approve</button>
-                                    </form>
-                                @endif
                             </div>
                         </td>
                     </tr>

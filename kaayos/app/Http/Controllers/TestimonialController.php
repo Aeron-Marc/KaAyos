@@ -19,10 +19,9 @@ class TestimonialController extends Controller
             ->latest()
             ->paginate(10);
 
-        $pendingCount = Testimonial::where('user_id', Auth::id())->pending()->count();
         $approvedCount = Testimonial::where('user_id', Auth::id())->approved()->count();
 
-        return view($this->viewPath() . '.index', compact('testimonials', 'pendingCount', 'approvedCount'));
+        return view($this->viewPath() . '.index', compact('testimonials', 'approvedCount'));
     }
 
     public function create()
@@ -47,15 +46,16 @@ class TestimonialController extends Controller
 
         Testimonial::create([
             'user_id'          => $user->id,
-            'name'             => $user->name,
+            'name'             => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->name,
             'role'             => $user->role === 'worker' ? 'Trabahador, ' . ($user->barangay ?? 'Tuy') : 'Homeowner, ' . ($user->barangay ?? 'Tuy'),
             'content'          => $validated['content'],
             'rating'           => $validated['rating'],
             'avatar_initials'  => $initials,
-            'status'           => 'pending',
+            'status'           => 'approved',
+            'is_active'        => true,
         ]);
 
         return redirect()->route(auth()->user()->role === 'worker' ? 'worker.testimonials.index' : 'client.testimonials.index')
-            ->with('success', 'Your testimonial has been submitted and is awaiting admin approval.');
+            ->with('success', 'Your testimonial has been published and is now visible on the landing page.');
     }
 }

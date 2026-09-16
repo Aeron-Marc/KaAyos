@@ -13,7 +13,7 @@
 <div class="header">
     <div class="header-left">
         <h1><i class="fa-solid fa-quote-left"></i> Testimonial Details</h1>
-        <p>Review and manage this testimonial</p>
+        <p>View this testimonial</p>
     </div>
 </div>
 
@@ -62,25 +62,10 @@
                 </p>
             </div>
         </div>
-
-        @if($testimonial->admin_notes)
-            <div class="detail-section" style="border-bottom:none;">
-                <div class="detail-label" style="margin-bottom:12px;">
-                    @if($testimonial->status === 'rejected')
-                        Rejection Reason
-                    @else
-                        Admin Notes
-                    @endif
-                </div>
-                <div style="background:{{ $testimonial->status === 'rejected' ? 'rgba(239,68,68,.06)' : 'rgba(26,111,196,.05)' }};border:1px solid {{ $testimonial->status === 'rejected' ? 'rgba(239,68,68,.15)' : 'rgba(26,111,196,.15)' }};border-radius:10px;padding:14px;font-size:.9rem;color:{{ $testimonial->status === 'rejected' ? '#B91C1C' : 'var(--g7)' }};">
-                    {{ $testimonial->admin_notes }}
-                </div>
-            </div>
-        @endif
     </div>
 
     <div>
-        <div class="card" style="margin-bottom:20px;">
+        <div class="card">
             <div class="card-title"><i class="fa-solid fa-user"></i> User Info</div>
             <div class="detail-section" style="border-bottom:none;">
                 <div class="detail-row">
@@ -103,54 +88,6 @@
                 @endif
             </div>
         </div>
-
-        @if($testimonial->status === 'pending')
-            <div class="card">
-                <div class="card-title"><i class="fa-solid fa-gavel"></i> Actions</div>
-
-                <form method="POST" action="{{ route('admin.testimonials.approve', $testimonial) }}" style="margin-bottom:16px;">
-                    @csrf
-                    <button type="submit" class="btn btn-success" style="width:100%;">
-                        <i class="fa-solid fa-check"></i> Approve Testimonial
-                    </button>
-                </form>
-
-                <form method="POST" action="{{ route('admin.testimonials.reject', $testimonial) }}">
-                    @csrf
-                    <div class="form-group" style="margin-bottom:12px;">
-                        <label class="form-label" for="rejection_reason">Rejection Reason (required)</label>
-                        <textarea name="rejection_reason" id="rejection_reason" class="form-group" rows="3" placeholder="Provide a reason for rejecting this testimonial..." required style="width:100%;padding:10px 14px;border:1.5px solid var(--g1);border-radius:8px;font-size:.9rem;font-family:'Inter',sans-serif;resize:vertical;"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-danger" style="width:100%;" onclick="return confirm('Are you sure you want to reject this testimonial?')">
-                        <i class="fa-solid fa-xmark"></i> Reject Testimonial
-                    </button>
-                </form>
-            </div>
-        @elseif($testimonial->status === 'rejected')
-            <div class="card">
-                <div class="card-title"><i class="fa-solid fa-gavel"></i> Actions</div>
-                <form method="POST" action="{{ route('admin.testimonials.approve', $testimonial) }}">
-                    @csrf
-                    <button type="submit" class="btn btn-success" style="width:100%;">
-                        <i class="fa-solid fa-check"></i> Approve Testimonial
-                    </button>
-                </form>
-            </div>
-        @elseif($testimonial->status === 'approved')
-            <div class="card">
-                <div class="card-title"><i class="fa-solid fa-gavel"></i> Actions</div>
-                <form method="POST" action="{{ route('admin.testimonials.reject', $testimonial) }}">
-                    @csrf
-                    <div class="form-group" style="margin-bottom:12px;">
-                        <label class="form-label" for="rejection_reason">Rejection Reason</label>
-                        <textarea name="rejection_reason" id="rejection_reason" class="form-group" rows="3" placeholder="Provide a reason..." style="width:100%;padding:10px 14px;border:1.5px solid var(--g1);border-radius:8px;font-size:.9rem;font-family:'Inter',sans-serif;resize:vertical;"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-danger" style="width:100%;" onclick="return confirm('This will remove the testimonial from the landing page. Continue?')">
-                        <i class="fa-solid fa-xmark"></i> Reject & Remove
-                    </button>
-                </form>
-            </div>
-        @endif
 
         <a href="{{ route('admin.testimonials.index') }}" class="back-link" style="display:inline-flex;margin-top:16px;">
             <i class="fa-solid fa-arrow-left"></i> Back to Testimonials

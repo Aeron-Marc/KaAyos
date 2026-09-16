@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Dispute;
-use App\Models\Testimonial;
 use App\Models\User;
 use App\Models\WorkerDocument;
 
@@ -24,7 +23,6 @@ class DashboardController extends Controller
         $cancelledBookings = Booking::cancelled()->count();
         $pendingVerifications = WorkerDocument::where('status', 'pending')->count();
         $openDisputes = Dispute::open()->count();
-        $pendingTestimonials = Testimonial::pending()->count();
 
         $totalRevenue = Booking::completed()->sum('price');
         $revenueThisMonth = Booking::completed()
@@ -42,7 +40,7 @@ class DashboardController extends Controller
         return view('admin.dashboard', compact(
             'totalUsers', 'totalClients', 'totalWorkers', 'suspendedUsers',
             'totalBookings', 'activeBookings', 'completedBookings', 'cancelledBookings',
-            'pendingVerifications', 'openDisputes', 'pendingTestimonials',
+            'pendingVerifications', 'openDisputes',
             'totalRevenue', 'revenueThisMonth', 'avgBookingValue',
             'completionRate',
             'recentBookings', 'bookingTrend', 'bookingStatusDist', 'topCategories'

@@ -59,12 +59,6 @@
                 {{ __('nav.reviews') }}
             </a>
 
-            <a href="{{ route('client.testimonials.index') }}"
-               class="nav-item {{ request()->routeIs('client.testimonials.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-quote-left nav-icon" aria-hidden="true"></i>
-                {{ __('nav.testimonials') }}
-            </a>
-
             <a href="{{ route('client.suggestions') }}"
                class="nav-item {{ request()->routeIs('client.suggestions*') ? 'active' : '' }}">
                 <i class="fa-solid fa-lightbulb nav-icon" aria-hidden="true"></i>

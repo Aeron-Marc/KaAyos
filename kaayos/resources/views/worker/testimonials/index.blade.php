@@ -29,7 +29,6 @@
 
 <div class="testimonials-header">
     <div class="testimonials-stats">
-        <div class="stat-pill"><i class="fa-solid fa-clock"></i> {{ $pendingCount }} Pending</div>
         <div class="stat-pill approved"><i class="fa-solid fa-circle-check"></i> {{ $approvedCount }} Approved</div>
     </div>
     <a href="{{ route('worker.testimonials.create') }}" class="btn-new-testimonial">
