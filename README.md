@@ -82,7 +82,8 @@ Three user roles, each with a dedicated dashboard:
 new → accepted → en_route → in_progress → completed
 ```
 
-- **Cancellation** allowed from any status except `completed` or `cancelled`.
+- **Cancellation** allowed from any status except `completed`, `cancelled`, or `declined`.
+- **Decline** — Workers can decline new bookings. Only `new` bookings can be declined. A decline reason is optional. Declined bookings become a terminal status.
 - **Auto-Cancellation** — Bookings are automatically cancelled when stale:
   - `new` bookings with no worker response after 24 hours
   - `accepted` jobs where the worker doesn't start within 60 minutes of the scheduled time (no-show)
@@ -105,6 +106,7 @@ new → accepted → en_route → in_progress → completed
 | `in_progress`| Work is being performed                  | No update for 12 hours |
 | `completed`  | Job finished successfully                | — |
 | `cancelled`  | Cancelled by client, worker, or admin    | — |
+| `declined`   | Declined by worker (new bookings only)   | — |
 
 ## Platform Fee
 
@@ -126,7 +128,7 @@ Statuses: `pending` → `approved` | `rejected`
 - **AI Chatbot** — Floating assistant on the homepage for guest worker search
 - **Worker Search** — Filter by service category and barangay location
 - **Worker Profiles** — Public profiles with ratings, reviews, skills, and portfolio
-- **Testimonials** — User-submitted testimonials displayed after admin approval
+- **Testimonials** — User-submitted testimonials, auto-approved on submission, displayed on the landing page
 
 ## AI Chatbot
 

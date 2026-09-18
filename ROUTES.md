@@ -98,6 +98,7 @@ All web routes require authentication via session (Laravel web middleware). API 
 | PATCH  | `/worker/jobs/{booking}/status`                     | Update job status        |
 | POST   | `/worker/jobs/{booking}/photo`                      | Upload job photo         |
 | POST   | `/worker/jobs/{booking}/cancel`                     | Cancel a job             |
+| POST   | `/worker/jobs/{booking}/decline`                    | Decline a new job        |
 | POST   | `/worker/jobs/{booking}/reschedule`                 | Request reschedule       |
 | POST   | `/worker/jobs/{booking}/reschedule-respond`         | Respond to reschedule    |
 | POST   | `/worker/jobs/{booking}/confirm-complete`           | Confirm job completion   |
@@ -170,8 +171,6 @@ All web routes require authentication via session (Laravel web middleware). API 
 | GET    | `/admin/reports/print`                           | Print report preview          |
 | GET    | `/admin/testimonials`                            | Testimonial management        |
 | GET    | `/admin/testimonials/{testimonial}`              | Testimonial detail            |
-| POST   | `/admin/testimonials/{testimonial}/approve`      | Approve testimonial           |
-| POST   | `/admin/testimonials/{testimonial}/reject`       | Reject testimonial            |
 
 ---
 
@@ -181,6 +180,8 @@ All web routes require authentication via session (Laravel web middleware). API 
 | --------------------- | ------------------ |
 | Login                 | 5/min per email+IP |
 | Registration          | 3/hr per IP        |
+| Password OTP Send     | 3/hr per user      |
+| Password OTP Verify   | 5/hr per user      |
 | Email OTP Send        | 3/hr per user      |
 | Email OTP Verify      | 5/hr per user      |
 | Client Booking Create | 10/min             |

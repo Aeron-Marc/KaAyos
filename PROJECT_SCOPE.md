@@ -23,7 +23,7 @@ A home services marketplace platform connecting clients with verified workers in
 - **Worker Reporting** — Clients can report workers after completed bookings; stored as disputes of type `worker_report`
 - **Realtime Chat** — Client-worker messaging via Laravel Reverb
 - **Realtime Notifications** — Booking updates, messages, verification status
-- **Testimonials** — Users submit testimonials; admin approves/rejects; approved testimonials appear on landing page
+- **Testimonials** — Users submit testimonials, auto-approved on submission; approved testimonials appear on landing page
 - **Dispute Resolution** — Admin-mediated dispute handling for booking disputes and worker reports
 - **Earnings Tracking** — Worker earnings report with export
 - **Profile Management** — Avatar, contact info, barangay, preferences
@@ -35,7 +35,7 @@ A home services marketplace platform connecting clients with verified workers in
 - **AI Chatbot** — Floating assistant for guest worker search and recommendations
 - **Worker Search & Filter** — Filter by service category and barangay location
 - **Worker Profiles** — Public profiles with ratings, reviews, skills, and portfolio
-- **Testimonials** — User-submitted testimonials displayed after admin approval
+- **Testimonials** — User-submitted testimonials, auto-approved on submission, displayed on the landing page
 
 ### Admin Reports
 
@@ -45,7 +45,7 @@ A home services marketplace platform connecting clients with verified workers in
 
 ### Booking Statuses
 
-`new` → `accepted` → `en_route` → `in_progress` → `completed` | `cancelled`
+`new` → `accepted` → `en_route` → `in_progress` → `completed` | `cancelled` | `declined`
 
 ### Platform Fee
 
