@@ -659,7 +659,10 @@ function openJobModal(index) {
     // Footer
     var footer = document.getElementById('jobModalFooter');
     if (job.raw_status === 'cancelled' || job.raw_status === 'completed') {
-        footer.innerHTML = '<button type="button" class="btn btn-outline" onclick="closeJobModal()">Close</button>';
+        var testimonialLink = job.raw_status === 'completed'
+            ? '<a href="{{ route('worker.testimonials.create') }}" class="btn btn-outline"><i class="fa-solid fa-quote-left" aria-hidden="true"></i> Share a Testimonial</a>'
+            : '';
+        footer.innerHTML = testimonialLink + '<button type="button" class="btn btn-outline" onclick="closeJobModal()">Close</button>';
     } else {
         var nextLabels = { 'new':'Accept', 'accepted':'Mark En Route', 'en_route':'Start Job', 'in_progress':'Complete' };
         var nextLabel = nextLabels[job.raw_status] || 'Next';
