@@ -13,7 +13,7 @@ class PublicWorkerController extends Controller
             abort(404);
         }
 
-        $worker->load('workerProfile.portfolios', 'workerDocuments');
+        $worker->load('workerProfile.portfolios', 'workerDocuments', 'providerServices.service');
 
         $reviews = $worker->reviewsReceived()->with('client')->latest()->get();
         $reviewCount = $reviews->count();
@@ -21,13 +21,18 @@ class PublicWorkerController extends Controller
             ? (float) round((float) $reviews->avg('rating'), 1)
             : 0.0;
 
+        $workerServices = $worker->providerServices
+            ->filter(fn ($ps) => $ps->service && $ps->is_available)
+            ->values();
+
         return view('worker.public-show', [
-            'worker'        => $worker,
-            'workerProfile' => $worker->workerProfile,
-            'documents'     => $worker->workerDocuments,
-            'reviews'       => $reviews,
-            'reviewCount'   => $reviewCount,
-            'averageRating' => $averageRating,
+            'worker'         => $worker,
+            'workerProfile'  => $worker->workerProfile,
+            'documents'      => $worker->workerDocuments,
+            'reviews'        => $reviews,
+            'reviewCount'    => $reviewCount,
+            'averageRating'  => $averageRating,
+            'workerServices' => $workerServices,
         ]);
     }
 }

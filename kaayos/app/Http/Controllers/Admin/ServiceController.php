@@ -44,6 +44,8 @@ class ServiceController extends Controller
             'slug'        => Str::slug($request->input('slug')),
             'description' => $request->input('description'),
             'base_price'  => $request->input('base_price'),
+            'min_price'   => $request->input('min_price'),
+            'max_price'   => $request->input('max_price'),
         ]);
 
         return redirect()->route('admin.services.index')
@@ -64,6 +66,8 @@ class ServiceController extends Controller
             'slug'        => Str::slug($request->input('slug')),
             'description' => $request->input('description'),
             'base_price'  => $request->input('base_price'),
+            'min_price'   => $request->input('min_price'),
+            'max_price'   => $request->input('max_price'),
             'is_active'   => $request->boolean('is_active', true),
         ]);
 

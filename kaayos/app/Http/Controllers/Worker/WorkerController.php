@@ -297,11 +297,11 @@ class WorkerController extends Controller
                 $type = $typeMap[$notif->type] ?? 'system';
 
                 $url = match ($type) {
-                    'message' => route('worker.messages', isset($data['conversation_id']) ? ['conversation' => $data['conversation_id']] : []),
-                    'booking' => route('worker.schedule'),
-                    'review'  => route('worker.schedule'),
-                    'earnings'=> route('worker.earnings'),
-                    default   => route('worker.dashboard'),
+                    'message'  => route('worker.messages', isset($data['conversation_id']) ? ['conversation' => $data['conversation_id']] : []),
+                    'booking'  => route('worker.schedule'),
+                    'review'   => route('worker.schedule'),
+                    'earnings' => route('worker.earnings'),
+                    default    => route('worker.dashboard'),
                 };
 
                 return [
@@ -619,6 +619,7 @@ class WorkerController extends Controller
                 'workerProfile' => $profile,
                 'portfolios'    => $profile->portfolios()->latest()->get(),
                 'documents'     => $documents,
+                'categories'    => \App\Models\ServiceCategory::active()->orderBy('name')->get(),
             ]
         ));
     }
@@ -633,7 +634,7 @@ class WorkerController extends Controller
             'phone'              => ['nullable', 'string', 'max:20', 'regex:/^(?:\+63|0)[0-9]{10}$/'],
             'city'               => ['nullable', 'string', 'max:255'],
             'language'           => ['required', 'string', Rule::in(['English', 'Filipino'])],
-            'service_category'   => ['nullable', 'string', 'max:255'],
+            'service_category'   => ['nullable', 'string', Rule::in(\App\Models\ServiceCategory::pluck('name'))],
             'bio'                => ['nullable', 'string', 'max:2000'],
             'skills'             => ['nullable', 'string'],
             'spoken_languages'   => ['nullable', 'string'],
@@ -793,6 +794,116 @@ class WorkerController extends Controller
     public function documents(): View
     {
         return view('worker.documents.index', $this->shared());
+    }
+
+    public function services(): View
+    {
+        $workerServices = \App\Models\ProviderService::where('user_id', auth()->id())
+            ->with('service.category')
+            ->get();
+
+        $linkedServiceIds = $workerServices->pluck('service_id')->toArray();
+
+        $categoryName = auth()->user()->service_category;
+        $availableServices = \App\Models\Service::whereHas('category', fn ($q) => $q->where('name', $categoryName))
+            ->whereNotIn('id', $linkedServiceIds)
+            ->with('category')
+            ->get();
+
+        return view('worker.services.index', array_merge($this->shared(), [
+            'workerServices'    => $workerServices,
+            'availableServices' => $availableServices,
+        ]));
+    }
+
+    public function addService(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        $validated = $request->validate([
+            'service_id' => ['required', 'exists:services,id'],
+        ]);
+
+        $service = \App\Models\Service::findOrFail($validated['service_id']);
+
+        $categoryName = auth()->user()->service_category;
+        if ($service->category->name !== $categoryName) {
+            return back()->withErrors(['service_id' => 'This service is not in your category.']);
+        }
+
+        $exists = \App\Models\ProviderService::where('user_id', auth()->id())
+            ->where('service_id', $service->id)
+            ->exists();
+
+        if ($exists) {
+            return back()->withErrors(['service_id' => 'You already offer this service.']);
+        }
+
+        \App\Models\ProviderService::create([
+            'user_id'    => auth()->id(),
+            'service_id' => $service->id,
+        ]);
+
+        $this->computeAndSaveHourlyRate(auth()->id());
+
+        return back()->with('success', "{$service->name} added to your services.");
+    }
+
+    public function updateServicePrice(Request $request, \App\Models\Service $service): \Illuminate\Http\RedirectResponse
+    {
+        $providerService = \App\Models\ProviderService::where('user_id', auth()->id())
+            ->where('service_id', $service->id)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'custom_price' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $providerService->update([
+            'custom_price' => $validated['custom_price'] ?: null,
+        ]);
+
+        $this->computeAndSaveHourlyRate(auth()->id());
+
+        return back()->with('success', 'Price updated.');
+    }
+
+    public function toggleService(\App\Models\Service $service): \Illuminate\Http\RedirectResponse
+    {
+        $providerService = \App\Models\ProviderService::where('user_id', auth()->id())
+            ->where('service_id', $service->id)
+            ->firstOrFail();
+
+        $providerService->update([
+            'is_available' => !$providerService->is_available,
+        ]);
+
+        $this->computeAndSaveHourlyRate(auth()->id());
+
+        $status = $providerService->is_available ? 'now available' : 'now hidden';
+        return back()->with('success', "{$service->name} is {$status}.");
+    }
+
+    public function removeService(\App\Models\Service $service): \Illuminate\Http\RedirectResponse
+    {
+        \App\Models\ProviderService::where('user_id', auth()->id())
+            ->where('service_id', $service->id)
+            ->delete();
+
+        $this->computeAndSaveHourlyRate(auth()->id());
+
+        return back()->with('success', "{$service->name} removed from your services.");
+    }
+
+    protected function computeAndSaveHourlyRate(int $userId): void
+    {
+        $prices = \App\Models\ProviderService::where('user_id', $userId)
+            ->where('is_available', true)
+            ->get()
+            ->map(fn ($ps) => (float) ($ps->custom_price ?? $ps->service?->base_price ?? 0))
+            ->filter(fn ($p) => $p > 0);
+
+        $avg = $prices->isNotEmpty() ? round($prices->avg(), 2) : null;
+
+        \App\Models\WorkerProfile::where('user_id', $userId)->update(['hourly_rate' => $avg]);
     }
 
     public function pollMessages(Request $request, Conversation $conversation): JsonResponse

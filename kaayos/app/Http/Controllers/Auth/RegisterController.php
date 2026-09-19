@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Support\TuyBarangays;
 use Illuminate\Auth\Events\Registered;
@@ -19,7 +20,8 @@ class RegisterController extends Controller
     public function create(): View
     {
         return view('auth.register', [
-            'barangays' => TuyBarangays::allBarangays(),
+            'barangays'  => TuyBarangays::allBarangays(),
+            'categories' => ServiceCategory::active()->orderBy('name')->get(),
         ]);
     }
 
@@ -38,7 +40,7 @@ class RegisterController extends Controller
         ];
 
         if ($request->input('role') === 'worker') {
-            $rules['service_category'] = ['required', 'string'];
+            $rules['service_category'] = ['required', 'string', Rule::in(ServiceCategory::pluck('name'))];
             $rules['barangay']         = ['required', Rule::in(TuyBarangays::allBarangays())];
         }
 

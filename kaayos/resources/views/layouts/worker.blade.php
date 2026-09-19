@@ -59,6 +59,12 @@
                 {{ __('nav.my_profile') }}
             </a>
 
+            <a href="{{ route('worker.services') }}"
+               class="nav-item {{ request()->routeIs('worker.services*') ? 'active' : '' }}">
+                <i class="fa-solid fa-list-check nav-icon" aria-hidden="true"></i>
+                {{ __('nav.my_services') }}
+            </a>
+
             <a href="{{ route('worker.documents') }}"
                class="nav-item {{ request()->routeIs('worker.documents*') ? 'active' : '' }}">
                 <i class="fa-solid fa-file-upload nav-icon" aria-hidden="true"></i>

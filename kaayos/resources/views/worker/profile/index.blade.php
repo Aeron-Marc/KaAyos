@@ -320,7 +320,7 @@
                     <textarea id="bio" name="bio" class="review-textarea" placeholder="Tell clients about yourself, your experience, and the services you offer…">{{ old('bio', $workerProfile->bio) }}</textarea>
                 </div>
                 <div class="form-group">
-                    <label>Skills</label>
+                    <label>Specialties</label>
                     <div class="tag-input-wrap">
                         <div class="tag-list" id="skills-tag-list">
                             @if($workerProfile->skills)
@@ -354,8 +354,8 @@
                         <label for="service_category">Primary Category</label>
                         <select id="service_category" name="service_category">
                             <option value="">Select category</option>
-                            @foreach(['Plumbing', 'Electrical', 'Cleaning', 'Carpentry', 'Painting', 'Aircon', 'Landscaping', 'General Repair'] as $cat)
-                                <option value="{{ $cat }}" {{ old('service_category', auth()->user()->service_category) === $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->name }}" {{ old('service_category', auth()->user()->service_category) === $cat->name ? 'selected' : '' }}>{{ $cat->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -364,11 +364,6 @@
                         <input type="number" id="years_of_experience" name="years_of_experience" min="0" max="100"
                                value="{{ old('years_of_experience', $workerProfile->years_of_experience) }}" placeholder="e.g. 5">
                     </div>
-                </div>
-                <div class="form-group">
-                    <label for="hourly_rate">Hourly Rate (₱)</label>
-                    <input type="number" id="hourly_rate" name="hourly_rate" min="0" step="0.01"
-                           value="{{ old('hourly_rate', $workerProfile->hourly_rate) }}" placeholder="e.g. 400">
                 </div>
             </div>
 

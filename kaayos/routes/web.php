@@ -141,6 +141,12 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::get('/testimonials', [TestimonialController::class, 'index'])->name('testimonials.index');
     Route::get('/testimonials/create', [TestimonialController::class, 'create'])->name('testimonials.create');
     Route::post('/testimonials', [TestimonialController::class, 'store'])->name('testimonials.store');
+
+    Route::get('/services', [WorkerController::class, 'services'])->name('services');
+    Route::post('/services', [WorkerController::class, 'addService'])->name('services.add');
+    Route::put('/services/{service}/price', [WorkerController::class, 'updateServicePrice'])->name('services.price');
+    Route::patch('/services/{service}/toggle', [WorkerController::class, 'toggleService'])->name('services.toggle');
+    Route::delete('/services/{service}', [WorkerController::class, 'removeService'])->name('services.remove');
 });
 
 Route::get('/email/verify', function () {

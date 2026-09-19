@@ -82,7 +82,7 @@
             <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px;text-align:left;">
                 @if($workerProfile && $workerProfile->hourly_rate)
                     <div style="display:flex;justify-content:space-between;font-size:.88rem;">
-                        <span style="color:var(--g5);">Rate</span>
+                        <span style="color:var(--g5);">General Rate</span>
                         <span style="font-weight:600;">₱{{ number_format($workerProfile->hourly_rate) }}/hr</span>
                     </div>
                 @endif
@@ -182,15 +182,38 @@
                 </div>
             @endif
 
-            {{-- Skills --}}
+            {{-- Specialties --}}
             @if($workerProfile && !empty($workerProfile->skills))
                 <div class="card-panel">
                     <div class="card-panel-header">
-                        <h3 class="section-title">Skills</h3>
+                        <h3 class="section-title">Specialties</h3>
                     </div>
                     <div class="skill-tags" style="margin-top:4px;">
                         @foreach($workerProfile->skills as $skill)
                             <span class="skill-tag">{{ $skill }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Services Offered --}}
+            @if($workerServices && $workerServices->count() > 0)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Services Offered</h3>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:8px;">
+                        @foreach($workerServices as $ps)
+                            <div style="background:var(--off);border:1px solid var(--g1);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;">
+                                <span style="font-size:.85rem;font-weight:600;color:var(--b9);">{{ $ps->service->name }}</span>
+                                <span style="font-size:.8rem;color:var(--b6);font-weight:500;">
+                                    @if($ps->custom_price)
+                                        ₱{{ number_format($ps->custom_price, 2) }}
+                                    @else
+                                        ₱{{ number_format($ps->service->base_price, 2) }}
+                                    @endif
+                                </span>
+                            </div>
                         @endforeach
                     </div>
                 </div>
@@ -329,10 +352,30 @@
                 @csrf
                 <input type="hidden" name="worker_id" value="{{ $worker->id }}">
 
+                @php
+                    $workerServicesJson = $workerServices->map(fn ($ps) => [
+                        'id'       => $ps->service_id,
+                        'name'     => $ps->service->name,
+                        'price'    => (float) ($ps->custom_price ?? $ps->service->base_price),
+                        'category' => $worker->service_category ?? 'General',
+                    ])->values()->toArray();
+                @endphp
+                <input type="hidden" id="worker-services-json" value="{{ json_encode($workerServicesJson) }}">
+
                 <div class="form-group">
                     <label>Service</label>
-                    <input type="text" class="form-control" value="{{ $worker->service_category ?? 'General' }}" readonly style="background:#f5f5f5;cursor:default;">
-                    <input type="hidden" name="service_category" value="{{ $worker->service_category ?? 'General' }}">
+                    @if($workerServices && $workerServices->count() > 0)
+                        <select name="service_id" id="service-select" class="form-control" required onchange="onServiceChange()">
+                            <option value="">Select a service...</option>
+                            @foreach($workerServices as $ps)
+                                <option value="{{ $ps->service_id }}">{{ $ps->service->name }} - ₱{{ number_format($ps->custom_price ?? $ps->service->base_price, 2) }}</option>
+                            @endforeach
+                        </select>
+                        <input type="hidden" name="service_category" id="service_category_hidden" value="">
+                    @else
+                        <input type="text" class="form-control" value="{{ $worker->service_category ?? 'General' }}" readonly style="background:#f5f5f5;cursor:default;">
+                        <input type="hidden" name="service_category" value="{{ $worker->service_category ?? 'General' }}">
+                    @endif
                 </div>
 
                 <div class="form-group">
@@ -377,12 +420,6 @@
                         <span class="notes-counter">0 / 2000</span>
                     </div>
                 </div>
-
-                @if($worker->workerProfile && $worker->workerProfile->hourly_rate)
-                    <div style="font-size:.85rem;color:var(--g5);margin-bottom:12px;">
-                        Rate: <strong>₱{{ number_format($worker->workerProfile->hourly_rate) }}/hr</strong>
-                    </div>
-                @endif
 
                 <div class="agreement-box">
                     <p class="agreement-title">Service Agreement</p>
@@ -472,14 +509,36 @@ function validateSchedule() {
 }
 
 function updateAgreementSummary() {
-    const svc  = document.querySelector('[name="service_category"]')?.value || '—';
+    const select = document.getElementById('service-select');
+    const svcHidden = document.getElementById('service_category_hidden');
+    let svcName = '—';
+    let price = null;
+
+    if (select && select.value) {
+        const opt = select.options[select.selectedIndex];
+        svcName = opt.textContent.split(' - ')[0].trim();
+        const svcs = JSON.parse(document.getElementById('worker-services-json')?.value || '[]');
+        const found = svcs.find(s => String(s.id) === String(select.value));
+        if (found) {
+            price = found.price;
+            if (svcHidden) svcHidden.value = found.category;
+        }
+    } else {
+        const fallback = document.querySelector('[name="service_category"]');
+        if (fallback) svcName = fallback.value || '—';
+    }
+
     const dt   = document.querySelector('[name="scheduled_at"]')?.value || '—';
-    const addr = [document.querySelector('[name="house_no"]')?.value, document.querySelector('[name="street"]')?.value, document.querySelector('[name="barangay"]')?.value].filter(Boolean).join(', ') || '—';
-    const pr   = document.querySelector('[name="price"]')?.value;
-    document.getElementById('agree-service').textContent  = svc;
+    const addr = [document.querySelector('[name="house_no"]')?.value, document.querySelector('[name="barangay"]')?.value].filter(Boolean).join(', ') || '—';
+
+    document.getElementById('agree-service').textContent  = svcName;
     document.getElementById('agree-date').textContent     = dt ? new Date(dt).toLocaleString('en-PH',{dateStyle:'long',timeStyle:'short'}) : '—';
     document.getElementById('agree-location').textContent = addr;
-    document.getElementById('agree-price').textContent    = pr ? '₱' + Number(pr).toLocaleString() : '—';
+    document.getElementById('agree-price').textContent    = price != null ? '\u20B1' + Number(price).toLocaleString() : '—';
+}
+
+function onServiceChange() {
+    updateAgreementSummary();
 }
 
 function updateNotesCounter() {

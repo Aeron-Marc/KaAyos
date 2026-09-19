@@ -225,7 +225,7 @@ a{text-decoration:none;color:inherit}
       <div class="profile-details">
         @if($workerProfile && $workerProfile->hourly_rate)
           <div class="detail-row">
-            <span class="label">Rate</span>
+            <span class="label">General Rate</span>
             <span class="value">₱{{ number_format($workerProfile->hourly_rate) }}/hr</span>
           </div>
         @endif
@@ -275,10 +275,30 @@ a{text-decoration:none;color:inherit}
 
       @if($workerProfile && !empty($workerProfile->skills))
         <div class="content-card">
-          <h3>Skills</h3>
+          <h3>Specialties</h3>
           <div class="skill-tags">
             @foreach($workerProfile->skills as $skill)
               <span class="skill-tag">{{ $skill }}</span>
+            @endforeach
+          </div>
+        </div>
+      @endif
+
+      @if($workerServices && $workerServices->count() > 0)
+        <div class="content-card">
+          <h3><i class="fa-solid fa-list-check" aria-hidden="true"></i> Services Offered</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:10px;">
+            @foreach($workerServices as $ps)
+              <div style="background:var(--off);border:1px solid var(--g1);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;">
+                <span style="font-size:.88rem;font-weight:600;color:var(--b9);">{{ $ps->service->name }}</span>
+                <span style="font-size:.82rem;color:var(--b6);font-weight:500;">
+                  @if($ps->custom_price)
+                    ₱{{ number_format($ps->custom_price, 2) }}
+                  @else
+                    ₱{{ number_format($ps->service->base_price, 2) }}
+                  @endif
+                </span>
+              </div>
             @endforeach
           </div>
         </div>

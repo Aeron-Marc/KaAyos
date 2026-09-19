@@ -605,13 +605,14 @@ class ClientController extends Controller
     public function storeBooking(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'worker_id'       => ['required', 'exists:users,id'],
+            'worker_id'        => ['required', 'exists:users,id'],
+            'service_id'       => ['nullable', 'exists:services,id'],
             'service_category' => ['required', 'string', 'max:255'],
-            'scheduled_at'    => ['required', 'date', 'after:now'],
-            'house_no'        => ['required', 'string', 'max:255'],
-            'barangay'        => ['required', 'string', 'max:255'],
-            'notes'           => ['nullable', 'string', 'max:2000'],
-            'price'           => ['nullable', 'numeric', 'min:0'],
+            'scheduled_at'     => ['required', 'date', 'after:now'],
+            'house_no'         => ['required', 'string', 'max:255'],
+            'barangay'         => ['required', 'string', 'max:255'],
+            'notes'            => ['nullable', 'string', 'max:2000'],
+            'price'            => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $worker = User::findOrFail($validated['worker_id']);
@@ -629,6 +630,36 @@ class ClientController extends Controller
             return response()->json(['success' => false, 'message' => "This worker hasn't set their availability yet. Booking is currently unavailable."], 422);
         }
 
+        // Resolve service and price from provider_services
+        $price = $validated['price'] ?? 0;
+        $serviceCategory = $validated['service_category'];
+
+        if (!empty($validated['service_id'])) {
+            $providerService = \App\Models\ProviderService::where('user_id', $worker->id)
+                ->where('service_id', $validated['service_id'])
+                ->where('is_available', true)
+                ->with('service')
+                ->first();
+
+            if ($providerService && $providerService->service) {
+                $serviceCategory = $providerService->service->name;
+                $price = $providerService->custom_price ?? $providerService->service->base_price ?? 0;
+            }
+        }
+
+        // Validate price against service min/max range
+        if ($price > 0) {
+            $service = \App\Models\Service::where('name', $serviceCategory)->first();
+            if ($service) {
+                if ($service->min_price !== null && $price < $service->min_price) {
+                    return response()->json(['success' => false, 'message' => "The minimum price for {$service->name} is ₱" . number_format($service->min_price, 2) . "."], 422);
+                }
+                if ($service->max_price !== null && $price > $service->max_price) {
+                    return response()->json(['success' => false, 'message' => "The maximum price for {$service->name} is ₱" . number_format($service->max_price, 2) . "."], 422);
+                }
+            }
+        }
+
         $overlap = Booking::where('worker_id', $worker->id)
             ->whereNotIn('status', [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED])
             ->where('scheduled_at', $validated['scheduled_at'])
@@ -640,17 +671,17 @@ class ClientController extends Controller
 
         $address = $validated['house_no'] . ', ' . $validated['barangay'] . ', ' . config('kaayos.default_location');
 
-        $booking = DB::transaction(function () use ($validated, $address, $worker) {
+        $booking = DB::transaction(function () use ($validated, $address, $worker, $serviceCategory, $price) {
             $booking = Booking::create([
                 'client_id'          => auth()->id(),
                 'worker_id'          => $validated['worker_id'],
-                'service_category'   => $validated['service_category'],
+                'service_category'   => $serviceCategory,
                 'scheduled_at'       => $validated['scheduled_at'],
                 'address'            => $address,
                 'house_no'           => $validated['house_no'],
                 'barangay'           => $validated['barangay'],
                 'notes'              => $validated['notes'] ?? null,
-                'price'              => $validated['price'] ?? 0,
+                'price'              => $price,
                 'status'             => Booking::STATUS_NEW,
                 'agreed_by_client_at' => now(),
             ]);

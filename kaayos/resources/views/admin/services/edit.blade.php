@@ -44,6 +44,18 @@
             <input type="number" name="base_price" id="base_price" value="{{ old('base_price', $service->base_price) }}" step="0.01" min="0">
             @error('base_price') <div class="error">{{ $message }}</div> @enderror
         </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="min_price">Minimum Price (₱)</label>
+                <input type="number" name="min_price" id="min_price" value="{{ old('min_price', $service->min_price) }}" step="0.01" min="0" placeholder="No minimum">
+                @error('min_price') <div class="error">{{ $message }}</div> @enderror
+            </div>
+            <div class="form-group">
+                <label for="max_price">Maximum Price (₱)</label>
+                <input type="number" name="max_price" id="max_price" value="{{ old('max_price', $service->max_price) }}" step="0.01" min="0" placeholder="No maximum">
+                @error('max_price') <div class="error">{{ $message }}</div> @enderror
+            </div>
+        </div>
         <div class="form-group">
             <label class="toggle-label">
                 <input type="checkbox" name="is_active" value="1" {{ old('is_active', $service->is_active) ? 'checked' : '' }}>

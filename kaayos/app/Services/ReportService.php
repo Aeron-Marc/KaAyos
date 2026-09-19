@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Models\Booking;
 use App\Models\Dispute;
+use App\Models\Earning;
 use App\Models\Review;
 use App\Models\User;
 use App\Models\WorkerDocument;
+use App\Models\WorkerProfile;
+use App\Support\TuyBarangays;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +24,7 @@ class ReportService
         'disputes',
         'service_popularity',
         'reviews',
+        'peso_employment',
     ];
 
     public const GROUPS = [
@@ -81,6 +85,12 @@ class ReportService
                 'icon' => 'fa-star',
                 'description' => 'Ratings and feedback submitted, with average and star distribution.',
             ],
+            'peso_employment' => [
+                'group' => 'people',
+                'label' => 'PESO Employment Summary',
+                'icon' => 'fa-building-columns',
+                'description' => 'Employment generation, barangay distribution, and verification status for PESO reporting.',
+            ],
         ];
     }
 
@@ -107,6 +117,7 @@ class ReportService
             'disputes' => $this->disputesReport($from, $to, $limit),
             'service_popularity' => $this->servicePopularityReport($from, $to, $limit),
             'reviews' => $this->reviewsReport($from, $to, $limit),
+            'peso_employment' => $this->pesoEmploymentReport($from, $to, $limit),
             default => ['summary' => [], 'chart' => null, 'columns' => [], 'rows' => [], 'total_rows' => 0],
         };
     }
@@ -473,6 +484,129 @@ class ReportService
     }
 
     // ── Helpers ────────────────────────────────────────────────
+
+    private function pesoEmploymentReport(string $from, string $to, ?int $limit): array
+    {
+        $end = $to.' 23:59:59';
+        $period = [$from.' 00:00:00', $end];
+
+        // Employment generation
+        $totalWorkers = (int) User::where('role', 'worker')->count();
+        $activeWorkers = (int) User::where('role', 'worker')
+            ->whereHas('bookingsAsWorker', fn ($q) => $q->where('status', 'completed')->whereBetween('completed_at', $period))
+            ->count();
+        $newWorkers = (int) User::where('role', 'worker')->whereBetween('created_at', $period)->count();
+
+        $completedBookings = Booking::where('status', 'completed')->whereBetween('completed_at', $period);
+        $totalJobs = (int) (clone $completedBookings)->count();
+        $uniqueEmployedWorkers = (int) (clone $completedBookings)->distinct('worker_id')->count('worker_id');
+
+        $earnings = Earning::whereBetween('created_at', $period);
+        $totalIncome = (float) (clone $earnings)->sum('net_amount');
+        $avgIncomePerWorker = $uniqueEmployedWorkers ? round($totalIncome / $uniqueEmployedWorkers, 2) : 0;
+        $totalGrossRevenue = (float) (clone $earnings)->sum('gross_amount');
+
+        // Barangay distribution (workers per barangay)
+        $workersPerBarangay = User::where('role', 'worker')
+            ->whereNotNull('barangay')
+            ->selectRaw('barangay, COUNT(*) as count')
+            ->groupBy('barangay')
+            ->orderByDesc('count')
+            ->get();
+
+        $barangays = TuyBarangays::allBarangays();
+        $barangayWorkerCounts = collect($barangays)->map(function ($b) use ($workersPerBarangay) {
+            $found = $workersPerBarangay->firstWhere('barangay', $b);
+            return ['barangay' => $b, 'workers' => $found ? (int) $found->count : 0];
+        })->sortByDesc('workers')->values();
+
+        // Bookings per barangay
+        $bookingsPerBarangay = Booking::whereBetween('created_at', $period)
+            ->whereNotNull('barangay')
+            ->selectRaw('barangay, COUNT(*) as total, COALESCE(SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END), 0) as completed')
+            ->groupBy('barangay')
+            ->orderByDesc('total')
+            ->get();
+
+        // Verification status
+        $fullyVerified = (int) User::where('role', 'worker')
+            ->whereHas('workerProfile', fn ($q) => $q->where('government_id_verified', true))
+            ->count();
+        $pendingVerification = (int) User::where('role', 'worker')
+            ->whereDoesntHave('workerProfile', fn ($q) => $q->where('government_id_verified', true))
+            ->count();
+
+        $totalDocs = (int) WorkerDocument::count();
+        $verifiedDocs = (int) WorkerDocument::where('status', 'verified')->count();
+        $pendingDocs = (int) WorkerDocument::where('status', 'pending')->count();
+
+        // Service category supply vs demand
+        $workersByCategory = User::where('role', 'worker')
+            ->whereNotNull('service_category')
+            ->where('service_category', '!=', '')
+            ->selectRaw('service_category, COUNT(*) as count')
+            ->groupBy('service_category')
+            ->orderByDesc('count')
+            ->get();
+
+        $demandByCategory = Booking::whereBetween('created_at', $period)
+            ->whereNotNull('service_category')
+            ->selectRaw('service_category, COUNT(*) as count')
+            ->groupBy('service_category')
+            ->get()
+            ->keyBy('service_category');
+
+        $categoryData = $workersByCategory->map(function ($w) use ($demandByCategory) {
+            $demand = $demandByCategory->get($w->service_category);
+            return [
+                'Service Category' => $w->service_category,
+                'Registered Workers' => (int) $w->count,
+                'Bookings (Period)' => $demand ? (int) $demand->count : 0,
+                'Supply vs Demand' => $demand && $w->count ? round((int) $demand->count / (int) $w->count, 1).'x' : '—',
+            ];
+        })->values()->all();
+
+        // Row data: barangay breakdown
+        $rows = $barangayWorkerCounts->map(function ($bw) use ($bookingsPerBarangay) {
+            $bk = $bookingsPerBarangay->firstWhere('barangay', $bw['barangay']);
+            return [
+                'Barangay' => $bw['barangay'],
+                'Registered Workers' => $bw['workers'],
+                'Total Bookings' => $bk ? (int) $bk->total : 0,
+                'Completed' => $bk ? (int) $bk->completed : 0,
+            ];
+        })->values()->all();
+
+        $chartLabels = $barangayWorkerCounts->take(10)->pluck('barangay')->values()->all();
+        $chartWorkers = $barangayWorkerCounts->take(10)->pluck('workers')->values()->all();
+        $chartBookings = $barangayWorkerCounts->take(10)->map(function ($bw) use ($bookingsPerBarangay) {
+            $bk = $bookingsPerBarangay->firstWhere('barangay', $bw['barangay']);
+            return $bk ? (int) $bk->total : 0;
+        })->values()->all();
+
+        return [
+            'summary' => [
+                $this->kpi('Total Registered Workers', $totalWorkers, 'fa-briefcase', 'blue'),
+                $this->kpi('Active Workers (Period)', $activeWorkers, 'fa-user-check', 'green'),
+                $this->kpi('Jobs Facilitated', $totalJobs, 'fa-calendar-check', 'orange'),
+                $this->kpi('Total Income Generated', $totalIncome, 'fa-coins', 'green', true),
+                $this->kpi('Avg Income/Worker', $avgIncomePerWorker, 'fa-peso-sign', 'purple', true),
+                $this->kpi('Fully Verified', $fullyVerified, 'fa-shield-halved', 'green'),
+                $this->kpi('Pending Verification', $pendingVerification, 'fa-clock', 'orange'),
+            ],
+            'chart' => [
+                'type' => 'bar',
+                'labels' => $chartLabels,
+                'datasets' => [
+                    ['label' => 'Workers', 'data' => $chartWorkers, 'color' => '#1A6FC4'],
+                    ['label' => 'Bookings', 'data' => $chartBookings, 'color' => '#10B981'],
+                ],
+            ],
+            'columns' => ['Barangay', 'Registered Workers', 'Total Bookings', 'Completed'],
+            'rows' => $rows,
+            'total_rows' => $barangayWorkerCounts->count(),
+        ];
+    }
 
     private function kpi(string $label, float|int|string $value, string $icon, string $accent, bool $money = false): array
     {

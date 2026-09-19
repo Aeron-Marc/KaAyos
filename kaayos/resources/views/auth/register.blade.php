@@ -406,16 +406,9 @@ select{cursor:pointer;padding-right:38px}
                 <i class="fa-solid fa-briefcase icon"></i>
                 <select id="service_category" name="service_category">
                   <option value="" disabled selected>Select your trade</option>
-                  <option value="plumbing">Plumbing</option>
-                  <option value="electrical">Electrical</option>
-                  <option value="carpentry">Carpentry</option>
-                  <option value="painting">Painting</option>
-                  <option value="aircon">Aircon Services</option>
-                  <option value="cleaning">Cleaning</option>
-                  <option value="roofing">Roofing</option>
-                  <option value="welding">Welding</option>
-                  <option value="gardening">Gardening</option>
-                  <option value="other">Other</option>
+                  @foreach($categories as $cat)
+                    <option value="{{ $cat->name }}">{{ $cat->name }}</option>
+                  @endforeach
                 </select>
                 <i class="fa-solid fa-chevron-down select-arrow"></i>
               </div>
