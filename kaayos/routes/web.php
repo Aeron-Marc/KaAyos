@@ -21,6 +21,8 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\Auth\CompleteProfileController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
 use App\Http\Controllers\HomeController;
@@ -50,6 +52,11 @@ Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 Route::get('/register', [RegisterController::class, 'create'])->name('register');
 Route::post('/register', [RegisterController::class, 'store'])
     ->middleware('throttle:register');
+
+Route::get('/auth/{provider}', [SocialController::class, 'redirect'])
+    ->name('social.redirect');
+Route::get('/auth/{provider}/callback', [SocialController::class, 'callback'])
+    ->name('social.callback');
 
 Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
 Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->name('password.email');
@@ -106,6 +113,9 @@ Route::post('/api/chat', [ChatBotController::class, '__invoke'])
 Route::middleware('auth')->post('/api/chat/suggest', [SuggestionController::class, '__invoke']);
 
 Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')->name('worker.')->group(function () {
+    Route::get('/complete-profile', [CompleteProfileController::class, 'show'])->name('complete-profile');
+    Route::post('/complete-profile', [CompleteProfileController::class, 'store'])->name('complete-profile.store');
+
     Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [WorkerController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');

@@ -17,6 +17,8 @@ class PrintReportRequest extends FormRequest
             'type' => 'required|in:bookings,revenue,users,worker_performance,verifications,disputes,service_popularity,reviews',
             'date_from' => 'required|date',
             'date_to' => 'required|date|after_or_equal:date_from',
+            'sort_col' => 'nullable|integer|min:0',
+            'sort_dir' => 'nullable|in:asc,desc',
         ];
     }
 }

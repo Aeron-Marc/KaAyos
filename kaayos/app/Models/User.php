@@ -42,6 +42,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_updated_at',
         'failed_login_attempts',
         'locked_until',
+        'provider',
+        'provider_id',
     ];
 
     protected static function booted(): void

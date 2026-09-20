@@ -92,6 +92,39 @@ class ReportController extends Controller
 
         $data = $this->reports->build($type, $from, $to);
 
+        $sortCol = $request->input('sort_col');
+        $sortDir = $request->input('sort_dir', 'asc');
+        if ($sortCol !== null && isset($data['columns'][(int) $sortCol])) {
+            $colName = $data['columns'][(int) $sortCol];
+            $moneyCols = ['Price', 'Total Value', 'Gross Amount', 'Platform Fee', 'Net Amount', 'Gross Revenue', 'Revenue'];
+            $isMoney = in_array($colName, $moneyCols);
+            $isDate = (bool) preg_match('/date|at$/i', $colName);
+            $colKeys = array_keys($data['rows'][0] ?? []);
+            $key = $colKeys[(int) $sortCol] ?? null;
+
+            if ($key) {
+                usort($data['rows'], function ($a, $b) use ($key, $isMoney, $isDate, $sortDir) {
+                    $aVal = $a[$key] ?? null;
+                    $bVal = $b[$key] ?? null;
+                    if ($aVal === null && $bVal === null) return 0;
+                    if ($aVal === null) return 1;
+                    if ($bVal === null) return -1;
+
+                    if ($isMoney) {
+                        $cmp = (float) $aVal <=> (float) $bVal;
+                    } elseif ($isDate) {
+                        $cmp = strtotime($aVal) <=> strtotime($bVal);
+                    } elseif (is_numeric($aVal) && is_numeric($bVal)) {
+                        $cmp = (float) $aVal <=> (float) $bVal;
+                    } else {
+                        $cmp = strcasecmp((string) $aVal, (string) $bVal);
+                    }
+
+                    return $sortDir === 'desc' ? -$cmp : $cmp;
+                });
+            }
+        }
+
         return view('admin.reports.print', [
             'catalog' => $this->reports->catalog()[$type],
             'type' => $type,
