@@ -19,6 +19,9 @@ use App\Events\BookingStatusUpdated;
 use App\Events\JobCompletionStatusUpdated;
 use App\Events\MessageSent;
 use App\Services\BookingMessageService;
+use App\Services\GeoTravelService;
+use App\Support\TuyBarangays;
+use Carbon\Carbon;
 use App\Notifications\BookingCancelled;
 use App\Notifications\NewBooking;
 use App\Notifications\NewMessage;
@@ -142,7 +145,34 @@ class ClientController extends Controller
                     'status'        => ucfirst($b->status),
                     'raw_status'    => $b->status,
                     'price'         => $b->price ?? 0,
+                    'property_type' => $b->property_type ?? 'residential',
+                    'pricing_type'  => $b->pricing_type ?? 'fixed',
+                    'estimated_duration_hours' => $b->estimated_duration_hours ?? 2.0,
+                    'complexity_level' => $b->complexity_level ?? 'standard',
+                    'complexity_multiplier' => $b->complexity_multiplier ?? 1.0,
+                    'work_started_at' => $b->work_started_at?->format('g:i A'),
+                    'work_ended_at'   => $b->work_ended_at?->format('g:i A'),
+                    'scope_amendment_status' => $b->scope_amendment_status,
+                    'scope_amendment_price'  => $b->scope_amendment_price,
+                    'scope_amendment_notes'  => $b->scope_amendment_notes,
+                    'scope_amendment_requested_at' => $b->scope_amendment_requested_at?->toIso8601String(),
+                    'team_status'    => $b->team_status ?? 'none',
+                    'team_justification' => $b->team_justification,
+                    'team_suggested_at'  => $b->team_suggested_at?->toIso8601String(),
+                    'crew'           => $b->bookingWorkers()->with('worker')->get()->map(fn($bw) => [
+                        'id'            => $bw->id,
+                        'worker_name'   => $bw->worker->name,
+                        'role'          => $bw->role,
+                        'payout_amount' => $bw->payout_amount,
+                        'status'        => $bw->status,
+                    ])->values()->toArray(),
                     'location'      => $b->address,
+                    'barangay'      => $b->barangay,
+                    'latitude'      => $b->latitude,
+                    'longitude'     => $b->longitude,
+                    'travel_distance_from_prev_km' => $b->travel_distance_from_prev_km,
+                    'estimated_transit_minutes'    => $b->estimated_transit_minutes,
+                    'gmaps_nav_url' => $b->google_maps_nav_url,
                     'notes'         => $b->notes,
                     'created'       => $b->created_at->format('M d, Y · h:i A'),
                     'booking_ref'   => $b->booking_ref ?? 'BK-' . str_pad($b->id, 5, '0', STR_PAD_LEFT),
@@ -602,16 +632,22 @@ class ClientController extends Controller
         ]);
     }
 
-    public function storeBooking(Request $request): JsonResponse
+    public function storeBooking(Request $request, GeoTravelService $geoTravel): JsonResponse
     {
         $validated = $request->validate([
-            'worker_id'       => ['required', 'exists:users,id'],
+            'worker_id'        => ['required', 'exists:users,id'],
             'service_category' => ['required', 'string', 'max:255'],
-            'scheduled_at'    => ['required', 'date', 'after:now'],
-            'house_no'        => ['required', 'string', 'max:255'],
-            'barangay'        => ['required', 'string', 'max:255'],
-            'notes'           => ['nullable', 'string', 'max:2000'],
-            'price'           => ['nullable', 'numeric', 'min:0'],
+            'scheduled_at'     => ['required', 'date', 'after:now'],
+            'house_no'         => ['required', 'string', 'max:255'],
+            'barangay'         => ['required', 'string', 'max:255'],
+            'property_type'    => ['nullable', 'string', 'in:residential,apartment,commercial,industrial,tenant,property_manager'],
+            'pricing_type'     => ['nullable', 'string', 'in:fixed,hourly'],
+            'estimated_duration_hours' => ['nullable', 'numeric', 'min:0.5', 'max:24'],
+            'complexity_level' => ['nullable', 'string', 'in:standard,moderate,complex,high_hazard,hazardous'],
+            'notes'            => ['nullable', 'string', 'max:2000'],
+            'price'            => ['nullable', 'numeric', 'min:0'],
+            'latitude'         => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude'        => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
         $worker = User::findOrFail($validated['worker_id']);
@@ -629,8 +665,59 @@ class ClientController extends Controller
             return response()->json(['success' => false, 'message' => "This worker hasn't set their availability yet. Booking is currently unavailable."], 422);
         }
 
+        // Resolve service and price from provider_services
+        $price = $validated['price'] ?? 0;
+        $serviceCategory = $validated['service_category'];
+
+        if (!empty($validated['service_id'])) {
+            $providerService = \App\Models\ProviderService::where('user_id', $worker->id)
+                ->where('service_id', $validated['service_id'])
+                ->where('is_available', true)
+                ->with('service')
+                ->first();
+
+            if ($providerService && $providerService->service) {
+                $serviceCategory = $providerService->service->name;
+                $price = $providerService->custom_price ?? $providerService->service->base_price ?? 0;
+            }
+        }
+
+        // Pricing, Duration, and Complexity Calculations
+        $pricingType = $validated['pricing_type'] ?? 'fixed';
+        $durationHours = (float) ($validated['estimated_duration_hours'] ?? 2.0);
+        $complexityLevel = $validated['complexity_level'] ?? 'standard';
+        $complexityMultiplier = match($complexityLevel) {
+            'moderate', 'complex'      => 1.20,
+            'high_hazard', 'hazardous' => 1.50,
+            default                    => 1.00,
+        };
+
+        if ($pricingType === 'hourly' && $worker->workerProfile?->hourly_rate) {
+            $basePrice = (float) $worker->workerProfile->hourly_rate * $durationHours;
+        } else {
+            $basePrice = (float) $price;
+        }
+
+        $finalPrice = round($basePrice * $complexityMultiplier, 2);
+
+        // Validate price against service min/max range
+        if ($finalPrice > 0) {
+            $service = \App\Models\Service::where('name', $serviceCategory)->first();
+            if ($service) {
+                if ($service->min_price !== null && $finalPrice < $service->min_price) {
+                    return response()->json(['success' => false, 'message' => "The minimum price for {$service->name} is ₱" . number_format($service->min_price, 2) . "."], 422);
+                }
+                if ($service->max_price !== null && $finalPrice > $service->max_price) {
+                    return response()->json(['success' => false, 'message' => "The maximum price for {$service->name} is ₱" . number_format($service->max_price, 2) . "."], 422);
+                }
+            }
+        }
+
+        $newStart = Carbon::parse($validated['scheduled_at']);
+
+        // Check exact overlap
         $overlap = Booking::where('worker_id', $worker->id)
-            ->whereNotIn('status', [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED])
+            ->whereNotIn('status', [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED, Booking::STATUS_DECLINED])
             ->where('scheduled_at', $validated['scheduled_at'])
             ->exists();
 
@@ -638,21 +725,100 @@ class ClientController extends Controller
             return response()->json(['success' => false, 'message' => 'This worker already has a booking at the selected time.'], 422);
         }
 
+        // Resolve coordinates
+        $clientLat = isset($validated['latitude']) && $validated['latitude'] !== '' ? (float) $validated['latitude'] : null;
+        $clientLng = isset($validated['longitude']) && $validated['longitude'] !== '' ? (float) $validated['longitude'] : null;
+
+        if ($clientLat === null || $clientLng === null) {
+            [$clientLat, $clientLng] = TuyBarangays::pointForStatic($validated['barangay']);
+        }
+
+        // Check worker service radius
+        $workerRadius = (int) ($worker->workerProfile?->service_radius_km ?? $worker->workerProfile?->service_radius ?? 0);
+        if ($workerRadius > 0) {
+            $workerLat = $worker->latitude ? (float) $worker->latitude : null;
+            $workerLng = $worker->longitude ? (float) $worker->longitude : null;
+            if ($workerLat === null || $workerLng === null) {
+                [$workerLat, $workerLng] = TuyBarangays::pointForStatic($worker->barangay ?? 'Luna');
+            }
+            $distFromWorker = $geoTravel->calculateTravel($workerLat, $workerLng, $clientLat, $clientLng);
+            if ($distFromWorker['road_distance_km'] > $workerRadius) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "The selected location in {$validated['barangay']} ({$distFromWorker['road_distance_km']} km) exceeds this worker's maximum service radius of {$workerRadius} km.",
+                ], 422);
+            }
+        }
+
+        // Check schedule feasibility against existing bookings on the same day
+        $existingBookings = Booking::where('worker_id', $worker->id)
+            ->whereDate('scheduled_at', $newStart->toDateString())
+            ->whereNotIn('status', [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED, Booking::STATUS_DECLINED])
+            ->get();
+
+        foreach ($existingBookings as $exist) {
+            $feasibility = $geoTravel->evaluateScheduleFeasibility(
+                $exist,
+                $newStart,
+                $clientLat,
+                $clientLng
+            );
+
+            if ($feasibility['status'] === 'conflict') {
+                return response()->json([
+                    'success'          => false,
+                    'conflict'         => true,
+                    'message'          => $feasibility['message'],
+                    'recommended_time' => $feasibility['recommended_time'],
+                ], 422);
+            }
+        }
+
+        // Compute travel metrics from preceding job on that date or base
+        $prevBooking = Booking::where('worker_id', $worker->id)
+            ->whereDate('scheduled_at', $newStart->toDateString())
+            ->where('scheduled_at', '<', $newStart)
+            ->whereNotIn('status', [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED, Booking::STATUS_DECLINED])
+            ->orderByDesc('scheduled_at')
+            ->first();
+
+        $travelMetrics = null;
+        if ($prevBooking) {
+            [$prevLat, $prevLng] = $geoTravel->resolveBookingCoordinates($prevBooking);
+            $travelMetrics = $geoTravel->calculateTravel($prevLat, $prevLng, $clientLat, $clientLng);
+        } else {
+            $workerLat = $worker->latitude ? (float) $worker->latitude : null;
+            $workerLng = $worker->longitude ? (float) $worker->longitude : null;
+            if ($workerLat === null || $workerLng === null) {
+                [$workerLat, $workerLng] = TuyBarangays::pointForStatic($worker->barangay ?? 'Luna');
+            }
+            $travelMetrics = $geoTravel->calculateTravel($workerLat, $workerLng, $clientLat, $clientLng);
+        }
+
         $address = $validated['house_no'] . ', ' . $validated['barangay'] . ', ' . config('kaayos.default_location');
 
-        $booking = DB::transaction(function () use ($validated, $address, $worker) {
+        $booking = DB::transaction(function () use ($validated, $address, $worker, $serviceCategory, $finalPrice, $pricingType, $durationHours, $complexityLevel, $complexityMultiplier, $clientLat, $clientLng, $travelMetrics) {
             $booking = Booking::create([
-                'client_id'          => auth()->id(),
-                'worker_id'          => $validated['worker_id'],
-                'service_category'   => $validated['service_category'],
-                'scheduled_at'       => $validated['scheduled_at'],
-                'address'            => $address,
-                'house_no'           => $validated['house_no'],
-                'barangay'           => $validated['barangay'],
-                'notes'              => $validated['notes'] ?? null,
-                'price'              => $validated['price'] ?? 0,
-                'status'             => Booking::STATUS_NEW,
-                'agreed_by_client_at' => now(),
+                'client_id'                    => auth()->id(),
+                'worker_id'                    => $validated['worker_id'],
+                'service_category'             => $serviceCategory,
+                'scheduled_at'                 => $validated['scheduled_at'],
+                'address'                      => $address,
+                'house_no'                     => $validated['house_no'],
+                'barangay'                     => $validated['barangay'],
+                'property_type'                => $validated['property_type'] ?? 'residential',
+                'pricing_type'                 => $pricingType,
+                'estimated_duration_hours'     => $durationHours,
+                'complexity_level'             => $complexityLevel,
+                'complexity_multiplier'        => $complexityMultiplier,
+                'latitude'                     => $clientLat,
+                'longitude'                    => $clientLng,
+                'travel_distance_from_prev_km' => $travelMetrics['road_distance_km'] ?? null,
+                'estimated_transit_minutes'    => $travelMetrics['estimated_minutes'] ?? null,
+                'notes'                        => $validated['notes'] ?? null,
+                'price'                        => $finalPrice,
+                'status'                       => Booking::STATUS_NEW,
+                'agreed_by_client_at'          => now(),
             ]);
 
             $booking->history()->create([
@@ -675,6 +841,74 @@ class ClientController extends Controller
             'success' => true,
             'booking' => $booking,
             'redirect' => route('client.bookings'),
+        ]);
+    }
+
+    public function checkScheduleConflict(Request $request, User $worker, GeoTravelService $geoTravel): JsonResponse
+    {
+        $scheduledAtStr = $request->query('scheduled_at');
+        $barangay = $request->query('barangay');
+        $lat = $request->query('latitude');
+        $lng = $request->query('longitude');
+
+        if (!$scheduledAtStr) {
+            return response()->json(['success' => true, 'status' => 'ok']);
+        }
+
+        try {
+            $newStart = Carbon::parse($scheduledAtStr);
+        } catch (\Exception $e) {
+            return response()->json(['success' => true, 'status' => 'ok']);
+        }
+
+        $clientLat = $lat ? (float) $lat : null;
+        $clientLng = $lng ? (float) $lng : null;
+        if ($clientLat === null || $clientLng === null) {
+            [$clientLat, $clientLng] = TuyBarangays::pointForStatic($barangay ?: 'Luna');
+        }
+
+        // Service radius check
+        $workerRadius = (int) ($worker->workerProfile?->service_radius_km ?? $worker->workerProfile?->service_radius ?? 0);
+        if ($workerRadius > 0) {
+            $workerLat = $worker->latitude ? (float) $worker->latitude : null;
+            $workerLng = $worker->longitude ? (float) $worker->longitude : null;
+            if ($workerLat === null || $workerLng === null) {
+                [$workerLat, $workerLng] = TuyBarangays::pointForStatic($worker->barangay ?? 'Luna');
+            }
+            $dist = $geoTravel->calculateTravel($workerLat, $workerLng, $clientLat, $clientLng);
+            if ($dist['road_distance_km'] > $workerRadius) {
+                return response()->json([
+                    'success'     => true,
+                    'status'      => 'out_of_radius',
+                    'message'     => "This location is {$dist['road_distance_km']} km away, exceeding worker's service radius ({$workerRadius} km).",
+                    'distance_km' => $dist['road_distance_km'],
+                ]);
+            }
+        }
+
+        $existingBookings = Booking::where('worker_id', $worker->id)
+            ->whereDate('scheduled_at', $newStart->toDateString())
+            ->whereNotIn('status', [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED, Booking::STATUS_DECLINED])
+            ->get();
+
+        foreach ($existingBookings as $exist) {
+            $res = $geoTravel->evaluateScheduleFeasibility($exist, $newStart, $clientLat, $clientLng);
+            if ($res['status'] === 'conflict' || $res['status'] === 'tight') {
+                return response()->json([
+                    'success'          => true,
+                    'status'           => $res['status'],
+                    'message'          => $res['message'],
+                    'recommended_time' => $res['recommended_time'] ?? null,
+                    'required_transit' => $res['required_transit'] ?? null,
+                    'distance_km'      => $res['distance_km'] ?? null,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'status'  => 'feasible',
+            'message' => 'Schedule buffer is feasible.',
         ]);
     }
 
@@ -838,5 +1072,185 @@ class ClientController extends Controller
             ], 422);
         }
     }
+
+    public function trackLiveLocation(Booking $booking, GeoTravelService $geoTravel): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $booking->load(['worker.workerProfile']);
+
+        // If job is already in progress or completed, worker has arrived
+        if (in_array($booking->status, [Booking::STATUS_IN_PROGRESS, Booking::STATUS_COMPLETED])) {
+            return response()->json([
+                'success'       => true,
+                'status'        => $booking->status,
+                'arrived'       => true,
+                'worker_name'   => $booking->worker->name ?? 'Worker',
+                'worker_phone'  => $booking->worker->phone ?? '',
+                'service'       => $booking->service_category,
+                'message'       => 'Worker has arrived at your location.',
+            ]);
+        }
+
+        if ($booking->status !== Booking::STATUS_EN_ROUTE) {
+            return response()->json([
+                'success' => false,
+                'status'  => $booking->status,
+                'arrived' => false,
+                'message' => 'Live tracking is only available when worker is en route.',
+            ]);
+        }
+
+        [$destLat, $destLng] = $geoTravel->resolveBookingCoordinates($booking);
+
+        $hasLivePing = !empty($booking->worker_live_latitude) && !empty($booking->worker_live_longitude);
+        if ($hasLivePing) {
+            $workerLat = (float) $booking->worker_live_latitude;
+            $workerLng = (float) $booking->worker_live_longitude;
+            $isLive = true;
+        } else {
+            [$workerLat, $workerLng] = $geoTravel->resolveWorkerCoordinates($booking->worker);
+            $isLive = false;
+        }
+
+        $roadRoute = $geoTravel->fetchRoadRoute($workerLat, $workerLng, $destLat, $destLng);
+        $secondsAgo = $booking->worker_live_updated_at ? (int) abs(now()->diffInSeconds($booking->worker_live_updated_at)) : null;
+        $etaTime = now()->addMinutes($roadRoute['estimated_minutes'])->format('g:i A');
+
+        return response()->json([
+            'success'           => true,
+            'status'            => $booking->status,
+            'arrived'           => false,
+            'worker_name'       => $booking->worker->name ?? 'Worker',
+            'worker_phone'      => $booking->worker->phone ?? '',
+            'service'           => $booking->service_category,
+            'worker_lat'        => $workerLat,
+            'worker_lng'        => $workerLng,
+            'worker_heading'    => $booking->worker_live_heading,
+            'worker_speed'      => $booking->worker_live_speed,
+            'dest_lat'          => $destLat,
+            'dest_lng'          => $destLng,
+            'dest_address'      => $booking->address . ($booking->barangay ? ', ' . $booking->barangay : ''),
+            'remaining_km'      => $roadRoute['road_distance_km'],
+            'formatted_dist'    => $roadRoute['formatted_distance'],
+            'remaining_minutes' => $roadRoute['estimated_minutes'],
+            'formatted_time'    => $roadRoute['formatted_time'],
+            'eta_time'          => $etaTime,
+            'route_coordinates' => $roadRoute['geometry'],
+            'last_ping_seconds' => $secondsAgo,
+            'is_live'           => $isLive,
+            'is_snapped_road'   => $roadRoute['is_osrm'] ?? false,
+            'live_tracked_at'   => $booking->worker_live_updated_at?->toIso8601String(),
+        ]);
+    }
+
+    public function respondScopeAmendment(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:approve,decline'],
+        ]);
+
+        if ($booking->scope_amendment_status !== 'pending') {
+            return response()->json(['success' => false, 'message' => 'No pending scope amendment request for this booking.'], 422);
+        }
+
+        if ($validated['action'] === 'approve') {
+            $booking->update([
+                'price' => $booking->scope_amendment_price,
+                'scope_amendment_status' => 'approved',
+            ]);
+
+            $booking->history()->create([
+                'user_id' => auth()->id(),
+                'old_status' => $booking->status,
+                'new_status' => $booking->status,
+                'notes' => 'Approved scope amendment: updated to ₱' . number_format($booking->scope_amendment_price, 2),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Scope amendment approved. Updated price: ₱' . number_format($booking->price, 2),
+                'price' => $booking->price,
+            ]);
+        }
+
+        $booking->update([
+            'scope_amendment_status' => 'declined',
+        ]);
+
+        $booking->history()->create([
+            'user_id' => auth()->id(),
+            'old_status' => $booking->status,
+            'new_status' => $booking->status,
+            'notes' => 'Declined on-site scope amendment proposal',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Scope amendment declined. Original price retained.',
+        ]);
+    }
+
+    public function respondTeamSuggestion(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:approve,decline'],
+        ]);
+
+        if ($booking->team_status !== 'suggested') {
+            return response()->json(['success' => false, 'message' => 'No pending team recommendation for this booking.'], 422);
+        }
+
+        if ($validated['action'] === 'approve') {
+            $booking->update(['team_status' => 'client_approved']);
+
+            // Update all pending crew members to 'invited'
+            $booking->bookingWorkers()->where('status', 'pending_client_approval')->update([
+                'status' => 'invited',
+                'invited_at' => now(),
+            ]);
+
+            $booking->history()->create([
+                'user_id' => auth()->id(),
+                'old_status' => $booking->status,
+                'new_status' => $booking->status,
+                'notes' => 'Client approved worker team / peer recommendation',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Team recommendation approved. Team members have been notified!',
+            ]);
+        }
+
+        $booking->update(['team_status' => 'client_declined']);
+        $booking->bookingWorkers()->where('status', 'pending_client_approval')->update([
+            'status' => 'declined',
+            'responded_at' => now(),
+        ]);
+
+        $booking->history()->create([
+            'user_id' => auth()->id(),
+            'old_status' => $booking->status,
+            'new_status' => $booking->status,
+            'notes' => 'Client declined team recommendation; proceeding with solo worker',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Team recommendation declined. Proceeding with solo worker.',
+        ]);
+    }
 }
+
 

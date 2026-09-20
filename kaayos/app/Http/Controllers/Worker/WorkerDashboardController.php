@@ -520,4 +520,157 @@ class WorkerDashboardController extends Controller
 
         return redirect()->back()->with('success', 'Reschedule '.$validated['action'].'d.');
     }
+
+    public function startTimer(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $booking->update(['work_started_at' => now()]);
+
+        if ($booking->status === Booking::STATUS_EN_ROUTE) {
+            try {
+                $booking->transitionTo(Booking::STATUS_IN_PROGRESS, auth()->id());
+            } catch (\Throwable $e) {
+                // Keep updated timestamp even if transition had race condition
+            }
+        } elseif ($booking->status === Booking::STATUS_ACCEPTED) {
+            try {
+                $booking->transitionTo(Booking::STATUS_EN_ROUTE, auth()->id());
+                $booking->transitionTo(Booking::STATUS_IN_PROGRESS, auth()->id());
+            } catch (\Throwable $e) {
+                // Keep updated timestamp even if transition had race condition
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Work timer started.',
+            'work_started_at' => $booking->work_started_at->format('g:i A'),
+        ]);
+    }
+
+    public function endTimer(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $booking->update(['work_ended_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Work timer completed.',
+            'work_ended_at' => $booking->work_ended_at->format('g:i A'),
+        ]);
+    }
+
+    public function requestScopeAmendment(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'amendment_price' => ['required', 'numeric', 'min:0'],
+            'notes'           => ['required', 'string', 'max:2000'],
+        ]);
+
+        $booking->update([
+            'scope_amendment_price'        => $validated['amendment_price'],
+            'scope_amendment_notes'        => $validated['notes'],
+            'scope_amendment_status'       => 'pending',
+            'scope_amendment_requested_at' => now(),
+        ]);
+
+        $booking->history()->create([
+            'user_id'    => auth()->id(),
+            'old_status' => $booking->status,
+            'new_status' => $booking->status,
+            'notes'      => 'Worker requested on-site scope amendment: ₱' . number_format($validated['amendment_price'], 2) . ' — ' . $validated['notes'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Scope amendment request sent to client for approval.',
+        ]);
+    }
+
+    public function suggestTeam(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'peer_ids'      => ['required', 'array', 'min:1'],
+            'peer_ids.*'    => ['required', 'exists:users,id'],
+            'roles'         => ['nullable', 'array'],
+            'payouts'       => ['nullable', 'array'],
+            'justification' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $booking->update([
+            'team_status'        => 'suggested',
+            'team_suggested_at'  => now(),
+            'team_justification' => $validated['justification'],
+        ]);
+
+        foreach ($validated['peer_ids'] as $idx => $peerId) {
+            if ($peerId == auth()->id()) continue;
+
+            $role = $validated['roles'][$idx] ?? 'assistant';
+            $payout = (float) ($validated['payouts'][$idx] ?? 0);
+
+            \App\Models\BookingWorker::updateOrCreate(
+                [
+                    'booking_id' => $booking->id,
+                    'worker_id'  => $peerId,
+                ],
+                [
+                    'role'               => $role,
+                    'payout_amount'      => $payout,
+                    'status'             => 'pending_client_approval',
+                    'justification_note' => $validated['justification'],
+                ]
+            );
+        }
+
+        $booking->history()->create([
+            'user_id'    => auth()->id(),
+            'old_status' => $booking->status,
+            'new_status' => $booking->status,
+            'notes'      => 'Worker suggested peer work / recommended team: ' . $validated['justification'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Team recommendation sent to client for review and approval.',
+        ]);
+    }
+
+    public function respondPeerInvitation(Request $request, Booking $booking): JsonResponse
+    {
+        $peerWorker = \App\Models\BookingWorker::where('booking_id', $booking->id)
+            ->where('worker_id', auth()->id())
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:accept,decline'],
+        ]);
+
+        $newStatus = $validated['action'] === 'accept' ? 'accepted' : 'declined';
+
+        $peerWorker->update([
+            'status'        => $newStatus,
+            'responded_at'  => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'You have ' . $newStatus . ' the crew invitation.',
+            'status'  => $newStatus,
+        ]);
+    }
 }

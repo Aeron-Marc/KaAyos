@@ -302,6 +302,10 @@ select{cursor:pointer;padding-right:38px}
   <main class="form-panel">
     <div class="form-inner">
 
+      <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+        <x-language-switcher />
+      </div>
+
       <div class="step-meta">
         <span class="step-count">STEP <b id="stepNow">01</b> / 03</span>
         <div class="step-track">
@@ -357,6 +361,18 @@ select{cursor:pointer;padding-right:38px}
               <div class="radio"></div>
             </div>
           </div>
+
+          <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line);">
+            <div style="font-size:.82rem; font-weight:600; color:var(--slate); margin-bottom:10px; text-align:center;">{{ __('oauth.or_email') }}:</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <a href="{{ route('auth.social.redirect', 'google') }}" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#374151; font-weight:600; font-size:.85rem; text-decoration:none;">
+                <i class="fa-brands fa-google" style="color:#EA4335;"></i> Google
+              </a>
+              <a href="{{ route('auth.social.redirect', 'facebook') }}" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#374151; font-weight:600; font-size:.85rem; text-decoration:none;">
+                <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Facebook
+              </a>
+            </div>
+          </div>
         </section>
 
         <!-- STEP 2: DETAILS -->
@@ -395,6 +411,41 @@ select{cursor:pointer;padding-right:38px}
             <div class="input-wrap">
               <i class="fa-solid fa-phone icon"></i>
               <input type="text" id="phone" name="phone" placeholder="09XX XXX XXXX" autocomplete="tel">
+            </div>
+          </div>
+
+          <!-- CLIENT PROFILE TYPE -->
+          <div class="client-block" id="clientBlock" style="margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper);">
+            <div class="tag-label" style="font-size:.78rem; font-weight:700; color:var(--ink); margin-bottom:8px;"><i class="fa-solid fa-building-user"></i> Account Type (Who is requesting service?)</div>
+            <div class="field">
+              <label for="client_type">I am registering as a:</label>
+              <div class="input-wrap">
+                <i class="fa-solid fa-house-chimney icon"></i>
+                <select id="client_type" name="client_type" onchange="toggleClientTypeFields(this.value)">
+                  <option value="homeowner" selected>Homeowner / Household</option>
+                  <option value="tenant_renter">Tenant / Renter (Apartment/Condo)</option>
+                  <option value="business_commercial">Business / Commercial Shop / Office</option>
+                  <option value="property_manager">Property Manager / Landlord</option>
+                  <option value="other">Other</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+              </div>
+            </div>
+            <div id="commercialFields" style="display:none; margin-top:10px;">
+              <div class="field">
+                <label for="organization_name">Business / Store Name</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-store icon"></i>
+                  <input type="text" id="organization_name" name="organization_name" placeholder="e.g. Batangas Hardware, Cafe Tuy">
+                </div>
+              </div>
+              <div class="field" style="margin-top:8px;">
+                <label for="tin_number">TIN (Tax ID No. - Optional for official receipt)</label>
+                <div class="input-wrap">
+                  <i class="fa-solid fa-receipt icon"></i>
+                  <input type="text" id="tin_number" name="tin_number" placeholder="XXX-XXX-XXX-000">
+                </div>
+              </div>
             </div>
           </div>
 
@@ -489,7 +540,14 @@ function setRole(role){
   document.getElementById('roleClient').classList.toggle('active', role==='client');
   document.getElementById('roleWorker').classList.toggle('active', role==='worker');
   document.getElementById('workerBlock').classList.toggle('show', role==='worker');
+  const clientBlock = document.getElementById('clientBlock');
+  if (clientBlock) clientBlock.style.display = (role==='client') ? 'block' : 'none';
   document.querySelectorAll('#workerBlock select, #workerBlock input').forEach(el=> el.required = (role==='worker'));
+}
+
+function toggleClientTypeFields(type) {
+  const comm = document.getElementById('commercialFields');
+  if (comm) comm.style.display = (type === 'business_commercial' || type === 'property_manager') ? 'block' : 'none';
 }
 
 function goToStep(n){

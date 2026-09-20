@@ -71,13 +71,34 @@
                 </div>
             @endif
 
-            @if($workerProfile && $workerProfile->government_id_verified)
-                <div style="margin-top:10px;">
-                    <span style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:500;">
-                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified
+            <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;">
+                @if($workerProfile && $workerProfile->government_id_verified)
+                    <span style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:.76rem;font-weight:600;" title="Government Valid ID Verified">
+                        <i class="fa-solid fa-id-card" aria-hidden="true"></i> ID Verified
                     </span>
-                </div>
-            @endif
+                @endif
+                @if($workerProfile && $workerProfile->tesda_certified)
+                    <span style="display:inline-flex;align-items:center;gap:4px;background:#e0f2fe;color:#0369a1;padding:4px 10px;border-radius:20px;font-size:.76rem;font-weight:600;" title="Technical Education and Skills Development Authority Certified">
+                        <i class="fa-solid fa-certificate" aria-hidden="true"></i> TESDA Certified
+                    </span>
+                @endif
+                @if($workerProfile && $workerProfile->barangay_clearance_verified)
+                    <span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:.76rem;font-weight:600;" title="Barangay Clearance on Record in Tuy">
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Barangay Verified
+                    </span>
+                @endif
+                @if($workerProfile && (float)$workerProfile->average_rating >= 4.5 && $reviews->count() >= 1)
+                    <span style="display:inline-flex;align-items:center;gap:4px;background:#fdf2f8;color:#9d174d;padding:4px 10px;border-radius:20px;font-size:.76rem;font-weight:600;">
+                        <i class="fa-solid fa-award" aria-hidden="true"></i> Top Rated
+                    </span>
+                @endif
+            </div>
+
+            <div style="margin-top:12px;">
+                <button type="button" class="btn btn-sm btn-outline" onclick="openShareModal()" style="width:100%;justify-content:center;font-size:.8rem;gap:6px;">
+                    <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Share Profile & QR
+                </button>
+            </div>
 
             <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px;text-align:left;">
                 @if($workerProfile && $workerProfile->hourly_rate)
@@ -196,6 +217,100 @@
                 </div>
             @endif
 
+            {{-- Equipped Tools & Gear --}}
+            @if($workerProfile && !empty($workerProfile->tools_equipped))
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title"><i class="fa-solid fa-toolbox" aria-hidden="true" style="color:#2563eb;"></i> {{ __('badges.tools_equipped') }}</h3>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                        @foreach($workerProfile->tools_equipped as $tool)
+                            <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:5px 12px;border-radius:20px;font-size:.82rem;font-weight:500;">
+                                <i class="fa-solid fa-wrench" style="font-size:.75rem;"></i> {{ $tool }}
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Services Offered --}}
+            @if($workerServices && $workerServices->count() > 0)
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <h3 class="section-title"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Services Offered</h3>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:8px;">
+                        @foreach($workerServices as $ps)
+                            <div style="background:var(--off);border:1px solid var(--g1);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;">
+                                <span style="font-size:.85rem;font-weight:600;color:var(--b9);">{{ $ps->service->name }}</span>
+                                <span style="font-size:.8rem;color:var(--b6);font-weight:500;">
+                                    @if($ps->custom_price)
+                                        ₱{{ number_format($ps->custom_price, 2) }}
+                                    @else
+                                        ₱{{ number_format($ps->service->base_price, 2) }}
+                                    @endif
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Peers Recommended by Worker --}}
+            @php
+                $recommendedPeers = $workerProfile?->recommended_peers_details ?? [];
+            @endphp
+            @if(!empty($recommendedPeers))
+                <div class="card-panel">
+                    <div class="card-panel-header">
+                        <div>
+                            <div class="eyebrow" style="color:var(--p6,#2563eb);">Peer Network</div>
+                            <h3 class="section-title"><i class="fa-solid fa-users" aria-hidden="true"></i> Trusted Peers Recommended by {{ $worker->name }}</h3>
+                        </div>
+                    </div>
+                    <p style="font-size:.82rem;color:var(--g5);margin:2px 0 14px;">
+                        Workers and specialists personally endorsed by {{ $worker->first_name }} for teamwork and collaborative jobs:
+                    </p>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+                        @foreach($recommendedPeers as $p)
+                            <div style="background:var(--off,#f8fafc);border:1px solid var(--g1,#e2e8f0);border-radius:12px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;">
+                                <div>
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        @if($p['avatar'])
+                                            <img src="{{ $p['avatar'] }}" alt="{{ $p['name'] }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--g2,#cbd5e1);">
+                                        @else
+                                            <div style="width:40px;height:40px;border-radius:50%;background:#e0e7ff;color:#4338ca;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;">
+                                                {{ $p['initials'] }}
+                                            </div>
+                                        @endif
+                                        <div style="flex:1;min-width:0;">
+                                            <a href="{{ route('client.workers.show', $p['id']) }}" style="font-weight:700;color:var(--b9,#0f172a);font-size:.9rem;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                                {{ $p['name'] }}
+                                            </a>
+                                            <div style="font-size:.78rem;color:var(--g5,#64748b);">{{ $p['service_category'] ?? 'Skilled Worker' }}</div>
+                                        </div>
+                                        @if($p['rating'] > 0)
+                                            <span style="font-size:.78rem;font-weight:700;color:#d97706;display:inline-flex;align-items:center;gap:3px;">
+                                                <i class="fa-solid fa-star" style="font-size:.7rem;"></i> {{ number_format($p['rating'], 1) }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    @if(!empty($p['note']))
+                                        <div style="margin-top:10px;font-size:.8rem;color:var(--g6,#475569);font-style:italic;background:#fff;padding:8px 10px;border-radius:8px;border-left:3px solid #3b82f6;">
+                                            &ldquo;{{ $p['note'] }}&rdquo;
+                                        </div>
+                                    @endif
+                                </div>
+                                <div style="display:flex;gap:8px;margin-top:4px;">
+                                    <a href="{{ route('client.workers.show', $p['id']) }}" class="btn btn-sm btn-outline" style="flex:1;justify-content:center;padding:5px 8px;font-size:.78rem;">
+                                        View Profile
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
             {{-- Languages --}}
             @if($workerProfile && !empty($workerProfile->spoken_languages))
                 <div class="card-panel">
@@ -346,6 +461,39 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="property_type">Property / Premises Type</label>
+                    <select name="property_type" id="property_type" class="form-control">
+                        <option value="residential" selected>Residential House</option>
+                        <option value="apartment">Apartment / Rental Unit</option>
+                        <option value="commercial">Commercial Shop / Store / Office</option>
+                        <option value="industrial">Warehouse / Industrial Facility</option>
+                    </select>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label for="pricing_type">Billing Mode</label>
+                        <select name="pricing_type" id="pricing_type" class="form-control" onchange="recalculatePriceEstimate()">
+                            <option value="fixed" selected>Fixed Task Rate</option>
+                            <option value="hourly">Hourly Rate (₱{{ number_format($workerProfile->hourly_rate ?? 350) }}/hr)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="duration_group">
+                        <label for="estimated_duration_hours">Estimated Hours</label>
+                        <input type="number" step="0.5" min="1" max="24" id="estimated_duration_hours" name="estimated_duration_hours" value="2" class="form-control" onchange="recalculatePriceEstimate()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="complexity_level">Job Complexity / Difficulty</label>
+                    <select name="complexity_level" id="complexity_level" class="form-control" onchange="recalculatePriceEstimate()">
+                        <option value="standard" selected>Standard (1.0x - Routine maintenance / basic repair)</option>
+                        <option value="moderate">Moderate (1.2x - Multiple stages / ceiling / attic / tight access)</option>
+                        <option value="high_hazard">High Risk / Hazardous (1.5x - 2-story roof / 220V live panel / structural)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label for="house_no">House No. / Street</label>
                     <input type="text" id="house_no" name="house_no" class="form-control"
                            placeholder="e.g. 123 Mabini St" required>
@@ -355,9 +503,12 @@
                     $allBarangays = ['Acle','Bayudbud','Bolbok','Burgos','Dalima','Dao','Guinhawa','Lumbangan','Luna','Luntal','Magahis','Malibu','Mataywanac','Palincaro','Putol','Rillo','Rizal','Sabang','San Jose','Talon','Toong','Tuyon-Tuyon'];
                     $coveredBarangays = $workerProfile ? ($workerProfile->service_areas ?? $workerProfile->service_zone ?? []) : [];
                 @endphp
+                <input type="hidden" name="latitude" id="client_lat" value="">
+                <input type="hidden" name="longitude" id="client_lng" value="">
+
                 <div class="form-group">
                     <label for="barangay">Barangay</label>
-                    <select id="barangay" name="barangay" class="form-control" required>
+                    <select id="barangay" name="barangay" class="form-control" required onchange="onBarangayChange(this.value)">
                         <option value="">Select barangay…</option>
                         @forelse($coveredBarangays as $barangay)
                             <option value="{{ $barangay }}">{{ $barangay }}</option>
@@ -367,6 +518,9 @@
                             @endforeach
                         @endforelse
                     </select>
+                    <div id="loc-indicator" style="display:none;font-size:.78rem;color:var(--g5);margin-top:4px;align-items:center;gap:6px;">
+                        <i class="fa-solid fa-location-dot" style="color:#2563eb;"></i> <span id="loc-indicator-text"></span>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -408,10 +562,34 @@
     </div>
 </div>
 
-{{-- Lightbox --}}
-<div id="lightbox" class="lightbox-overlay" style="display:none;" onclick="closeLightbox()">
-    <button type="button" class="lightbox-close" onclick="closeLightbox()">&times;</button>
-    <img id="lightboxImg" src="" alt="Photo">
+{{-- Share Profile Modal --}}
+<div id="share-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeShareModal()">
+    <div class="modal-box" style="max-width:420px;text-align:center;">
+        <div class="modal-header">
+            <h3>Share {{ $worker->name }}'s Profile</h3>
+            <button type="button" class="modal-close" onclick="closeShareModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:20px;">
+            <p style="font-size:.85rem;color:var(--g5);margin-bottom:14px;">Scan QR Code or share this link to book directly:</p>
+            <div style="background:#f8fafc;padding:16px;border-radius:12px;display:inline-block;border:1px solid #e2e8f0;margin-bottom:16px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode(url('/workers/' . $worker->id)) }}" alt="Worker QR Code" style="width:160px;height:160px;border-radius:6px;display:block;">
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:16px;">
+                <input type="text" id="shareProfileUrl" value="{{ url('/workers/' . $worker->id) }}" readonly class="form-control" style="font-size:.82rem;">
+                <button type="button" class="btn btn-solid" onclick="copyShareUrl()" id="copyShareBtn">
+                    <i class="fa-regular fa-copy"></i>
+                </button>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(url('/workers/' . $worker->id)) }}" target="_blank" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
+                    <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Facebook
+                </a>
+                <a href="https://api.whatsapp.com/send?text={{ urlencode('Book ' . $worker->name . ' on KaAyos: ' . url('/workers/' . $worker->id)) }}" target="_blank" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
+                    <i class="fa-brands fa-whatsapp" style="color:#22c55e;"></i> WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 @endsection
@@ -421,15 +599,116 @@
 const WORKER_AVAILABILITY = @json($workerProfile && $workerProfile->availability ? $workerProfile->availability : []);
 const DAY_MAP = {0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
 
+const TUY_COORDS = {
+    'Acle': [14.0051, 120.7477], 'Bayudbud': [14.0555, 120.7363], 'Bolbok': [14.0215, 120.7582],
+    'Burgos': [14.0162, 120.7301], 'Dalima': [14.0339, 120.6950], 'Dao': [13.9996, 120.7547],
+    'Guinhawa': [13.9823, 120.7268], 'Lumbangan': [14.0245, 120.7150], 'Luna': [14.0192, 120.7353],
+    'Luntal': [14.0314, 120.7129], 'Magahis': [14.0429, 120.7532], 'Malibu': [13.9956, 120.7058],
+    'Mataywanac': [14.0394, 120.7393], 'Palincaro': [14.0096, 120.7045], 'Putol': [13.9930, 120.7281],
+    'Rillo': [14.0163, 120.7258], 'Rizal': [14.0187, 120.7289], 'Sabang': [14.0576, 120.7080],
+    'San Jose': [14.0236, 120.7820], 'Talon': [14.0179, 120.6986], 'Toong': [14.0492, 120.7909],
+    'Tuyon-Tuyon': [14.0044, 120.7297]
+};
+
+function onBarangayChange(val) {
+    if (TUY_COORDS[val]) {
+        var pt = TUY_COORDS[val];
+        document.getElementById('client_lat').value = pt[0];
+        document.getElementById('client_lng').value = pt[1];
+        var ind = document.getElementById('loc-indicator');
+        var indText = document.getElementById('loc-indicator-text');
+        if (ind && indText) {
+            indText.textContent = 'Coordinates mapped to Barangay ' + val + ' (' + pt[0] + ', ' + pt[1] + ')';
+            ind.style.display = 'flex';
+        }
+    }
+    checkTravelBuffer();
+    updateAgreementSummary();
+}
+
 function openBookModal() {
     document.getElementById('book-modal').style.display = 'flex';
     document.getElementById('book-msg').style.display = 'none';
     document.getElementById('schedule-warning').style.display = 'none';
     document.getElementById('book-submit-btn').disabled = false;
+    // Set default coordinates if barangay selected
+    var bVal = document.getElementById('barangay')?.value;
+    if (bVal && TUY_COORDS[bVal]) {
+        document.getElementById('client_lat').value = TUY_COORDS[bVal][0];
+        document.getElementById('client_lng').value = TUY_COORDS[bVal][1];
+    }
 }
 
 function closeBookModal() {
     document.getElementById('book-modal').style.display = 'none';
+}
+
+var scheduleCheckTimer = null;
+function checkTravelBuffer() {
+    clearTimeout(scheduleCheckTimer);
+    var dt = document.getElementById('scheduled_at').value;
+    var brgy = document.getElementById('barangay').value;
+    var lat = document.getElementById('client_lat')?.value || '';
+    var lng = document.getElementById('client_lng')?.value || '';
+    var warning = document.getElementById('schedule-warning');
+    var warningText = document.getElementById('schedule-warning-text');
+    var btn = document.getElementById('book-submit-btn');
+
+    if (!dt || !brgy) return;
+
+    scheduleCheckTimer = setTimeout(function() {
+        fetch('/client/workers/{{ $worker->id }}/check-schedule?scheduled_at=' + encodeURIComponent(dt) + '&barangay=' + encodeURIComponent(brgy) + '&latitude=' + lat + '&longitude=' + lng)
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.status === 'conflict') {
+                    warningText.innerHTML = '<strong>Schedule/Travel Conflict:</strong> ' + res.message +
+                        (res.recommended_time ? ' <button type="button" class="btn btn-sm btn-solid" style="margin-left:6px;padding:3px 8px;font-size:.75rem;" onclick="applyRecommendedTime(\'' + res.recommended_time + '\')">Use ' + res.recommended_time + '</button>' : '');
+                    warning.style.display = 'flex';
+                    warning.style.background = '#fef2f2';
+                    warning.style.borderColor = '#fca5a5';
+                    warning.style.color = '#991b1b';
+                    btn.disabled = true;
+                } else if (res.status === 'out_of_radius') {
+                    warningText.innerHTML = '<strong>Outside Worker Radius:</strong> ' + res.message;
+                    warning.style.display = 'flex';
+                    warning.style.background = '#fef2f2';
+                    warning.style.borderColor = '#fca5a5';
+                    warning.style.color = '#991b1b';
+                    btn.disabled = true;
+                } else if (res.status === 'tight') {
+                    warningText.innerHTML = '<strong>Tight Buffer:</strong> ' + res.message + ' (Worker has an adjacent job; travel buffer may be snug)';
+                    warning.style.display = 'flex';
+                    warning.style.background = '#fffbeb';
+                    warning.style.borderColor = '#fde68a';
+                    warning.style.color = '#92400e';
+                    btn.disabled = false;
+                }
+            })
+            .catch(function() {});
+    }, 350);
+}
+
+function applyRecommendedTime(recTime) {
+    // recTime is e.g. "11:30 AM" or "3:00 PM"
+    var input = document.getElementById('scheduled_at');
+    if (!input.value) return;
+    var parts = recTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!parts) return;
+    var hours = parseInt(parts[1], 10);
+    var mins = parts[2];
+    var ampm = parts[3].toUpperCase();
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+
+    var cur = new Date(input.value);
+    var y = cur.getFullYear();
+    var m = String(cur.getMonth() + 1).padStart(2, '0');
+    var d = String(cur.getDate()).padStart(2, '0');
+    var h = String(hours).padStart(2, '0');
+    input.value = y + '-' + m + '-' + d + 'T' + h + ':' + mins;
+
+    validateSchedule();
+    updateAgreementSummary();
 }
 
 function validateSchedule() {
@@ -437,6 +716,11 @@ function validateSchedule() {
     const warning = document.getElementById('schedule-warning');
     const btn = document.getElementById('book-submit-btn');
     const warningText = document.getElementById('schedule-warning-text');
+
+    // Reset default styling
+    warning.style.background = '#fff3cd';
+    warning.style.borderColor = '#ffc107';
+    warning.style.color = '#856404';
 
     if (!input.value || WORKER_AVAILABILITY.length === 0) {
         warningText.textContent = 'This worker hasn\u2019t set their availability yet. Booking is currently unavailable.';
@@ -469,17 +753,79 @@ function validateSchedule() {
 
     warning.style.display = 'none';
     btn.disabled = false;
+
+    // Also check transit buffer with backend
+    checkTravelBuffer();
+}
+
+function recalculatePriceEstimate() {
+    updateAgreementSummary();
 }
 
 function updateAgreementSummary() {
-    const svc  = document.querySelector('[name="service_category"]')?.value || '—';
+    const select = document.getElementById('service-select');
+    const svcHidden = document.getElementById('service_category_hidden');
+    let svcName = '—';
+    let basePrice = 0;
+
+    if (select && select.value) {
+        const opt = select.options[select.selectedIndex];
+        svcName = opt.textContent.split(' - ')[0].trim();
+        const svcs = JSON.parse(document.getElementById('worker-services-json')?.value || '[]');
+        const found = svcs.find(s => String(s.id) === String(select.value));
+        if (found) {
+            basePrice = found.price;
+            if (svcHidden) svcHidden.value = found.category;
+        }
+    } else {
+        const fallback = document.querySelector('[name="service_category"]');
+        if (fallback) svcName = fallback.value || '—';
+        basePrice = {{ (float) ($workerProfile->hourly_rate ?? 350) }};
+    }
+
+    const pricingType = document.getElementById('pricing_type')?.value || 'fixed';
+    const hours = parseFloat(document.getElementById('estimated_duration_hours')?.value || '2');
+    const complexity = document.getElementById('complexity_level')?.value || 'standard';
+    const multiplier = complexity === 'high_hazard' ? 1.5 : (complexity === 'moderate' ? 1.2 : 1.0);
+
+    let laborPrice = basePrice;
+    if (pricingType === 'hourly') {
+        const hourlyRate = {{ (float) ($workerProfile->hourly_rate ?? 350) }};
+        laborPrice = hourlyRate * hours;
+    }
+
+    const finalEstimate = Math.round(laborPrice * multiplier);
+
     const dt   = document.querySelector('[name="scheduled_at"]')?.value || '—';
     const addr = [document.querySelector('[name="house_no"]')?.value, document.querySelector('[name="street"]')?.value, document.querySelector('[name="barangay"]')?.value].filter(Boolean).join(', ') || '—';
     const pr   = document.querySelector('[name="price"]')?.value;
-    document.getElementById('agree-service').textContent  = svc;
+    document.getElementById('agree-service').textContent  = svcName;
     document.getElementById('agree-date').textContent     = dt ? new Date(dt).toLocaleString('en-PH',{dateStyle:'long',timeStyle:'short'}) : '—';
     document.getElementById('agree-location').textContent = addr;
-    document.getElementById('agree-price').textContent    = pr ? '₱' + Number(pr).toLocaleString() : '—';
+    document.getElementById('agree-price').innerHTML      = '\u20B1' + Number(finalEstimate).toLocaleString() +
+        ' <small style="font-weight:normal;color:#64748b;">(' + (pricingType === 'hourly' ? hours + ' hrs @ ₱' + {{ (float) ($workerProfile->hourly_rate ?? 350) }} + '/hr' : 'Fixed Task') + (multiplier > 1.0 ? ' &times; ' + multiplier + 'x diff.' : '') + ')</small>';
+}
+
+function openShareModal() {
+    document.getElementById('share-modal').style.display = 'flex';
+}
+
+function closeShareModal() {
+    document.getElementById('share-modal').style.display = 'none';
+}
+
+function copyShareUrl() {
+    const input = document.getElementById('shareProfileUrl');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value);
+    const btn = document.getElementById('copyShareBtn');
+    btn.innerHTML = '<i class="fa-solid fa-check" style="color:#22c55e;"></i>';
+    setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i>'; }, 2000);
+}
+
+function onServiceChange() {
+    updateAgreementSummary();
 }
 
 function updateNotesCounter() {
@@ -516,22 +862,31 @@ function submitBooking(e) {
         },
         body: JSON.stringify(data),
     })
-    .then(r => r.json())
-    .then(res => {
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
         if (res.success) {
             msg.style.display = 'block';
             msg.className = 'alert alert-success';
             msg.innerHTML = 'Booking request sent! <a href="' + res.redirect + '" style="text-decoration:underline;">View my bookings</a>';
             btn.textContent = 'Sent!';
-            setTimeout(() => {
+            setTimeout(function() {
                 closeBookModal();
                 if (res.redirect) window.location.href = res.redirect;
             }, 1500);
         } else {
+            if (res.conflict && res.recommended_time) {
+                msg.style.display = 'block';
+                msg.className = 'alert alert-error';
+                msg.innerHTML = '<div>' + res.message + '</div>' +
+                    '<div style="margin-top:8px;"><button type="button" class="btn btn-sm btn-solid" onclick="applyRecommendedTime(\'' + res.recommended_time + '\')"><i class="fa-regular fa-clock"></i> Switch to ' + res.recommended_time + '</button></div>';
+                btn.disabled = false;
+                btn.textContent = 'Send Request';
+                return;
+            }
             throw new Error(res.message || 'Something went wrong');
         }
     })
-    .catch(err => {
+    .catch(function(err) {
         msg.style.display = 'block';
         msg.className = 'alert alert-error';
         msg.textContent = err.message;

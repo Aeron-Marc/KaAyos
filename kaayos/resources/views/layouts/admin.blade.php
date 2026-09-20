@@ -333,6 +333,9 @@
         </ul>
         <div class="sidebar-spacer" style="flex:1"></div>
         <div class="sidebar-footer">
+            <div style="padding: 8px 16px; margin-bottom: 8px;">
+                <x-language-switcher />
+            </div>
             <form method="POST" action="{{ route('logout') }}" style="display:block">
                 @csrf
                 <button type="submit" style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:8px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.95rem;font-weight:500;border:none;background:none;font-family:'Inter',sans-serif;width:100%;cursor:pointer;transition:all .18s;"

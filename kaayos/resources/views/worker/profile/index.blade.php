@@ -235,7 +235,7 @@
             </form>
             <h3>{{ auth()->user()->name ?? 'User' }}</h3>
             <p>{{ auth()->user()->city ?: 'Location not set' }}</p>
-            <span class="profile-role-tag">Trabahador</span>
+            <span class="profile-role-tag">{{ __('role.worker') }}</span>
 
             <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--g1);">
                 <div style="display:flex;justify-content:center;gap:20px;">
@@ -373,6 +373,46 @@
             </div>
 
             <div class="form-section">
+                <h3>Equipped Tools & Work Preferences</h3>
+                <div class="form-group">
+                    <label for="tools_equipped">Tools & Equipment You Own (comma-separated)</label>
+                    <input type="text" id="tools_equipped" name="tools_equipped"
+                           placeholder="e.g. Cordless Hammer Drill, Inverter Welding Machine, 16ft Ladder, Pipe Wrench, PPE"
+                           value="{{ old('tools_equipped', $workerProfile->tools_equipped ? implode(', ', $workerProfile->tools_equipped) : '') }}">
+                    <span style="font-size:.78rem;color:var(--g4);margin-top:4px;display:block;">These tools will be highlighted with verified badges on your public client profile.</span>
+                </div>
+
+                <div class="form-row" style="margin-top:14px;">
+                    <div class="form-group">
+                        <label for="min_notice_hours">Minimum Advance Notice (Hours)</label>
+                        <select id="min_notice_hours" name="min_notice_hours">
+                            <option value="1" {{ old('min_notice_hours', $workerProfile->min_notice_hours) == 1 ? 'selected' : '' }}>1 hour (Fast response)</option>
+                            <option value="2" {{ old('min_notice_hours', $workerProfile->min_notice_hours) == 2 ? 'selected' : '' }}>2 hours (Standard)</option>
+                            <option value="4" {{ old('min_notice_hours', $workerProfile->min_notice_hours) == 4 ? 'selected' : '' }}>4 hours (Half-day)</option>
+                            <option value="24" {{ old('min_notice_hours', $workerProfile->min_notice_hours) == 24 ? 'selected' : '' }}>24 hours (Next-day)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display:flex;flex-direction:column;justify-content:center;">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:16px;">
+                            <input type="checkbox" name="emergency_available" value="1" {{ old('emergency_available', $workerProfile->emergency_available) ? 'checked' : '' }} style="width:18px;height:18px;accent-color:#2563eb;">
+                            <span style="font-size:.88rem;font-weight:600;color:var(--b9);">Available for Emergency / Urgent Dispatch</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top:14px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="tesda_certified" value="1" {{ old('tesda_certified', $workerProfile->tesda_certified) ? 'checked' : '' }} style="width:18px;height:18px;accent-color:#2563eb;">
+                        <span style="font-size:.88rem;font-weight:600;color:var(--b9);">I hold a TESDA National Certificate (NC II / NC III)</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="barangay_clearance_verified" value="1" {{ old('barangay_clearance_verified', $workerProfile->barangay_clearance_verified) ? 'checked' : '' }} style="width:18px;height:18px;accent-color:#2563eb;">
+                        <span style="font-size:.88rem;font-weight:600;color:var(--b9);">Barangay Clearance on Record in Tuy</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-section">
                 <h3>Availability</h3>
                 @php
                     $daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -465,6 +505,75 @@
                         </button>
                     </div>
                     <div id="locStatusMsg" style="display:none;margin-top:8px;font-size:.78rem;"></div>
+                </div>
+            </div>
+
+            {{-- Recommended Peers & Collaborators --}}
+            <div class="form-section">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <h3 style="margin:0;"><i class="fa-solid fa-users" aria-hidden="true"></i> Recommended Peers & Collaborators</h3>
+                        <p style="font-size:.82rem;color:var(--g5);margin:2px 0 0;">
+                            Directly endorse trusted peer workers (Person B, Person C...) to clients visiting your public profile.
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline" id="addPeerBtn" onclick="addProfilePeerRow()" style="font-size:.78rem;gap:4px;">
+                        <i class="fa-solid fa-user-plus"></i> Add Recommended Peer
+                    </button>
+                </div>
+
+                <div id="recommendedPeersContainer" style="display:flex;flex-direction:column;gap:12px;margin-top:14px;">
+                    @php
+                        $savedPeers = old('recommended_peers', $workerProfile->recommended_peers ?? []);
+                    @endphp
+
+                        @php
+                            $peerWorkerModel = ($otherWorkers ?? collect())->firstWhere('id', $rec['worker_id'] ?? null);
+                            $initialCat = $peerWorkerModel?->service_category ?? '';
+                            $allSpecializations = ($otherWorkers ?? collect())->pluck('service_category')->filter()->unique()->sort()->values();
+                        @endphp
+                        <div class="peer-rec-row" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;position:relative;">
+                            <div style="display:grid;grid-template-columns:160px 1fr auto;gap:10px;align-items:center;margin-bottom:8px;">
+                                <div>
+                                    <label style="font-size:.78rem;font-weight:600;color:var(--g7);display:block;margin-bottom:3px;"><i class="fa-solid fa-filter" style="font-size:.7rem;color:#64748b;"></i> Specialization</label>
+                                    <select class="form-input profile-peer-cat-elem" onchange="onProfilePeerCatChange(this)" style="width:100%;padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:.82rem;background:#fff;">
+                                        <option value="">All Specializations</option>
+                                        @foreach($allSpecializations as $spec)
+                                            <option value="{{ $spec }}" {{ $spec === $initialCat ? 'selected' : '' }}>{{ $spec }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:.78rem;font-weight:600;color:var(--g7);display:block;margin-bottom:3px;"><i class="fa-solid fa-user" style="font-size:.7rem;color:#64748b;"></i> Worker Name *</label>
+                                    <select name="recommended_peers[{{ $pIdx }}][worker_id]" class="form-input profile-peer-select-elem" style="width:100%;padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:.85rem;background:#fff;">
+                                        <option value="">-- Select Worker (e.g. Person B) --</option>
+                                        @foreach($otherWorkers ?? [] as $peer)
+                                            @php
+                                                $peerDisplayName = trim($peer->name ?: ($peer->first_name . ' ' . $peer->last_name)) ?: 'Worker #' . $peer->id;
+                                            @endphp
+                                            <option value="{{ $peer->id }}" {{ ($rec['worker_id'] ?? '') == $peer->id ? 'selected' : '' }}>
+                                                {{ $peerDisplayName }} ({{ $peer->service_category ?? 'Skilled Worker' }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div style="align-self:flex-end;">
+                                    <button type="button" class="btn btn-sm btn-ghost" onclick="removeProfilePeerRow(this)" style="color:#dc2626;padding:6px 10px;font-size:.8rem;" title="Remove Worker">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label style="font-size:.78rem;font-weight:600;color:var(--g7);display:block;margin-bottom:3px;">Your Personal Endorsement / Recommendation Note</label>
+                                <input type="text" name="recommended_peers[{{ $pIdx }}][note]" class="form-input" value="{{ $rec['note'] ?? '' }}" placeholder="e.g. Expert in rewiring and solar setups. We frequently collaborate on commercial projects in Batangas." style="width:100%;padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:.82rem;">
+                            </div>
+                        </div>
+                    @empty
+                        <div id="noPeersNotice" style="text-align:center;padding:18px;background:var(--g0);border-radius:8px;color:var(--g5);font-size:.82rem;">
+                            <i class="fa-solid fa-user-group" style="font-size:1.4rem;margin-bottom:6px;display:block;color:var(--g4);"></i>
+                            No peers recommended yet. Click <strong>"Add Recommended Peer"</strong> to suggest trusted colleagues to clients!
+                        </div>
+                    @endforelse
                 </div>
             </div>
 
@@ -1435,5 +1544,107 @@ document.querySelectorAll('.tag-input-wrap').forEach(initTagInput);
             );
         });
     })();
+
+    // ── Recommended Peers Management ──
+    const otherWorkersList = @json($otherWorkers ?? []);
+    let profilePeerIndex = {{ count(old('recommended_peers', $workerProfile->recommended_peers ?? [])) }};
+
+    function getProfileUniqueSpecializations() {
+        var list = [];
+        otherWorkersList.forEach(function (w) {
+            if (w.service_category && !list.includes(w.service_category)) {
+                list.push(w.service_category);
+            }
+        });
+        return list.sort();
+    }
+
+    function buildProfileWorkerOptions(selectedCategory, selectedWorkerId) {
+        var placeholder = selectedCategory
+            ? '-- Select ' + selectedCategory + ' Worker --'
+            : '-- Select Worker (e.g. Person B) --';
+        var html = '<option value="">' + placeholder + '</option>';
+
+        var filtered = otherWorkersList.filter(function (w) {
+            return !selectedCategory || w.service_category === selectedCategory;
+        });
+
+        filtered.forEach(function (w) {
+            var sel = (String(w.id) === String(selectedWorkerId)) ? 'selected' : '';
+            var workerName = (w.name && w.name.trim().length > 0)
+                ? w.name.trim()
+                : (((w.first_name || '') + ' ' + (w.last_name || '')).trim() || 'Worker #' + w.id);
+            var cat = w.service_category ? ' — ' + w.service_category : '';
+            html += '<option value="' + w.id + '" ' + sel + '>' + workerName + cat + '</option>';
+        });
+
+        return html;
+    }
+
+    window.onProfilePeerCatChange = function (catSelectElem) {
+        var row = catSelectElem.closest('.peer-rec-row');
+        if (!row) return;
+        var cat = catSelectElem.value;
+        var selectElem = row.querySelector('.profile-peer-select-elem');
+        if (!selectElem) return;
+
+        var currentVal = selectElem.value;
+        selectElem.innerHTML = buildProfileWorkerOptions(cat, currentVal);
+    };
+
+    window.addProfilePeerRow = function () {
+        const container = document.getElementById('recommendedPeersContainer');
+        const notice = document.getElementById('noPeersNotice');
+        if (notice) notice.style.display = 'none';
+
+        var specs = getProfileUniqueSpecializations();
+        var specOptHtml = '<option value="">All Specializations</option>';
+        specs.forEach(function (s) {
+            specOptHtml += '<option value="' + s + '">' + s + '</option>';
+        });
+
+        var workerOptHtml = buildProfileWorkerOptions('', '');
+
+        const row = document.createElement('div');
+        row.className = 'peer-rec-row';
+        row.style = 'background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;position:relative;';
+        row.innerHTML =
+            '<div style="display:grid;grid-template-columns:160px 1fr auto;gap:10px;align-items:center;margin-bottom:8px;">' +
+                '<div>' +
+                    '<label style="font-size:.78rem;font-weight:600;color:var(--g7);display:block;margin-bottom:3px;"><i class="fa-solid fa-filter" style="font-size:.7rem;color:#64748b;"></i> Specialization</label>' +
+                    '<select class="form-input profile-peer-cat-elem" onchange="onProfilePeerCatChange(this)" style="width:100%;padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:.82rem;background:#fff;">' +
+                        specOptHtml +
+                    '</select>' +
+                '</div>' +
+                '<div>' +
+                    '<label style="font-size:.78rem;font-weight:600;color:var(--g7);display:block;margin-bottom:3px;"><i class="fa-solid fa-user" style="font-size:.7rem;color:#64748b;"></i> Worker Name *</label>' +
+                    '<select name="recommended_peers[' + profilePeerIndex + '][worker_id]" class="form-input profile-peer-select-elem" style="width:100%;padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:.85rem;background:#fff;">' +
+                        workerOptHtml +
+                    '</select>' +
+                '</div>' +
+                '<div style="align-self:flex-end;">' +
+                    '<button type="button" class="btn btn-sm btn-ghost" onclick="removeProfilePeerRow(this)" style="color:#dc2626;padding:6px 10px;font-size:.8rem;" title="Remove Worker">' +
+                        '<i class="fa-solid fa-trash-can"></i>' +
+                    '</button>' +
+                '</div>' +
+            '</div>' +
+            '<div>' +
+                '<label style="font-size:.78rem;font-weight:600;color:var(--g7);display:block;margin-bottom:3px;">Your Personal Endorsement / Recommendation Note</label>' +
+                '<input type="text" name="recommended_peers[' + profilePeerIndex + '][note]" class="form-input" placeholder="e.g. Expert in rewiring and solar setups. We frequently collaborate on commercial projects in Batangas." style="width:100%;padding:7px 10px;border:1px solid var(--g3);border-radius:7px;font-size:.82rem;">' +
+            '</div>';
+
+        container.appendChild(row);
+        profilePeerIndex++;
+    };
+
+    window.removeProfilePeerRow = function (btn) {
+        const row = btn.closest('.peer-rec-row');
+        if (row) row.remove();
+        const container = document.getElementById('recommendedPeersContainer');
+        if (container.querySelectorAll('.peer-rec-row').length === 0) {
+            const notice = document.getElementById('noPeersNotice');
+            if (notice) notice.style.display = 'block';
+        }
+    };
 </script>
 @endpush

@@ -11,6 +11,7 @@ use App\Models\WorkerProfile;
 use App\Events\MessageSent;
 use App\Notifications\NewMessage;
 use App\Support\WorkerDocuments;
+use App\Services\GeoTravelService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,14 +100,37 @@ class WorkerController extends Controller
                     'day'            => $booking->scheduled_at->format('d'),
                     'time'           => $booking->scheduled_at->format('g:i A'),
                     'location'       => $booking->address,
+                    'barangay'       => $booking->barangay,
+                    'latitude'       => $booking->latitude,
+                    'longitude'      => $booking->longitude,
                     'status'         => $labelMap[$booking->status] ?? ucfirst($booking->status),
                     'raw_status'     => $booking->status,
                     'price'          => $booking->price ?? 0,
+                    'property_type'  => $booking->property_type ?? 'residential',
+                    'pricing_type'   => $booking->pricing_type ?? 'fixed',
+                    'estimated_duration_hours' => $booking->estimated_duration_hours ?? 2.0,
+                    'complexity_level' => $booking->complexity_level ?? 'standard',
+                    'complexity_multiplier' => $booking->complexity_multiplier ?? 1.0,
+                    'work_started_at' => $booking->work_started_at?->format('g:i A'),
+                    'work_ended_at'   => $booking->work_ended_at?->format('g:i A'),
+                    'scope_amendment_status' => $booking->scope_amendment_status,
+                    'scope_amendment_price'  => $booking->scope_amendment_price,
+                    'scope_amendment_notes'  => $booking->scope_amendment_notes,
+                    'team_status'    => $booking->team_status ?? 'none',
+                    'team_justification' => $booking->team_justification,
+                    'crew'           => $booking->bookingWorkers()->with('worker')->get()->map(fn($bw) => [
+                        'id'            => $bw->id,
+                        'worker_name'   => $bw->worker->name,
+                        'role'          => $bw->role,
+                        'payout_amount' => $bw->payout_amount,
+                        'status'        => $bw->status,
+                    ])->values()->toArray(),
                     'created'        => $booking->created_at->format('M d, Y · h:i A'),
                     'booking_ref'    => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
                     'status_history' => $statusHistory,
                     'cancellation_reason' => $booking->cancellation_reason,
                     'cancelled_at'  => $booking->cancelled_at?->toIso8601String(),
+                    'gmaps_nav_url'  => $booking->google_maps_nav_url,
                 ];
             })
             ->toArray();
@@ -193,26 +217,40 @@ class WorkerController extends Controller
             Booking::STATUS_CANCELLED  => 'Cancelled',
         ];
 
+        $geoTravel = app(GeoTravelService::class);
         $days = [];
-        foreach ($bookings as $booking) {
-            $day = $booking->scheduled_at->day;
-            if (!isset($days[$day])) {
-                $days[$day] = [];
+
+        // Group by day to compute inter-job travel metrics
+        $grouped = $bookings->groupBy(fn($b) => $b->scheduled_at->day);
+
+        foreach ($grouped as $day => $dayBookings) {
+            $days[$day] = [];
+            $routeInfo = $geoTravel->buildDailyRoute($dayBookings, auth()->user());
+            $waypointsById = collect($routeInfo['waypoints'])->where('type', 'job')->keyBy('id');
+
+            foreach ($dayBookings as $booking) {
+                $wp = $waypointsById->get($booking->id);
+
+                $days[$day][] = [
+                    'id'                   => $booking->id,
+                    'client'               => $booking->client->name ?? 'Unknown',
+                    'client_phone'         => $booking->client->phone ?? '',
+                    'service'              => $booking->service_category,
+                    'time'                 => $booking->scheduled_at->format('g:i A'),
+                    'time_24'              => $booking->scheduled_at->format('H:i'),
+                    'location'             => $booking->address,
+                    'barangay'             => $booking->barangay,
+                    'latitude'             => $wp['latitude'] ?? (float) $booking->latitude,
+                    'longitude'            => $wp['longitude'] ?? (float) $booking->longitude,
+                    'status'               => $labelMap[$booking->status] ?? ucfirst($booking->status),
+                    'raw_status'           => $booking->status,
+                    'price'                => $booking->price ?? 0,
+                    'booking_ref'          => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
+                    'travel_from_prev'     => $wp['travel_prev'] ?? null,
+                    'feasibility'          => $wp['feasibility'] ?? 'feasible',
+                    'gmaps_nav_url'        => $wp['nav_url'] ?? $booking->google_maps_nav_url,
+                ];
             }
-            $days[$day][] = [
-                'id'          => $booking->id,
-                'client'      => $booking->client->name ?? 'Unknown',
-                'client_phone'=> $booking->client->phone ?? '',
-                'service'     => $booking->service_category,
-                'time'        => $booking->scheduled_at->format('g:i A'),
-                'time_24'     => $booking->scheduled_at->format('H:i'),
-                'location'    => $booking->address,
-                'barangay'    => $booking->barangay,
-                'status'      => $labelMap[$booking->status] ?? ucfirst($booking->status),
-                'raw_status'  => $booking->status,
-                'price'       => $booking->price ?? 0,
-                'booking_ref' => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
-            ];
         }
 
         return response()->json([
@@ -220,6 +258,48 @@ class WorkerController extends Controller
             'month'  => (int) $month,
             'days'   => $days,
             'today'  => now()->year === (int) $year && now()->month === (int) $month ? now()->day : null,
+        ]);
+    }
+
+    public function dailyRoute(Request $request, GeoTravelService $geoTravel): JsonResponse
+    {
+        $dateStr = $request->query('date', now()->toDateString());
+        $targetDate = \Carbon\Carbon::parse($dateStr);
+
+        $bookings = auth()->user()->bookingsAsWorker()
+            ->with('client')
+            ->whereDate('scheduled_at', $targetDate)
+            ->whereNotIn('status', [Booking::STATUS_CANCELLED, Booking::STATUS_DECLINED])
+            ->orderBy('scheduled_at')
+            ->get();
+
+        $itinerary = $geoTravel->buildDailyRoute($bookings, auth()->user());
+
+        return response()->json([
+            'date'            => $targetDate->format('Y-m-d'),
+            'formatted_date'  => $targetDate->format('F d, Y'),
+            'itinerary'       => $itinerary,
+        ]);
+    }
+
+    public function optimizeRoute(Request $request, GeoTravelService $geoTravel): JsonResponse
+    {
+        $dateStr = $request->query('date', now()->toDateString());
+        $targetDate = \Carbon\Carbon::parse($dateStr);
+
+        $bookings = auth()->user()->bookingsAsWorker()
+            ->with('client')
+            ->whereDate('scheduled_at', $targetDate)
+            ->whereNotIn('status', [Booking::STATUS_CANCELLED, Booking::STATUS_DECLINED])
+            ->orderBy('scheduled_at')
+            ->get();
+
+        $optimization = $geoTravel->suggestOptimizedStopOrder($bookings, auth()->user());
+
+        return response()->json([
+            'date'            => $targetDate->format('Y-m-d'),
+            'formatted_date'  => $targetDate->format('F d, Y'),
+            'optimization'    => $optimization,
         ]);
     }
 
@@ -247,6 +327,9 @@ class WorkerController extends Controller
             $statusHistory['new'] = $booking->created_at->toIso8601String();
         }
 
+        $geoTravel = app(GeoTravelService::class);
+        [$lat, $lng] = $geoTravel->resolveBookingCoordinates($booking);
+
         return response()->json([
             'id'                  => $booking->id,
             'client'              => $booking->client->name ?? 'Unknown',
@@ -260,14 +343,93 @@ class WorkerController extends Controller
             'time'                => $booking->scheduled_at->format('g:i A'),
             'location'            => $booking->address,
             'barangay'            => $booking->barangay,
+            'latitude'            => $lat,
+            'longitude'           => $lng,
             'status'              => $labelMap[$booking->status] ?? ucfirst($booking->status),
             'raw_status'          => $booking->status,
             'price'               => $booking->price ?? 0,
+            'property_type'       => $booking->property_type ?? 'residential',
+            'pricing_type'        => $booking->pricing_type ?? 'fixed',
+            'estimated_duration_hours' => $booking->estimated_duration_hours ?? 2.0,
+            'complexity_level'    => $booking->complexity_level ?? 'standard',
+            'complexity_multiplier' => $booking->complexity_multiplier ?? 1.0,
+            'work_started_at'     => $booking->work_started_at?->format('g:i A'),
+            'work_ended_at'       => $booking->work_ended_at?->format('g:i A'),
+            'scope_amendment_status' => $booking->scope_amendment_status,
+            'scope_amendment_price'  => $booking->scope_amendment_price,
+            'scope_amendment_notes'  => $booking->scope_amendment_notes,
+            'team_status'         => $booking->team_status ?? 'none',
+            'team_justification'  => $booking->team_justification,
+            'crew'                => $booking->bookingWorkers()->with('worker')->get()->map(fn($bw) => [
+                'id'            => $bw->id,
+                'worker_name'   => $bw->worker->name,
+                'role'          => $bw->role,
+                'payout_amount' => $bw->payout_amount,
+                'status'        => $bw->status,
+            ])->values()->toArray(),
             'created'             => $booking->created_at->format('M d, Y · h:i A'),
             'booking_ref'         => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
             'status_history'      => $statusHistory,
-            'cancellation_reason'=> $booking->cancellation_reason,
+            'cancellation_reason' => $booking->cancellation_reason,
             'cancelled_at'        => $booking->cancelled_at?->toIso8601String(),
+            'gmaps_nav_url'       => "https://www.google.com/maps/dir/?api=1&destination={$lat},{$lng}",
+        ]);
+    }
+
+    public function updateLiveLocation(Request $request, Booking $booking, GeoTravelService $geoTravel): JsonResponse
+    {
+        if ($booking->worker_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        if ($booking->status !== Booking::STATUS_EN_ROUTE) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Live tracking is only active while en route.',
+                'status'  => $booking->status,
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'latitude'  => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'heading'   => ['nullable', 'numeric'],
+            'speed'     => ['nullable', 'numeric'],
+        ]);
+
+        $workerLat = (float) $validated['latitude'];
+        $workerLng = (float) $validated['longitude'];
+
+        [$destLat, $destLng] = $geoTravel->resolveBookingCoordinates($booking);
+        $travel = $geoTravel->calculateTravel($workerLat, $workerLng, $destLat, $destLng);
+
+        $booking->update([
+            'worker_live_latitude'         => $workerLat,
+            'worker_live_longitude'        => $workerLng,
+            'worker_live_heading'          => $validated['heading'] ?? null,
+            'worker_live_speed'            => $validated['speed'] ?? null,
+            'worker_live_updated_at'       => now(),
+            'travel_distance_from_prev_km' => $travel['road_distance_km'],
+            'estimated_transit_minutes'    => $travel['estimated_minutes'],
+        ]);
+
+        $workerProfile = auth()->user()->workerProfile;
+        if ($workerProfile) {
+            $workerProfile->update([
+                'current_latitude'        => $workerLat,
+                'current_longitude'       => $workerLng,
+                'location_is_approximate' => false,
+            ]);
+        }
+
+        return response()->json([
+            'success'           => true,
+            'remaining_km'      => $travel['road_distance_km'],
+            'formatted_dist'    => $travel['formatted_distance'],
+            'remaining_minutes' => $travel['estimated_minutes'],
+            'formatted_time'    => $travel['formatted_time'],
+            'eta_time'          => now()->addMinutes($travel['estimated_minutes'])->format('g:i A'),
+            'live_tracked_at'   => now()->toIso8601String(),
         ]);
     }
 
@@ -480,6 +642,15 @@ class WorkerController extends Controller
         $data['jobRequests'] = $this->getJobRequests($filter);
         $data['activeFilter'] = $filter ?? '';
 
+        $maximizer = app(\App\Services\ScheduleMaximizationService::class);
+        $data['todayUtilization'] = $maximizer->computeDailyUtilization(auth()->user(), now());
+        $data['availablePeers'] = User::where('role', 'worker')
+            ->where('id', '!=', auth()->id())
+            ->active()
+            ->with('workerProfile')
+            ->orderBy('name')
+            ->get(['id', 'first_name', 'last_name', 'name', 'phone', 'service_category']);
+
         return view('worker.schedule.index', $data);
     }
 
@@ -619,6 +790,13 @@ class WorkerController extends Controller
                 'workerProfile' => $profile,
                 'portfolios'    => $profile->portfolios()->latest()->get(),
                 'documents'     => $documents,
+                'categories'    => \App\Models\ServiceCategory::active()->orderBy('name')->get(),
+                'otherWorkers'  => User::where('role', 'worker')
+                    ->where('id', '!=', $user->id)
+                    ->active()
+                    ->with('workerProfile')
+                    ->orderBy('name')
+                    ->get(['id', 'first_name', 'last_name', 'name', 'phone', 'service_category']),
             ]
         ));
     }
@@ -652,6 +830,14 @@ class WorkerController extends Controller
             'years_of_experience'=> ['nullable', 'integer', 'min:0', 'max:100'],
             'service_radius'     => ['nullable', 'integer', 'min:0', 'max:500'],
             'service_zone'       => ['nullable', 'string'],
+            'tools_equipped'     => ['nullable'],
+            'recommended_peers'  => ['nullable', 'array'],
+            'recommended_peers.*.worker_id' => ['nullable', 'exists:users,id'],
+            'recommended_peers.*.note'      => ['nullable', 'string', 'max:500'],
+            'tesda_certified'    => ['nullable', 'boolean'],
+            'barangay_clearance_verified' => ['nullable', 'boolean'],
+            'min_notice_hours'   => ['nullable', 'integer', 'min:1', 'max:72'],
+            'emergency_available'=> ['nullable', 'boolean'],
         ]);
 
         $updates = [
@@ -673,16 +859,29 @@ class WorkerController extends Controller
 
         $profile->fill([
             'bio'                => $data['bio'] ?? null,
-            'skills'             => isset($data['skills']) ? array_map('trim', explode(',', $data['skills'])) : null,
-            'spoken_languages'   => isset($data['spoken_languages']) ? array_map('trim', explode(',', $data['spoken_languages'])) : null,
+            'skills'             => isset($data['skills']) ? array_values(array_filter(array_map('trim', explode(',', $data['skills'])))) : null,
+            'tools_equipped'     => isset($data['tools_equipped'])
+                ? (is_array($data['tools_equipped']) ? array_values(array_filter($data['tools_equipped'])) : array_values(array_filter(array_map('trim', explode(',', $data['tools_equipped'])))))
+                : ($profile->tools_equipped ?? []),
+            'spoken_languages'   => isset($data['spoken_languages']) ? array_values(array_filter(array_map('trim', explode(',', $data['spoken_languages'])))) : null,
             'hourly_rate'        => $data['hourly_rate'] ?? null,
             'available_days'     => $data['available_days'] ?? null,
             'preferred_hours'    => $data['preferred_hours'] ?? null,
             'availability'       => isset($data['availability']) ? json_decode($data['availability'], true) : null,
-            'service_areas'      => isset($data['service_areas']) ? array_map('trim', explode(',', $data['service_areas'])) : null,
+            'service_areas'      => isset($data['service_areas']) ? array_values(array_filter(array_map('trim', explode(',', $data['service_areas'])))) : null,
             'years_of_experience'=> $data['years_of_experience'] ?? null,
             'service_radius'     => $data['service_radius'] ?? null,
-            'service_zone'       => isset($data['service_zone']) ? array_map('trim', explode(',', $data['service_zone'])) : null,
+            'service_zone'       => isset($data['service_zone']) ? array_values(array_filter(array_map('trim', explode(',', $data['service_zone'])))) : null,
+            'recommended_peers'  => $request->has('recommended_peers')
+                ? array_values(array_filter(
+                    $request->input('recommended_peers', []),
+                    fn($item) => !empty($item['worker_id']) && $item['worker_id'] != $user->id
+                ))
+                : ($profile->recommended_peers ?? []),
+            'tesda_certified'    => $request->boolean('tesda_certified'),
+            'barangay_clearance_verified' => $request->boolean('barangay_clearance_verified'),
+            'min_notice_hours'   => $data['min_notice_hours'] ?? 2,
+            'emergency_available'=> $request->boolean('emergency_available'),
         ]);
 
         $profile->save();

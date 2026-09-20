@@ -248,10 +248,30 @@ input::placeholder{color:#A8AFB8}
   <main class="form-panel">
     <div class="form-inner">
 
+      <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+        <x-language-switcher />
+      </div>
+
       <div class="form-head">
         <div class="form-eyebrow">Welcome back</div>
         <div class="form-title">Sign in to your account</div>
         <div class="form-sub">Find and book trusted workers near you.</div>
+      </div>
+
+      <!-- Social Logins -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        <a href="{{ route('auth.social.redirect', 'google') }}" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#374151; font-weight:600; font-size:.85rem; text-decoration:none; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+          <i class="fa-brands fa-google" style="color:#EA4335;"></i> Google
+        </a>
+        <a href="{{ route('auth.social.redirect', 'facebook') }}" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#374151; font-weight:600; font-size:.85rem; text-decoration:none; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+          <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Facebook
+        </a>
+      </div>
+
+      <div style="display:flex; align-items:center; text-align:center; margin:16px 0 20px; color:#9ca3af; font-size:.8rem;">
+        <span style="flex:1; border-bottom:1px solid #e5e7eb;"></span>
+        <span style="padding:0 10px; font-weight:500;">{{ __('oauth.or_email') }}</span>
+        <span style="flex:1; border-bottom:1px solid #e5e7eb;"></span>
       </div>
 
       @if(session('status'))

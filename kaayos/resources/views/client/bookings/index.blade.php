@@ -135,7 +135,24 @@
                     <div class="booking-card-top">
                         <span class="booking-card-service">{{ $booking['service'] }}</span>
                         <span class="booking-card-time"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ $booking['time'] }}</span>
-                        <span class="status-badge {{ $statusClass }}">{{ $statusLabelMap[$booking['raw_status']] ?? $booking['status'] }}</span>
+                        @if($booking['raw_status'] === 'en_route')
+                            <div style="display:inline-flex;align-items:center;gap:6px;">
+                                <span class="status-badge status-active" style="background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;">
+                                    <i class="fa-solid fa-truck-fast" style="margin-right:3px;"></i> En Route{{ !empty($booking['estimated_transit_minutes']) ? ' (~' . $booking['estimated_transit_minutes'] . 'm)' : '' }}
+                                </span>
+                                <button type="button" class="btn btn-sm btn-solid" style="background:#2563eb;color:#fff;padding:2px 8px;font-size:.72rem;border-radius:99px;gap:4px;" onclick="event.stopPropagation(); openLiveTrackingModal({{ $booking['id'] }})">
+                                    <span class="live-pulse-dot" style="width:6px;height:6px;background:#fff;"></span> Track
+                                </button>
+                            </div>
+                        @else
+                            <span class="status-badge {{ $statusClass }}">{{ $statusLabelMap[$booking['raw_status']] ?? $booking['status'] }}</span>
+                        @endif
+                        @if(($booking['scope_amendment_status'] ?? '') === 'pending')
+                            <span class="badge" style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:600;"><i class="fa-solid fa-file-pen"></i> Scope Review</span>
+                        @endif
+                        @if(($booking['team_status'] ?? '') === 'suggested')
+                            <span class="badge" style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:600;"><i class="fa-solid fa-users"></i> Team Proposal</span>
+                        @endif
                     </div>
                     <div class="booking-card-bottom">
                         <span><i class="fa-regular fa-user" aria-hidden="true"></i> {{ $booking['worker'] }}</span>
@@ -229,6 +246,77 @@
             <button type="button" class="btn btn-solid" style="background:#dc2626;" id="reportSubmitBtn" onclick="submitReport()">
                 <i class="fa-solid fa-flag"></i> Submit Report
             </button>
+        </div>
+    </div>
+</div>
+
+{{-- Live Tracking Modal --}}
+<div id="liveTrackingModal" class="modal-overlay" style="display:none;" onclick="closeLiveTrackingModal(event)">
+    <div class="modal-box modal-wide" onclick="event.stopPropagation()" style="max-width:720px;padding:0;overflow:hidden;border-radius:14px;">
+        <div class="modal-header" style="padding:16px 20px;border-bottom:1px solid var(--g2,#e2e8f0);background:#fff;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span class="live-pulse-dot" style="background:#22c55e;"></span>
+                <div>
+                    <h3 style="margin:0;font-size:1.05rem;color:var(--g8,#1e293b);" id="trackWorkerTitle">Live Worker Tracking</h3>
+                    <div style="font-size:.78rem;color:var(--g5,#64748b);" id="trackWorkerSubtitle">Real-time GPS transit monitoring</div>
+                </div>
+            </div>
+            <button type="button" class="modal-close" onclick="closeLiveTrackingModal()">&times;</button>
+        </div>
+
+        {{-- Live Status Bar --}}
+        <div id="trackStatusBar" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);padding:12px 20px;border-bottom:1px solid #bfdbfe;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:40px;height:40px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;flex-shrink:0;">
+                    <i class="fa-solid fa-truck-fast"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700;color:#1e3a8a;font-size:.92rem;" id="trackWorkerName">Worker</div>
+                    <div style="font-size:.78rem;color:#3b82f6;" id="trackServiceName">Service</div>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:1.2rem;font-weight:800;color:#1d4ed8;" id="trackEta">Calculating...</div>
+                <div style="font-size:.78rem;color:#3b82f6;" id="trackDistance">Connecting...</div>
+            </div>
+        </div>
+
+        {{-- Arrival Alert Container --}}
+        <div id="trackArrivalNotice" style="display:none;background:#dcfce7;border-bottom:1px solid #86efac;padding:12px 20px;color:#15803d;font-size:.9rem;font-weight:600;align-items:center;gap:10px;">
+            <i class="fa-solid fa-circle-check" style="font-size:1.2rem;"></i>
+            <div>
+                <div>Worker has arrived at your location!</div>
+                <div style="font-size:.78rem;font-weight:400;color:#166534;">Job status will update to In Progress once work begins.</div>
+            </div>
+        </div>
+
+        {{-- Interactive Map Container --}}
+        <div style="position:relative;width:100%;height:360px;background:#f1f5f9;">
+            <div id="liveTrackingMap" style="width:100%;height:100%;z-index:1;"></div>
+            
+            {{-- Fit Route button --}}
+            <button type="button" onclick="recenterTrackingMap()" title="Fit entire route" style="position:absolute;top:12px;right:12px;z-index:999;background:rgba(255,255,255,0.92);backdrop-filter:blur(4px);border:1px solid #cbd5e1;border-radius:8px;padding:6px 10px;font-size:.75rem;font-weight:600;color:#1e293b;box-shadow:0 2px 6px rgba(0,0,0,0.12);display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+                <i class="fa-solid fa-expand" style="color:#2563eb;"></i> Fit Route
+            </button>
+
+            {{-- Ping info badge overlay --}}
+            <div id="trackPingBadge" style="position:absolute;bottom:12px;left:12px;z-index:999;background:rgba(255,255,255,0.94);backdrop-filter:blur(4px);padding:5px 12px;border-radius:20px;font-size:.74rem;color:#475569;box-shadow:0 2px 8px rgba(0,0,0,0.12);border:1px solid #e2e8f0;display:flex;align-items:center;gap:6px;">
+                <span class="live-pulse-dot" style="width:7px;height:7px;"></span>
+                <span id="trackPingTime">Connecting...</span>
+            </div>
+        </div>
+
+        {{-- Modal Footer --}}
+        <div class="modal-footer" style="padding:12px 20px;border-top:1px solid var(--g2,#e2e8f0);background:#fff;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:.8rem;color:var(--g5,#64748b);" id="trackDestAddress">
+                <i class="fa-solid fa-location-dot" style="color:#ef4444;margin-right:4px;"></i> Destination
+            </div>
+            <div style="display:flex;gap:8px;">
+                <a id="trackCallBtn" href="#" class="btn btn-sm btn-outline" style="display:none;align-items:center;gap:5px;">
+                    <i class="fa-solid fa-phone"></i> Call
+                </a>
+                <button type="button" class="btn btn-sm btn-outline" onclick="closeLiveTrackingModal()">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -450,9 +538,74 @@
     color: #dc2626 !important;
     border-color: #fca5a5 !important;
 }
-.btn-report:hover {
-    background: #fef2f2 !important;
+.live-pulse-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: livePulse 1.8s infinite;
+    display: inline-block;
+    flex-shrink: 0;
 }
+@keyframes livePulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.live-worker-marker-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.worker-radar-ring {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.25);
+    animation: radarRipple 2s ease-out infinite;
+}
+@keyframes radarRipple {
+    0% { transform: scale(0.5); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+.live-worker-icon {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .88rem;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.45);
+    border: 2px solid #fff;
+    z-index: 2;
+}
+.live-dest-marker-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.live-dest-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #dc2626;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .8rem;
+    box-shadow: 0 2px 8px rgba(220,38,38,0.45);
+    border: 2px solid #fff;
+}
+
 @media (max-width: 640px) {
     .booking-modal-layout { grid-template-columns: 1fr; gap: 14px; }
     .booking-card { padding: 10px 14px; gap: 10px; }
@@ -580,17 +733,151 @@ function openBookingModal(index) {
     var statusFlow = ['new', 'accepted', 'en_route', 'in_progress', 'completed'];
     var currentIdx = statusFlow.indexOf(b.raw_status);
 
-    // Details
     var notes = b.notes || 'No details provided.';
     var cancelReason = b.cancellation_reason || '';
     var cancelledAt = b.cancelled_at ? formatTime(b.cancelled_at) : '';
+
+    var enRouteBanner = (b.raw_status === 'en_route')
+        ? '<div class="en-route-banner" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:14px;color:#1e40af;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+                '<span class="live-pulse-dot" style="background:#2563eb;"></span>' +
+                '<div>' +
+                    '<div style="font-weight:700;font-size:.9rem;color:#1e3a8a;">Worker is on the way!</div>' +
+                    '<div style="font-size:.8rem;color:#2563eb;margin-top:2px;">' +
+                        b.worker + ' is currently en route' + (b.estimated_transit_minutes ? ' (~' + b.estimated_transit_minutes + ' mins transit)' : '') + '.' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<button type="button" class="btn btn-sm btn-solid" style="background:#2563eb;padding:5px 12px;font-size:.8rem;display:inline-flex;align-items:center;gap:6px;" onclick="closeBookingModal(); openLiveTrackingModal(' + b.id + ')">' +
+                '<i class="fa-solid fa-location-crosshairs"></i> Track Live Map' +
+            '</button>' +
+          '</div>'
+        : '';
+
+    var propTypeLabels = {
+        'residential': 'Residential',
+        'commercial': 'Commercial / Business',
+        'property_manager': 'Property Management',
+        'tenant': 'Tenant / Renter'
+    };
+    var propType = propTypeLabels[b.property_type] || (b.property_type ? b.property_type.replace('_',' ') : 'Residential');
+    var pricingType = (b.pricing_type === 'hourly') ? 'Hourly (est. ' + (b.estimated_duration_hours || 2) + 'h)' : 'Fixed Price';
+    var complexityLabels = {
+        'standard': '<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:99px;font-size:.72rem;">Standard (1.0x)</span>',
+        'complex': '<span class="badge" style="background:#fef3c7;color:#b45309;padding:2px 8px;border-radius:99px;font-size:.72rem;">Complex (1.2x)</span>',
+        'hazardous': '<span class="badge" style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:99px;font-size:.72rem;">Hazardous (1.5x)</span>'
+    };
+    var complexityHtml = complexityLabels[b.complexity_level] || '<span class="badge" style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:99px;font-size:.72rem;">Standard</span>';
+
+    // Work Timer Section
+    var timerSection = '';
+    if (b.work_started_at) {
+        var timerText = b.work_ended_at ? 'Work completed at ' + b.work_ended_at : 'Work in progress since ' + b.work_started_at;
+        timerSection = '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;margin-top:12px;font-size:.8rem;color:#1e293b;">' +
+            '<i class="fa-solid fa-stopwatch" style="color:#2563eb;margin-right:6px;"></i><strong>On-Site Timer:</strong> ' + timerText +
+        '</div>';
+    }
+
+    // Scope Amendment Card
+    var scopeCard = '';
+    if (b.scope_amendment_status === 'pending') {
+        scopeCard = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-top:12px;">' +
+            '<div style="font-weight:700;color:#92400e;font-size:.88rem;display:flex;align-items:center;gap:6px;">' +
+                '<i class="fa-solid fa-file-pen"></i> Worker Proposed Scope Revision' +
+            '</div>' +
+            '<div style="font-size:.82rem;color:#78350f;margin-top:4px;">' +
+                '<strong>Reason:</strong> ' + (b.scope_amendment_notes || 'On-site scope adjustment') +
+            '</div>' +
+            '<div style="font-size:.85rem;font-weight:700;color:#92400e;margin-top:4px;">' +
+                'Proposed Total Price: ₱' + Number(b.scope_amendment_price).toLocaleString() +
+            '</div>' +
+            '<div style="display:flex;gap:8px;margin-top:10px;">' +
+                '<button type="button" class="btn btn-sm btn-solid" style="background:#16a34a;padding:5px 12px;font-size:.8rem;" onclick="respondScopeAmendment(' + b.id + ', \'approve\')">' +
+                    '<i class="fa-solid fa-check"></i> Approve Revision' +
+                '</button>' +
+                '<button type="button" class="btn btn-sm btn-outline" style="padding:5px 12px;font-size:.8rem;" onclick="respondScopeAmendment(' + b.id + ', \'decline\')">' +
+                    'Decline' +
+                '</button>' +
+            '</div>' +
+        '</div>';
+    } else if (b.scope_amendment_status === 'approved') {
+        scopeCard = '<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:8px 12px;margin-top:12px;font-size:.8rem;color:#065f46;">' +
+            '<strong><i class="fa-solid fa-circle-check"></i> Scope Revision Approved:</strong> ₱' + Number(b.price).toLocaleString() +
+        '</div>';
+    }
+
+    // Team / Peer Work Card
+    var teamCard = '';
+    if (b.team_status === 'suggested') {
+        var crewHtml = '';
+        if (b.crew && b.crew.length > 0) {
+            crewHtml = '<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">' +
+                b.crew.map(function(c) {
+                    var payoutText = c.payout_amount > 0 ? '₱' + Number(c.payout_amount).toLocaleString() : '';
+                    return '<div style="background:#fff;padding:6px 10px;border-radius:6px;border:1px solid #dbeafe;display:flex;justify-content:space-between;align-items:center;font-size:.8rem;">' +
+                        '<span><i class="fa-solid fa-user-gear" style="color:#3b82f6;margin-right:6px;"></i><strong>' + c.worker_name + '</strong> <span style="color:#64748b;">(' + c.role + ')</span></span>' +
+                        (payoutText ? '<span style="font-weight:600;color:#2563eb;">' + payoutText + '</span>' : '') +
+                    '</div>';
+                }).join('') +
+            '</div>';
+        } else {
+            crewHtml = '<div style="font-size:.8rem;color:#2563eb;margin-top:6px;"><strong>Recommended Crew:</strong> Peer skilled worker</div>';
+        }
+
+        teamCard = '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-top:12px;">' +
+            '<div style="font-weight:700;color:#1e40af;font-size:.88rem;display:flex;align-items:center;gap:6px;">' +
+                '<i class="fa-solid fa-users"></i> Worker Recommends Team for this Job' +
+            '</div>' +
+            '<div style="font-size:.82rem;color:#1e3a8a;margin-top:4px;">' +
+                '<strong>Reason:</strong> ' + (b.team_justification || 'Additional manpower recommended') +
+            '</div>' +
+            crewHtml +
+            '<div style="display:flex;gap:8px;margin-top:10px;">' +
+                '<button type="button" class="btn btn-sm btn-solid" style="background:#2563eb;padding:5px 12px;font-size:.8rem;" onclick="respondTeamSuggestion(' + b.id + ', \'approve\')">' +
+                    '<i class="fa-solid fa-check"></i> Approve Team' +
+                '</button>' +
+                '<button type="button" class="btn btn-sm btn-outline" style="padding:5px 12px;font-size:.8rem;" onclick="respondTeamSuggestion(' + b.id + ', \'decline\')">' +
+                    'Decline (Solo Worker)' +
+                '</button>' +
+            '</div>' +
+        '</div>';
+    } else if (b.team_status === 'client_approved') {
+        var approvedCrewHtml = '';
+        if (b.crew && b.crew.length > 0) {
+            approvedCrewHtml = '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">' +
+                b.crew.map(function(c) {
+                    var statusBadge = c.status === 'accepted'
+                        ? '<span style="color:#16a34a;font-weight:600;"><i class="fa-solid fa-circle-check"></i> Joined</span>'
+                        : '<span style="color:#d97706;font-weight:600;"><i class="fa-solid fa-clock"></i> Invited</span>';
+                    return '<div style="font-size:.8rem;display:flex;justify-content:space-between;align-items:center;background:#fff;padding:4px 8px;border-radius:5px;border:1px solid #a7f3d0;">' +
+                        '<span><strong>' + c.worker_name + '</strong> <span style="color:#047857;">(' + c.role + ')</span></span>' +
+                        statusBadge +
+                    '</div>';
+                }).join('') +
+            '</div>';
+        } else {
+            approvedCrewHtml = ' Assigned';
+        }
+
+        teamCard = '<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:8px 12px;margin-top:12px;font-size:.8rem;color:#065f46;">' +
+            '<strong><i class="fa-solid fa-users-check"></i> Approved Team:</strong>' + approvedCrewHtml +
+        '</div>';
+    }
+
     document.getElementById('bookingModalTitle').textContent = 'Booking Details';
     document.getElementById('bookingModalDetails').innerHTML =
+        enRouteBanner +
         '<div class="detail-grid-compact">' +
             '<span class="detail-label">Reference</span>' +
             '<span class="detail-value">' + (b.booking_ref || 'BK-' + String(b.id).padStart(5,'0')) + '</span>' +
             '<span class="detail-label">Worker</span>' +
             '<span class="detail-value">' + b.worker + '</span>' +
+            '<span class="detail-label">Property</span>' +
+            '<span class="detail-value">' + propType + '</span>' +
+            '<span class="detail-label">Billing</span>' +
+            '<span class="detail-value">' + pricingType + '</span>' +
+            '<span class="detail-label">Complexity</span>' +
+            '<span class="detail-value">' + complexityHtml + '</span>' +
             '<span class="detail-label">Service</span>' +
             '<span class="detail-value">' + b.service + '</span>' +
             '<span class="detail-label">Schedule</span>' +
@@ -603,7 +890,10 @@ function openBookingModal(index) {
             '<span class="detail-value">' + notes + '</span>' +
             (cancelledAt ? '<span class="detail-label">Cancelled At</span><span class="detail-value">' + cancelledAt + '</span>' : '') +
             (cancelReason ? '<span class="detail-label">Cancel Reason</span><span class="detail-value">' + cancelReason + '</span>' : '') +
-        '</div>';
+        '</div>' +
+        timerSection +
+        scopeCard +
+        teamCard;
 
     // Timeline
     var timelineHtml = '<div class="timeline">';
@@ -684,9 +974,13 @@ function openBookingModal(index) {
         
         footer.innerHTML = completionHtml;
     } else {
+        var trackBtn = (b.raw_status === 'en_route')
+            ? '<button type="button" class="btn btn-solid" style="background:#2563eb;" onclick="closeBookingModal(); openLiveTrackingModal(' + b.id + ')"><i class="fa-solid fa-location-crosshairs"></i> Track Live</button>'
+            : '';
         footer.innerHTML =
             '<button type="button" class="btn btn-outline" onclick="closeBookingModal(); showCancelModal(' + index + ')">Cancel Booking</button>' +
-            '<a href="{{ route('client.messages.start') }}?worker_id=' + b.worker_id + '" class="btn btn-solid"><i class="fa-regular fa-comment" aria-hidden="true"></i> Message</a>';
+            '<a href="{{ route('client.messages.start') }}?worker_id=' + b.worker_id + '" class="btn btn-outline"><i class="fa-regular fa-comment" aria-hidden="true"></i> Message</a>' +
+            trackBtn;
     }
 
     document.getElementById('bookingModal').style.display = 'flex';
@@ -889,5 +1183,240 @@ function confirmJobComplete(index) {
         }
     }
 })();
+
+// ── Live Tracking System ──
+let trackingBookingId = null;
+let trackingPollInterval = null;
+let trackingMapInstance = null;
+let trackingWorkerMarker = null;
+let trackingDestMarker = null;
+let trackingRouteLine = null;
+let hasFittedTrackingBounds = false;
+
+function loadLeaflet(cb) {
+    if (window.L) { cb(); return; }
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+    var script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = cb;
+    document.head.appendChild(script);
+}
+
+function openLiveTrackingModal(bookingId) {
+    trackingBookingId = bookingId;
+    hasFittedTrackingBounds = false;
+    var modal = document.getElementById('liveTrackingModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+
+    // Reset status elements
+    document.getElementById('trackArrivalNotice').style.display = 'none';
+    document.getElementById('trackStatusBar').style.display = 'flex';
+    document.getElementById('trackEta').textContent = 'Calculating...';
+    document.getElementById('trackDistance').textContent = 'Locating worker...';
+    document.getElementById('trackPingTime').textContent = 'Connecting to GPS...';
+
+    loadLeaflet(function() {
+        initTrackingMap();
+        setTimeout(function() {
+            if (trackingMapInstance) trackingMapInstance.invalidateSize();
+        }, 150);
+        fetchTrackingData();
+        if (trackingPollInterval) clearInterval(trackingPollInterval);
+        trackingPollInterval = setInterval(fetchTrackingData, 5000);
+    });
+}
+
+function closeLiveTrackingModal(e) {
+    if (e && e.target && !e.target.closest) return;
+    var modal = document.getElementById('liveTrackingModal');
+    if (modal) modal.style.display = 'none';
+    if (trackingPollInterval) {
+        clearInterval(trackingPollInterval);
+        trackingPollInterval = null;
+    }
+    trackingBookingId = null;
+}
+
+function initTrackingMap() {
+    var mapEl = document.getElementById('liveTrackingMap');
+    if (!mapEl) return;
+
+    if (trackingMapInstance) {
+        trackingMapInstance.remove();
+        trackingMapInstance = null;
+        trackingWorkerMarker = null;
+        trackingDestMarker = null;
+        trackingRouteLine = null;
+    }
+
+    trackingMapInstance = L.map('liveTrackingMap', { zoomControl: true });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(trackingMapInstance);
+}
+
+function fetchTrackingData() {
+    if (!trackingBookingId) return;
+
+    fetch('/client/bookings/' + trackingBookingId + '/track', {
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.success) {
+            document.getElementById('trackDistance').textContent = data.message || 'Tracking unavailable';
+            return;
+        }
+
+        // 1. Arrival detection
+        if (data.arrived) {
+            document.getElementById('trackArrivalNotice').style.display = 'flex';
+            document.getElementById('trackStatusBar').style.display = 'none';
+            document.getElementById('trackPingBadge').style.display = 'none';
+            if (trackingPollInterval) {
+                clearInterval(trackingPollInterval);
+                trackingPollInterval = null;
+            }
+            return;
+        }
+
+        // 2. Info bar updates
+        document.getElementById('trackWorkerName').textContent = data.worker_name;
+        document.getElementById('trackServiceName').textContent = data.service;
+        document.getElementById('trackEta').textContent = '~' + data.formatted_time;
+        document.getElementById('trackDistance').textContent = data.formatted_dist + ' remaining';
+        document.getElementById('trackDestAddress').innerHTML = '<i class="fa-solid fa-location-dot" style="color:#ef4444;margin-right:4px;"></i> ' + data.dest_address;
+
+        var callBtn = document.getElementById('trackCallBtn');
+        if (data.worker_phone) {
+            callBtn.href = 'tel:' + data.worker_phone;
+            callBtn.style.display = 'inline-flex';
+        } else {
+            callBtn.style.display = 'none';
+        }
+
+        var pingBadge = document.getElementById('trackPingTime');
+        var roadBadgeText = data.is_snapped_road ? ' • Road-snapped route' : '';
+        if (data.is_live && data.last_ping_seconds !== null) {
+            pingBadge.textContent = 'Live GPS (updated ' + (data.last_ping_seconds < 5 ? 'just now' : data.last_ping_seconds + 's ago') + ')' + roadBadgeText;
+        } else {
+            pingBadge.textContent = 'Worker starting location (waiting for GPS ping...)' + roadBadgeText;
+        }
+
+        // 3. Map Marker & Polyline updates
+        if (!trackingMapInstance) return;
+
+        var workerPos = [data.worker_lat, data.worker_lng];
+        var destPos = [data.dest_lat, data.dest_lng];
+
+        var workerIcon = L.divIcon({
+            className: 'live-worker-marker-wrap',
+            html: '<div class="worker-radar-ring"></div><div class="live-worker-icon"><i class="fa-solid fa-motorcycle"></i></div>',
+            iconSize: [44, 44],
+            iconAnchor: [22, 22]
+        });
+
+        var destIcon = L.divIcon({
+            className: 'live-dest-marker-wrap',
+            html: '<div class="live-dest-icon"><i class="fa-solid fa-house"></i></div>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        if (!trackingWorkerMarker) {
+            trackingWorkerMarker = L.marker(workerPos, { icon: workerIcon, zIndexOffset: 1000 }).addTo(trackingMapInstance);
+            trackingWorkerMarker.bindPopup('<strong>' + data.worker_name + '</strong><br>En route to your location');
+        } else {
+            trackingWorkerMarker.setLatLng(workerPos);
+        }
+
+        if (!trackingDestMarker) {
+            trackingDestMarker = L.marker(destPos, { icon: destIcon }).addTo(trackingMapInstance);
+            trackingDestMarker.bindPopup('<strong>Service Location</strong><br>' + data.dest_address);
+        } else {
+            trackingDestMarker.setLatLng(destPos);
+        }
+
+        var routePts = (Array.isArray(data.route_coordinates) && data.route_coordinates.length > 1)
+            ? data.route_coordinates
+            : [workerPos, destPos];
+
+        if (!trackingRouteLine) {
+            trackingRouteLine = L.polyline(routePts, {
+                color: '#2563eb',
+                weight: 5,
+                opacity: 0.88,
+                lineJoin: 'round',
+                lineCap: 'round'
+            }).addTo(trackingMapInstance);
+        } else {
+            trackingRouteLine.setLatLngs(routePts);
+        }
+
+        if (!hasFittedTrackingBounds) {
+            var bounds = L.latLngBounds(routePts);
+            trackingMapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+            hasFittedTrackingBounds = true;
+        }
+    })
+    .catch(function(err) {
+        console.error('Tracking fetch error:', err);
+    });
+}
+
+window.recenterTrackingMap = function() {
+    if (!trackingMapInstance) return;
+    if (trackingRouteLine) {
+        trackingMapInstance.fitBounds(trackingRouteLine.getBounds(), { padding: [50, 50], maxZoom: 16 });
+    }
+};
+
+window.respondScopeAmendment = function(bookingId, action) {
+    if (!confirm('Are you sure you want to ' + action + ' this scope revision?')) return;
+    fetch('/client/bookings/' + bookingId + '/respond-scope-amendment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        body: JSON.stringify({ action: action }),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showToast(data.message || 'Action failed.', 'error');
+        }
+    })
+    .catch(() => showToast('Something went wrong.', 'error'));
+};
+
+window.respondTeamSuggestion = function(bookingId, action) {
+    if (!confirm('Are you sure you want to ' + action + ' this team proposal?')) return;
+    fetch('/client/bookings/' + bookingId + '/respond-team-suggestion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        body: JSON.stringify({ action: action }),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showToast(data.message || 'Action failed.', 'error');
+        }
+    })
+    .catch(() => showToast('Something went wrong.', 'error'));
+};
+
+window.addEventListener('beforeunload', function() {
+    if (trackingPollInterval) clearInterval(trackingPollInterval);
+});
 </script>
 @endpush

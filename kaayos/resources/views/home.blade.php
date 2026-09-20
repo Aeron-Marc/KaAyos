@@ -73,6 +73,7 @@
     <li><a href="#faq">FAQ</a></li>
   </ul>
   <div class="nav-cta">
+    <x-language-switcher />
     <a href="/login" class="btn btn-ghost"><i class="fa-regular fa-user" aria-hidden="true"></i> Log In</a>
     <a href="/register" class="btn btn-amber"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign Up Free</a>
     <button class="nav-toggle" id="navToggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
@@ -93,7 +94,7 @@
   </div>
   <div class="hero-tag"><div class="dot"></div><span>In Partnership with PESO Tuy, Batangas</span></div>
   <h1>Find a trusted <em>trabahador</em> in minutes</h1>
-  <p class="hero-sub">KaAyos helps homeowners book verified workers by skill, rating, and distance. Every worker is PESO-accredited and reviewed by the community.</p>
+  <p class="hero-sub">KaAyos helps homeowners, renters, and local businesses book verified skilled workers by trade, rating, and location. Every worker is PESO-accredited and reviewed by the community.</p>
   <div class="hero-actions">
     <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Hire a Worker Now</a>
     <a href="#join" class="btn-outline"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Join as Worker</a>

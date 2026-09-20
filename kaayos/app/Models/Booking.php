@@ -31,6 +31,15 @@ class Booking extends Model
         'reschedule_responded_at',
         'house_no',
         'barangay',
+        'latitude',
+        'longitude',
+        'travel_distance_from_prev_km',
+        'estimated_transit_minutes',
+        'worker_live_latitude',
+        'worker_live_longitude',
+        'worker_live_heading',
+        'worker_live_speed',
+        'worker_live_updated_at',
         'agreed_by_client_at',
         'agreed_by_worker_at',
         'completion_requested_by',
@@ -39,6 +48,20 @@ class Booking extends Model
         'confirmed_by_client_at',
         'declined_at',
         'decline_reason',
+        'property_type',
+        'pricing_type',
+        'estimated_duration_hours',
+        'complexity_level',
+        'complexity_multiplier',
+        'scope_amendment_price',
+        'scope_amendment_notes',
+        'scope_amendment_status',
+        'scope_amendment_requested_at',
+        'team_status',
+        'team_suggested_at',
+        'team_justification',
+        'work_started_at',
+        'work_ended_at',
     ];
 
     protected static function booted(): void
@@ -112,7 +135,49 @@ class Booking extends Model
         'confirmed_by_worker_at' => 'datetime',
         'confirmed_by_client_at' => 'datetime',
         'declined_at' => 'datetime',
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'travel_distance_from_prev_km' => 'float',
+        'estimated_transit_minutes' => 'integer',
+        'worker_live_latitude' => 'float',
+        'worker_live_longitude' => 'float',
+        'worker_live_heading' => 'float',
+        'worker_live_speed' => 'float',
+        'worker_live_updated_at' => 'datetime',
+        'estimated_duration_hours' => 'decimal:2',
+        'complexity_multiplier' => 'decimal:2',
+        'scope_amendment_price' => 'decimal:2',
+        'scope_amendment_requested_at' => 'datetime',
+        'team_suggested_at' => 'datetime',
+        'work_started_at' => 'datetime',
+        'work_ended_at' => 'datetime',
     ];
+
+    public function getHasCoordinatesAttribute(): bool
+    {
+        return !is_null($this->latitude) && !is_null($this->longitude);
+    }
+
+    public function getHasLiveLocationAttribute(): bool
+    {
+        return !is_null($this->worker_live_latitude) && !is_null($this->worker_live_longitude);
+    }
+
+    public function getIsActivelyTrackedAttribute(): bool
+    {
+        return $this->status === self::STATUS_EN_ROUTE
+            && $this->has_live_location
+            && $this->worker_live_updated_at
+            && $this->worker_live_updated_at->diffInMinutes(now()) <= 15;
+    }
+
+    public function getGoogleMapsNavUrlAttribute(): ?string
+    {
+        if (!$this->has_coordinates) {
+            return null;
+        }
+        return "https://www.google.com/maps/dir/?api=1&destination={$this->latitude},{$this->longitude}";
+    }
 
     // ── Relationships ──────────────────────────────────────────
 
@@ -492,5 +557,10 @@ class Booking extends Model
     public function history(): HasMany
     {
         return $this->hasMany(BookingHistory::class);
+    }
+
+    public function bookingWorkers(): HasMany
+    {
+        return $this->hasMany(BookingWorker::class);
     }
 }

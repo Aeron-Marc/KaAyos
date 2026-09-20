@@ -36,8 +36,13 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_notifications',
         'language',
         'avatar',
-        'failed_login_attempts',
-        'locked_until',
+        'client_type',
+        'organization_name',
+        'tin_number',
+        'billing_address',
+        'oauth_provider',
+        'oauth_id',
+        'oauth_avatar',
         'suspended_at',
         'suspended_reason',
         'pending_email',
@@ -96,7 +101,11 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getNameAttribute(): string
     {
-        return "{$this->first_name} {$this->last_name}";
+        $computed = trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
+        if ($computed !== '') {
+            return $computed;
+        }
+        return $this->attributes['name'] ?? '';
     }
 
     public function getResidenceAttribute(): string
@@ -150,6 +159,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isClient(): bool
     {
         return $this->role === 'client';
+    }
+
+    public function isBusiness(): bool
+    {
+        return $this->client_type === 'business_commercial';
+    }
+
+    public function isTenant(): bool
+    {
+        return $this->client_type === 'tenant_renter';
+    }
+
+    public function hasOauth(): bool
+    {
+        return !empty($this->oauth_provider) && !empty($this->oauth_id);
     }
 
     public function isActive(): bool
@@ -210,5 +234,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function reviewsReceived(): HasMany
     {
         return $this->hasMany(Review::class, 'worker_id');
+    }
+
+    public function bookingCrews(): HasMany
+    {
+        return $this->hasMany(BookingWorker::class, 'worker_id');
     }
 }

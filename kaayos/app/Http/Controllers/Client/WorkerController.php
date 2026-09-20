@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\ServiceCategory;
 use App\Models\User;
+use App\Services\GeoTravelService;
+use App\Support\TuyBarangays;
 use App\Support\WorkerDocuments;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,6 +40,7 @@ class WorkerController extends Controller
     {
         $sorters = [
             'rating'     => fn ($a, $b) => $b['rating']  <=> $a['rating']  ?: $b['reviews'] <=> $a['reviews'],
+            'distance'   => fn ($a, $b) => ($a['distance_km'] ?? 9999) <=> ($b['distance_km'] ?? 9999) ?: $b['rating'] <=> $a['rating'],
             'price_low'  => fn ($a, $b) => $a['price']   <=> $b['price']   ?: $b['rating']  <=> $a['rating'],
             'price_high' => fn ($a, $b) => $b['price']   <=> $a['price']   ?: $b['rating']  <=> $a['rating'],
             'reviews'    => fn ($a, $b) => $b['reviews'] <=> $a['reviews'] ?: $b['rating']  <=> $a['rating'],
@@ -98,26 +101,61 @@ class WorkerController extends Controller
             $query->where('barangay', $area);
         }
 
-        $workers = $query->get()->map(fn ($u) => [
-            'id'               => $u->id,
-            'name'             => $u->name,
-            'category'         => $u->service_category ?? 'General',
-            'avatar'           => $u->avatar ? \Storage::url($u->avatar) : null,
-            'initials'         => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
-            'rating'           => $u->workerProfile?->average_rating ?? 0,
-            'reviews'          => $u->reviews_received_count,
-            'distance'         => $u->residence,
-            'price'            => (float) ($u->workerProfile?->hourly_rate ?? 0),
-            'verified'         => $u->workerProfile?->government_id_verified ?? false,
-            'skills'           => $u->workerProfile?->skills ?? [],
-            'experience'       => (int) ($u->workerProfile?->years_of_experience ?? 0),
-            'profile_complete' => $u->workerProfile && (
-                $u->workerProfile->bio
-                || !empty($u->workerProfile->skills)
-                || !empty($u->workerProfile->spoken_languages)
-                || ($u->workerProfile->portfolios && $u->workerProfile->portfolios->count() > 0)
-            ),
-        ])->toArray();
+        $client = auth()->user();
+        $clientLat = $client?->latitude ? (float) $client->latitude : null;
+        $clientLng = $client?->longitude ? (float) $client->longitude : null;
+        if (($clientLat === null || $clientLng === null) && $client?->barangay) {
+            [$clientLat, $clientLng] = TuyBarangays::pointForStatic($client->barangay);
+        }
+
+        $geoTravel = app(GeoTravelService::class);
+
+        $workers = $query->get()->map(function ($u) use ($clientLat, $clientLng, $geoTravel) {
+            $wLat = $u->latitude ? (float) $u->latitude : null;
+            $wLng = $u->longitude ? (float) $u->longitude : null;
+            if (($wLat === null || $wLng === null) && $u->barangay) {
+                [$wLat, $wLng] = TuyBarangays::pointForStatic($u->barangay);
+            }
+
+            $distKm = null;
+            $distFormatted = $u->residence;
+            if ($clientLat !== null && $clientLng !== null && $wLat !== null && $wLng !== null) {
+                $calc = $geoTravel->calculateTravel($clientLat, $clientLng, $wLat, $wLng);
+                $distKm = $calc['road_distance_km'];
+                $distFormatted = $calc['formatted_distance'] . ' away';
+            }
+
+            $radius = (int) ($u->workerProfile?->service_radius_km ?? $u->workerProfile?->service_radius ?? 0);
+
+            return [
+                'id'                 => $u->id,
+                'name'               => $u->name,
+                'category'           => $u->service_category ?? 'General',
+                'avatar'             => $u->avatar ? \Storage::url($u->avatar) : null,
+                'initials'           => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
+                'rating'             => $u->workerProfile?->average_rating ?? 0,
+                'reviews'            => $u->reviews_received_count,
+                'distance'           => $distFormatted,
+                'distance_km'        => $distKm,
+                'service_radius_km'  => $radius,
+                'barangay'           => $u->barangay,
+                'price'              => (float) ($u->workerProfile?->hourly_rate ?? 0),
+                'verified'           => $u->workerProfile?->government_id_verified ?? false,
+                'skills'             => $u->workerProfile?->skills ?? [],
+                'experience'         => (int) ($u->workerProfile?->years_of_experience ?? 0),
+                'profile_complete'   => $u->workerProfile && (
+                    $u->workerProfile->bio
+                    || !empty($u->workerProfile->skills)
+                    || !empty($u->workerProfile->spoken_languages)
+                    || ($u->workerProfile->portfolios && $u->workerProfile->portfolios->count() > 0)
+                ),
+            ];
+        })->toArray();
+
+        if ($maxRadius = $request->query('max_radius')) {
+            $maxR = (float) $maxRadius;
+            $workers = array_values(array_filter($workers, fn ($w) => $w['distance_km'] === null || $w['distance_km'] <= $maxR));
+        }
 
         $sort = $request->query('sort', 'rating');
         $workers = $this->sortWorkers($workers, $sort);
@@ -128,10 +166,11 @@ class WorkerController extends Controller
             'workers'        => $workers,
             'notifications'  => [],
             'filters'        => [
-                'q'        => $request->query('q', ''),
-                'category' => $request->query('category', ''),
-                'area'     => $request->query('area', ''),
-                'sort'     => $sort,
+                'q'          => $request->query('q', ''),
+                'category'   => $request->query('category', ''),
+                'area'       => $request->query('area', ''),
+                'max_radius' => $request->query('max_radius', ''),
+                'sort'       => $sort,
             ],
         ]);
     }

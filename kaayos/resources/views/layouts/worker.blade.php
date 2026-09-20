@@ -79,7 +79,7 @@
             </div>
             <div class="profile-info">
                 <p class="profile-name">{{ auth()->user()->name ?? 'User' }}</p>
-                <span class="profile-role">{{ __('role.trabahador') }}</span>
+                <span class="profile-role">{{ __('role.worker') }}</span>
             </div>
         </div>
 
@@ -102,6 +102,8 @@
             <h1 class="page-title">@yield('page_title', __('page_title.default'))</h1>
 
             <div class="topbar-actions">
+                <x-language-switcher />
+
                 <a href="{{ route('worker.dashboard.notifications') }}" class="icon-btn" aria-label="{{ __('action.notifications') }}">
                     <i class="fa-solid fa-bell" style="font-size:1rem;" aria-hidden="true"></i>
                     @if(collect($notifications ?? [])->where('unread', true)->count() > 0)
