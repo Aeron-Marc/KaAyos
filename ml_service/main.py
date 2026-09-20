@@ -1,12 +1,15 @@
 import os
 import sys
+import logging
+from contextlib import asynccontextmanager
 import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import List, Optional, Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
 from sklearn.cluster import DBSCAN
@@ -16,15 +19,45 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import joblib
 
+ML_API_KEY = os.getenv("ML_API_KEY", "")
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+logger = logging.getLogger("kaayos-ml")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
+
+def verify_api_key(key: str = Security(_api_key_header)):
+    if not ML_API_KEY:
+        raise HTTPException(status_code=500, detail="ML_API_KEY not configured on server")
+    if key != ML_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid or missing API key")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    meta = _load_or_train_model()
+    if meta:
+        logger.info("Model loaded. Accuracy: %s", meta.get('accuracy', 'N/A'))
+    else:
+        logger.warning("No dataset found. Train a model via POST /retrain before using /predict.")
+    yield
+
+
 app = FastAPI(
     title="KaAyos ML Microservice",
     description="Geospatial clustering & AI worker matching for KaAyos marketplace",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ML_CORS_ORIGINS", "https://yourdomain.com").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -110,7 +143,6 @@ class RetrainRecord(BaseModel):
 
 class RetrainRequest(BaseModel):
     records: Optional[List[RetrainRecord]] = None
-    dataset_path: Optional[str] = None
 
 
 class RetrainResponse(BaseModel):
@@ -198,16 +230,6 @@ def _load_or_train_model() -> dict:
     return {}
 
 
-@app.on_event("startup")
-def startup():
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    meta = _load_or_train_model()
-    if meta:
-        print(f"Model loaded. Accuracy: {meta.get('accuracy', 'N/A')}")
-    else:
-        print("WARNING: No dataset found. Train a model via POST /retrain before using /predict.")
-
-
 def _predict_worker_proba(workers: List[WorkerMatch]) -> List[RankedWorker]:
     if _model is None or _label_encoder is None:
         raise HTTPException(status_code=503, detail="Model not trained yet. Call POST /retrain first.")
@@ -248,11 +270,10 @@ def health():
     return {
         "status": "ok",
         "model_loaded": _model is not None,
-        "model_accuracy": _model_metadata.get("accuracy") if _model_metadata else None,
     }
 
 
-@app.post("/cluster", response_model=ClusterResponse)
+@app.post("/cluster", response_model=ClusterResponse, dependencies=[Depends(verify_api_key)])
 def cluster_workers(req: ClusterRequest):
     if len(req.workers) < 2:
         return ClusterResponse(
@@ -285,7 +306,7 @@ def cluster_workers(req: ClusterRequest):
     )
 
 
-@app.post("/predict", response_model=PredictResponse)
+@app.post("/predict", response_model=PredictResponse, dependencies=[Depends(verify_api_key)])
 def predict_matches(req: PredictRequest):
     if not req.workers:
         return PredictResponse(rankings=[], model_accuracy=None, model_trained_on=None)
@@ -298,22 +319,17 @@ def predict_matches(req: PredictRequest):
     )
 
 
-@app.post("/retrain", response_model=RetrainResponse)
+@app.post("/retrain", response_model=RetrainResponse, dependencies=[Depends(verify_api_key)])
 def retrain_model(req: RetrainRequest):
     if req.records:
         rows = [r.model_dump() for r in req.records]
         df = pd.DataFrame(rows)
-    elif req.dataset_path:
-        path = Path(req.dataset_path)
-        if not path.exists():
-            raise HTTPException(status_code=404, detail=f"Dataset not found: {req.dataset_path}")
-        df = pd.read_csv(path)
     elif DATASET_PATH.exists():
         df = pd.read_csv(DATASET_PATH)
     else:
         raise HTTPException(
             status_code=400,
-            detail="No data provided. Send 'records', 'dataset_path', or ensure kaayos_dataset.csv is in database/data/.",
+            detail="No data provided. Send 'records' or ensure kaayos_dataset.csv exists.",
         )
 
     required = set(CATEGORY_COLUMNS + ["service_category", "match_success"])
@@ -339,4 +355,4 @@ def retrain_model(req: RetrainRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host=os.getenv("ML_HOST", "127.0.0.1"), port=int(os.getenv("ML_PORT", "8001")), reload=False)

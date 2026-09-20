@@ -14,9 +14,7 @@ return new class extends Migration
             $table->string('barangay', 255)->nullable()->after('house_no');
         });
 
-        if (DB::connection()->getDriverName() !== 'sqlite') {
-            DB::statement("UPDATE bookings SET house_no = SUBSTRING_INDEX(address, ',', 1), barangay = TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(address, ',', 2), ',', -1)) WHERE house_no IS NULL");
-        }
+        DB::statement("UPDATE bookings SET house_no = SUBSTRING_INDEX(address, ',', 1), barangay = TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(address, ',', 2), ',', -1)) WHERE house_no IS NULL");
     }
 
     public function down(): void

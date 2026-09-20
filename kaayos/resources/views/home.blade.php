@@ -20,7 +20,17 @@
 
 <!-- PAGE LOADER -->
 <div id="pageLoader" class="page-loader">
-  <div class="loader-bg"></div>
+  <div class="loader-shapes">
+    <span class="ls-shape ls-circle ls-main"></span>
+    <span class="ls-shape ls-square ls-main"></span>
+    <span class="ls-shape ls-triangle ls-main"></span>
+    <span class="ls-shape ls-ring ls-main"></span>
+    <span class="ls-shape ls-diamond ls-main"></span>
+    <span class="ls-shape ls-circle ls-tiny"></span>
+    <span class="ls-shape ls-square ls-tiny"></span>
+    <span class="ls-shape ls-ring ls-tiny"></span>
+    <span class="ls-shape ls-triangle ls-tiny"></span>
+  </div>
   <div class="loader-logos">
     <div class="loader-inner">
       <img src="/images/logo-gs-removebg-preview.png" alt="KaAyos" class="loader-logo loader-primary" id="loaderPrimary">
@@ -96,15 +106,21 @@
   <div class="search-bar">
     <div class="input-wrap">
       <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-      <input type="text" id="searchQuery" placeholder="e.g. leaking pipe, broken circuit, painting…" aria-label="Service type">
+      <input type="text" id="searchQuery" placeholder="e.g. leaking pipe, broken circuit, painting…" aria-label="Service type" autocomplete="off">
     </div>
     <div class="input-wrap loc-input">
       <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-      <input type="text" id="searchLocation" placeholder="Your barangay" aria-label="Location">
+      <input type="text" id="searchLocation" list="barangayList" placeholder="Your barangay (e.g. Luna, Bolbok…)" aria-label="Location" autocomplete="off">
     </div>
-    <button class="btn btn-primary btn-lg" onclick="doSearch()"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Find Workers</button>
+    <button class="btn btn-primary btn-lg" id="searchButton" onclick="doSearch()"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Find Workers</button>
   </div>
-
+  <div class="search-error" id="searchError" role="alert" style="display:none;"></div>
+  <datalist id="barangayList">
+    @foreach(\App\Support\TuyBarangays::allBarangays() as $barangayName)
+      <option value="{{ $barangayName }}"></option>
+    @endforeach
+    <option value="Tuy, Batangas"></option>
+  </datalist>
 </div>
 
 <div class="section-divider" style="margin-top:48px"></div>
@@ -122,11 +138,21 @@
     @foreach($categories as $cat)
       <button class="cat-pill {{ $category === $cat->slug ? 'active' : '' }}" data-category="{{ $cat->slug }}"><i class="fa-solid {{ $cat->icon ?: 'fa-wrench' }}"></i> {{ $cat->name }}</button>
     @endforeach
+</div>
+
+  <div class="view-toggle-wrap fade-up">
+    <div class="view-toggle">
+      <button class="active" id="viewGridBtn" onclick="switchView('grid')"><i class="fa-solid fa-grip"></i> Grid</button>
+      <button id="viewMapBtn" onclick="switchView('map')"><i class="fa-solid fa-map-location-dot"></i> Map</button>
+    </div>
+    <span class="workers-count">{{ $workers->total() }} worker{{ $workers->total() !== 1 ? 's' : '' }}</span>
   </div>
 
   <div id="workersSection">
     @include('partials.workers-grid')
   </div>
+
+  @include('partials.workers-map')
 </section>
 
 <!-- STATS -->
@@ -331,6 +357,7 @@
       <div class="ai-avatar"><i class="fa-solid fa-robot"></i></div>
       <div><div class="ai-title">KaAyos Assistant</div><div class="ai-status">Online</div></div>
     </div>
+    <button id="aiExpand" class="ai-expand" aria-label="Expand chat"><i class="fa-solid fa-expand"></i></button>
   </div>
   <div class="ai-messages" id="aiMessages">
     <div class="ai-msg bot">
@@ -413,7 +440,9 @@ function loadWorkers(url) {
       url.searchParams.delete('page');
       pills.forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
-      loadWorkers(url).catch(function(){ window.location.href = url; });
+      loadWorkers(url).then(function() {
+        if (_currentView === 'map') refreshMapFromSection();
+      }).catch(function(){ window.location.href = url; });
     });
   });
 })();
@@ -425,13 +454,43 @@ function searchTag(el) {
 }
 
 function doSearch() {
+  var btn = document.getElementById('searchButton');
+  var err = document.getElementById('searchError');
   var q = document.getElementById('searchQuery').value.trim();
   var loc = document.getElementById('searchLocation').value.trim();
+
+  if (!q && !loc) {
+    if (err) {
+      err.textContent = 'Please enter a service (e.g. Plumbing, Cleaning) or your barangay (e.g. Luna, Bolbok).';
+      err.style.display = 'block';
+    }
+    document.getElementById('searchQuery').focus();
+    return;
+  }
+
+  if (err) err.style.display = 'none';
+  if (btn && !btn.disabled) btn.disabled = true;
+
   var params = new URLSearchParams();
-  if(q) params.set('q', q);
-  if(loc) params.set('location', loc);
+  if (q) params.set('q', q);
+  if (loc) params.set('location', loc);
   window.location.href = '/search' + (params.toString() ? '?' + params.toString() : '');
 }
+
+(function() {
+  var ids = ['searchQuery', 'searchLocation'];
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+    });
+    el.addEventListener('input', function() {
+      var err = document.getElementById('searchError');
+      if (err) err.style.display = 'none';
+    });
+  });
+})();
 
 /* ESC key closes modal + mobile menu */
 document.addEventListener('keydown', function(e) {
@@ -487,29 +546,115 @@ function goToSignUp() {
   window.location.href = '/register?intended=/client/workers/' + _bookingWorkerId;
 }
 
-window.addEventListener('load', function() {
+(function() {
   var loader = document.getElementById('pageLoader');
+  if (!loader) return;
   if (new URLSearchParams(window.location.search).has('page')) {
     loader.classList.add('loaded');
     document.body.classList.add('loaded');
     return;
   }
-  setTimeout(function() {
-    loader.classList.add('phase-2');
+
+  var MIN_SHOW_MS = 1200;
+  var start = Date.now();
+  var finished = false;
+
+  function finish() {
+    if (finished) return;
+    finished = true;
+    loader.classList.add('phase-3');
     setTimeout(function() {
       loader.classList.add('loaded');
       setTimeout(function() { document.body.classList.add('loaded'); }, 100);
-    }, 400);
-  }, 300);
-});
+    }, 500);
+  }
+
+  setTimeout(function() { loader.classList.add('phase-2'); }, 300);
+
+  function onLoaded() {
+    var elapsed = Date.now() - start;
+    setTimeout(finish, Math.max(0, MIN_SHOW_MS - elapsed));
+  }
+
+  if (document.readyState === 'complete') {
+    onLoaded();
+  } else {
+    window.addEventListener('load', onLoaded);
+  }
+})();
+
+/* VIEW TOGGLE (Grid / Map) */
+var _currentView = 'grid';
+var _mapInitialized = false;
+
+function switchView(view) {
+  _currentView = view;
+  var gridSection = document.getElementById('workersSection');
+  var mapContainer = document.getElementById('workersMap');
+  var gridBtn = document.getElementById('viewGridBtn');
+  var mapBtn = document.getElementById('viewMapBtn');
+
+  if (view === 'map') {
+    gridSection.style.display = 'none';
+    mapContainer.classList.add('map-active');
+    gridBtn.classList.remove('active');
+    mapBtn.classList.add('active');
+    if (!_mapInitialized) {
+      if (typeof initWorkerMap === 'function') initWorkerMap();
+      _mapInitialized = true;
+    } else if (typeof initWorkerMap === 'function') {
+      initWorkerMap();
+    }
+  } else {
+    gridSection.style.display = '';
+    mapContainer.classList.remove('map-active');
+    gridBtn.classList.add('active');
+    mapBtn.classList.remove('active');
+  }
+}
 
 /* AJAX PAGINATION */
 document.addEventListener('click', function(e) {
   var link = e.target.closest('.pagination a');
   if (!link) return;
   e.preventDefault();
-  loadWorkers(link.href).catch(function() { window.location.href = link.href; });
+  loadWorkers(link.href).then(function() {
+    if (_currentView === 'map') {
+      refreshMapFromSection();
+    }
+  }).catch(function() { window.location.href = link.href; });
 });
+
+function refreshMapFromSection() {
+  var section = document.getElementById('workersSection');
+  if (!section) return;
+  var cards = section.querySelectorAll('.worker-card');
+  var workers = [];
+  cards.forEach(function(card) {
+    var href = card.getAttribute('href') || '';
+    var idMatch = href.match(/\/workers\/(\d+)/);
+    if (!idMatch) return;
+    workers.push({
+      id: parseInt(idMatch[1]),
+      name: card.dataset.name || '',
+      category: card.querySelector('.w-trade') ? card.querySelector('.w-trade').childNodes[0].textContent.trim() : '',
+      rating: parseFloat(card.dataset.rating) || 0,
+      reviews: parseInt(card.dataset.reviews) || 0,
+      price: parseInt(card.dataset.price) || 0,
+      avatar: card.dataset.avatar || null,
+      initials: card.dataset.initials || '',
+      distance: '',
+      verified: card.dataset.verified === '1',
+      skills: [],
+      works: [],
+      latitude: parseFloat(card.dataset.lat) || 14.02,
+      longitude: parseFloat(card.dataset.lng) || 120.73
+    });
+  });
+  if (typeof updateWorkerMap === 'function' && workers.length > 0) {
+    updateWorkerMap(workers);
+  }
+}
 
 /* AI FLOATING ASSISTANT */
 (function() {
@@ -519,6 +664,7 @@ document.addEventListener('click', function(e) {
   var suggestions = document.getElementById('aiSuggestions');
   var input = document.getElementById('aiInput');
   var send = document.getElementById('aiSend');
+  var expand = document.getElementById('aiExpand');
   var csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
   var history = [];
   var isOpen = false;
@@ -526,10 +672,21 @@ document.addEventListener('click', function(e) {
   function scrollBottom() {
     setTimeout(function(){ messages.scrollTop = messages.scrollHeight; }, 50);
   }
+  function formatBotReply(text) {
+    var t = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    var lines = String(t).split(/\n/);
+    for (var i = 0; i < lines.length; i++) {
+      lines[i] = lines[i].replace(/^\s*[*\-•]\s+/, '• ');
+      lines[i] = lines[i].replace(/^\s*\d+[.)]\s+/, '• ');
+      lines[i] = lines[i].replace(/\*/g, '');
+    }
+    return lines.join('<br>');
+  }
   function addMsg(role, text) {
     var div = document.createElement('div');
     div.className = 'ai-msg ' + role;
-    div.innerHTML = '<div class="ai-bubble"><p>' + text.replace(/\n/g, '<br>') + '</p></div>';
+    var body = role === 'bot' ? formatBotReply(text) : text.replace(/\n/g, '<br>');
+    div.innerHTML = '<div class="ai-bubble"><p>' + body + '</p></div>';
     messages.appendChild(div);
     history.push({ role: role, content: text.replace(/<[^>]*>/g, '') });
     scrollBottom();
@@ -582,6 +739,12 @@ document.addEventListener('click', function(e) {
     if (isOpen) input.focus();
   });
   send.addEventListener('click', function(){ sendMsg(); });
+  expand.addEventListener('click', function() {
+    var isExpanded = win.classList.toggle('expanded');
+    expand.innerHTML = isExpanded ? '<i class="fa-solid fa-compress"></i>' : '<i class="fa-solid fa-expand"></i>';
+    expand.setAttribute('aria-label', isExpanded ? 'Shrink chat' : 'Expand chat');
+    input.focus();
+  });
   input.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
   });

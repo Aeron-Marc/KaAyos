@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\WorkerDocument;
 use App\Support\WorkerDocuments;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 class VerificationController extends Controller
@@ -83,7 +84,15 @@ class VerificationController extends Controller
 
         $user = $verification->user;
         $this->checkWorkerVerification($user);
-        $user->notify(new \App\Notifications\VerificationApproved($user));
+
+        try {
+            $user->notify(new \App\Notifications\VerificationApproved($user));
+        } catch (\Exception $e) {
+            Log::warning('Failed to send verification approval notification', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
 
         return redirect()->back()
             ->with('success', "Verification for {$user->name} has been approved.");
@@ -105,7 +114,15 @@ class VerificationController extends Controller
         if ($user->workerProfile) {
             $user->workerProfile->update(['government_id_verified' => false]);
         }
-        $user->notify(new \App\Notifications\VerificationRejected($user, $request->input('rejection_reason')));
+
+        try {
+            $user->notify(new \App\Notifications\VerificationRejected($user, $request->input('rejection_reason')));
+        } catch (\Exception $e) {
+            Log::warning('Failed to send verification rejection notification', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
 
         return redirect()->back()
             ->with('error', "Verification for {$user->name} has been rejected.");

@@ -50,6 +50,12 @@ a{text-decoration:none;color:inherit}
 .search-bar .input-wrap input{width:100%;border:1.5px solid var(--g1);border-radius:9px;padding:13px 18px 13px 42px;font-size:1rem;color:var(--g9);background:var(--off);outline:none;font-family:inherit;transition:border-color .18s;box-sizing:border-box}
 .search-bar .input-wrap input:focus{border-color:var(--b4)}
 .search-bar .input-wrap input::placeholder{color:var(--g4)}
+.search-bar .input-wrap.loc-input{flex:0 0 240px}
+.search-bar .input-wrap.loc-input input{padding-left:44px}
+.location-notice{margin:14px auto 0;max-width:800px;background:#fde8d8;border:1.5px solid #f5c2a0;color:#a04d1a;border-radius:9px;padding:10px 14px;font-size:.85rem;display:flex;align-items:center;gap:8px}
+.location-hint{font-size:.88rem;color:var(--g4);margin:0 0 18px}
+.location-hint i{color:var(--b6)}
+.location-hint strong{color:var(--b8)}
 
 .layout{display:flex;gap:28px;max-width:1200px;margin:0 auto;padding:32px 5%}
 .sidebar{flex:0 0 220px}
@@ -68,36 +74,30 @@ a{text-decoration:none;color:inherit}
 .result-header .clear-link{font-size:.84rem;color:var(--b6);font-weight:500;display:inline-flex;align-items:center;gap:4px}
 .result-header .clear-link:hover{text-decoration:underline}
 
-.worker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.worker-card{background:var(--white);border:1.5px solid var(--g1);border-radius:14px;padding:18px 20px;cursor:pointer;transition:all .25s;display:block;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.worker-card:hover{border-color:var(--b4);box-shadow:0 8px 28px rgba(0,0,0,.1);transform:translateY(-3px)}
+.worker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.worker-card{background:var(--white);border:1.5px solid var(--g1);border-radius:16px;padding:20px 22px;cursor:pointer;transition:all .25s;display:flex;flex-direction:column;height:100%;box-shadow:0 2px 8px rgba(4,44,83,.06)}
+.worker-card:hover{border-color:var(--b4);box-shadow:0 8px 28px rgba(0,0,0,.1);transform:translateY(-4px)}
 .w-card-top{display:flex;gap:14px;align-items:flex-start}
-.w-avatar{width:56px;height:56px;border-radius:12px;object-fit:cover;flex-shrink:0}
+.w-avatar{width:60px;height:60px;border-radius:12px;object-fit:cover;flex-shrink:0}
 .w-initials{background:var(--b0);color:var(--b6);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700}
 .w-meta{flex:1;min-width:0}
 .w-name-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.w-name{font-size:.9rem;font-weight:600;color:var(--b9)}
-.w-trade{font-size:.78rem;color:var(--b6);font-weight:500;margin-top:1px}
-.w-rating{display:flex;align-items:center;gap:3px;background:var(--b0);padding:3px 7px;border-radius:7px;font-size:.78rem;font-weight:600;color:var(--b8);white-space:nowrap;flex-shrink:0}
-.w-rating i{color:#f59e0b;font-size:.68rem}
-.w-details-row{display:flex;align-items:center;gap:14px;margin-top:5px;font-size:.78rem;color:var(--g4)}
+.w-name{font-size:.95rem;font-weight:600;color:var(--b9)}
+.w-trade{font-size:.8rem;color:var(--b6);font-weight:500;margin-top:1px}
+.w-rating{display:flex;align-items:center;gap:4px;background:var(--b0);padding:4px 10px;border-radius:7px;font-size:.82rem;font-weight:600;color:var(--b8);white-space:nowrap;flex-shrink:0}
+.w-rating i{color:#f59e0b;font-size:.72rem}
+.w-details-row{display:flex;align-items:center;gap:14px;margin-top:8px;font-size:.82rem;color:var(--g4)}
 .w-details-row .w-price{font-weight:600;color:var(--b7);margin-left:auto}
 .w-skills{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.w-skill-tag{padding:3px 10px;border-radius:20px;font-size:.73rem;font-weight:500}
-.w-skill-tag:nth-child(6n+1){background:#dbeeff;color:#185FA5}
-.w-skill-tag:nth-child(6n+2){background:#fef3d0;color:#a07b10}
-.w-skill-tag:nth-child(6n+3){background:#fde8d8;color:#b04d1a}
-.w-skill-tag:nth-child(6n+4){background:#d6f5e8;color:#1a6852}
-.w-skill-tag:nth-child(6n+5){background:#ede8fc;color:#534AB7}
-.w-skill-tag:nth-child(6n+6){background:#d4f4f4;color:#0F6E56}
+.w-skill-tag{padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:500;background:var(--off);color:var(--g7);border:1px solid var(--g1)}
 .w-works{margin-top:10px;padding-top:10px;border-top:1px solid var(--g1)}
 .w-works-row{display:flex;gap:8px}
 .w-work-thumb{width:64px;height:64px;border-radius:9px;background:var(--off);background-size:cover;background-position:center;border:1.5px solid var(--g1);display:flex;align-items:center;justify-content:center;color:var(--g4);font-size:1.1rem;transition:all .2s;cursor:pointer;flex-shrink:0}
 .w-work-thumb:hover{transform:scale(1.08);box-shadow:0 4px 12px rgba(0,0,0,.1);border-color:var(--b4)}
 .w-work-sample{background:var(--b0);color:var(--b2);border-style:dashed;font-size:1rem}
-.w-card-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--g1)}
-.w-card-actions .btn{flex:1;justify-content:center;padding:9px 0;font-size:.8rem}
-.w-card-actions .btn-outline{flex:1;justify-content:center;padding:9px 0;font-size:.8rem}
+.w-card-actions{display:flex;gap:10px;margin-top:auto;padding-top:16px;border-top:1px solid var(--g1)}
+.w-card-actions .btn{flex:1;justify-content:center;padding:11px 0;font-size:.84rem}
+.w-card-actions .btn-outline{flex:1;justify-content:center;padding:11px 0;font-size:.84rem}
 
 .pagination{display:flex;justify-content:center;gap:6px;margin-top:36px;flex-wrap:wrap}
 .pagination a,.pagination span{padding:8px 14px;border-radius:8px;font-size:.88rem;font-weight:500;border:1.5px solid var(--g1);transition:all .18s}
@@ -128,6 +128,9 @@ a{text-decoration:none;color:inherit}
 
 @media(max-width:768px){
 .layout{flex-direction:column}
+.search-bar{flex-wrap:wrap}
+.search-bar .input-wrap,.search-bar .input-wrap.loc-input{width:100%!important;flex:1 1 100%!important}
+.search-bar .btn{width:100%;justify-content:center}
 .sidebar{flex:none;overflow-x:auto;display:flex;flex-wrap:wrap;gap:10px}
 .sidebar h3{width:100;margin-bottom:6px}
 .cat-list{flex-direction:row;flex-wrap:wrap;gap:4px}
@@ -137,6 +140,7 @@ a{text-decoration:none;color:inherit}
 }
 @media(max-width:480px){
 .footer-grid{grid-template-columns:1fr}
+.worker-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -166,17 +170,30 @@ a{text-decoration:none;color:inherit}
   <form class="search-bar" action="/search" method="GET">
     <div class="input-wrap">
       <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-      <input type="text" name="q" placeholder="e.g. leaking pipe, cleaning, painting..." value="{{ $query ?? '' }}" aria-label="Search workers">
+      <input type="text" name="q" placeholder="e.g. leaking pipe, cleaning, painting..." value="{{ $query ?? '' }}" aria-label="Search workers" autocomplete="off">
+    </div>
+    <div class="input-wrap loc-input">
+      <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+      <input type="text" name="location" list="barangayList" placeholder="Your barangay (e.g. Luna, Bolbok…)" value="{{ $location ?? '' }}" aria-label="Location" autocomplete="off">
     </div>
     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Search</button>
   </form>
+  <datalist id="barangayList">
+    @foreach(\App\Support\TuyBarangays::allBarangays() as $barangayName)
+      <option value="{{ $barangayName }}"></option>
+    @endforeach
+    <option value="Tuy, Batangas"></option>
+  </datalist>
+  @if(!empty($locationNotice))
+    <div class="location-notice"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> {{ $locationNotice }}</div>
+  @endif
 </div>
 
 <div class="layout">
   <aside class="sidebar">
     <h3>Categories</h3>
     <div class="cat-list">
-      <a href="/search{{ $query ? '?q=' . urlencode($query) : '' }}" class="cat-link {{ !$category ? 'active' : '' }}">
+      <a href="/search{{ $query ? '?q=' . urlencode($query) : '' }}{{ $location ? ($query ? '&' : '?') . 'location=' . urlencode($location) : '' }}" class="cat-link {{ !$category ? 'active' : '' }}">
         <span class="cat-icon" style="background:var(--b0);color:var(--b6)"><i class="fa-solid fa-grid-2"></i></span>
         All Services
       </a>
@@ -184,6 +201,7 @@ a{text-decoration:none;color:inherit}
         @php
           $url = '/search?category=' . urlencode($cat->slug);
           if ($query) $url .= '&q=' . urlencode($query);
+          if ($location) $url .= '&location=' . urlencode($location);
         @endphp
         <a href="{{ $url }}" class="cat-link {{ $category === $cat->slug ? 'active' : '' }}">
           <span class="cat-icon" style="background:var(--b0);color:var(--b6)"><i class="fa-solid {{ $cat->icon ?: 'fa-wrench' }}"></i></span>
@@ -203,12 +221,16 @@ a{text-decoration:none;color:inherit}
         @endif
       </h2>
       <div>
-        @if($category || $query)
+        @if($category || $query || $location)
           <a href="/search" class="clear-link"><i class="fa-solid fa-xmark"></i> Clear filters</a>
         @endif
         <span class="count">{{ $workers->total() }} result{{ $workers->total() !== 1 ? 's' : '' }}</span>
       </div>
     </div>
+
+    @if($locationBarangay)
+      <p class="location-hint"><i class="fa-solid fa-map-pin" aria-hidden="true"></i> Showing workers near <strong>Brgy. {{ $locationBarangay }}, Tuy, Batangas</strong> — sorted by distance.</p>
+    @endif
 
     @if($workers->count() > 0)
       <div class="worker-grid">
@@ -232,7 +254,7 @@ a{text-decoration:none;color:inherit}
                   </div>
                 </div>
                 <div class="w-details-row">
-                  <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $w['distance'] }}</span>
+                  <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> @if($w['distance_km'] !== null){{ $w['distance_km'] }} km away@else{{ $w['distance'] }}@endif</span>
                   @if($w['reviews'] > 0)
                     <span><i class="fa-regular fa-comment"></i> {{ $w['reviews'] }}</span>
                   @endif
@@ -274,9 +296,9 @@ a{text-decoration:none;color:inherit}
       </div>
     @else
       <div class="empty-state">
-        <i class="fa-solid fa-user-slash"></i>
-        <h3>No workers found</h3>
-        <p>Try adjusting your search or category filter to find available workers.</p>
+        <i class="fa-solid fa-users-slash"></i>
+        <h3>No matching services/workers found</h3>
+        <p>Try adjusting your search term, location, or category filter to find available workers.</p>
         <a href="{{ url('/search') }}" class="btn btn-primary" style="margin-top: 16px; display: inline-flex;"><i class="fa-solid fa-rotate-left"></i> Reset Filters</a>
       </div>
     @endif

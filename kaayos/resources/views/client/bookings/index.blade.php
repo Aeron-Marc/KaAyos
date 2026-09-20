@@ -652,6 +652,7 @@ function openBookingModal(index) {
         var extra = '';
         if (b.raw_status === 'completed') {
             extra = '<a href="{{ route('client.reviews') }}" class="btn btn-outline"><i class="fa-regular fa-star" aria-hidden="true"></i> Leave Review</a>' +
+                    '<a href="{{ route('client.testimonials.create') }}" class="btn btn-outline"><i class="fa-solid fa-quote-left" aria-hidden="true"></i> Share a Testimonial</a>' +
                     '<button type="button" class="btn btn-outline btn-report" onclick="showReportModal(' + index + ')"><i class="fa-solid fa-flag"></i> Report Worker</button>';
         }
         footer.innerHTML = extra + '<button type="button" class="btn btn-outline" onclick="closeBookingModal()">Close</button>';

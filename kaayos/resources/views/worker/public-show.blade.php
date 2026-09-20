@@ -303,9 +303,9 @@ a{text-decoration:none;color:inherit}
           @if($hasPortfolio)
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
               @foreach($workerProfile->portfolios as $i => $item)
+                @php $portfolioPhoto = \App\Support\PortfolioPhoto::url($item->photo_path, $item->id); @endphp
                 <div class="works-item">
-                  <div class="thumb{{ !$item->photo_path ? ' sample' : '' }}"@if($item->photo_path) style="background-image:url('{{ Storage::url($item->photo_path) }}');cursor:pointer"@endif data-index="{{ $i }}">
-                    @if(!$item->photo_path)<i class="fa-solid fa-camera"></i>@endif
+                  <div class="thumb" style="background-image:url('{{ $portfolioPhoto }}');cursor:pointer" data-index="{{ $i }}">
                   </div>
                   @if($item->caption)
                     <div class="works-caption">{{ $item->caption }}</div>
@@ -455,7 +455,7 @@ a{text-decoration:none;color:inherit}
 @php
 $pubPhotos = $workerProfile && $workerProfile->portfolios
     ? $workerProfile->portfolios->map(fn($p) => [
-        'url'     => $p->photo_path ? Storage::url($p->photo_path) : null,
+        'url'     => \App\Support\PortfolioPhoto::url($p->photo_path, $p->id),
         'caption' => $p->caption,
     ])->values()->toArray()
     : [];

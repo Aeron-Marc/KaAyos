@@ -79,6 +79,38 @@ class TuyBarangays
         return $barangay !== null && isset(self::CENTERS[$barangay]);
     }
 
+    public static function parseLocation(?string $location): ?string
+    {
+        if ($location === null || trim($location) === '') {
+            return null;
+        }
+
+        $raw = trim($location);
+
+        foreach (self::CENTERS as $name => $_center) {
+            if (strcasecmp($name, $raw) === 0) {
+                return $name;
+            }
+        }
+
+        $parts = preg_split('/[,\s]+/', $raw) ?: [];
+
+        foreach ($parts as $part) {
+            foreach (self::CENTERS as $name => $_center) {
+                if (strcasecmp($name, $part) === 0) {
+                    return $name;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static function distanceKm(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        return self::haversine($lat1, $lng1, $lat2, $lng2);
+    }
+
     public static function barangayFor(float $lat, float $lng): string
     {
         $best = null;

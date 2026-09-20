@@ -43,7 +43,13 @@
 <div class="header">
     <div class="header-left">
         <h1><i class="fa-solid fa-gauge-high"></i> Dashboard</h1>
-        <p>{{ now()->format('l, F j, Y') }}</p>
+        <p>Overview of platform activity</p>
+    </div>
+    <div class="header-right">
+        <div class="dash-clock" id="dashClock">
+            <div class="dash-clock-time" id="dashClockTime">{{ now()->format('h:i:s A') }}</div>
+            <div class="dash-clock-date" id="dashClockDate">{{ now()->format('l, F j, Y') }}</div>
+        </div>
     </div>
 </div>
 
@@ -218,54 +224,31 @@
             </div>
         </div>
         @endif
-
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <div>
-                    <div class="dash-card-title"><i class="fa-solid fa-bolt"></i> Quick Actions</div>
-                </div>
-            </div>
-            <div class="dash-actions">
-                <a href="{{ route('admin.verification.index') }}" class="dash-action">
-                    <i class="fa-solid fa-shield-heart"></i>
-                    <span>Verifications</span>
-                </a>
-                <a href="{{ route('admin.disputes.index') }}" class="dash-action">
-                    <i class="fa-solid fa-scale-balanced"></i>
-                    <span>Disputes</span>
-                </a>
-                <a href="{{ route('admin.users.index') }}" class="dash-action">
-                    <i class="fa-solid fa-users-gear"></i>
-                    <span>Users</span>
-                </a>
-                <a href="{{ route('admin.bookings.index') }}" class="dash-action">
-                    <i class="fa-solid fa-calendar-days"></i>
-                    <span>Bookings</span>
-                </a>
-            </div>
-        </div>
     </div>
 </div>
 
 @push('styles')
 <style>
     .header{margin-bottom:16px}
-    .dash-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
-    .dash-kpi{display:flex;align-items:center;gap:10px;background:#fff;border-radius:11px;padding:9px 11px;border:1px solid rgba(0,0,0,.05);box-shadow:0 2px 6px rgba(0,0,0,.04)}
-    .dash-kpi-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+    .dash-clock{display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:12px 20px;border-radius:12px;background:linear-gradient(135deg,var(--b9),#0C447C);color:#fff;box-shadow:0 4px 14px rgba(4,44,83,.25);min-width:200px}
+    .dash-clock-time{font-size:1.55rem;font-weight:800;letter-spacing:.04em;font-variant-numeric:tabular-nums;line-height:1.1}
+    .dash-clock-date{font-size:.74rem;color:rgba(255,255,255,.82)}
+    .dash-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
+    .dash-kpi{display:flex;align-items:center;gap:9px;background:#fff;border-radius:10px;padding:9px 12px;border:1px solid rgba(0,0,0,.05);box-shadow:0 2px 6px rgba(0,0,0,.05);min-width:0}
+    .dash-kpi-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.88rem;flex-shrink:0}
     .icon-blue{background:rgba(26,111,196,.1);color:var(--b6)}
     .icon-navy{background:rgba(11,63,120,.1);color:var(--b8)}
     .icon-green{background:rgba(16,185,129,.12);color:var(--s9)}
     .icon-orange{background:rgba(245,158,11,.14);color:var(--y8)}
     .icon-purple{background:rgba(139,92,246,.12);color:#7C3AED}
     .dash-kpi-body{min-width:0}
-    .dash-kpi-value{font-size:1.1rem;font-weight:800;color:var(--b9);line-height:1.15;font-variant-numeric:tabular-nums}
-    .dash-kpi-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--g4);margin-top:1px}
-    .dash-kpi-sub{font-size:.7rem;color:var(--g4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-    .dash-main{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:14px;align-items:start}
-    .dash-col{display:flex;flex-direction:column;gap:14px;min-width:0}
-    .dash-card{background:#fff;border-radius:13px;padding:15px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.05)}
-    .dash-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .dash-kpi-value{font-size:1.05rem;font-weight:800;color:var(--b9);line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .dash-kpi-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--g4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .dash-kpi-sub{font-size:.68rem;color:var(--g4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
+    .dash-main{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:18px;align-items:start}
+    .dash-col{display:flex;flex-direction:column;gap:18px;min-width:0}
+    .dash-card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 3px 10px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.05)}
+    .dash-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
     .dash-card-title{font-size:.95rem;font-weight:700;color:var(--b9);display:flex;align-items:center;gap:9px}
     .dash-card-title i{color:var(--b6);font-size:1rem}
     .dash-card-sub{font-size:.73rem;color:var(--g4);margin-top:2px}
@@ -296,14 +279,9 @@
     .cat-bullet{width:8px;height:8px;border-radius:50%;background:var(--b6);flex-shrink:0}
     .cat-name{flex:1;min-width:0;font-size:.78rem;font-weight:600;color:var(--g7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cat-count{font-size:.78rem;font-weight:700;color:var(--g9);font-variant-numeric:tabular-nums}
-    .dash-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .dash-action{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:9px;border:1px solid rgba(0,0,0,.06);background:linear-gradient(180deg,#fff 0%,#fbfcfe 100%);text-decoration:none;color:var(--g9);transition:all .15s}
-    .dash-action:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.08);border-color:rgba(26,111,196,.2)}
-    .dash-action i{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(26,111,196,.08);color:var(--b6);font-size:.82rem;flex-shrink:0}
-    .dash-action span{font-size:.8rem;font-weight:700;color:var(--b9)}
-    @media(max-width:1200px){.dash-main{grid-template-columns:1fr}}
-    @media(max-width:768px){.dash-kpis{grid-template-columns:1fr 1fr}}
-    @media(max-width:480px){.dash-kpis{grid-template-columns:1fr}.dash-card table{min-width:420px}}
+    @media(max-width:1280px){.dash-kpis{grid-template-columns:repeat(3,1fr)}.dash-main{grid-template-columns:1fr}}
+    @media(max-width:768px){.dash-kpis{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:480px){.dash-kpis{grid-template-columns:1fr}.dash-card table{min-width:420px}.dash-kpi-sub{display:none}}
 </style>
 @endpush
 @push('scripts')
@@ -417,6 +395,24 @@ function initStatusDonut() {
             init();
         }
     }, 50);
+})();
+</script>
+<script>
+(function () {
+    var timeEl = document.getElementById('dashClockTime');
+    var dateEl = document.getElementById('dashClockDate');
+    if (!timeEl || !dateEl) return;
+
+    var timeFmt = new Intl.DateTimeFormat('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Manila' });
+    var dateFmt = new Intl.DateTimeFormat('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Manila' });
+
+    function tick() {
+        var now = new Date();
+        timeEl.textContent = timeFmt.format(now).toUpperCase();
+        dateEl.textContent = dateFmt.format(now);
+    }
+    tick();
+    setInterval(tick, 1000);
 })();
 </script>
 @endpush

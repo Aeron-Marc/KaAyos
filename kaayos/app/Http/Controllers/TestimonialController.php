@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Testimonial;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class TestimonialController extends Controller
+{
+    private function viewPath(): string
+    {
+        return Auth::user()->role === 'worker' ? 'worker.testimonials' : 'client.testimonials';
+    }
+
+    public function index()
+    {
+        $testimonials = Testimonial::where('user_id', Auth::id())
+            ->latest()
+            ->paginate(10);
+
+        $approvedCount = Testimonial::where('user_id', Auth::id())->approved()->count();
+
+        return view($this->viewPath() . '.index', compact('testimonials', 'approvedCount'));
+    }
+
+    public function create()
+    {
+        $hasExisting = Testimonial::where('user_id', Auth::id())->exists();
+
+        return view($this->viewPath() . '.create', compact('hasExisting'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'rating'  => 'required|integer|min:1|max:5',
+            'content' => 'required|string|max:1000',
+        ]);
+
+        $user = Auth::user();
+        $initials = strtoupper(substr($user->first_name ?? '', 0, 1) . substr($user->last_name ?? '', 0, 1));
+        if (empty($initials)) {
+            $initials = strtoupper(substr($user->name ?? 'U', 0, 2));
+        }
+
+        Testimonial::create([
+            'user_id'          => $user->id,
+            'name'             => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->name,
+            'role'             => $user->role === 'worker' ? 'Trabahador, ' . ($user->barangay ?? 'Tuy') : 'Homeowner, ' . ($user->barangay ?? 'Tuy'),
+            'content'          => $validated['content'],
+            'rating'           => $validated['rating'],
+            'avatar_initials'  => $initials,
+            'status'           => 'approved',
+            'is_active'        => true,
+        ]);
+
+        return redirect()->route(auth()->user()->role === 'worker' ? 'worker.testimonials.index' : 'client.testimonials.index')
+            ->with('success', 'Your testimonial has been published and is now visible on the landing page.');
+    }
+}

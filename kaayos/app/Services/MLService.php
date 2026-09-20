@@ -8,16 +8,29 @@ use Illuminate\Support\Facades\Log;
 class MLService
 {
     protected string $baseUrl;
+    protected string $apiKey;
 
     public function __construct()
     {
-        $this->baseUrl = config('kaayos.ml_service_url', 'http://127.0.0.1:8000');
+        $this->baseUrl = config('kaayos.ml_service_url', 'http://127.0.0.1:8001');
+        $this->apiKey = config('kaayos.ml_api_key', '');
+    }
+
+    protected function headers(): array
+    {
+        $headers = ['Accept' => 'application/json'];
+        if ($this->apiKey) {
+            $headers['X-API-Key'] = $this->apiKey;
+        }
+        return $headers;
     }
 
     public function health(): ?array
     {
         try {
-            $response = Http::timeout(3)->get("{$this->baseUrl}/health");
+            $response = Http::timeout(3)
+                ->withHeaders($this->headers())
+                ->get("{$this->baseUrl}/health");
             if ($response->successful()) {
                 return $response->json();
             }
@@ -34,9 +47,11 @@ class MLService
         }
 
         try {
-            $response = Http::timeout(10)->post("{$this->baseUrl}/predict", [
-                'workers' => $workers,
-            ]);
+            $response = Http::timeout(10)
+                ->withHeaders($this->headers())
+                ->post("{$this->baseUrl}/predict", [
+                    'workers' => $workers,
+                ]);
 
             if ($response->successful()) {
                 return $response->json();

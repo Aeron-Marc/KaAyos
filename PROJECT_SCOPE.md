@@ -10,9 +10,9 @@ A home services marketplace platform connecting clients with verified workers in
 
 | Role   | Capabilities |
 |--------|-------------|
-| Admin  | Manage users, workers, verifications, service categories, services, bookings, disputes, and reports |
-| Client | Browse/search workers, book services, message workers, leave reviews, manage account |
-| Worker | View/update job status, manage schedule, track earnings, upload documents & portfolio, manage profile |
+| Admin  | Manage users, workers, verifications, service categories, services, bookings, disputes, testimonials, and reports |
+| Client | Browse/search workers, book services, message workers, leave reviews, submit testimonials, manage account |
+| Worker | View/update job status, manage schedule, track earnings, upload documents & portfolio, submit testimonials, manage profile |
 
 ### Core Flows
 
@@ -23,14 +23,29 @@ A home services marketplace platform connecting clients with verified workers in
 - **Worker Reporting** — Clients can report workers after completed bookings; stored as disputes of type `worker_report`
 - **Realtime Chat** — Client-worker messaging via Laravel Reverb
 - **Realtime Notifications** — Booking updates, messages, verification status
+- **Testimonials** — Users submit testimonials, auto-approved on submission; approved testimonials appear on landing page
 - **Dispute Resolution** — Admin-mediated dispute handling for booking disputes and worker reports
 - **Earnings Tracking** — Worker earnings report with export
 - **Profile Management** — Avatar, contact info, barangay, preferences
 - **Password & Email Change** — OTP-verified via email
 
+### Landing Page Features
+
+- **Worker Map View** — Interactive Leaflet map with markers for each worker's location across Tuy's 22 barangays
+- **AI Chatbot** — Floating assistant for guest worker search and recommendations
+- **Worker Search & Filter** — Filter by service category and barangay location
+- **Worker Profiles** — Public profiles with ratings, reviews, skills, and portfolio
+- **Testimonials** — User-submitted testimonials, auto-approved on submission, displayed on the landing page
+
+### Admin Reports
+
+- **8 report types** — Bookings, revenue, users, worker performance, verifications, disputes, service popularity, reviews
+- **Export** — CSV and XLSX with letterhead and KPI summaries
+- **Print** — Browser-native print preview with A4 landscape layout
+
 ### Booking Statuses
 
-`new` → `accepted` → `en_route` → `in_progress` → `completed` | `cancelled`
+`new` → `accepted` → `en_route` → `in_progress` → `completed` | `cancelled` | `declined`
 
 ### Platform Fee
 
@@ -53,7 +68,6 @@ Configurable percentage (default: 10%) deducted from worker earnings.
 - Multi-language i18n beyond Filipino/English
 - Public API for external developers
 - Automated worker scheduling/assignment
-- Geolocation-based worker matching beyond barangay filter
 - Subscription or membership tiers
 
 ---

@@ -1,6 +1,6 @@
 # KaAyos API Reference
 
-All API endpoints are protected by **Laravel Sanctum** and require a valid `Authorization: Bearer <token>` header.
+All API endpoints are protected by **Laravel Sanctum** and require a valid `Authorization: Bearer <token>` header, except where noted.
 
 Rate limits are enforced on OTP endpoints to prevent abuse.
 
@@ -244,3 +244,177 @@ Uploads a profile avatar image.
 ```
 
 The previous avatar (if any) is automatically deleted.
+
+---
+
+## 8. Reverse Geocode
+
+Converts latitude/longitude coordinates to the nearest barangay in Tuy, Batangas.
+
+**`POST /api/location/reverse`**
+
+### Request
+
+```json
+{
+  "latitude": 14.0192,
+  "longitude": 120.7353
+}
+```
+
+### Success Response (200)
+
+```json
+{
+  "barangay": "Luna",
+  "region": "Calabarzon",
+  "province": "Batangas",
+  "city_municipality": "Tuy",
+  "latitude": 14.0192,
+  "longitude": 120.7353
+}
+```
+
+### Validation Rules
+
+| Field     | Rule                                |
+| --------- | ----------------------------------- |
+| latitude  | Required, numeric, between -90, 90  |
+| longitude | Required, numeric, between -180, 180 |
+
+---
+
+## 9. Save Location
+
+Saves the user's location (GPS or manual). Updates both the user record and worker profile if applicable.
+
+**`POST /api/location`**
+
+### Request
+
+```json
+{
+  "latitude": 14.0192,
+  "longitude": 120.7353,
+  "barangay": "Luna",
+  "street_address": "Purok 3, Malakas St.",
+  "region": "Calabarzon",
+  "province": "Batangas",
+  "city_municipality": "Tuy",
+  "location_source": "gps"
+}
+```
+
+### Success Response (200)
+
+```json
+{
+  "message": "Location saved.",
+  "latitude": 14.0192,
+  "longitude": 120.7353,
+  "barangay": "Luna",
+  "region": "Calabarzon",
+  "province": "Batangas",
+  "city_municipality": "Tuy",
+  "street_address": "Purok 3, Malakas St.",
+  "location_source": "gps",
+  "residence": "Luna, Tuy, Batangas"
+}
+```
+
+### Validation Rules
+
+| Field              | Rule                                              |
+| ------------------ | ------------------------------------------------- |
+| latitude           | Nullable, numeric, between -90, 90                |
+| longitude          | Nullable, numeric, between -180, 180              |
+| barangay           | Required, string, must be a valid Tuy barangay    |
+| street_address     | Nullable, string, max 255                         |
+| location_source    | Required, string, `gps` or `manual`               |
+
+> If latitude/longitude are null, coordinates are auto-generated from the barangay center with a slight jitter.
+
+---
+
+## 10. AI Chatbot
+
+Sends a message to the AI chatbot and receives a reply with suggestions. Works for both guests and authenticated users.
+
+**`POST /api/chat`**
+
+### Request
+
+```json
+{
+  "message": "I need a plumber for a leaking pipe",
+  "history": [
+    { "role": "user", "content": "Hi" },
+    { "role": "assistant", "content": "Hello! How can I help?" }
+  ]
+}
+```
+
+### Success Response (200)
+
+```json
+{
+  "success": true,
+  "reply": "I can help you find a plumber...",
+  "suggestions": ["Find a plumber near Luna", "View top-rated plumbers"]
+}
+```
+
+### Validation Rules
+
+| Field    | Rule                                     |
+| -------- | ---------------------------------------- |
+| message  | Required, string, max 1000               |
+| history  | Optional, array of `{role, content}`     |
+
+---
+
+## 11. AI Worker Suggestions
+
+Sends a message to the AI with the user's location context and returns matched worker recommendations. Requires authentication.
+
+**`POST /api/chat/suggest`**
+
+### Request
+
+```json
+{
+  "message": "I need a plumber for a leaking pipe",
+  "history": []
+}
+```
+
+### Success Response (200)
+
+```json
+{
+  "success": true,
+  "reply": "I found some plumbers near you...",
+  "suggestions": ["View top-rated plumbers"],
+  "workers": [
+    {
+      "id": 1,
+      "name": "Divina Lopez",
+      "category": "Plumbing",
+      "rating": 4.8,
+      "price": 350,
+      "verified": true,
+      "skills": ["Pipe Repair", "Fixture Installation"],
+      "match_percent": 87,
+      "latitude": 14.0192,
+      "longitude": 120.7353
+    }
+  ]
+}
+```
+
+### Error Responses
+
+| Status | Condition           |
+| ------ | ------------------- |
+| 401    | Not authenticated   |
+| 500    | Server error        |

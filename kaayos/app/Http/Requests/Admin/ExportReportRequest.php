@@ -14,9 +14,10 @@ class ExportReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type'      => 'required|in:bookings,payments,verifications',
+            'type' => 'required|in:bookings,revenue,users,worker_performance,verifications,disputes,service_popularity,reviews',
+            'format' => 'required|in:csv,xlsx',
             'date_from' => 'required|date',
-            'date_to'   => 'required|date|after_or_equal:date_from',
+            'date_to' => 'required|date|after_or_equal:date_from',
         ];
     }
 }

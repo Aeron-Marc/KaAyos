@@ -251,9 +251,9 @@
                     @if($hasPortfolio)
                         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
                             @foreach($workerProfile->portfolios as $item)
+                                @php $portfolioPhoto = \App\Support\PortfolioPhoto::url($item->photo_path, $item->id); @endphp
                                 <div class="works-item">
-                                    <div class="thumb"@if($item->photo_path) style="background-image:url('{{ Storage::url($item->photo_path) }}')"@endif>
-                                        @if(!$item->photo_path)<i class="fa-solid fa-camera" aria-hidden="true"></i>@endif
+                                    <div class="thumb" style="background-image:url('{{ $portfolioPhoto }}')">
                                     </div>
                                     @if($item->caption)
                                         <div class="works-caption">{{ $item->caption }}</div>
