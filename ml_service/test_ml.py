@@ -6,10 +6,12 @@ Run with:  python test_ml.py
 """
 
 import sys
+import os
 import json
-import numpy as np
 from pathlib import Path
 from typing import Any
+
+os.environ.setdefault("ML_API_KEY", "test-key-12345")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -23,7 +25,7 @@ if _model is None:
         df = pd.read_csv(DATASET_PATH)
         _train_model_from_df(df)
 
-client = TestClient(app)
+client = TestClient(app, headers={"X-API-Key": os.environ["ML_API_KEY"]})
 
 PASS = 0
 FAIL = 0
@@ -95,85 +97,11 @@ check_contains("has 'status'", data, "status")
 check("status value", data["status"], "ok")
 check_contains("has 'model_loaded'", data, "model_loaded")
 check("model_loaded is bool", isinstance(data["model_loaded"], bool), True)
-if data["model_accuracy"] is not None:
-    check_near("model_accuracy range", data["model_accuracy"], 0.74, tol=0.05)
 
 # ---------------------------------------------------------------------------
-#  2. CLUSTER — Normal case (5 workers, 2 close together)
+#  2. PREDICT — Normal case, verify ranking order
 # ---------------------------------------------------------------------------
-section("2. POST /cluster — 5 workers, expect 1 cluster + noise")
-
-payload = {
-    "workers": [
-        {"worker_id": 1000, "latitude": 13.758754, "longitude": 120.99626},
-        {"worker_id": 1001, "latitude": 13.946436, "longitude": 121.150607},
-        {"worker_id": 1002, "latitude": 13.804418, "longitude": 121.235025},
-        {"worker_id": 1003, "latitude": 14.090591, "longitude": 121.032487},
-        {"worker_id": 1004, "latitude": 14.091000, "longitude": 121.033000},
-    ]
-}
-r = client.post("/cluster", json=payload)
-check("status code", r.status_code, 200)
-data = r.json()
-check_contains("has 'clusters'", data, "clusters")
-check("cluster count matches input", len(data["clusters"]), 5)
-check("total_clusters > 0", data["total_clusters"] > 0, True)
-check("noise_count >= 0", data["noise_count"] >= 0, True)
-check("eps_km_used matches default", data["eps_km_used"], 2.0)
-
-ids_near = {c["worker_id"] for c in data["clusters"] if c["cluster_id"] != -1}
-check("1003 and 1004 clustered together", 1003 in ids_near and 1004 in ids_near, True)
-
-# ---------------------------------------------------------------------------
-#  3. CLUSTER — Single worker = noise
-# ---------------------------------------------------------------------------
-section("3. POST /cluster — 1 worker => noise")
-
-r = client.post("/cluster", json={"workers": [{"worker_id": 1, "latitude": 14.0, "longitude": 121.0}]})
-check("status code", r.status_code, 200)
-data = r.json()
-check("1 cluster returned", len(data["clusters"]), 1)
-check("cluster_id is -1 (noise)", data["clusters"][0]["cluster_id"], -1)
-check("total_clusters = 0", data["total_clusters"], 0)
-check("noise_count = 1", data["noise_count"], 1)
-
-# ---------------------------------------------------------------------------
-#  4. CLUSTER — Custom eps_km
-# ---------------------------------------------------------------------------
-section("4. POST /cluster — custom eps_km = 50 (merge all)")
-
-r = client.post("/cluster", json={
-    "workers": [
-        {"worker_id": 1, "latitude": 13.7, "longitude": 121.0},
-        {"worker_id": 2, "latitude": 14.1, "longitude": 121.0},
-    ],
-    "eps_km": 50.0,
-    "min_samples": 1,
-})
-check("status code", r.status_code, 200)
-data = r.json()
-check("both in same cluster", data["clusters"][0]["cluster_id"] == data["clusters"][1]["cluster_id"] != -1, True)
-check("total_clusters = 1", data["total_clusters"], 1)
-check("eps_km_used = 50", data["eps_km_used"], 50.0)
-
-# ---------------------------------------------------------------------------
-#  5. CLUSTER — Validation errors
-# ---------------------------------------------------------------------------
-section("5. POST /cluster — validation")
-
-r = client.post("/cluster", json={"workers": [{"worker_id": 1, "latitude": 200, "longitude": 121.0}]})
-check("invalid lat => 422", r.status_code, 422)
-
-r = client.post("/cluster", json={"workers": [{"worker_id": 1, "latitude": 14.0, "longitude": 200}]})
-check("invalid lng => 422", r.status_code, 422)
-
-r = client.post("/cluster", json={"workers": [{"worker_id": 1, "latitude": 14.0, "longitude": 121.0}], "eps_km": -1})
-check("negative eps => 422", r.status_code, 422)
-
-# ---------------------------------------------------------------------------
-#  6. PREDICT — Normal case, verify ranking order
-# ---------------------------------------------------------------------------
-section("6. POST /predict — 4 workers, verify ranking")
+section("2. POST /predict — 4 workers, verify ranking")
 
 payload = {
     "workers": [
@@ -218,9 +146,9 @@ check("1000 ranked first (highest rating, close)", ids_ordered[0], 1000)
 check("1001 ranked last (lowest rating, farthest)", ids_ordered[-1], 1001)
 
 # ---------------------------------------------------------------------------
-#  7. PREDICT — Empty workers
+#  3. PREDICT — Empty workers
 # ---------------------------------------------------------------------------
-section("7. POST /predict — empty list")
+section("3. POST /predict — empty list")
 
 r = client.post("/predict", json={"workers": []})
 check("status code", r.status_code, 200)
@@ -228,9 +156,9 @@ data = r.json()
 check("empty rankings", data["rankings"], [])
 
 # ---------------------------------------------------------------------------
-#  8. PREDICT — Unknown category
+#  4. PREDICT — Unknown category
 # ---------------------------------------------------------------------------
-section("8. POST /predict — unknown service_category")
+section("4. POST /predict — unknown service_category")
 
 payload = {
     "workers": [
@@ -250,9 +178,9 @@ check("worker_id preserved", data["rankings"][0]["worker_id"], 999)
 check("probability is float 0-1", 0 <= data["rankings"][0]["probability"] <= 1, True)
 
 # ---------------------------------------------------------------------------
-#  9. PREDICT — Missing required fields
+#  5. PREDICT — Missing required fields
 # ---------------------------------------------------------------------------
-section("9. POST /predict — missing fields => 422")
+section("5. POST /predict — missing fields => 422")
 
 payloads_bad = [
     {"workers": [{"worker_id": 1}]},
@@ -271,9 +199,9 @@ for i, p in enumerate(payloads_bad):
     print(f"  {sym} missing-fields payload #{i + 1}: status={r.status_code} (expected 422)")
 
 # ---------------------------------------------------------------------------
-# 10. RETRAIN — From default dataset
+#  6. RETRAIN — From default dataset
 # ---------------------------------------------------------------------------
-section("10. POST /retrain — from default dataset")
+section("6. POST /retrain — from default dataset")
 
 r = client.post("/retrain", json={"dataset_path": "../kaayos/storage/app/data/kaayos_dataset.csv"})
 check("status code", r.status_code, 200)
@@ -289,9 +217,9 @@ check("all 6 features in importances", set(feat.keys()), expected_feats)
 check_gt("distance_km is top feature", feat["distance_km"], 0.3)
 
 # ---------------------------------------------------------------------------
-# 11. RETRAIN — From inline records
+#  7. RETRAIN — From inline records
 # ---------------------------------------------------------------------------
-section("11. POST /retrain — from inline records")
+section("7. POST /retrain — from inline records")
 
 records = [
     {"worker_id": 1, "service_category": "Plumbing", "distance_km": 1.0,
@@ -320,9 +248,9 @@ check("status = success", data["status"], "success")
 check("samples_trained (80% of 6)", data["samples_trained"], 4)
 
 # ---------------------------------------------------------------------------
-# 12. RETRAIN — Missing everything => 400
+#  8. RETRAIN — Missing everything => falls back to CSV
 # ---------------------------------------------------------------------------
-section("12. POST /retrain — no data falls back to default CSV")
+section("8. POST /retrain — no data falls back to default CSV")
 
 r = client.post("/retrain", json={})
 check("returns 200 (uses default CSV)", r.status_code, 200)
@@ -331,9 +259,9 @@ check("status = success", data["status"], "success")
 check_gt("accuracy > 0.5", data["accuracy"], 0.5)
 
 # ---------------------------------------------------------------------------
-# 13. RETRAIN — Dataset has wrong columns
+#  9. RETRAIN — Dataset has wrong columns
 # ---------------------------------------------------------------------------
-section("13. POST /retrain — bad columns => 422 (Pydantic validation)")
+section("9. POST /retrain — bad columns => 422 (Pydantic validation)")
 
 r = client.post("/retrain", json={"records": [{"worker_id": 1, "foo": "bar"}]})
 check("returns 422", r.status_code, 422)

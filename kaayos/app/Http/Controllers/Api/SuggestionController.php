@@ -51,7 +51,9 @@ class SuggestionController extends Controller
             $workers = [];
             $intent = $this->extractIntent($validated['message']);
             if ($intent['intent'] === 'service_request' && !empty($intent['category'])) {
-                $workers = $this->fetchWorkers($intent['category'], $validated['message']);
+                $clientLat = $clientLocation['client']['latitude'] ?? null;
+                $clientLng = $clientLocation['client']['longitude'] ?? null;
+                $workers = $this->fetchWorkers($intent['category'], $validated['message'], $clientLat, $clientLng);
             }
 
             return response()->json([
@@ -109,7 +111,7 @@ class SuggestionController extends Controller
         return ['intent' => 'service_request', 'category' => '', 'description' => $message];
     }
 
-    protected function fetchWorkers(string $category, string $userMessage = ''): array
+    protected function fetchWorkers(string $category, string $userMessage = '', ?float $clientLat = null, ?float $clientLng = null): array
     {
         $query = User::where('role', 'worker')
             ->with('workerProfile')
@@ -117,7 +119,7 @@ class SuggestionController extends Controller
             ->active()
             ->where('service_category', $category);
 
-        $workers = $query->get()->map(function ($u) use ($userMessage) {
+        $workers = $query->get()->map(function ($u) use ($userMessage, $clientLat, $clientLng) {
             $profile = $u->workerProfile;
             $name = $u->name ?? '';
             $parts = explode(' ', $name, 2);
@@ -141,6 +143,10 @@ class SuggestionController extends Controller
                 ]);
             }
 
+            $distanceKm = ($clientLat !== null && $clientLng !== null)
+                ? TuyBarangays::distanceKm($clientLat, $clientLng, $lat, $lng)
+                : null;
+
             $rating = (float) ($profile?->average_rating ?? 0);
             $completedJobs = $u->completed_jobs_count ?? 0;
             $verified = (bool) ($profile?->government_id_verified ?? false);
@@ -148,7 +154,7 @@ class SuggestionController extends Controller
             $skills = $profile?->skills ?? [];
 
             $matchPercent = $this->computeMatchPercent(
-                $rating, $completedJobs, $verified, $yearsExp, $skills, $userMessage
+                $rating, $completedJobs, $verified, $yearsExp, $skills, $userMessage, $distanceKm
             );
 
             return [
@@ -164,7 +170,8 @@ class SuggestionController extends Controller
                 ),
                 'rating' => $rating,
                 'price' => (float) ($profile?->hourly_rate ?? 0),
-                'distance' => $u->residence,
+                'distance_km' => $distanceKm !== null ? round($distanceKm, 2) : null,
+                'distance_text' => $u->residence,
                 'verified' => $verified,
                 'skills' => $skills,
                 'jobs_completed' => $completedJobs,
@@ -175,7 +182,13 @@ class SuggestionController extends Controller
             ];
         })->values()->toArray();
 
-        usort($workers, fn($a, $b) => $b['match_percent'] <=> $a['match_percent']);
+        usort($workers, function ($a, $b) {
+            $cmp = $b['match_percent'] <=> $a['match_percent'];
+            if ($cmp !== 0) return $cmp;
+            $da = $a['distance_km'] ?? 999;
+            $db = $b['distance_km'] ?? 999;
+            return $da <=> $db;
+        });
 
         return $workers;
     }
@@ -186,17 +199,26 @@ class SuggestionController extends Controller
         bool $verified,
         int $yearsExperience,
         array $skills,
-        string $userMessage
+        string $userMessage,
+        ?float $distanceKm = null
     ): int {
         $score = 0;
 
-        $score += ($rating / 5.0) * 35;
+        $score += ($rating / 5.0) * 25;
 
-        $score += (min($completedJobs, 10) / 10.0) * 25;
+        $score += (min($completedJobs, 10) / 10.0) * 20;
 
-        $score += $verified ? 20.0 : 10.0;
+        $score += $verified ? 15.0 : 7.0;
 
-        $score += (min($yearsExperience, 15) / 15.0) * 20;
+        $score += (min($yearsExperience, 15) / 15.0) * 15;
+
+        if ($distanceKm !== null) {
+            $maxDistance = 15.0;
+            $distanceScore = max(0, 1 - ($distanceKm / $maxDistance));
+            $score += $distanceScore * 25;
+        } else {
+            $score += 12.5;
+        }
 
         if ($userMessage !== '') {
             $keywords = preg_split('/\s+/', strtolower($userMessage));

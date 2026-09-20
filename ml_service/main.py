@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 from contextlib import asynccontextmanager
-import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import List, Optional, Literal
@@ -12,7 +11,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
-from sklearn.cluster import DBSCAN
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
@@ -50,7 +48,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="KaAyos ML Microservice",
-    description="Geospatial clustering & AI worker matching for KaAyos marketplace",
+    description="AI worker matching for KaAyos marketplace",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -80,30 +78,6 @@ FEATURE_COLUMNS = CATEGORY_COLUMNS + ["service_category_encoded"]
 # ---------------------------------------------------------------------------
 # Pydantic schemas
 # ---------------------------------------------------------------------------
-
-class WorkerGeo(BaseModel):
-    worker_id: int
-    latitude: float = Field(..., ge=-90, le=90)
-    longitude: float = Field(..., ge=-180, le=180)
-
-
-class ClusterRequest(BaseModel):
-    workers: List[WorkerGeo]
-    eps_km: float = Field(default=2.0, ge=0.1, le=100, description="DBSCAN epsilon in kilometers")
-    min_samples: int = Field(default=2, ge=1, le=100)
-
-
-class ClusterResult(BaseModel):
-    worker_id: int
-    cluster_id: int
-
-
-class ClusterResponse(BaseModel):
-    clusters: List[ClusterResult]
-    total_clusters: int
-    noise_count: int
-    eps_km_used: float
-
 
 class WorkerMatch(BaseModel):
     worker_id: int
@@ -271,39 +245,6 @@ def health():
         "status": "ok",
         "model_loaded": _model is not None,
     }
-
-
-@app.post("/cluster", response_model=ClusterResponse, dependencies=[Depends(verify_api_key)])
-def cluster_workers(req: ClusterRequest):
-    if len(req.workers) < 2:
-        return ClusterResponse(
-            clusters=[ClusterResult(worker_id=w.worker_id, cluster_id=-1) for w in req.workers],
-            total_clusters=0,
-            noise_count=len(req.workers),
-            eps_km_used=req.eps_km,
-        )
-
-    coords = np.radians([[w.latitude, w.longitude] for w in req.workers])
-    eps_rad = req.eps_km / 6371.0
-
-    db = DBSCAN(eps=eps_rad, min_samples=req.min_samples, metric="haversine")
-    labels = db.fit_predict(coords)
-
-    clusters = []
-    unique_labels = set()
-    for w, label in zip(req.workers, labels):
-        clusters.append(ClusterResult(worker_id=w.worker_id, cluster_id=int(label)))
-        if label != -1:
-            unique_labels.add(label)
-
-    noise_count = sum(1 for l in labels if l == -1)
-
-    return ClusterResponse(
-        clusters=clusters,
-        total_clusters=len(unique_labels),
-        noise_count=noise_count,
-        eps_km_used=req.eps_km,
-    )
 
 
 @app.post("/predict", response_model=PredictResponse, dependencies=[Depends(verify_api_key)])

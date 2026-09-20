@@ -526,7 +526,7 @@
       html += '<div class="s-worker-avatar">' + avatar + '</div>';
       html += '<div class="s-worker-info">';
       html += '<div class="s-worker-name">' + sanitize(w.name) + '</div>';
-      html += '<div class="s-worker-meta">' + sanitize(w.category) + ' &middot; \u20B1' + (w.price || 0) + '/hr &middot; ' + sanitize(w.distance || '') + (w.location_approximate ? ' <span style="color:#9aa4b2;font-size:.65rem;">~ approximate</span>' : '') + '</div>';
+      html += '<div class="s-worker-meta">' + sanitize(w.category) + ' &middot; \u20B1' + (w.price || 0) + '/hr &middot; ' + (w.distance_km != null ? w.distance_km + ' km' : sanitize(w.distance_text || '')) + (w.location_approximate ? ' <span style="color:#9aa4b2;font-size:.65rem;">~ approximate</span>' : '') + '</div>';
       html += '<div class="s-worker-footer">';
       html += '<span class="s-worker-rating"><i class="fa-solid fa-star"></i> ' + (w.rating || '0').toFixed(1) + '</span>';
       html += '<span class="s-worker-match ' + pctClass + '">' + pct + '% match</span>';
@@ -606,7 +606,7 @@
             '<div style="font-family:Inter,sans-serif;font-size:13px;line-height:1.5;">' +
             '<strong>' + sanitize(w.name) + '</strong><br>' +
             sanitize(w.category) + ' &middot; \u20B1' + (w.price || 0) + '/hr<br>' +
-            (w.distance ? sanitize(w.distance) + (approx ? ' <span style="color:#9aa4b2;font-size:11px;">(~ approximate location)</span><br>' : '<br>') : '') +
+            (w.distance_km != null ? w.distance_km + ' km' + (approx ? ' <span style="color:#9aa4b2;font-size:11px;">(~ approximate location)</span><br>' : '<br>') : (w.distance_text ? sanitize(w.distance_text) + (approx ? ' <span style="color:#9aa4b2;font-size:11px;">(~ approximate location)</span><br>' : '<br>') : '')) +
             '\u2605 ' + (w.rating || '0').toFixed(1) + ' &middot; <span style="color:' + color + ';font-weight:600;">' + pct + '% match</span><br>' +
             '<a href="/client/workers/' + w.id + '" style="color:#1A6FC4;font-size:12px;">View Profile &rarr;</a>' +
             '</div>'

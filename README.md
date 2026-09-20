@@ -16,7 +16,7 @@ Installation, running each service (Laravel server, queue worker, Vite, ML micro
 - **Realtime:** Laravel Reverb (WebSockets for chat & notifications)
 - **Queues & Cache:** Database driver
 - **Build:** Vite 8, concurrently
-- **ML Microservice:** Python FastAPI (scikit-learn for geospatial clustering & worker matching)
+- **ML Microservice:** Python FastAPI (scikit-learn for AI worker matching)
 - **AI Chatbot:** OpenRouter-powered assistant (`/api/chat`)
 - **Maps:** Leaflet 1.9.4 (OpenStreetMap) for worker map view on landing page
 
@@ -144,8 +144,7 @@ The admin dashboard includes a reporting section with:
 ## ML Microservice
 
 Located in `ml_service/` at the project root — a FastAPI-based Python microservice providing:
-- **Geospatial clustering** (DBSCAN) of workers by location
-- **Worker matching** (Random Forest) using distance, rating, completion rate, and experience
+- **AI worker matching** (Random Forest) using proximity, rating, completion rate, and experience
 - **Model retraining** endpoint
 
 See [SETUP.md](SETUP.md) — Terminal 1 — for how to run it.

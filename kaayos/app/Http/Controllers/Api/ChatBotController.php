@@ -21,7 +21,13 @@ class ChatBotController extends Controller
 
         try {
             $service = app(ChatBotService::class);
-            $result = $service->chat($validated['message'], $validated['history'] ?? [], auth()->user());
+            $clientLocation = [];
+            try {
+                $clientLocation = ['client' => auth()->user()->locationContext()];
+            } catch (\Throwable $e) {
+                Log::warning('Location context failed in chatbot', ['error' => $e->getMessage()]);
+            }
+            $result = $service->chat($validated['message'], $validated['history'] ?? [], auth()->user(), $clientLocation);
 
             return response()->json([
                 'success' => true,
