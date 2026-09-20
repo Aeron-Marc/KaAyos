@@ -723,7 +723,7 @@ function showConfirmModal(index) {
     document.getElementById('confirmForm').onsubmit = function(e) {
         if (agreeHtml && !document.getElementById('agree-terms-worker').checked) {
             e.preventDefault();
-            alert('Please agree to the Service Agreement before accepting.');
+            showToast('Please agree to the Service Agreement before accepting.', 'warning');
             return false;
         }
     };
@@ -759,9 +759,9 @@ function confirmCancel() {
     .then(function (r) { return r.json(); })
     .then(function (data) {
         if (data.success) { location.reload(); }
-        else { alert(data.message || 'Failed to cancel job.'); }
+        else { showToast(data.message || 'Failed to cancel job.', 'error'); }
     })
-    .catch(function () { alert('Something went wrong.'); })
+    .catch(function () { showToast('Something went wrong.', 'error'); })
     .finally(function () {
         document.getElementById('confirmCancelBtn').disabled = false;
         document.getElementById('confirmCancelBtn').textContent = 'Yes, Cancel';
@@ -917,7 +917,7 @@ function confirmCancel() {
                         jobs.push(fullJob);
                         openJobModal(jobs.length - 1);
                     })
-                    .catch(function() { alert('Failed to load job details.'); });
+                    .catch(function() { showToast('Failed to load job details.', 'error'); });
             };
             card.innerHTML =
                 '<div class="cal-job-card-header">' +

@@ -29,8 +29,10 @@ logging.basicConfig(
 
 
 def verify_api_key(key: str = Security(_api_key_header)):
+    # In local development or when ML_API_KEY is not configured, permit requests
     if not ML_API_KEY:
-        raise HTTPException(status_code=500, detail="ML_API_KEY not configured on server")
+        logger.debug("ML_API_KEY not configured on server; allowing request in development mode.")
+        return
     if key != ML_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
 

@@ -47,7 +47,8 @@
                     <td style="text-align: center;">
                         <div class="actions-cell" style="justify-content: center;">
                             <a href="{{ route('admin.service-categories.edit', $cat) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i> Edit</a>
-                            <form method="POST" action="{{ route('admin.service-categories.destroy', $cat) }}" style="display:inline" onsubmit="return confirm('Delete this category?')">
+                            <form method="POST" action="{{ route('admin.service-categories.destroy', $cat) }}" style="display:inline"
+                                  data-confirm="Delete this category?" data-confirm-title="Delete Category" data-confirm-btn="Delete">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
                             </form>

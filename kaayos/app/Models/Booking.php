@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Exceptions\BookingStateException;
+use App\Models\Earning;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -349,6 +350,21 @@ class Booking extends Model
             if ($fresh->confirmed_by_worker_at !== null && $fresh->confirmed_by_client_at !== null) {
                 $fresh->status = self::STATUS_COMPLETED;
                 $fresh->completed_at = now();
+
+                $platformFeePercent = config('kaayos.platform_fee_percent', 10);
+                $gross = (float) ($fresh->price ?? 0);
+                $fee = round($gross * ($platformFeePercent / 100), 2);
+                $net = $gross - $fee;
+
+                Earning::updateOrCreate(
+                    ['booking_id' => $fresh->id],
+                    [
+                        'worker_id'    => $fresh->worker_id,
+                        'gross_amount' => $gross,
+                        'platform_fee' => $fee,
+                        'net_amount'   => $net,
+                    ]
+                );
             }
 
             $fresh->save();

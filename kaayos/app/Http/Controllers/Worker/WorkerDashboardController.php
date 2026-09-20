@@ -485,6 +485,14 @@ class WorkerDashboardController extends Controller
         if ($booking->worker_id !== auth()->id()) {
             abort(403);
         }
+        if ($booking->reschedule_requested_by === auth()->id()) {
+            $msg = 'You cannot respond to your own reschedule request.';
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $msg], 403);
+            }
+
+            return redirect()->back()->with('error', $msg);
+        }
         if ($booking->reschedule_status !== 'pending') {
             $msg = 'No pending reschedule request.';
             if ($request->expectsJson()) {

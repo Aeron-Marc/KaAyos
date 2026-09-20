@@ -234,6 +234,23 @@
       <p class="text-muted">No testimonials yet.</p>
     @endforelse
   </div>
+  <div style="text-align:center;margin-top:32px;" class="fade-up">
+    @auth
+      @if(auth()->user()->role === 'worker')
+        <a href="{{ route('worker.testimonials.create') }}" class="btn btn-ghost" style="border:1.5px solid var(--line);padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;">
+          <i class="fa-solid fa-pen"></i> Share Your Experience
+        </a>
+      @elseif(auth()->user()->role === 'client')
+        <a href="{{ route('client.testimonials.create') }}" class="btn btn-ghost" style="border:1.5px solid var(--line);padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;">
+          <i class="fa-solid fa-pen"></i> Share Your Experience
+        </a>
+      @endif
+    @else
+      <a href="{{ route('login') }}" class="btn btn-ghost" style="border:1.5px solid var(--line);padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;">
+        <i class="fa-solid fa-pen"></i> Sign in to share your experience
+      </a>
+    @endauth
+  </div>
 </section>
 
 <!-- JOIN AS WORKER -->
@@ -753,5 +770,6 @@ function refreshMapFromSection() {
   });
 })();
 </script>
+@include('partials.notifications')
 </body>
 </html>

@@ -112,9 +112,10 @@
 
                     @if($doc->status === 'pending')
                     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px dashed var(--g1);padding-top:10px">
-                        <form method="POST" action="{{ route('admin.verification.approve', $doc) }}" style="display:inline">
+                        <form method="POST" action="{{ route('admin.verification.approve', $doc) }}" style="display:inline"
+                              data-confirm="Approve this document?" data-confirm-title="Approve Document" data-confirm-btn="Approve">
                             @csrf
-                            <button type="submit" class="btn btn-success btn-xs" onclick="if(!confirm('Approve this document?'))return false;this.disabled=true;this.form.submit();">
+                            <button type="submit" class="btn btn-success btn-xs">
                                 <i class="fa-solid fa-check-circle"></i> Approve
                             </button>
                         </form>
@@ -162,9 +163,10 @@
         <span style="display:block;font-size:1rem;font-weight:700;color:var(--b9);">Ready for Decision</span>
     </div>
     <div class="page-actions">
-        <form method="POST" action="{{ route('admin.verification.approve', $verification) }}" style="display:inline">
+        <form method="POST" action="{{ route('admin.verification.approve', $verification) }}" style="display:inline"
+              data-confirm="Approve this verification?" data-confirm-title="Approve Verification" data-confirm-btn="Approve Verification">
             @csrf
-            <button type="submit" class="btn btn-success" onclick="if(!confirm('Approve this verification?'))return false;this.disabled=true;this.form.submit();">
+            <button type="submit" class="btn btn-success">
                 <i class="fa-solid fa-check-circle"></i> Approve Verification
             </button>
         </form>

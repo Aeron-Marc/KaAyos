@@ -96,9 +96,10 @@
                             <a href="{{ route('admin.users.show', $user) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-eye"></i> View</a>
                             @if(!$user->isAdmin())
                                 @if($user->suspended_at)
-                                    <form method="POST" action="{{ route('admin.users.reactivate', $user) }}" style="display:inline">
+                                    <form method="POST" action="{{ route('admin.users.reactivate', $user) }}" style="display:inline"
+                                          data-confirm="Reactivate {{ $user->name }}?" data-confirm-title="Reactivate User" data-confirm-btn="Reactivate">
                                         @csrf
-                                        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Reactivate {{ $user->name }}?')"><i class="fa-solid fa-rotate-left"></i> Reactivate</button>
+                                        <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-rotate-left"></i> Reactivate</button>
                                     </form>
                                 @else
                                     <button type="button" class="btn btn-warning btn-sm" onclick="document.getElementById('suspend-{{ $user->id }}').style.display='block'"><i class="fa-solid fa-ban"></i> Suspend</button>

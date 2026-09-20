@@ -30,4 +30,26 @@ class TestimonialController extends Controller
 
         return view('admin.testimonials.show', compact('testimonial'));
     }
+
+    public function updateStatus(Request $request, Testimonial $testimonial)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:approved,pending,rejected'],
+        ]);
+
+        $testimonial->update([
+            'status'    => $validated['status'],
+            'is_active' => $validated['status'] === 'approved',
+        ]);
+
+        return back()->with('success', "Testimonial #{$testimonial->id} status updated to {$validated['status']}.");
+    }
+
+    public function destroy(Testimonial $testimonial)
+    {
+        $testimonial->delete();
+
+        return redirect()->route('admin.testimonials.index')
+            ->with('success', "Testimonial #{$testimonial->id} has been deleted.");
+    }
 }

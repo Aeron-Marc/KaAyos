@@ -397,7 +397,7 @@ function submitReview(index) {
     const picker = card.querySelector('.star-picker');
     const rating = parseInt((picker && picker.dataset && picker.dataset.rating) ? picker.dataset.rating : '0', 10);
     if (!rating) {
-        alert('Please select a rating.');
+        showToast('Please select a rating.', 'warning');
         return;
     }
 
@@ -428,10 +428,10 @@ function submitReview(index) {
         if (data.success) {
             location.reload();
         } else {
-            alert(data.message || 'Failed to submit review.');
+            showToast(data.message || 'Failed to submit review.', 'error');
         }
     })
-    .catch(() => alert('Something went wrong.'))
+    .catch(() => showToast('Something went wrong.', 'error'))
     .finally(function () {
         btn.disabled = false;
         btn.textContent = 'Submit Review';

@@ -18,7 +18,7 @@ class DashboardController extends Controller
         $suspendedUsers = User::suspended()->count();
 
         $totalBookings = Booking::count();
-        $activeBookings = Booking::whereNotIn('status', ['completed', 'cancelled'])->count();
+        $activeBookings = Booking::whereNotIn('status', ['completed', 'cancelled', 'declined'])->count();
         $completedBookings = Booking::completed()->count();
         $cancelledBookings = Booking::cancelled()->count();
         $pendingVerifications = WorkerDocument::where('status', 'pending')->count();
@@ -56,6 +56,7 @@ class DashboardController extends Controller
             'in_progress' => ['label' => 'In Progress', 'color' => '#F59E0B'],
             'completed'   => ['label' => 'Completed',   'color' => '#10B981'],
             'cancelled'   => ['label' => 'Cancelled',   'color' => '#EF4444'],
+            'declined'    => ['label' => 'Declined',    'color' => '#9CA3AF'],
         ];
 
         $raw = Booking::selectRaw('status, COUNT(*) as total')

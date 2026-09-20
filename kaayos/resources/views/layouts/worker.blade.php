@@ -71,6 +71,12 @@
                 {{ __('nav.documents') }}
             </a>
 
+            <a href="{{ route('worker.testimonials.index') }}"
+               class="nav-item {{ request()->routeIs('worker.testimonials*') ? 'active' : '' }}">
+                <i class="fa-solid fa-quote-left nav-icon" aria-hidden="true"></i>
+                {{ __('nav.testimonials') }}
+            </a>
+
         </nav>
 
         <div class="sidebar-spacer"></div>
@@ -158,8 +164,6 @@
             </div>
         </main>
 
-        <div id="toastContainer" class="toast-container" aria-live="polite"></div>
-
         @push('scripts')
         <script>
         (function() {
@@ -218,11 +222,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 .listen('BookingCreated', function (e) {
                     var badge = document.querySelector('.badge-dot');
                     if (badge) badge.style.display = '';
-                    var toast = document.createElement('div');
-                    toast.className = 'toast-notification';
-                    toast.innerHTML = '<strong>New Booking!</strong><br>' + e.client_name + ' booked you for ' + e.service;
-                    document.body.appendChild(toast);
-                    setTimeout(function () { toast.remove(); }, 5000);
+                    window.showToast('New Booking: ' + e.client_name + ' booked you for ' + e.service, 'success', 6000);
                 });
         } else if (checkCount >= 50) {
             clearInterval(checkEcho);
@@ -230,5 +230,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 200);
 });
 </script>
+@include('partials.notifications')
 </body>
 </html>

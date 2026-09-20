@@ -552,7 +552,7 @@ function updateNotesCounter() {
 function submitBooking(e) {
     e.preventDefault();
     if (!document.getElementById('agree-terms').checked) {
-        alert('Please agree to the Service Agreement before submitting.');
+        showToast('Please agree to the Service Agreement before submitting.', 'warning');
         return;
     }
     const form = e.target;

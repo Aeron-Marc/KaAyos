@@ -202,8 +202,47 @@ class ClientController extends Controller
             ];
         }
 
-        if (count($list) === 0) {
-            $list[] = [
+        $typeMap = [
+            'App\Notifications\NewBooking'             => 'booking',
+            'App\Notifications\BookingConfirmed'       => 'booking',
+            'App\Notifications\BookingCancelled'       => 'booking',
+            'App\Notifications\BookingCompleted'       => 'booking',
+            'App\Notifications\BookingStatusChanged'   => 'booking',
+            'App\Notifications\NewMessage'             => 'message',
+            'App\Notifications\NewReview'              => 'review',
+            'App\Notifications\RescheduleRequested'    => 'booking',
+            'App\Notifications\JobCompletionRequested' => 'booking',
+            'App\Notifications\JobCompletionConfirmed' => 'booking',
+            'App\Notifications\ReportReceived'         => 'dispute',
+            'App\Notifications\DisputeResolved'        => 'dispute',
+        ];
+
+        $dbNotifications = $user->notifications->map(function ($notif) use ($typeMap) {
+            $data = $notif->data;
+            $type = $typeMap[$notif->type] ?? 'system';
+
+            $url = match ($type) {
+                'message' => route('client.messages', isset($data['conversation_id']) ? ['conversation' => $data['conversation_id']] : []),
+                'booking' => route('client.bookings'),
+                'review'  => route('client.reviews'),
+                default   => route('client.dashboard'),
+            };
+
+            return [
+                'type'       => $type,
+                'title'      => $data['title'] ?? 'Notification',
+                'desc'       => $data['message'] ?? '',
+                'time'       => $notif->created_at->diffForHumans(),
+                'unread'     => is_null($notif->read_at),
+                'url'        => $url,
+                'booking_id' => $data['booking_id'] ?? null,
+            ];
+        })->toArray();
+
+        $merged = array_merge($list, $dbNotifications);
+
+        if (count($merged) === 0) {
+            $merged[] = [
                 'type'   => 'system',
                 'title'  => 'Welcome to KaAyos!',
                 'desc'   => 'Browse workers and book a service to get started.',
@@ -213,7 +252,7 @@ class ClientController extends Controller
             ];
         }
 
-        return $list;
+        return $merged;
     }
 
     protected function getConversations(): array
@@ -339,6 +378,8 @@ class ClientController extends Controller
 
     public function notifications(): View
     {
+        auth()->user()->unreadNotifications->markAsRead();
+
         return view('client.dashboard.notifications', $this->shared([
             'notifications',
         ]));
@@ -407,6 +448,9 @@ class ClientController extends Controller
     public function respondReschedule(Request $request, Booking $booking): JsonResponse
     {
         if ($booking->client_id !== auth()->id()) abort(403);
+        if ($booking->reschedule_requested_by === auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'You cannot respond to your own reschedule request.'], 403);
+        }
         if ($booking->reschedule_status !== 'pending') {
             return response()->json(['success' => false, 'message' => 'No pending reschedule request.'], 422);
         }

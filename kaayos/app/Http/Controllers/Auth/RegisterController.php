@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\ServiceCategory;
 use App\Models\User;
+use App\Models\WorkerProfile;
 use App\Support\TuyBarangays;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -62,6 +63,29 @@ class RegisterController extends Controller
                 'city'             => $role === 'worker' ? 'Tuy' : null,
                 'city_municipality'=> $role === 'worker' ? 'Tuy' : null,
             ]);
+
+            if ($role === 'worker') {
+                [$lat, $lng] = TuyBarangays::pointFor($user->barangay, $user->id);
+                $defaultAvailability = [
+                    ['day' => 'Monday',    'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Tuesday',   'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Wednesday', 'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Thursday',  'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Friday',    'active' => true,  'start' => '08:00', 'end' => '17:00'],
+                    ['day' => 'Saturday',  'active' => false, 'start' => null,    'end' => null],
+                    ['day' => 'Sunday',    'active' => false, 'start' => null,    'end' => null],
+                ];
+
+                WorkerProfile::create([
+                    'user_id'                 => $user->id,
+                    'availability'            => $defaultAvailability,
+                    'service_zone'            => ['barangay' => $user->barangay],
+                    'current_latitude'        => $lat,
+                    'current_longitude'       => $lng,
+                    'location_is_approximate' => true,
+                    'government_id_verified'  => false,
+                ]);
+            }
         } catch (\Throwable $e) {
             Log::error('Registration failed for email: ' . $validated['email'] . ' — ' . $e->getMessage());
             return back()->withInput()

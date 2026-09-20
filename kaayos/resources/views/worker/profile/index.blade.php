@@ -964,7 +964,7 @@ document.querySelectorAll('.port-clickable').forEach(function(el) {
             if (emailDisplay) emailDisplay.textContent = currentNewEmail;
 
             closeModal();
-            alert('Email changed successfully.');
+            showToast('Email changed successfully.', 'success');
         } catch (err) {
             showError(errOtp, err.message);
             otpInputs.forEach(inp => inp.value = '');
@@ -1167,7 +1167,7 @@ document.querySelectorAll('.port-clickable').forEach(function(el) {
             if (!res.ok) throw new Error(data.message || 'Verification failed.');
 
             closeModal();
-            alert('Password changed successfully.');
+            showToast('Password changed successfully.', 'success');
         } catch (err) {
             showError(errOtp, err.message);
             otpInputs.forEach(inp => inp.value = '');
@@ -1362,9 +1362,9 @@ document.querySelectorAll('.tag-input-wrap').forEach(initTagInput);
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (data.success) { location.reload(); }
-            else { alert(data.message || 'Failed to remove photo.'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Remove'; }
+            else { showToast(data.message || 'Failed to remove photo.', 'error'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Remove'; }
         })
-        .catch(function () { alert('Something went wrong.'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Remove'; });
+        .catch(function () { showToast('Something went wrong.', 'error'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Remove'; });
     };
 
     // ── Set My Location (worker profile page) ──

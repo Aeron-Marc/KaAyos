@@ -17,6 +17,8 @@
         'en_route'       => 'En Route',
         'in_progress'    => 'In Progress',
         'completed'      => 'Completed',
+        'cancelled'      => 'Cancelled',
+        'declined'       => 'Declined',
     ];
     $statusLabelMap = [
         'new'         => 'New',
@@ -25,6 +27,7 @@
         'in_progress' => 'In Progress',
         'completed'   => 'Completed',
         'cancelled'   => 'Cancelled',
+        'declined'    => 'Declined',
     ];
 @endphp
 
@@ -102,6 +105,14 @@
             <span class="cat-option-icon"><i class="fa-regular fa-circle-check"></i></span>
             <span class="cat-option-label">Completed</span>
         </button>
+        <button type="button" class="cat-option" data-filter="cancelled">
+            <span class="cat-option-icon"><i class="fa-solid fa-ban"></i></span>
+            <span class="cat-option-label">Cancelled</span>
+        </button>
+        <button type="button" class="cat-option" data-filter="declined">
+            <span class="cat-option-icon"><i class="fa-solid fa-circle-xmark"></i></span>
+            <span class="cat-option-label">Declined</span>
+        </button>
     </div>
 </div>
 
@@ -123,6 +134,7 @@
                     'en_route'   => 'status-active',
                     'in_progress'=> 'status-active',
                     'completed'  => 'status-done',
+                    'declined'   => 'status-cancelled',
                     default      => 'status-cancelled',
                 };
             @endphp
@@ -521,6 +533,8 @@ document.addEventListener('DOMContentLoaded', function () {
         'en_route': 'fa-solid fa-truck',
         'in_progress': 'fa-solid fa-spinner',
         'completed': 'fa-regular fa-circle-check',
+        'cancelled': 'fa-solid fa-ban',
+        'declined': 'fa-solid fa-circle-xmark',
     };
     var statusLabels = {
         '': 'All',
@@ -529,6 +543,8 @@ document.addEventListener('DOMContentLoaded', function () {
         'en_route': 'En Route',
         'in_progress': 'In Progress',
         'completed': 'Completed',
+        'cancelled': 'Cancelled',
+        'declined': 'Declined',
     };
 
     function updateEmpty() {
@@ -743,9 +759,9 @@ function confirmCancel() {
     .then(function (r) { return r.json(); })
     .then(function (data) {
         if (data.success) { location.reload(); }
-        else { alert(data.message || 'Failed to cancel booking.'); }
+        else { showToast(data.message || 'Failed to cancel booking.', 'error'); }
     })
-    .catch(function () { alert('Something went wrong.'); })
+    .catch(function () { showToast('Something went wrong.', 'error'); })
     .finally(function () {
         document.getElementById('confirmCancelBtn').disabled = false;
         document.getElementById('confirmCancelBtn').textContent = 'Yes, Cancel';
@@ -801,7 +817,7 @@ function submitReport() {
     .then(function (data) {
         if (data.success) {
             closeReportModal();
-            alert(data.message || 'Report submitted.');
+            showToast(data.message || 'Report submitted.', 'success');
         } else {
             errorEl.textContent = data.message || 'Failed to submit report.';
             errorEl.style.display = 'block';
@@ -822,58 +838,70 @@ function markJobComplete(index) {
     var b = bookings[index];
     if (!b) return;
     
-    if (confirm('Mark this job as complete? The worker will need to confirm.')) {
-        var btn = document.activeElement;
-        if (btn) btn.disabled = true;
-        
-        fetch('/client/bookings/' + b.id + '/mark-complete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.message || 'Failed to mark job as complete.');
-            }
-        })
-        .catch(function () { 
-            alert('Something went wrong.'); 
-        })
-        .finally(function () {
-            if (btn) btn.disabled = false;
-        });
-    }
+    showConfirm({
+        title: 'Mark Job Complete',
+        message: 'Mark this job as complete? The worker will need to confirm.',
+        confirmText: 'Mark Complete',
+        isDanger: false,
+        onConfirm: function() {
+            var btn = document.activeElement;
+            if (btn) btn.disabled = true;
+            
+            fetch('/client/bookings/' + b.id + '/mark-complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    showToast(data.message || 'Failed to mark job as complete.', 'error');
+                }
+            })
+            .catch(function () { 
+                showToast('Something went wrong.', 'error'); 
+            })
+            .finally(function () {
+                if (btn) btn.disabled = false;
+            });
+        }
+    });
 }
 
 function confirmJobComplete(index) {
     var b = bookings[index];
     if (!b) return;
     
-    if (confirm('Confirm job completion? This will finalize the booking.')) {
-        var btn = document.activeElement;
-        if (btn) btn.disabled = true;
-        
-        fetch('/client/bookings/' + b.id + '/confirm-complete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.message || 'Failed to confirm job completion.');
-            }
-        })
-        .catch(function () { 
-            alert('Something went wrong.'); 
-        })
-        .finally(function () {
-            if (btn) btn.disabled = false;
-        });
-    }
+    showConfirm({
+        title: 'Confirm Job Completion',
+        message: 'Confirm job completion? This will finalize the booking.',
+        confirmText: 'Confirm Completion',
+        isDanger: false,
+        onConfirm: function() {
+            var btn = document.activeElement;
+            if (btn) btn.disabled = true;
+            
+            fetch('/client/bookings/' + b.id + '/confirm-complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    showToast(data.message || 'Failed to confirm job completion.', 'error');
+                }
+            })
+            .catch(function () { 
+                showToast('Something went wrong.', 'error'); 
+            })
+            .finally(function () {
+                if (btn) btn.disabled = false;
+            });
+        }
+    });
 }
 
 // Focus handler: ?focus=ID opens the booking modal on load

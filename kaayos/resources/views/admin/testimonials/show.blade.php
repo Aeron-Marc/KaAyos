@@ -89,6 +89,58 @@
             </div>
         </div>
 
+        <div class="card" style="margin-top:20px;">
+            <div class="card-title"><i class="fa-solid fa-sliders"></i> Moderation Actions</div>
+            <div class="detail-section" style="border-bottom:none;display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    @if($testimonial->status !== 'approved')
+                        <form method="POST" action="{{ route('admin.testimonials.update-status', $testimonial) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="approved">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="fa-solid fa-check"></i> Approve Testimonial
+                            </button>
+                        </form>
+                    @endif
+
+                    @if($testimonial->status !== 'rejected')
+                        <form method="POST" action="{{ route('admin.testimonials.update-status', $testimonial) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="rejected">
+                            <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--d9);border-color:var(--d9);">
+                                <i class="fa-solid fa-ban"></i> Reject Testimonial
+                            </button>
+                        </form>
+                    @endif
+
+                    @if($testimonial->status !== 'pending')
+                        <form method="POST" action="{{ route('admin.testimonials.update-status', $testimonial) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="pending">
+                            <button type="submit" class="btn btn-secondary btn-sm">
+                                <i class="fa-solid fa-rotate-left"></i> Mark as Pending
+                            </button>
+                        </form>
+                    @endif
+                </div>
+
+                <div style="border-top:1px solid var(--g1);padding-top:12px;margin-top:4px;">
+                    <form method="POST" action="{{ route('admin.testimonials.destroy', $testimonial) }}"
+                          data-confirm="Are you sure you want to delete this testimonial? This action cannot be undone."
+                          data-confirm-title="Delete Testimonial" data-confirm-btn="Delete">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-trash"></i> Delete Testimonial
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <a href="{{ route('admin.testimonials.index') }}" class="back-link" style="display:inline-flex;margin-top:16px;">
             <i class="fa-solid fa-arrow-left"></i> Back to Testimonials
         </a>

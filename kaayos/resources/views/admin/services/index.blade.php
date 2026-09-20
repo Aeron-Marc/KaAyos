@@ -56,7 +56,8 @@
                     <td style="text-align: center;">
                         <div class="actions-cell" style="justify-content: center;">
                             <a href="{{ route('admin.services.edit', $service) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i> Edit</a>
-                            <form method="POST" action="{{ route('admin.services.destroy', $service) }}" style="display:inline" onsubmit="return confirm('Delete this service?')">
+                            <form method="POST" action="{{ route('admin.services.destroy', $service) }}" style="display:inline"
+                                  data-confirm="Delete this service?" data-confirm-title="Delete Service" data-confirm-btn="Delete">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
                             </form>

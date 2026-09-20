@@ -464,6 +464,8 @@ class WorkerController extends Controller
 
     public function notifications(): View
     {
+        auth()->user()->unreadNotifications->markAsRead();
+
         return view('worker.dashboard.notifications', $this->shared());
     }
 
@@ -857,8 +859,19 @@ class WorkerController extends Controller
             'custom_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        $price = $validated['custom_price'] ?: null;
+
+        if ($price !== null) {
+            if ($service->min_price !== null && $price < $service->min_price) {
+                return back()->withErrors(['custom_price' => "The minimum price for {$service->name} is ₱" . number_format($service->min_price, 2) . "."]);
+            }
+            if ($service->max_price !== null && $price > $service->max_price) {
+                return back()->withErrors(['custom_price' => "The maximum price for {$service->name} is ₱" . number_format($service->max_price, 2) . "."]);
+            }
+        }
+
         $providerService->update([
-            'custom_price' => $validated['custom_price'] ?: null,
+            'custom_price' => $price,
         ]);
 
         $this->computeAndSaveHourlyRate(auth()->id());

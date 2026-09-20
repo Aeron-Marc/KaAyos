@@ -422,5 +422,6 @@
     }, delay);
 })();
 </script>
+@include('partials.notifications')
 </body>
 </html>

@@ -79,7 +79,10 @@ class WorkerController extends Controller
             ->withCount('reviewsReceived')
             ->active()
             ->whereHas('workerProfile', function ($q) {
-                $q->whereRaw("JSON_CONTAINS(availability->'$[*].active', 'true') = 1");
+                $q->where(function ($sq) {
+                    $sq->where('availability', 'LIKE', '%"active":true%')
+                       ->orWhere('availability', 'LIKE', '%"active": true%');
+                });
             });
 
         if ($category = $request->query('category')) {

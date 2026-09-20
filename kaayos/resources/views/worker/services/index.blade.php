@@ -88,7 +88,7 @@
 
                 {{-- Remove --}}
                 <form action="{{ route('worker.services.remove', $ps->service_id) }}" method="POST"
-                      onsubmit="return confirm('Remove {{ $ps->service->name }} from your services?');">
+                      data-confirm="Remove {{ $ps->service->name }} from your services?" data-confirm-title="Remove Service" data-confirm-btn="Remove">
                     @csrf @method('DELETE')
                     <button type="submit" style="background:none;border:none;color:var(--g4);cursor:pointer;padding:4px;font-size:.9rem;" title="Remove service">
                         <i class="fa-solid fa-xmark" aria-hidden="true"></i>

@@ -65,6 +65,12 @@
                 {{ __('nav.suggestions') }}
             </a>
 
+            <a href="{{ route('client.testimonials.index') }}"
+               class="nav-item {{ request()->routeIs('client.testimonials*') ? 'active' : '' }}">
+                <i class="fa-solid fa-quote-left nav-icon" aria-hidden="true"></i>
+                {{ __('nav.testimonials') }}
+            </a>
+
             <a href="{{ route('client.account.profile') }}"
                class="nav-item {{ request()->routeIs('client.account*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user nav-icon" aria-hidden="true"></i>
@@ -227,5 +233,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 200);
 });
 </script>
+@include('partials.notifications')
 </body>
 </html>

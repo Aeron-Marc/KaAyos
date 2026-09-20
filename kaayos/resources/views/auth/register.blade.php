@@ -456,7 +456,7 @@ select{cursor:pointer;padding-right:38px}
 
           <div class="terms-wrap">
             <input type="checkbox" id="terms" name="terms" required>
-            <span>I agree to KaAyos' <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+            <span>I agree to KaAyos' <a href="{{ route('terms') }}" target="_blank">Terms of Service</a> and <a href="{{ route('privacy') }}" target="_blank">Privacy Policy</a></span>
           </div>
         </section>
 
