@@ -83,11 +83,21 @@
 </nav>
 
 <!-- HERO -->
-<section class="hero">
+<section class="hero" id="heroSection">
+  <div class="mouse-glow" id="heroGlow"></div>
   <div class="hero-icons-floating">
-    <div class="hero-icon-f"><i class="fa-solid fa-wrench"></i></div>
-    <div class="hero-icon-f"><i class="fa-solid fa-bolt"></i></div>
-    <div class="hero-icon-f"><i class="fa-solid fa-paint-roller"></i></div>
+    <div class="hero-icon-f" data-depth="0.03"><i class="fa-solid fa-wrench"></i></div>
+    <div class="hero-icon-f" data-depth="0.05"><i class="fa-solid fa-bolt"></i></div>
+    <div class="hero-icon-f" data-depth="0.02"><i class="fa-solid fa-paint-roller"></i></div>
+    <div class="hero-icon-f" data-depth="0.04"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+    <div class="hero-icon-f" data-depth="0.03"><i class="fa-solid fa-hammer"></i></div>
+    <div class="hero-icon-f" data-depth="0.05"><i class="fa-solid fa-broom"></i></div>
+    <div class="hero-icon-f" data-depth="0.04"><i class="fa-solid fa-fan"></i></div>
+    <div class="hero-icon-f" data-depth="0.02"><i class="fa-solid fa-plug"></i></div>
+    <div class="hero-icon-f" data-depth="0.05"><i class="fa-solid fa-house-chimney"></i></div>
+    <div class="hero-icon-f" data-depth="0.03"><i class="fa-solid fa-hard-hat"></i></div>
+    <div class="hero-icon-f" data-depth="0.04"><i class="fa-solid fa-shield-halved"></i></div>
+    <div class="hero-icon-f" data-depth="0.02"><i class="fa-solid fa-star"></i></div>
   </div>
   <div class="peso-stamp">
     <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy Accredited">
@@ -158,10 +168,10 @@
 
 <!-- STATS -->
 <div class="stats fade-up">
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num">500+</div><div class="stat-label">Active Workers</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num">1,000+</div><div class="stat-label">Jobs Completed</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num">22</div><div class="stat-label">Barangays Covered</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num">4.8★</div><div class="stat-label">Avg Rating</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num" data-count="500" data-suffix="+">0</div><div class="stat-label">Active Workers</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num" data-count="1000" data-suffix="+">0</div><div class="stat-label">Jobs Completed</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num" data-count="22" data-suffix="">0</div><div class="stat-label">Barangays Covered</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num" data-count="4.8" data-suffix="★" data-decimal="1">0</div><div class="stat-label">Avg Rating</div></div>
 </div>
 
 <!-- TRUST -->
@@ -180,26 +190,22 @@
     <p class="sec-sub">From posting your job to getting it done — fast and simple.</p>
   </div>
   <div class="steps">
-    <div class="step fade-up">
-      <div class="step-n">01</div>
+    <div class="step fade-up stagger-child"><div class="step-n">01</div>
       <div class="step-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></div>
       <h3 class="step-title">Post Your Job</h3>
       <p class="step-desc">Describe what needs fixing — type, location, and when you need it done.</p>
     </div>
-    <div class="step fade-up">
-      <div class="step-n">02</div>
+    <div class="step fade-up stagger-child"><div class="step-n">02</div>
       <div class="step-icon"><i class="fa-solid fa-robot" aria-hidden="true"></i></div>
       <h3 class="step-title">AI Finds Matches</h3>
       <p class="step-desc">Our system recommends verified, nearby workers ranked by rating and distance.</p>
     </div>
-    <div class="step fade-up">
-      <div class="step-n">03</div>
+    <div class="step fade-up stagger-child"><div class="step-n">03</div>
       <div class="step-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></div>
       <h3 class="step-title">Chat &amp; Book</h3>
       <p class="step-desc">Message your worker, confirm pricing, and lock in the schedule in-app.</p>
     </div>
-    <div class="step fade-up">
-      <div class="step-n">04</div>
+    <div class="step fade-up stagger-child"><div class="step-n">04</div>
       <div class="step-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div>
       <h3 class="step-title">Rate &amp; Done</h3>
       <p class="step-desc">Leave a review after the job. Your feedback helps the whole community.</p>
@@ -246,13 +252,15 @@
     </div>
     <h2>Are You a Skilled Trabahador?</h2>
     <p>KaAyos helps Filipino workers earn more, reach more clients, and build a professional reputation — without relying on referrals alone.</p>
-    <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Register as a Worker</a>
+    <a href="/register?role=worker" class="btn btn-primary btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Register as a Worker</a>
   </div>
-  <div class="perks">
-    <div class="perk"><div class="perk-ico"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></div><div><strong>More Job Visibility</strong><span>Get discovered by homeowners in your barangay and beyond</span></div></div>
-    <div class="perk"><div class="perk-ico"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div><strong>Build Your Reputation</strong><span>Earn ratings that set you apart from unverified workers</span></div></div>
-    <div class="perk"><div class="perk-ico"><i class="fa-solid fa-briefcase" aria-hidden="true"></i></div><div><strong>Manage Your Work</strong><span>Track bookings and your portfolio in one place</span></div></div>
-    <div class="perk"><div class="perk-ico"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div><div><strong>Safer Transactions</strong><span>In-app chat and clear agreements protect you and your clients</span></div></div>
+  <div class="join-carousel" aria-hidden="true">
+    <div class="join-slide active"><img src="{{ asset('images/stock/work-1.jpg') }}" alt="Skilled worker at work"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-2.jpg') }}" alt="Skilled worker at work"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-3.jpg') }}" alt="Skilled worker at work"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-4.jpg') }}" alt="Skilled worker at work"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-5.jpg') }}" alt="Skilled worker at work"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-6.jpg') }}" alt="Skilled worker at work"></div>
   </div>
 </section>
 
@@ -331,7 +339,7 @@
       <ul class="f-links">
         <li><a href="/about"><i class="fa-solid fa-circle-info fa-fw" aria-hidden="true"></i> About KaAyos</a></li>
         <li><a href="#how-it-works"><i class="fa-solid fa-list-ol fa-fw" aria-hidden="true"></i> How It Works</a></li>
-        <li><a href="/register"><i class="fa-solid fa-hammer fa-fw" aria-hidden="true"></i> Join as Worker</a></li>
+        <li><a href="/register?role=worker"><i class="fa-solid fa-hammer fa-fw" aria-hidden="true"></i> Join as Worker</a></li>
         <li><a href="#faq"><i class="fa-solid fa-circle-question fa-fw" aria-hidden="true"></i> FAQ</a></li>
         <li><a href="/contact"><i class="fa-solid fa-envelope fa-fw" aria-hidden="true"></i> Contact</a></li>
         <li><a href="/privacy"><i class="fa-solid fa-shield fa-fw" aria-hidden="true"></i> Privacy Policy</a></li>
@@ -412,10 +420,69 @@ function toggleFaq(el){
 (function(){
   var observer = new IntersectionObserver(function(entries){
     entries.forEach(function(e){
-      if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); }
+      if(e.isIntersecting){
+        e.target.classList.add('visible');
+        var siblings = e.target.parentElement.querySelectorAll('.stagger-child');
+        if(siblings.length && e.target.classList.contains('stagger-child')){
+          for(var i=0;i<siblings.length;i++){
+            if(siblings[i].classList.contains('visible')) continue;
+            siblings[i].style.transitionDelay = (i * 80) + 'ms';
+            siblings[i].classList.add('visible');
+          }
+        }
+        observer.unobserve(e.target);
+      }
     });
   }, { threshold: 0.12 });
   document.querySelectorAll('.fade-up').forEach(function(el){ observer.observe(el); });
+})();
+
+/* STAT NUMBER COUNTING */
+(function(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var counted = false;
+  var nums = document.querySelectorAll('.stat-num[data-count]');
+  if(!nums.length) return;
+
+  function formatNum(val, dec){
+    if(dec) return val.toFixed(dec);
+    return val >= 1000 ? val.toLocaleString('en-US') : String(val);
+  }
+
+  function animateCount(el){
+    var target = parseFloat(el.dataset.count);
+    var suffix = el.dataset.suffix || '';
+    var dec = parseInt(el.dataset.decimal) || 0;
+    var duration = 2500;
+    var start = performance.now();
+    var lastVal = -1;
+
+    function tick(now){
+      var elapsed = now - start;
+      var progress = Math.min(elapsed / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var current = eased * target;
+      var display = dec ? current.toFixed(dec) : Math.round(current);
+      if(display !== lastVal){
+        lastVal = display;
+        el.textContent = (dec ? display : Number(display).toLocaleString('en-US')) + suffix;
+      }
+      if(progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting && !counted){
+        counted = true;
+        nums.forEach(function(n){ animateCount(n); });
+        obs.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+  var statsEl = document.querySelector('.stats');
+  if(statsEl) obs.observe(statsEl);
 })();
 
 /* CATEGORY FILTER */
@@ -752,6 +819,55 @@ function refreshMapFromSection() {
   document.querySelectorAll('.ai-chip').forEach(function(btn) {
     btn.addEventListener('click', function(){ sendMsg(btn.dataset.text); });
   });
+})();
+
+/* HERO PARALLAX + MOUSE GLOW */
+(function() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var hero = document.getElementById('heroSection');
+  var glow = document.getElementById('heroGlow');
+  var icons = hero ? hero.querySelectorAll('.hero-icon-f') : [];
+  if (!hero || !glow || !icons.length) return;
+
+  var heroRect = hero.getBoundingClientRect();
+
+  function onResize() { heroRect = hero.getBoundingClientRect(); }
+  window.addEventListener('resize', onResize);
+
+  hero.addEventListener('mousemove', function(e) {
+    var rect = hero.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    glow.style.setProperty('--mx', mx + 'px');
+    glow.style.setProperty('--my', my + 'px');
+    glow.classList.add('active');
+
+    var cx = e.clientX - (rect.left + rect.width / 2);
+    var cy = e.clientY - (rect.top + rect.height / 2);
+    for (var i = 0; i < icons.length; i++) {
+      var depth = parseFloat(icons[i].dataset.depth) || 0.03;
+      icons[i].style.translate = (cx * depth * -1) + 'px ' + (cy * depth * -1) + 'px';
+    }
+  });
+
+  hero.addEventListener('mouseleave', function() {
+    glow.classList.remove('active');
+    for (var i = 0; i < icons.length; i++) {
+      icons[i].style.translate = '0 0';
+    }
+  });
+})();
+
+/* JOIN CAROUSEL */
+(function(){
+  var slides = document.querySelectorAll('.join-slide');
+  if(slides.length < 2) return;
+  var i = 0;
+  setInterval(function(){
+    slides[i].classList.remove('active');
+    i = (i + 1) % slides.length;
+    slides[i].classList.add('active');
+  }, 3000);
 })();
 </script>
 </body>
