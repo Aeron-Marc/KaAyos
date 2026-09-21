@@ -36,8 +36,10 @@ class SocialAuthController extends Controller
             ]);
         }
 
+        $redirectUrl = config("services.{$provider}.redirect") ?: url("/auth/{$provider}/callback");
+
         try {
-            return Socialite::driver($provider)->redirect();
+            return Socialite::driver($provider)->redirectUrl($redirectUrl)->redirect();
         } catch (\Throwable $e) {
             Log::warning("OAuth {$provider} redirect failed: " . $e->getMessage());
             return redirect()->route('login')->withErrors([
@@ -52,8 +54,10 @@ class SocialAuthController extends Controller
             return redirect()->route('login')->withErrors(['oauth' => 'Unsupported login provider.']);
         }
 
+        $redirectUrl = config("services.{$provider}.redirect") ?: url("/auth/{$provider}/callback");
+
         try {
-            $socialUser = Socialite::driver($provider)->user();
+            $socialUser = Socialite::driver($provider)->redirectUrl($redirectUrl)->user();
         } catch (\Throwable $e) {
             Log::warning("OAuth {$provider} failed: " . $e->getMessage());
             return redirect()->route('login')->withErrors([
