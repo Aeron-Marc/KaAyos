@@ -39,7 +39,7 @@ class SocialAuthController extends Controller
         $redirectUrl = config("services.{$provider}.redirect") ?: url("/auth/{$provider}/callback");
 
         try {
-            return Socialite::driver($provider)->redirectUrl($redirectUrl)->redirect();
+            return Socialite::driver($provider)->stateless()->redirectUrl($redirectUrl)->redirect();
         } catch (\Throwable $e) {
             Log::warning("OAuth {$provider} redirect failed: " . $e->getMessage());
             return redirect()->route('login')->withErrors([
@@ -57,9 +57,11 @@ class SocialAuthController extends Controller
         $redirectUrl = config("services.{$provider}.redirect") ?: url("/auth/{$provider}/callback");
 
         try {
-            $socialUser = Socialite::driver($provider)->redirectUrl($redirectUrl)->user();
+            $socialUser = Socialite::driver($provider)->stateless()->redirectUrl($redirectUrl)->user();
         } catch (\Throwable $e) {
-            Log::warning("OAuth {$provider} failed: " . $e->getMessage());
+            Log::warning("OAuth {$provider} failed: " . get_class($e) . ' - ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return redirect()->route('login')->withErrors([
                 'oauth' => "Unable to authenticate with {$provider}. Please try again or log in with email.",
             ]);
@@ -67,9 +69,7 @@ class SocialAuthController extends Controller
 
         $email = $socialUser->getEmail();
         if (empty($email)) {
-            return redirect()->route('login')->withErrors([
-                'oauth' => "Your {$provider} account did not provide an email address.",
-            ]);
+            $email = "{$provider}_{$socialUser->getId()}@kaayos.app";
         }
 
         // 1. Check if user already linked with this OAuth provider
