@@ -219,8 +219,8 @@
             <form method="POST" action="{{ route('worker.profile.avatar') }}" enctype="multipart/form-data" id="avatar-form">
                 @csrf
                 <div class="avatar-upload-wrap">
-                    @if(auth()->user()->avatar)
-                        <img src="{{ \Illuminate\Support\Facades\Storage::url(auth()->user()->avatar) }}"
+                    @if(auth()->user()->avatar_url)
+                        <img src="{{ auth()->user()->avatar_url }}"
                              alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 14px;display:block;">
                     @else
                         <div class="profile-big-avatar">

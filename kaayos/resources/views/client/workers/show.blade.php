@@ -52,8 +52,8 @@
     {{-- Left: Profile Card --}}
     <div class="card-panel" style="flex:0 0 340px;align-self:start;">
         <div style="text-align:center;padding:8px 0;">
-            @if($worker->avatar)
-                <img src="{{ Storage::url($worker->avatar) }}" alt="{{ $worker->name }}"
+            @if($worker->avatar_url)
+                <img src="{{ $worker->avatar_url }}" alt="{{ $worker->name }}"
                      style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--b2);">
             @else
                 <div style="width:96px;height:96px;border-radius:50%;background:var(--b0);color:var(--b6);display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;margin:0 auto;">

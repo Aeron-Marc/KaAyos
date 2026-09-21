@@ -99,6 +99,20 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->notify(new \App\Notifications\ForgotPasswordNotification($token));
     }
 
+    public function getAvatarUrlAttribute(): ?string
+    {
+        $avatar = $this->avatar ?? $this->oauth_avatar;
+        if (empty($avatar)) {
+            return null;
+        }
+
+        if (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://')) {
+            return $avatar;
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($avatar);
+    }
+
     public function getNameAttribute(): string
     {
         $computed = trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
