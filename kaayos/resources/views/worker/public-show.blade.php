@@ -199,8 +199,8 @@ a{text-decoration:none;color:inherit}
 
     <div class="profile-card">
       <div class="avatar-wrap">
-        @if($worker->avatar)
-          <img src="{{ Storage::url($worker->avatar) }}" alt="{{ $worker->name }}">
+        @if($worker->avatar_url)
+          <img src="{{ $worker->avatar_url }}" alt="{{ $worker->name }}">
         @else
           <div class="initials">{{ strtoupper(substr($worker->first_name, 0, 1) . substr($worker->last_name, 0, 1)) }}</div>
         @endif

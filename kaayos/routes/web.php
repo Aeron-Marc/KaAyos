@@ -35,6 +35,7 @@ use App\Http\Controllers\Worker\PublicWorkerController;
 use App\Http\Controllers\Worker\WorkerController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -186,9 +187,13 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
 })->middleware(['auth', 'signed', 'no-cache'])->name('verification.verify');
 
 Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-
-    return back()->with('message', 'Verification link sent!');
+    try {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', 'Verification link sent!');
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error('Verification email resend failed: ' . $e->getMessage());
+        return back()->with('error', 'Could not send verification email at this time. Please try again in a few moments.');
+    }
 })->middleware(['auth', 'throttle:6,1', 'no-cache'])->name('verification.send');
 
 Route::get('/about', [PageController::class, 'about'])->name('about');

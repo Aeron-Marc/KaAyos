@@ -71,8 +71,8 @@
 
         <div class="sidebar-profile">
             <div class="profile-avatar">
-                @if(auth()->user()->avatar)
-                    <img src="{{ \Illuminate\Support\Facades\Storage::url(auth()->user()->avatar) }}" alt="" class="sidebar-avatar-img" />
+                @if(auth()->user()->avatar_url)
+                    <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" class="sidebar-avatar-img" />
                 @else
                     {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
                 @endif

@@ -56,5 +56,22 @@ class Phase1FoundationTest extends TestCase
         $badResponse->assertRedirect(route('login'));
         $badResponse->assertSessionHasErrors('oauth');
     }
+
+    public function test_avatar_url_handles_both_oauth_http_urls_and_local_storage_paths(): void
+    {
+        $oauthUser = User::factory()->create([
+            'avatar' => 'https://lh3.googleusercontent.com/a/ACg8ocK12345=s96-c',
+        ]);
+        $this->assertEquals(
+            'https://lh3.googleusercontent.com/a/ACg8ocK12345=s96-c',
+            $oauthUser->avatar_url
+        );
+
+        $localUser = User::factory()->create([
+            'avatar' => 'avatars/profile.png',
+        ]);
+        $this->assertStringContainsString('avatars/profile.png', $localUser->avatar_url);
+        $this->assertStringNotContainsString('/storage/https://', $oauthUser->avatar_url);
+    }
 }
 

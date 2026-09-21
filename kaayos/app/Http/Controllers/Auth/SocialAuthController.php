@@ -27,7 +27,25 @@ class SocialAuthController extends Controller
             session(['oauth_intended_role' => $request->query('role')]);
         }
 
-        return Socialite::driver($provider)->redirect();
+        $clientId = config("services.{$provider}.client_id");
+        $clientSecret = config("services.{$provider}.client_secret");
+
+        if (empty($clientId) || empty($clientSecret)) {
+            return redirect()->route('login')->withErrors([
+                'oauth' => ucfirst($provider) . ' login is not configured yet. Please configure ' . strtoupper($provider) . '_CLIENT_ID in your .env or sign in with email.',
+            ]);
+        }
+
+        $redirectUrl = config("services.{$provider}.redirect") ?: url("/auth/{$provider}/callback");
+
+        try {
+            return Socialite::driver($provider)->stateless()->redirectUrl($redirectUrl)->redirect();
+        } catch (\Throwable $e) {
+            Log::warning("OAuth {$provider} redirect failed: " . $e->getMessage());
+            return redirect()->route('login')->withErrors([
+                'oauth' => "Unable to connect to {$provider} login. Please ensure 'composer install' has been run on your machine.",
+            ]);
+        }
     }
 
     public function handleProviderCallback(Request $request, string $provider): RedirectResponse
@@ -36,10 +54,14 @@ class SocialAuthController extends Controller
             return redirect()->route('login')->withErrors(['oauth' => 'Unsupported login provider.']);
         }
 
+        $redirectUrl = config("services.{$provider}.redirect") ?: url("/auth/{$provider}/callback");
+
         try {
-            $socialUser = Socialite::driver($provider)->user();
+            $socialUser = Socialite::driver($provider)->stateless()->redirectUrl($redirectUrl)->user();
         } catch (\Throwable $e) {
-            Log::warning("OAuth {$provider} failed: " . $e->getMessage());
+            Log::warning("OAuth {$provider} failed: " . get_class($e) . ' - ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return redirect()->route('login')->withErrors([
                 'oauth' => "Unable to authenticate with {$provider}. Please try again or log in with email.",
             ]);
@@ -47,9 +69,7 @@ class SocialAuthController extends Controller
 
         $email = $socialUser->getEmail();
         if (empty($email)) {
-            return redirect()->route('login')->withErrors([
-                'oauth' => "Your {$provider} account did not provide an email address.",
-            ]);
+            $email = "{$provider}_{$socialUser->getId()}@kaayos.app";
         }
 
         // 1. Check if user already linked with this OAuth provider
@@ -118,6 +138,10 @@ class SocialAuthController extends Controller
             return redirect()->route('login')->withErrors([
                 'email' => 'Your account has been suspended. Reason: ' . ($user->suspended_reason ?? 'Administrative action.'),
             ]);
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
         }
 
         Auth::login($user, remember: true);

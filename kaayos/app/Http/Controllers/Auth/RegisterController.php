@@ -75,7 +75,11 @@ class RegisterController extends Controller
         Log::info('New account created', ['user_id' => $user->id, 'email' => $user->email, 'role' => $user->role]);
 
         if (config('mail.mailers.smtp.username')) {
-            event(new Registered($user));
+            try {
+                event(new Registered($user));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send verification email upon registration: ' . $e->getMessage());
+            }
 
             $loginUrl = route('login');
 

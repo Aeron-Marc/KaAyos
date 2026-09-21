@@ -46,6 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'suspended_at',
         'suspended_reason',
         'pending_email',
+        'email_verified_at',
         'email_updated_at',
         'failed_login_attempts',
         'locked_until',
@@ -99,6 +100,20 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new \App\Notifications\ForgotPasswordNotification($token));
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        $avatar = $this->avatar ?? $this->oauth_avatar;
+        if (empty($avatar)) {
+            return null;
+        }
+
+        if (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://')) {
+            return $avatar;
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($avatar);
     }
 
     public function getNameAttribute(): string

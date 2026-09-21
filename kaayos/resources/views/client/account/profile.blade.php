@@ -20,8 +20,8 @@
     {{-- Left: Profile sidebar card --}}
     <div class="profile-sidebar-card">
         <div class="profile-avatar-wrap">
-            @if($user->avatar)
-                <img src="{{ Storage::url($user->avatar) }}" alt="" class="profile-big-avatar" id="sidebarAvatar">
+            @if($user->avatar_url)
+                <img src="{{ $user->avatar_url }}" alt="" class="profile-big-avatar" id="sidebarAvatar">
             @else
                 <div class="profile-big-avatar" id="sidebarAvatar">{{ strtoupper(substr($user->first_name ?? 'U', 0, 1) . substr($user->last_name ?? '', 0, 1)) }}</div>
             @endif
