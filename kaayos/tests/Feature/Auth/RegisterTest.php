@@ -94,4 +94,22 @@ class RegisterTest extends TestCase
             'role' => 'client',
         ]);
     }
+
+    public function test_user_can_resend_verification_email(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+
+        $user = User::factory()->unverified()->create(['role' => 'client']);
+
+        $response = $this->actingAs($user)
+            ->post('/email/verification-notification');
+
+        $response->assertRedirect();
+        $response->assertSessionHas('message', 'Verification link sent!');
+
+        \Illuminate\Support\Facades\Notification::assertSentTo(
+            $user,
+            \Illuminate\Auth\Notifications\VerifyEmail::class
+        );
+    }
 }
