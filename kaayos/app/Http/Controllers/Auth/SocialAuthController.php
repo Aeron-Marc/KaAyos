@@ -140,6 +140,10 @@ class SocialAuthController extends Controller
             ]);
         }
 
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 
