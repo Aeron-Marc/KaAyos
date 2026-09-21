@@ -223,7 +223,7 @@ a{text-decoration:none;color:inherit}
     <p>&copy; 2026 KaAyos</p>
     <div class="socials">
       <a href="https://facebook.com/kaayos" class="soc" title="Facebook" target="_blank" rel="noopener"><i class="fa-brands fa-facebook-f"></i></a>
-      <a href="mailto:hello@kaayos.com" class="soc" title="Email"><i class="fa-solid fa-envelope"></i></a>
+      <a href="mailto:hello@kaayos.tech" class="soc" title="Email"><i class="fa-solid fa-envelope"></i></a>
     </div>
   </div>
 </footer>

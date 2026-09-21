@@ -702,7 +702,7 @@ PROMPT;
     protected function askContact(): array
     {
         return [
-            'reply' => "Need help? Here's how to reach us:\n\n• <strong>Contact Page:</strong> <a href=\"/contact\">kaayos.com/contact</a>\n• <strong>Email:</strong> hello@kaayos.com\n• <strong>Facebook:</strong> facebook.com/kaayos\n\nYou can also browse our <a href=\"/#faq\">FAQ section</a> for quick answers to common questions. If you're logged in, you can report issues directly from your dashboard.",
+            'reply' => "Need help? Here's how to reach us:\n\n• <strong>Contact Page:</strong> <a href=\"/contact\">kaayos.tech/contact</a>\n• <strong>Email:</strong> hello@kaayos.tech\n• <strong>Facebook:</strong> facebook.com/kaayos\n\nYou can also browse our <a href=\"/#faq\">FAQ section</a> for quick answers to common questions. If you're logged in, you can report issues directly from your dashboard.",
             'suggestions' => [
                 'How do I book a worker?',
                 'How are workers verified?',
