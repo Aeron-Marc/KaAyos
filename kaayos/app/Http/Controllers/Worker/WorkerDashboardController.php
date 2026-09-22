@@ -166,7 +166,6 @@ class WorkerDashboardController extends Controller
         $booking->load('client');
 
         // Broadcast completion status if relevant
-        if ($oldStatus !== $booking->status) {
         if ($oldStatus !== $booking->status || $booking->isCompletionPending()) {
             if ($booking->isCompletionPending()) {
                 broadcast(new JobCompletionStatusUpdated(
@@ -197,7 +196,6 @@ class WorkerDashboardController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Job status updated successfully.',
                 'success' => true,
                 'message' => $successMessage,
                 'booking' => $booking->fresh()->load('earning'),
@@ -205,7 +203,6 @@ class WorkerDashboardController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Job status updated successfully.');
         return redirect()->back()->with('success', $successMessage);
     }
 
