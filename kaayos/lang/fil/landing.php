@@ -115,3 +115,4 @@ return [
     'ai_chip3' => 'Kailangan ng maglilinis ng bahay',
     'ai_input' => 'Ilarawan ang iyong kailangan...',
 ];
+
