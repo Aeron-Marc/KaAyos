@@ -93,7 +93,7 @@
                     <div class="author-avatar">{{ strtoupper(substr(auth()->user()->first_name ?? '', 0, 1) . substr(auth()->user()->last_name ?? '', 0, 1)) ?: strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}</div>
                     <div class="author-info">
                         <div class="name">{{ auth()->user()->name }}</div>
-                        <div class="role">Trabahador, {{ auth()->user()->barangay ?? 'Tuy' }}</div>
+                        <div class="role">{{ __('role.worker') }}, {{ auth()->user()->barangay ?? 'Tuy' }}</div>
                     </div>
                 </div>
             </div>

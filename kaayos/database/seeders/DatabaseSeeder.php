@@ -194,7 +194,7 @@ class DatabaseSeeder extends Seeder
             'first_name' => 'Admin',
             'last_name'  => 'KaAyos',
             'name'       => 'Admin KaAyos',
-            'email'      => 'admin@kaayos.com',
+            'email'      => 'admin@kaayos.tech',
             'password'   => $password,
             'role'       => 'admin',
             'city'       => 'Tuy, Batangas',
@@ -1227,7 +1227,7 @@ class DatabaseSeeder extends Seeder
 
         $this->command->info('Database seeded successfully!');
         $this->command->info('Categories: ' . ServiceCategory::count() . ' | Services: ' . Service::count());
-        $this->command->info('Admin:  admin@kaayos.com / password');
+        $this->command->info('Admin:  admin@kaayos.tech / password');
         $this->command->info('Clients: ' . User::where('role', 'client')->count() . ' users | Workers: ' . User::where('role', 'worker')->count() . ' users');
         $this->command->info('Bookings: ' . Booking::count() . ' | Reviews: ' . Review::count() . ' | Earnings: ' . Earning::count());
         $this->command->info('Testimonials: ' . Testimonial::count());

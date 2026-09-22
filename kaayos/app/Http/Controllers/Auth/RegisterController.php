@@ -35,6 +35,9 @@ class RegisterController extends Controller
                                 ->letters()
                                 ->numbers()],
             'terms'      => ['accepted'],
+            'client_type' => ['nullable', 'string', 'in:homeowner,tenant_renter,business_commercial,property_manager,other'],
+            'organization_name' => ['nullable', 'string', 'max:255'],
+            'tin_number' => ['nullable', 'string', 'max:50'],
         ];
 
         if ($request->input('role') === 'worker') {
@@ -55,6 +58,9 @@ class RegisterController extends Controller
                 'phone'            => $validated['phone'] ?? null,
                 'password'         => Hash::make($validated['password']),
                 'role'             => $role,
+                'client_type'      => $validated['client_type'] ?? 'homeowner',
+                'organization_name'=> $validated['organization_name'] ?? null,
+                'tin_number'       => $validated['tin_number'] ?? null,
                 'service_category' => $validated['service_category'] ?? null,
                 'barangay'         => $validated['barangay'] ?? null,
                 'city'             => $role === 'worker' ? 'Tuy' : null,
@@ -69,7 +75,11 @@ class RegisterController extends Controller
         Log::info('New account created', ['user_id' => $user->id, 'email' => $user->email, 'role' => $user->role]);
 
         if (config('mail.mailers.smtp.username')) {
-            event(new Registered($user));
+            try {
+                event(new Registered($user));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send verification email upon registration: ' . $e->getMessage());
+            }
 
             $loginUrl = route('login');
 

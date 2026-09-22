@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fil">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,8 +33,8 @@
   </div>
   <div class="loader-logos">
     <div class="loader-inner">
-      <img src="/images/logo-gs-removebg-preview.png" alt="KaAyos" class="loader-logo loader-primary" id="loaderPrimary">
-      <img src="/images/peso-logo-removed-bg.png" alt="PESO Tuy" class="loader-logo loader-secondary" id="loaderSecondary">
+      <img src="/images/logo-gs-removebg-preview.png" alt="KaAyos" class="loader-logo loader-primary" id="loaderPrimary" width="80" height="80">
+      <img src="/images/peso-logo-removed-bg.png" alt="PESO Tuy" class="loader-logo loader-secondary" id="loaderSecondary" width="80" height="80">
     </div>
   </div>
 </div>
@@ -50,31 +50,32 @@
 <!-- MOBILE DRAWER -->
 <aside id="mobileDrawer" class="mobile-drawer" role="dialog" aria-label="Navigation menu">
   <button class="drawer-close" onclick="closeMobileMenu()" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
-  <a href="#services" onclick="closeMobileMenu()"><i class="fa-solid fa-briefcase"></i> Services</a>
-  <a href="#how-it-works" onclick="closeMobileMenu()"><i class="fa-solid fa-list-ol"></i> How It Works</a>
-  <a href="#join" onclick="closeMobileMenu()"><i class="fa-solid fa-hammer"></i> Join as Worker</a>
-  <a href="#faq" onclick="closeMobileMenu()"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+  <a href="#services" onclick="closeMobileMenu()"><i class="fa-solid fa-briefcase"></i> {{ __('landing.services') }}</a>
+  <a href="#how-it-works" onclick="closeMobileMenu()"><i class="fa-solid fa-list-ol"></i> {{ __('landing.how_it_works') }}</a>
+  <a href="#join" onclick="closeMobileMenu()"><i class="fa-solid fa-hammer"></i> {{ __('landing.join_worker') }}</a>
+  <a href="#faq" onclick="closeMobileMenu()"><i class="fa-solid fa-circle-question"></i> {{ __('landing.faq') }}</a>
   <div class="drawer-cta">
-    <a href="/login" class="btn-ghost"><i class="fa-regular fa-user"></i> Log In</a>
-    <a href="/register" class="btn-amber"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign Up Free</a>
+    <a href="/login" class="btn-ghost"><i class="fa-regular fa-user"></i> {{ __('landing.log_in') }}</a>
+    <a href="/register" class="btn-amber"><i class="fa-solid fa-arrow-right-to-bracket"></i> {{ __('landing.sign_up') }}</a>
   </div>
 </aside>
 
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-logo">
-    <div class="logo-box"><img src="../images/logo-gs-removebg-preview.png" alt="KaAyos Logo"></div>
+    <div class="logo-box"><img src="../images/logo-gs-removebg-preview.png" alt="KaAyos Logo" width="36" height="36"></div>
     <span>KaAyos</span>
   </div>
   <ul class="nav-links">
-    <li><a href="#services">Services</a></li>
-    <li><a href="#how-it-works">How It Works</a></li>
-    <li><a href="#join">Join as Worker</a></li>
-    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#services">{{ __('landing.services') }}</a></li>
+    <li><a href="#how-it-works">{{ __('landing.how_it_works') }}</a></li>
+    <li><a href="#join">{{ __('landing.join_worker') }}</a></li>
+    <li><a href="#faq">{{ __('landing.faq') }}</a></li>
   </ul>
   <div class="nav-cta">
-    <a href="/login" class="btn btn-ghost"><i class="fa-regular fa-user" aria-hidden="true"></i> Log In</a>
-    <a href="/register" class="btn btn-amber"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign Up Free</a>
+    <x-language-switcher />
+    <a href="/login" class="btn btn-ghost"><i class="fa-regular fa-user" aria-hidden="true"></i> {{ __('landing.log_in') }}</a>
+    <a href="/register" class="btn btn-amber"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> {{ __('landing.sign_up') }}</a>
     <button class="nav-toggle" id="navToggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
       <span></span><span></span><span></span>
     </button>
@@ -82,37 +83,47 @@
 </nav>
 
 <!-- HERO -->
-<section class="hero">
+<section class="hero" id="heroSection">
+  <div class="mouse-glow" id="heroGlow"></div>
   <div class="hero-icons-floating">
-    <div class="hero-icon-f"><i class="fa-solid fa-wrench"></i></div>
-    <div class="hero-icon-f"><i class="fa-solid fa-bolt"></i></div>
-    <div class="hero-icon-f"><i class="fa-solid fa-paint-roller"></i></div>
+    <div class="hero-icon-f" data-depth="0.03"><i class="fa-solid fa-wrench"></i></div>
+    <div class="hero-icon-f" data-depth="0.05"><i class="fa-solid fa-bolt"></i></div>
+    <div class="hero-icon-f" data-depth="0.02"><i class="fa-solid fa-paint-roller"></i></div>
+    <div class="hero-icon-f" data-depth="0.04"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+    <div class="hero-icon-f" data-depth="0.03"><i class="fa-solid fa-hammer"></i></div>
+    <div class="hero-icon-f" data-depth="0.05"><i class="fa-solid fa-broom"></i></div>
+    <div class="hero-icon-f" data-depth="0.04"><i class="fa-solid fa-fan"></i></div>
+    <div class="hero-icon-f" data-depth="0.02"><i class="fa-solid fa-plug"></i></div>
+    <div class="hero-icon-f" data-depth="0.05"><i class="fa-solid fa-house-chimney"></i></div>
+    <div class="hero-icon-f" data-depth="0.03"><i class="fa-solid fa-hard-hat"></i></div>
+    <div class="hero-icon-f" data-depth="0.04"><i class="fa-solid fa-shield-halved"></i></div>
+    <div class="hero-icon-f" data-depth="0.02"><i class="fa-solid fa-star"></i></div>
   </div>
   <div class="peso-stamp">
-    <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy Accredited">
+    <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy Accredited" width="64" height="64">
   </div>
-  <div class="hero-tag"><div class="dot"></div><span>In Partnership with PESO Tuy, Batangas</span></div>
-  <h1>Find a trusted <em>trabahador</em> in minutes</h1>
-  <p class="hero-sub">KaAyos helps homeowners book verified workers by skill, rating, and distance. Every worker is PESO-accredited and reviewed by the community.</p>
+  <div class="hero-tag"><div class="dot"></div><span>{{ __('landing.hero_tag') }}</span></div>
+  <h1>{!! __('landing.hero_title') !!}</h1>
+  <p class="hero-sub">{{ __('landing.hero_sub') }}</p>
   <div class="hero-actions">
-    <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Hire a Worker Now</a>
-    <a href="#join" class="btn-outline"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Join as Worker</a>
+    <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {{ __('landing.hero_hire') }}</a>
+    <a href="#join" class="btn-outline"><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{ __('landing.hero_join') }}</a>
   </div>
 </section>
 
 <!-- SEARCH + AI ASSISTANT -->
 <div class="search-section">
-  <div class="search-label">What do you need fixed?</div>
+  <div class="search-label">{{ __('landing.search_label') }}</div>
   <div class="search-bar">
     <div class="input-wrap">
       <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-      <input type="text" id="searchQuery" placeholder="e.g. leaking pipe, broken circuit, painting…" aria-label="Service type" autocomplete="off">
+      <input type="text" id="searchQuery" placeholder="{{ __('landing.search_placeholder') }}" aria-label="Service type" autocomplete="off">
     </div>
     <div class="input-wrap loc-input">
       <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-      <input type="text" id="searchLocation" list="barangayList" placeholder="Your barangay (e.g. Luna, Bolbok…)" aria-label="Location" autocomplete="off">
+      <input type="text" id="searchLocation" list="barangayList" placeholder="{{ __('landing.search_location') }}" aria-label="Location" autocomplete="off">
     </div>
-    <button class="btn btn-primary btn-lg" id="searchButton" onclick="doSearch()"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Find Workers</button>
+    <button class="btn btn-primary btn-lg" id="searchButton" onclick="doSearch()"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {{ __('landing.search_btn') }}</button>
   </div>
   <div class="search-error" id="searchError" role="alert" style="display:none;"></div>
   <datalist id="barangayList">
@@ -128,13 +139,13 @@
 <!-- SERVICES & WORKERS -->
 <section class="section" id="services">
   <div class="sec-header fade-up">
-    <div class="eyebrow">Services & Workers</div>
-    <h2 class="sec-title">Every Trade, One Platform</h2>
-    <p class="sec-sub">Browse verified workers across all major home service categories. Click a category to filter.</p>
+    <div class="eyebrow">{{ __('landing.services_eyebrow') }}</div>
+    <h2 class="sec-title">{{ __('landing.services_title') }}</h2>
+    <p class="sec-sub">{{ __('landing.services_sub') }}</p>
   </div>
 
   <div class="cat-pills fade-up">
-    <button class="cat-pill {{ !$category ? 'active' : '' }}" data-category="">All</button>
+    <button class="cat-pill {{ !$category ? 'active' : '' }}" data-category="">{{ __('landing.all') }}</button>
     @foreach($categories as $cat)
       <button class="cat-pill {{ $category === $cat->slug ? 'active' : '' }}" data-category="{{ $cat->slug }}"><i class="fa-solid {{ $cat->icon ?: 'fa-wrench' }}"></i> {{ $cat->name }}</button>
     @endforeach
@@ -142,10 +153,10 @@
 
   <div class="view-toggle-wrap fade-up">
     <div class="view-toggle">
-      <button class="active" id="viewGridBtn" onclick="switchView('grid')"><i class="fa-solid fa-grip"></i> Grid</button>
-      <button id="viewMapBtn" onclick="switchView('map')"><i class="fa-solid fa-map-location-dot"></i> Map</button>
+      <button class="active" id="viewGridBtn" onclick="switchView('grid')"><i class="fa-solid fa-grip"></i> {{ __('landing.grid') }}</button>
+      <button id="viewMapBtn" onclick="switchView('map')"><i class="fa-solid fa-map-location-dot"></i> {{ __('landing.map') }}</button>
     </div>
-    <span class="workers-count">{{ $workers->total() }} worker{{ $workers->total() !== 1 ? 's' : '' }}</span>
+    <span class="workers-count">{{ trans_choice('landing.workers_count', $workers->total()) }}</span>
   </div>
 
   <div id="workersSection">
@@ -157,51 +168,47 @@
 
 <!-- STATS -->
 <div class="stats fade-up">
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num">500+</div><div class="stat-label">Active Workers</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num">1,000+</div><div class="stat-label">Jobs Completed</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num">22</div><div class="stat-label">Barangays Covered</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num">4.8★</div><div class="stat-label">Avg Rating</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num" data-count="500" data-suffix="+">0</div><div class="stat-label">{{ __('landing.stat_workers') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num" data-count="1000" data-suffix="+">0</div><div class="stat-label">{{ __('landing.stat_jobs') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num" data-count="22" data-suffix="">0</div><div class="stat-label">{{ __('landing.stat_barangays') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num" data-count="4.8" data-suffix="★" data-decimal="1">0</div><div class="stat-label">{{ __('landing.stat_rating') }}</div></div>
 </div>
 
 <!-- TRUST -->
 <div class="trust">
-  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-id-card" aria-hidden="true"></i></div><div><strong>ID-Verified Workers</strong><span>Valid ID &amp; clearance required</span></div></div>
-  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-robot" aria-hidden="true"></i></div><div><strong>AI-Assisted Matching</strong><span>Best worker for your job</span></div></div>
-  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-certificate" aria-hidden="true"></i></div><div><strong>PESO-Accredited Workers</strong><span>Verified by Public Employment Service Office</span></div></div>
-  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div><strong>Rated &amp; Reviewed</strong><span>Read real feedback first</span></div></div>
+  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-id-card" aria-hidden="true"></i></div><div><strong>{{ __('landing.trust_id') }}</strong><span>{{ __('landing.trust_id_sub') }}</span></div></div>
+  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-robot" aria-hidden="true"></i></div><div><strong>{{ __('landing.trust_ai') }}</strong><span>{{ __('landing.trust_ai_sub') }}</span></div></div>
+  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-certificate" aria-hidden="true"></i></div><div><strong>{{ __('landing.trust_peso') }}</strong><span>{{ __('landing.trust_peso_sub') }}</span></div></div>
+  <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div><strong>{{ __('landing.trust_rated') }}</strong><span>{{ __('landing.trust_rated_sub') }}</span></div></div>
 </div>
 
 <!-- HOW IT WORKS -->
 <section class="section section-alt" id="how-it-works">
   <div class="sec-header fade-up">
-    <div class="eyebrow">How It Works</div>
-    <h2 class="sec-title">Booked in Four Steps</h2>
-    <p class="sec-sub">From posting your job to getting it done — fast and simple.</p>
+    <div class="eyebrow">{{ __('landing.how_eyebrow') }}</div>
+    <h2 class="sec-title">{{ __('landing.how_title') }}</h2>
+    <p class="sec-sub">{{ __('landing.how_sub') }}</p>
   </div>
   <div class="steps">
-    <div class="step fade-up">
-      <div class="step-n">01</div>
+    <div class="step fade-up stagger-child"><div class="step-n">01</div>
       <div class="step-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></div>
-      <h3 class="step-title">Post Your Job</h3>
-      <p class="step-desc">Describe what needs fixing — type, location, and when you need it done.</p>
+      <h3 class="step-title">{{ __('landing.step1_title') }}</h3>
+      <p class="step-desc">{{ __('landing.step1_desc') }}</p>
     </div>
-    <div class="step fade-up">
-      <div class="step-n">02</div>
+    <div class="step fade-up stagger-child"><div class="step-n">02</div>
       <div class="step-icon"><i class="fa-solid fa-robot" aria-hidden="true"></i></div>
-      <h3 class="step-title">AI Finds Matches</h3>
-      <p class="step-desc">Our system recommends verified, nearby workers ranked by rating and distance.</p>
+      <h3 class="step-title">{{ __('landing.step2_title') }}</h3>
+      <p class="step-desc">{{ __('landing.step2_desc') }}</p>
     </div>
-    <div class="step fade-up">
-      <div class="step-n">03</div>
+    <div class="step fade-up stagger-child"><div class="step-n">03</div>
       <div class="step-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></div>
-      <h3 class="step-title">Chat &amp; Book</h3>
-      <p class="step-desc">Message your worker, confirm pricing, and lock in the schedule in-app.</p>
+      <h3 class="step-title">{{ __('landing.step3_title') }}</h3>
+      <p class="step-desc">{{ __('landing.step3_desc') }}</p>
     </div>
-    <div class="step fade-up">
-      <div class="step-n">04</div>
+    <div class="step fade-up stagger-child"><div class="step-n">04</div>
       <div class="step-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div>
-      <h3 class="step-title">Rate &amp; Done</h3>
-      <p class="step-desc">Leave a review after the job. Your feedback helps the whole community.</p>
+      <h3 class="step-title">{{ __('landing.step4_title') }}</h3>
+      <p class="step-desc">{{ __('landing.step4_desc') }}</p>
     </div>
   </div>
 </section>
@@ -209,9 +216,9 @@
 <!-- TESTIMONIALS -->
 <section class="section" id="testimonials">
   <div class="sec-header fade-up">
-    <div class="eyebrow">Testimonials</div>
-    <h2 class="sec-title">What Our Users Say</h2>
-    <p class="sec-sub">Real feedback from homeowners and workers in Tuy, Batangas.</p>
+    <div class="eyebrow">{{ __('landing.testimonials_eyebrow') }}</div>
+    <h2 class="sec-title">{{ __('landing.testimonials_title') }}</h2>
+    <p class="sec-sub">{{ __('landing.testimonials_sub') }}</p>
   </div>
   <div class="testimonials">
     @forelse($testimonials as $t)
@@ -231,7 +238,7 @@
         </div>
       </div>
     @empty
-      <p class="text-muted">No testimonials yet.</p>
+      <p class="text-muted">{{ __('landing.testimonials_empty') }}</p>
     @endforelse
   </div>
 </section>
@@ -240,51 +247,53 @@
 <section class="join" id="join">
   <div class="join-text">
     <div class="join-badge">
-      <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy">
-      <span>In Partnership with PESO Tuy, Batangas</span>
+        <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy" width="48" height="48" loading="lazy">
+      <span>{{ __('landing.join_badge') }}</span>
     </div>
-    <h2>Are You a Skilled Trabahador?</h2>
-    <p>KaAyos helps Filipino workers earn more, reach more clients, and build a professional reputation — without relying on referrals alone.</p>
-    <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Register as a Worker</a>
+    <h2>{{ __('landing.join_title') }}</h2>
+    <p>{{ __('landing.join_desc') }}</p>
+    <a href="/register?role=worker" class="btn btn-primary btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{ __('landing.join_btn') }}</a>
   </div>
-  <div class="perks">
-    <div class="perk"><div class="perk-ico"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></div><div><strong>More Job Visibility</strong><span>Get discovered by homeowners in your barangay and beyond</span></div></div>
-    <div class="perk"><div class="perk-ico"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div><strong>Build Your Reputation</strong><span>Earn ratings that set you apart from unverified workers</span></div></div>
-    <div class="perk"><div class="perk-ico"><i class="fa-solid fa-briefcase" aria-hidden="true"></i></div><div><strong>Manage Your Work</strong><span>Track bookings and your portfolio in one place</span></div></div>
-    <div class="perk"><div class="perk-ico"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div><div><strong>Safer Transactions</strong><span>In-app chat and clear agreements protect you and your clients</span></div></div>
+  <div class="join-carousel" aria-hidden="true">
+    <div class="join-slide active"><img src="{{ asset('images/stock/work-1.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-2.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-3.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-4.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-5.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
+    <div class="join-slide"><img src="{{ asset('images/stock/work-6.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
   </div>
 </section>
 
 <!-- FAQ -->
 <section class="section section-alt" id="faq">
   <div class="sec-header fade-up">
-    <div class="eyebrow">FAQ</div>
-    <h2 class="sec-title">Common Questions</h2>
+    <div class="eyebrow">{{ __('landing.faq_eyebrow') }}</div>
+    <h2 class="sec-title">{{ __('landing.faq_title') }}</h2>
   </div>
   <div class="faq-list">
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-circle-question" style="color:var(--b6);margin-right:8px"></i>Is KaAyos free to use as a homeowner?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
-      <div class="faq-a">Yes. Creating an account, browsing workers, and booking jobs is completely free. You only pay the worker directly.</div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-circle-question" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q1') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-a">{{ __('landing.faq_a1') }}</div>
     </div>
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-id-card" style="color:var(--b6);margin-right:8px"></i>How are workers verified?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
-      <div class="faq-a">Every worker submits a valid government-issued ID and barangay clearance before their profile goes live. Workers who pass appear with a Verified badge.</div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-id-card" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q2') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-a">{{ __('landing.faq_a2') }}</div>
     </div>
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-robot" style="color:var(--b6);margin-right:8px"></i>How does AI matching work?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
-      <div class="faq-a">When you post a job, KaAyos ranks candidates by distance, skill match, and community rating — so you see the most suitable workers first.</div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-robot" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q3') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-a">{{ __('landing.faq_a3') }}</div>
     </div>
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-location-dot" style="color:var(--b6);margin-right:8px"></i>What areas does KaAyos cover?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
-      <div class="faq-a">KaAyos currently serves all 22 barangays of Tuy, Batangas, with plans to expand to neighboring municipalities.</div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-location-dot" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q4') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-a">{{ __('landing.faq_a4') }}</div>
     </div>
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-user" style="color:var(--b6);margin-right:8px"></i>Can I register as both a homeowner and a worker?</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
-      <div class="faq-a">Yes. One account supports both roles. Switch between them from your dashboard.</div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-user" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q5') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-a">{{ __('landing.faq_a5') }}</div>
     </div>
   </div>
   <div class="faq-contact fade-up">
-    Still have questions? <a href="/contact">Contact our support team</a>
+    {{ __('landing.faq_contact') }} <a href="/contact">{{ __('landing.faq_contact_link') }}</a>
   </div>
 </section>
 
@@ -293,11 +302,11 @@
   <div class="modal-box">
     <button class="modal-close" onclick="hideSignInModal()" aria-label="Close">&times;</button>
     <div class="modal-icon"><i class="fa-solid fa-lock" aria-hidden="true"></i></div>
-    <h2 id="modalTitle">Sign In Required</h2>
-    <p>Please sign in or create an account to continue booking <strong id="modalWorkerName"></strong>.</p>
+    <h2 id="modalTitle">{{ __('landing.modal_title') }}</h2>
+    <p>{{ __('landing.modal_desc') }} <strong id="modalWorkerName"></strong>.</p>
     <div class="modal-actions">
-      <button onclick="goToSignIn()" class="btn btn-solid"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign In</button>
-      <button onclick="goToSignUp()" class="btn-ghost-dark"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Create Account</button>
+      <button onclick="goToSignIn()" class="btn btn-solid"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> {{ __('landing.modal_signin') }}</button>
+      <button onclick="goToSignUp()" class="btn-ghost-dark"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> {{ __('landing.modal_signup') }}</button>
     </div>
   </div>
 </div>
@@ -307,35 +316,35 @@
   <div class="footer-grid">
     <div class="f-brand">
       <div class="brand">
-        <div class="flogo"><img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos"></div>
+        <div class="flogo"><img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos" width="40" height="40" loading="lazy"></div>
         <span>KaAyos</span>
       </div>
-      <p>A web-based home service platform connecting homeowners with verified skilled workers in Tuy, Batangas — powered by AI matching. In partnership with PESO Tuy, Batangas.</p>
+      <p>{{ __('landing.footer_desc') }}</p>
       <div class="partner-logos">
-        <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy">
+      <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy" width="48" height="48">
       </div>
     </div>
     <div>
-      <div class="f-title">Services</div>
+      <div class="f-title">{{ __('landing.footer_services') }}</div>
       <ul class="f-links">
         <li><a href="/?category=plumbing"><i class="fa-solid fa-wrench fa-fw" aria-hidden="true"></i> Plumbing</a></li>
         <li><a href="/?category=electrical"><i class="fa-solid fa-bolt fa-fw" aria-hidden="true"></i> Electrical</a></li>
         <li><a href="/?category=carpentry"><i class="fa-solid fa-screwdriver-wrench fa-fw" aria-hidden="true"></i> Carpentry</a></li>
         <li><a href="/?category=cleaning"><i class="fa-solid fa-broom fa-fw" aria-hidden="true"></i> Cleaning</a></li>
-        <li><a href="/#services"><i class="fa-solid fa-list fa-fw" aria-hidden="true"></i> View all</a></li>
+        <li><a href="/#services"><i class="fa-solid fa-list fa-fw" aria-hidden="true"></i> {{ __('landing.footer_view_all') }}</a></li>
       </ul>
     </div>
     <div>
-      <div class="f-title">Company</div>
+      <div class="f-title">{{ __('landing.footer_company') }}</div>
       <ul class="f-links">
-        <li><a href="/about"><i class="fa-solid fa-circle-info fa-fw" aria-hidden="true"></i> About KaAyos</a></li>
-        <li><a href="#how-it-works"><i class="fa-solid fa-list-ol fa-fw" aria-hidden="true"></i> How It Works</a></li>
-        <li><a href="/register"><i class="fa-solid fa-hammer fa-fw" aria-hidden="true"></i> Join as Worker</a></li>
-        <li><a href="#faq"><i class="fa-solid fa-circle-question fa-fw" aria-hidden="true"></i> FAQ</a></li>
-        <li><a href="/contact"><i class="fa-solid fa-envelope fa-fw" aria-hidden="true"></i> Contact</a></li>
-        <li><a href="/privacy"><i class="fa-solid fa-shield fa-fw" aria-hidden="true"></i> Privacy Policy</a></li>
-        <li><a href="/terms"><i class="fa-solid fa-file-lines fa-fw" aria-hidden="true"></i> Terms of Service</a></li>
-        <li><a href="/safety"><i class="fa-solid fa-shield-halved fa-fw" aria-hidden="true"></i> Safety</a></li>
+        <li><a href="/about"><i class="fa-solid fa-circle-info fa-fw" aria-hidden="true"></i> {{ __('landing.footer_about') }}</a></li>
+        <li><a href="#how-it-works"><i class="fa-solid fa-list-ol fa-fw" aria-hidden="true"></i> {{ __('landing.how_it_works') }}</a></li>
+        <li><a href="/register?role=worker"><i class="fa-solid fa-hammer fa-fw" aria-hidden="true"></i> {{ __('landing.join_worker') }}</a></li>
+        <li><a href="#faq"><i class="fa-solid fa-circle-question fa-fw" aria-hidden="true"></i> {{ __('landing.faq') }}</a></li>
+        <li><a href="/contact"><i class="fa-solid fa-envelope fa-fw" aria-hidden="true"></i> {{ __('landing.footer_contact') }}</a></li>
+        <li><a href="/privacy"><i class="fa-solid fa-shield fa-fw" aria-hidden="true"></i> {{ __('landing.footer_privacy') }}</a></li>
+        <li><a href="/terms"><i class="fa-solid fa-file-lines fa-fw" aria-hidden="true"></i> {{ __('landing.footer_terms') }}</a></li>
+        <li><a href="/safety"><i class="fa-solid fa-shield-halved fa-fw" aria-hidden="true"></i> {{ __('landing.footer_safety') }}</a></li>
       </ul>
     </div>
   </div>
@@ -344,7 +353,7 @@
     <p>&copy; {{ date('Y') }} KaAyos &mdash; Capstone project by Salanguit, Formentos &amp; Briones &middot; Batangas State University ARASOF &ndash; Nasugbu Campus.</p>
     <div class="socials">
       <a href="https://facebook.com/kaayos" class="soc" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-      <a href="mailto:hello@kaayos.com" class="soc" title="Email" aria-label="Email"><i class="fa-solid fa-envelope"></i></a>
+      <a href="mailto:hello@kaayos.tech" class="soc" title="Email" aria-label="Email"><i class="fa-solid fa-envelope"></i></a>
     </div>
   </div>
 </footer>
@@ -355,22 +364,22 @@
   <div class="ai-header">
     <div class="ai-header-info">
       <div class="ai-avatar"><i class="fa-solid fa-robot"></i></div>
-      <div><div class="ai-title">KaAyos Assistant</div><div class="ai-status">Online</div></div>
+      <div><div class="ai-title">{{ __('landing.ai_title') }}</div><div class="ai-status">{{ __('landing.ai_status') }}</div></div>
     </div>
     <button id="aiExpand" class="ai-expand" aria-label="Expand chat"><i class="fa-solid fa-expand"></i></button>
   </div>
   <div class="ai-messages" id="aiMessages">
     <div class="ai-msg bot">
-      <div class="ai-bubble"><p>Hi! I can help you find the right worker. Tell me what you need — like <em>"plumber for leaking pipe in Lumbangan"</em> or <em>"electrician near me"</em>.</p></div>
+      <div class="ai-bubble"><p>{!! __('landing.ai_welcome') !!}</p></div>
     </div>
   </div>
   <div class="ai-suggestions" id="aiSuggestions">
-    <button class="ai-chip" data-text="I need a plumber for a leaking pipe">I need a plumber</button>
-    <button class="ai-chip" data-text="Looking for an electrician nearby">Looking for an electrician</button>
-    <button class="ai-chip" data-text="Need someone to clean my house">Need house cleaning</button>
+    <button class="ai-chip" data-text="I need a plumber for a leaking pipe">{{ __('landing.ai_chip1') }}</button>
+    <button class="ai-chip" data-text="Looking for an electrician nearby">{{ __('landing.ai_chip2') }}</button>
+    <button class="ai-chip" data-text="Need someone to clean my house">{{ __('landing.ai_chip3') }}</button>
   </div>
   <div class="ai-input-bar">
-    <input type="text" id="aiInput" class="ai-input" placeholder="Describe what you need..." maxlength="1000" autocomplete="off">
+    <input type="text" id="aiInput" class="ai-input" placeholder="{{ __('landing.ai_input') }}" maxlength="1000" autocomplete="off">
     <button class="ai-send" id="aiSend" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
   </div>
 </div>
@@ -411,10 +420,69 @@ function toggleFaq(el){
 (function(){
   var observer = new IntersectionObserver(function(entries){
     entries.forEach(function(e){
-      if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); }
+      if(e.isIntersecting){
+        e.target.classList.add('visible');
+        var siblings = e.target.parentElement.querySelectorAll('.stagger-child');
+        if(siblings.length && e.target.classList.contains('stagger-child')){
+          for(var i=0;i<siblings.length;i++){
+            if(siblings[i].classList.contains('visible')) continue;
+            siblings[i].style.transitionDelay = (i * 80) + 'ms';
+            siblings[i].classList.add('visible');
+          }
+        }
+        observer.unobserve(e.target);
+      }
     });
   }, { threshold: 0.12 });
   document.querySelectorAll('.fade-up').forEach(function(el){ observer.observe(el); });
+})();
+
+/* STAT NUMBER COUNTING */
+(function(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var counted = false;
+  var nums = document.querySelectorAll('.stat-num[data-count]');
+  if(!nums.length) return;
+
+  function formatNum(val, dec){
+    if(dec) return val.toFixed(dec);
+    return val >= 1000 ? val.toLocaleString('en-US') : String(val);
+  }
+
+  function animateCount(el){
+    var target = parseFloat(el.dataset.count);
+    var suffix = el.dataset.suffix || '';
+    var dec = parseInt(el.dataset.decimal) || 0;
+    var duration = 2500;
+    var start = performance.now();
+    var lastVal = -1;
+
+    function tick(now){
+      var elapsed = now - start;
+      var progress = Math.min(elapsed / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var current = eased * target;
+      var display = dec ? current.toFixed(dec) : Math.round(current);
+      if(display !== lastVal){
+        lastVal = display;
+        el.textContent = (dec ? display : Number(display).toLocaleString('en-US')) + suffix;
+      }
+      if(progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting && !counted){
+        counted = true;
+        nums.forEach(function(n){ animateCount(n); });
+        obs.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+  var statsEl = document.querySelector('.stats');
+  if(statsEl) obs.observe(statsEl);
 })();
 
 /* CATEGORY FILTER */
@@ -461,7 +529,7 @@ function doSearch() {
 
   if (!q && !loc) {
     if (err) {
-      err.textContent = 'Please enter a service (e.g. Plumbing, Cleaning) or your barangay (e.g. Luna, Bolbok).';
+      err.textContent = '{{ __("landing.search_error") }}';
       err.style.display = 'block';
     }
     document.getElementById('searchQuery').focus();
@@ -555,7 +623,7 @@ function goToSignUp() {
     return;
   }
 
-  var MIN_SHOW_MS = 1200;
+  var MIN_SHOW_MS = 400;
   var start = Date.now();
   var finished = false;
 
@@ -723,11 +791,11 @@ function refreshMapFromSection() {
     .then(function(data) {
       hideTyping();
       if (data.success && data.reply) { addMsg('bot', data.reply); setChips(data.suggestions || []); }
-      else { addMsg('bot', 'Sorry, I couldn\'t process that. Please try again.'); setChips(['Find a plumber', 'Find an electrician', 'House cleaning']); }
+      else { addMsg('bot', 'Sorry, I couldn\'t process that. Please try again.'); setChips(['{{ __("landing.ai_chip1") }}', '{{ __("landing.ai_chip2") }}', '{{ __("landing.ai_chip3") }}']); }
     })
     .catch(function() {
       hideTyping(); addMsg('bot', 'Having trouble connecting. Try again later.');
-      setChips(['Find a plumber', 'Find an electrician', 'House cleaning']);
+      setChips(['{{ __("landing.ai_chip1") }}', '{{ __("landing.ai_chip2") }}', '{{ __("landing.ai_chip3") }}']);
     })
     .finally(function(){ send.disabled = false; input.focus(); });
   }
@@ -751,6 +819,55 @@ function refreshMapFromSection() {
   document.querySelectorAll('.ai-chip').forEach(function(btn) {
     btn.addEventListener('click', function(){ sendMsg(btn.dataset.text); });
   });
+})();
+
+/* HERO PARALLAX + MOUSE GLOW */
+(function() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var hero = document.getElementById('heroSection');
+  var glow = document.getElementById('heroGlow');
+  var icons = hero ? hero.querySelectorAll('.hero-icon-f') : [];
+  if (!hero || !glow || !icons.length) return;
+
+  var heroRect = hero.getBoundingClientRect();
+
+  function onResize() { heroRect = hero.getBoundingClientRect(); }
+  window.addEventListener('resize', onResize);
+
+  hero.addEventListener('mousemove', function(e) {
+    var rect = hero.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    glow.style.setProperty('--mx', mx + 'px');
+    glow.style.setProperty('--my', my + 'px');
+    glow.classList.add('active');
+
+    var cx = e.clientX - (rect.left + rect.width / 2);
+    var cy = e.clientY - (rect.top + rect.height / 2);
+    for (var i = 0; i < icons.length; i++) {
+      var depth = parseFloat(icons[i].dataset.depth) || 0.03;
+      icons[i].style.translate = (cx * depth * -1) + 'px ' + (cy * depth * -1) + 'px';
+    }
+  });
+
+  hero.addEventListener('mouseleave', function() {
+    glow.classList.remove('active');
+    for (var i = 0; i < icons.length; i++) {
+      icons[i].style.translate = '0 0';
+    }
+  });
+})();
+
+/* JOIN CAROUSEL */
+(function(){
+  var slides = document.querySelectorAll('.join-slide');
+  if(slides.length < 2) return;
+  var i = 0;
+  setInterval(function(){
+    slides[i].classList.remove('active');
+    i = (i + 1) % slides.length;
+    slides[i].classList.add('active');
+  }, 3000);
 })();
 </script>
 </body>

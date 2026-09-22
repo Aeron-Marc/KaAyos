@@ -57,7 +57,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ML_CORS_ORIGINS", "https://yourdomain.com").split(","),
+    allow_origins=os.getenv("ML_CORS_ORIGINS", "https://kaayos.tech").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

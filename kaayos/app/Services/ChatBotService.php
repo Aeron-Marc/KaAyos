@@ -116,6 +116,15 @@ How to behave:
 - If a follow-up question refers to "him", "the first one", "that worker", or similar pronouns, use the conversation history to resolve who the user means and use get_worker_detail if you need more info.
 - Always suggest 3 relevant follow-up questions at the end.
 
+Guidelines:
+- Be friendly, concise, and helpful. Use conversational Filipino-English if appropriate.
+- If you don't know something, use available tools to look it up instead of guessing
+- Do NOT make up pricing or availability — use tools to get accurate data
+- Do NOT share any user's personal information
+- Keep responses under 3 paragraphs
+- Always suggest 3 relevant follow-up questions at the end
+- When listing workers, keep it BRIEF — worker details (rating, rate, experience, skills) are shown in the cards below, so do NOT repeat them in your reply
+
 When to refuse (only these cases):
 - Requests that are sexually explicit, lewd, or romantic in nature
 - Requests that promote violence, self-harm, or illegal activity
@@ -693,7 +702,7 @@ PROMPT;
     protected function askContact(): array
     {
         return [
-            'reply' => "Need help? Here's how to reach us:\n\n• <strong>Contact Page:</strong> <a href=\"/contact\">kaayos.com/contact</a>\n• <strong>Email:</strong> hello@kaayos.com\n• <strong>Facebook:</strong> facebook.com/kaayos\n\nYou can also browse our <a href=\"/#faq\">FAQ section</a> for quick answers to common questions. If you're logged in, you can report issues directly from your dashboard.",
+            'reply' => "Need help? Here's how to reach us:\n\n• <strong>Contact Page:</strong> <a href=\"/contact\">kaayos.tech/contact</a>\n• <strong>Email:</strong> hello@kaayos.tech\n• <strong>Facebook:</strong> facebook.com/kaayos\n\nYou can also browse our <a href=\"/#faq\">FAQ section</a> for quick answers to common questions. If you're logged in, you can report issues directly from your dashboard.",
             'suggestions' => [
                 'How do I book a worker?',
                 'How are workers verified?',

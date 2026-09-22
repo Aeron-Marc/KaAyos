@@ -21,9 +21,13 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\Auth\CompleteProfileController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TestimonialController;
@@ -31,9 +35,15 @@ use App\Http\Controllers\Worker\PublicWorkerController;
 use App\Http\Controllers\Worker\WorkerController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
+
+// Social Authentication (Google & Facebook)
+Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirectToProvider'])->name('auth.social.redirect');
 
 Route::get('/workers/{worker}', [PublicWorkerController::class, 'show'])->name('workers.public.show');
 
@@ -51,6 +61,11 @@ Route::get('/register', [RegisterController::class, 'create'])->name('register')
 Route::post('/register', [RegisterController::class, 'store'])
     ->middleware('throttle:register');
 
+Route::get('/auth/{provider}', [SocialController::class, 'redirect'])
+    ->name('social.redirect');
+Route::get('/auth/{provider}/callback', [SocialController::class, 'callback'])
+    ->name('social.callback');
+
 Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
 Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->name('password.email');
 Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])->name('password.reset');
@@ -61,13 +76,17 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::get('/dashboard/notifications', [ClientController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/workers', [ClientWorkerController::class, 'index'])->name('workers');
     Route::get('/workers/{worker}', [ClientWorkerController::class, 'show'])->name('workers.show');
+    Route::get('/workers/{worker}/check-schedule', [ClientController::class, 'checkScheduleConflict'])->name('workers.check-schedule');
     Route::get('/bookings', [ClientController::class, 'bookings'])->name('bookings');
+    Route::get('/bookings/{booking}/track', [ClientController::class, 'trackLiveLocation'])->name('bookings.track');
     Route::post('/bookings', [ClientController::class, 'storeBooking'])->middleware('throttle:10,1')->name('bookings.store');
     Route::post('/bookings/{booking}/cancel', [ClientController::class, 'cancelBooking'])->name('bookings.cancel');
     Route::post('/bookings/{booking}/review', [ClientController::class, 'submitReview'])->name('bookings.review');
     Route::post('/bookings/{booking}/report', [ClientController::class, 'reportWorker'])->middleware('throttle:3,1')->name('bookings.report');
     Route::post('/bookings/{booking}/reschedule', [ClientController::class, 'rescheduleRequest'])->name('bookings.reschedule');
     Route::post('/bookings/{booking}/reschedule-respond', [ClientController::class, 'respondReschedule'])->name('bookings.reschedule-respond');
+    Route::post('/bookings/{booking}/respond-scope-amendment', [ClientController::class, 'respondScopeAmendment'])->name('bookings.respond-scope-amendment');
+    Route::post('/bookings/{booking}/respond-team-suggestion', [ClientController::class, 'respondTeamSuggestion'])->name('bookings.respond-team-suggestion');
     Route::post('/bookings/{booking}/mark-complete', [ClientController::class, 'markJobComplete'])->name('bookings.mark-complete');
     Route::post('/bookings/{booking}/confirm-complete', [ClientController::class, 'confirmJobCompletion'])->name('bookings.confirm-complete');
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
@@ -106,11 +125,16 @@ Route::post('/api/chat', [ChatBotController::class, '__invoke'])
 Route::middleware('auth')->post('/api/chat/suggest', [SuggestionController::class, '__invoke']);
 
 Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')->name('worker.')->group(function () {
+    Route::get('/complete-profile', [CompleteProfileController::class, 'show'])->name('complete-profile');
+    Route::post('/complete-profile', [CompleteProfileController::class, 'store'])->name('complete-profile.store');
+
     Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [WorkerController::class, 'notifications'])->name('dashboard.notifications');
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
     Route::get('/schedule', [WorkerController::class, 'schedule'])->name('schedule');
     Route::get('/calendar/data', [WorkerController::class, 'calendarData'])->name('calendar.data');
+    Route::get('/calendar/route', [WorkerController::class, 'dailyRoute'])->name('calendar.route');
+    Route::get('/calendar/optimize-route', [WorkerController::class, 'optimizeRoute'])->name('calendar.optimize-route');
     Route::get('/messages', [WorkerController::class, 'messages'])->name('messages');
     Route::get('/messages/start', [WorkerController::class, 'startConversation'])->name('messages.start');
     Route::get('/messages/poll/{conversation}', [WorkerController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');
@@ -136,6 +160,12 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::post('/jobs/{booking}/reschedule-respond', [WorkerDashboardController::class, 'respondReschedule'])->name('jobs.reschedule-respond');
     Route::post('/jobs/{booking}/confirm-complete', [WorkerDashboardController::class, 'confirmJobCompletion'])->name('jobs.confirm-complete');
     Route::get('/jobs/{booking}/details', [WorkerController::class, 'jobDetails'])->name('jobs.details');
+    Route::post('/jobs/{booking}/start-timer', [WorkerDashboardController::class, 'startTimer'])->name('jobs.start-timer');
+    Route::post('/jobs/{booking}/end-timer', [WorkerDashboardController::class, 'endTimer'])->name('jobs.end-timer');
+    Route::post('/jobs/{booking}/request-scope-amendment', [WorkerDashboardController::class, 'requestScopeAmendment'])->name('jobs.request-scope-amendment');
+    Route::post('/jobs/{booking}/suggest-team', [WorkerDashboardController::class, 'suggestTeam'])->name('jobs.suggest-team');
+    Route::post('/jobs/{booking}/respond-peer-invite', [WorkerDashboardController::class, 'respondPeerInvitation'])->name('jobs.respond-peer-invite');
+    Route::post('/jobs/{booking}/location-ping', [WorkerController::class, 'updateLiveLocation'])->name('jobs.location-ping');
     Route::put('/location', [WorkerDashboardController::class, 'updateLocation'])->name('location.update');
 
     Route::get('/testimonials', [TestimonialController::class, 'index'])->name('testimonials.index');
@@ -157,9 +187,13 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
 })->middleware(['auth', 'signed', 'no-cache'])->name('verification.verify');
 
 Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-
-    return back()->with('message', 'Verification link sent!');
+    try {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', 'Verification link sent!');
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error('Verification email resend failed: ' . $e->getMessage());
+        return back()->with('error', 'Could not send verification email at this time. Please try again in a few moments.');
+    }
 })->middleware(['auth', 'throttle:6,1', 'no-cache'])->name('verification.send');
 
 Route::get('/about', [PageController::class, 'about'])->name('about');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\ChatBotService;
+use App\Services\MLService;
 use App\Support\TuyBarangays;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,9 +55,19 @@ class SuggestionController extends Controller
                 $workers = $this->fetchWorkers($intent['category'], $validated['message']);
             }
 
+            $reply = $result['reply'];
+            if (!empty($workers)) {
+                $intro = $this->contextualIntro($workers, $validated['message']);
+                if ($intro) {
+                    $reply = $intro;
+                } else {
+                    $reply = $this->briefReply($reply);
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'reply' => $result['reply'],
+                'reply' => $reply,
                 'suggestions' => $result['suggestions'],
                 'workers' => $workers,
             ]);
@@ -109,15 +120,57 @@ class SuggestionController extends Controller
         return ['intent' => 'service_request', 'category' => '', 'description' => $message];
     }
 
+    protected function contextualIntro(array $workers, string $userMessage): ?string
+    {
+        try {
+            $chat = app(ChatBotService::class);
+
+            $category = $workers[0]['category'] ?? 'workers';
+            $area = config('kaayos.default_location', 'Tuy, Batangas');
+
+            $prompt = <<<PROMPT
+The user said: "{$userMessage}"
+
+We found {$category} workers in {$area}. Explain in 1-2 short sentences — natural and conversational, like a real assistant talking to a neighbor. Refer to what they asked for but keep it varied and human. No lists, no details.
+
+Reply with just the explanation.
+PROMPT;
+
+            $result = $chat->chat($prompt);
+            $text = trim($result['reply'] ?? '');
+            return !empty($text) ? $text : null;
+        } catch (\Exception $e) {
+            Log::warning('Contextual intro failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    protected function briefReply(string $reply): string
+    {
+        $lines = explode("\n", $reply);
+        $brief = [];
+        foreach ($lines as $line) {
+            if (preg_match('/^\d+\.\s/', $line)) {
+                break;
+            }
+            $brief[] = $line;
+        }
+        $result = trim(implode("\n", $brief));
+        return !empty($result) ? $result : $reply;
+    }
+
     protected function fetchWorkers(string $category, string $userMessage = ''): array
     {
         $query = User::where('role', 'worker')
             ->with('workerProfile')
-            ->withCount(['bookingsAsWorker as completed_jobs_count' => fn($q) => $q->where('status', 'completed')])
+            ->withCount([
+                'bookingsAsWorker as completed_jobs_count' => fn($q) => $q->where('status', 'completed'),
+                'bookingsAsWorker as total_jobs_count',
+            ])
             ->active()
             ->where('service_category', $category);
 
-        $workers = $query->get()->map(function ($u) use ($userMessage) {
+        $rawWorkers = $query->get()->map(function ($u) use ($userMessage) {
             $profile = $u->workerProfile;
             $name = $u->name ?? '';
             $parts = explode(' ', $name, 2);
@@ -143,6 +196,7 @@ class SuggestionController extends Controller
 
             $rating = (float) ($profile?->average_rating ?? 0);
             $completedJobs = $u->completed_jobs_count ?? 0;
+            $totalJobs = $u->total_jobs_count ?? 0;
             $verified = (bool) ($profile?->government_id_verified ?? false);
             $yearsExp = (int) ($profile?->years_of_experience ?? 0);
             $skills = $profile?->skills ?? [];
@@ -167,7 +221,9 @@ class SuggestionController extends Controller
                 'distance' => $u->residence,
                 'verified' => $verified,
                 'skills' => $skills,
+                'years_experience' => $yearsExp,
                 'jobs_completed' => $completedJobs,
+                'total_jobs' => $totalJobs,
                 'latitude'  => $lat,
                 'longitude' => $lng,
                 'location_approximate' => (bool) ($profile?->location_is_approximate ?? true),
@@ -175,7 +231,52 @@ class SuggestionController extends Controller
             ];
         })->values()->toArray();
 
+        if (empty($rawWorkers)) {
+            return $rawWorkers;
+        }
+
+        $workers = $this->rankWithML($rawWorkers);
+
         usort($workers, fn($a, $b) => $b['match_percent'] <=> $a['match_percent']);
+
+        return $workers;
+    }
+
+    protected function rankWithML(array $workers): array
+    {
+        try {
+            $mlWorkers = array_map(function ($w) {
+                $totalJobs = $w['total_jobs'];
+                $completionRate = $totalJobs > 0 ? round(($w['jobs_completed'] / $totalJobs) * 100) : 50;
+                return [
+                    'worker_id' => $w['id'],
+                    'service_category' => $w['category'],
+                    'distance_km' => 1.0,
+                    'worker_avg_rating' => $w['rating'],
+                    'worker_completion_rate' => $completionRate,
+                    'jobs_completed_in_category' => $w['jobs_completed'],
+                    'is_new_worker' => $w['jobs_completed'] < 3 ? 1 : 0,
+                ];
+            }, $workers);
+
+            $ml = app(MLService::class);
+            $result = $ml->predict($mlWorkers);
+
+            if ($result && isset($result['rankings'])) {
+                $predMap = [];
+                foreach ($result['rankings'] as $pred) {
+                    if (isset($pred['worker_id'], $pred['probability'])) {
+                        $predMap[$pred['worker_id']] = min(100, max(0, (int) round($pred['probability'] * 100)));
+                    }
+                }
+                foreach ($workers as &$w) {
+                    $w['match_percent'] = $predMap[$w['id']] ?? $w['match_percent'];
+                }
+                unset($w);
+            }
+        } catch (\Exception $e) {
+            Log::warning('ML ranking failed, falling back to heuristic: ' . $e->getMessage());
+        }
 
         return $workers;
     }

@@ -19,7 +19,7 @@
     </div>
     @if($type && $preview)
     <div class="header-right">
-        <a href="{{ route('admin.reports.print', $exportParams) }}" id="printReportBtn" class="btn btn-secondary">
+        <a href="{{ route('admin.reports.print', $exportParams) }}" id="printReportBtn" class="btn btn-secondary" target="_blank">
             <i class="fa-solid fa-print"></i> Print
         </a>
         <div class="rpt-export">
@@ -136,7 +136,30 @@
     <div class="card">
         <div class="rpt-table-head">
             <div class="card-title" style="margin-bottom:0"><i class="fa-solid fa-table"></i> {{ $meta['label'] }} Details</div>
-            <a href="{{ route('admin.reports.export', $exportParams + ['format' => 'xlsx']) }}" class="btn btn-secondary btn-sm">
+            <div class="rpt-sort-controls">
+                <div class="rpt-sort-field">
+                    <label for="sortSelect"><i class="fa-solid fa-arrow-down-wide-short"></i> Sort by</label>
+                    <div class="rpt-sort-select-wrap">
+                        <select id="sortSelect" onchange="applySort()">
+                            @foreach($preview['columns'] as $col)
+                            @php
+                                $sortType = 'text';
+                                if(in_array($col, $moneyCols)) $sortType = 'currency';
+                                elseif(preg_match('/date|at$/i', $col)) $sortType = 'date';
+                                elseif(in_array($col, ['Total Bookings','Completed','Cancelled','Active','Completion Rate','Avg Rating','Bookings','Total Reviews','Average Rating','5-Star Reviews','1-Star Reviews','Total Submissions','Pending','Verified','Rejected','Open','Under Review','Resolved','Categories Tracked'])) $sortType = 'number';
+                                elseif($col === 'Status') $sortType = 'status';
+                            @endphp
+                                <option value="{{ $loop->index }}" data-type="{{ $sortType }}">{{ $col }}</option>
+                            @endforeach
+                        </select>
+                        <i class="fa-solid fa-chevron-down rpt-sort-select-arrow"></i>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="sortDirBtn" onclick="toggleSortDir()" title="Toggle sort direction">
+                    <i class="fa-solid fa-arrow-up" id="sortDirIcon"></i>
+                </button>
+            </div>
+            <a href="{{ route('admin.reports.export', $exportParams + ['format' => 'xlsx']) }}" id="exportExcelBtn" class="btn btn-secondary btn-sm">
                 <i class="fa-solid fa-file-excel"></i> Export Excel
             </a>
         </div>
@@ -159,7 +182,14 @@
                     <tr>
                         @foreach($preview['columns'] as $col)
                             @php $value = $row[$col] ?? null; @endphp
-                            <td class="text-sm">
+                            @php
+                                $sortVal = '';
+                                if(in_array($col, $moneyCols) && $value !== null) $sortVal = (float)preg_replace('/[^\d.\-]/', '', $value);
+                                elseif(preg_match('/date|at$/i', $col) && $value !== null) $sortVal = strtotime($value);
+                                elseif(is_numeric($value)) $sortVal = (float)$value;
+                                elseif($value !== null) $sortVal = $value;
+                            @endphp
+                            <td class="text-sm" data-sort="{{ $sortVal }}">
                                 @if($col === 'Status' && in_array($value, $statusCols, true))
                                     <span class="status-badge status-{{ $value }}">{{ str_replace('_', ' ', ucfirst($value)) }}</span>
                                 @elseif(in_array($col, $moneyCols, true) && $value !== null)
@@ -242,6 +272,15 @@
 
     .rpt-table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
     .rpt-results .metrics-grid{margin-bottom:24px}
+
+    .rpt-sort-controls{display:flex;align-items:flex-end;gap:6px}
+    .rpt-sort-field{display:flex;flex-direction:column;gap:4px}
+    .rpt-sort-field label{font-size:.7rem;font-weight:700;color:var(--g4);text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:5px}
+    .rpt-sort-field label i{color:var(--b6);font-size:.72rem}
+    .rpt-sort-select-wrap{position:relative}
+    .rpt-sort-select-wrap select{appearance:none;-webkit-appearance:none;padding:8px 32px 8px 12px;border:1.5px solid var(--g1);border-radius:8px;font-size:.82rem;font-family:'Inter',sans-serif;font-weight:500;color:var(--g9);background:#fff;cursor:pointer;outline:none;transition:border-color .15s;min-width:160px}
+    .rpt-sort-select-wrap select:focus{border-color:var(--b4);box-shadow:0 0 0 3px rgba(26,111,196,.1)}
+    .rpt-sort-select-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--g4);font-size:.65rem}
     @media(max-width:768px){
         .rpt-bar-form{flex-direction:column;align-items:stretch}
         .rpt-range{width:100%}
@@ -254,6 +293,57 @@
 
 @push('scripts')
 <script src="{{ asset('js/chart.umd.min.js') }}"></script>
+<script>
+var currentSortDir = 'asc';
+var baseExportUrl = '{{ route("admin.reports.export", $exportParams + ["format" => "xlsx"]) }}';
+
+function updateSortUrls() {
+    var col = document.getElementById('sortSelect').value;
+    var sep = baseExportUrl.includes('?') ? '&' : '?';
+    var sortParams = 'sort_col=' + col + '&sort_dir=' + currentSortDir;
+    document.getElementById('exportExcelBtn').href = baseExportUrl + sep + sortParams;
+}
+
+function applySort() {
+    var select = document.getElementById('sortSelect');
+    if (!select) return;
+    var option = select.options[select.selectedIndex];
+    var colIndex = parseInt(option.value);
+    var sortType = option.dataset.type;
+    var table = document.querySelector('.table-container table');
+    if (!table) return;
+    var tbody = table.querySelector('tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+
+    rows.sort(function(a, b) {
+        var aCell = a.children[colIndex];
+        var bCell = b.children[colIndex];
+        var aVal = aCell ? aCell.dataset.sort || '' : '';
+        var bVal = bCell ? bCell.dataset.sort || '' : '';
+        var cmp = 0;
+
+        if (sortType === 'currency' || sortType === 'number') {
+            cmp = (parseFloat(aVal) || 0) - (parseFloat(bVal) || 0);
+        } else if (sortType === 'date') {
+            cmp = (parseInt(aVal) || 0) - (parseInt(bVal) || 0);
+        } else {
+            cmp = String(aVal).localeCompare(String(bVal), undefined, {sensitivity: 'base'});
+        }
+
+        return currentSortDir === 'asc' ? cmp : -cmp;
+    });
+
+    rows.forEach(function(row) { tbody.appendChild(row); });
+    updateSortUrls();
+}
+
+function toggleSortDir() {
+    currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+    var icon = document.getElementById('sortDirIcon');
+    icon.className = currentSortDir === 'asc' ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down';
+    applySort();
+}
+</script>
 <script>
 function initReportChart() {
     var el = document.getElementById('reportChart');
@@ -310,14 +400,6 @@ function initReportChart() {
         });
         document.addEventListener('click', function (e) {
             if (menu && !menu.contains(e.target) && e.target !== toggle) menu.classList.remove('open');
-        });
-    }
-
-    var printBtn = document.getElementById('printReportBtn');
-    if (printBtn) {
-        printBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            window.open(printBtn.getAttribute('href'), 'kaayosReportPrint');
         });
     }
 

@@ -3,8 +3,11 @@
 namespace App\Providers;
 
 use App\Support\ClientSampleData;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(Registered::class, SendEmailVerificationNotification::class);
+
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(5)->by($request->input('email') . '|' . $request->ip());
         });
