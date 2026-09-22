@@ -256,7 +256,6 @@
                     default      => 'status-cancelled',
                 };
                 if ($isCompPending) {
-                    $statusClass = 'status-pending';
                     $statusBadgeText = !empty($job['confirmed_by_worker_at']) ? 'Awaiting Client' : 'Confirm Complete';
                 }
             @endphp
@@ -270,7 +269,9 @@
                         <span class="job-card-service">{{ $job['service'] }}</span>
                         <span class="job-card-time"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ $job['time'] }}</span>
                         <span class="status-badge {{ $statusClass }}">{{ $job['status'] }}</span>
-                        <span class="status-badge {{ $statusClass }}">{{ $statusBadgeText }}</span>
+                        @if($isCompPending)
+                            <span class="status-badge status-pending">{{ $statusBadgeText }}</span>
+                        @endif
                     </div>
                     <div class="job-card-bottom">
                         <span><i class="fa-regular fa-user" aria-hidden="true"></i> {{ $job['client'] }}</span>
