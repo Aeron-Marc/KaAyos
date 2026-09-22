@@ -11,8 +11,9 @@ git pull origin main
 echo "=== Updating Laravel application ==="
 cd /var/www/KaAyos/kaayos
 
-# Composer dependencies
-composer install --no-dev --optimize-autoloader
+# Composer dependencies (non-interactive as root)
+export COMPOSER_ALLOW_SUPERUSER=1
+composer install --no-dev --optimize-autoloader --no-interaction
 
 # Build frontend assets
 npm ci
