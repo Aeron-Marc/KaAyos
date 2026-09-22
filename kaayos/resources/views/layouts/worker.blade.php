@@ -153,6 +153,7 @@
                 @yield('content')
             </div>
         </main>
+        @include('partials.notifications')
 
         <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 

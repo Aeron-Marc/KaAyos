@@ -159,6 +159,7 @@
                 @yield('content')
             </div>
         </main>
+        @include('partials.notifications')
 
         @push('scripts')
         <script>

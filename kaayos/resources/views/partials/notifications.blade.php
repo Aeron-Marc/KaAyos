@@ -363,4 +363,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endif
+@if(isset($errors) && $errors->any())
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    window.showToast(@json($errors->first()), 'error');
+});
+</script>
+@endif
 

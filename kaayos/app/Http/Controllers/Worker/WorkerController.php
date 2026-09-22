@@ -131,6 +131,11 @@ class WorkerController extends Controller
                     'cancellation_reason' => $booking->cancellation_reason,
                     'cancelled_at'  => $booking->cancelled_at?->toIso8601String(),
                     'gmaps_nav_url'  => $booking->google_maps_nav_url,
+                    'completion_status' => $booking->getCompletionStatus(),
+                    'is_completion_pending' => $booking->isCompletionPending(),
+                    'completion_requested_by' => $booking->completion_requested_by,
+                    'confirmed_by_worker_at' => $booking->confirmed_by_worker_at?->format('M d, Y · g:i A'),
+                    'confirmed_by_client_at' => $booking->confirmed_by_client_at?->format('M d, Y · g:i A'),
                 ];
             })
             ->toArray();

@@ -245,6 +245,8 @@
     <div class="job-card-list">
         @forelse($jobRequests as $i => $job)
             @php
+                $isCompPending = !empty($job['is_completion_pending']);
+                $statusBadgeText = $job['status'];
                 $statusClass = match($job['raw_status']) {
                     'new'        => 'status-pending',
                     'accepted'   => 'status-active',
@@ -253,6 +255,10 @@
                     'completed'  => 'status-done',
                     default      => 'status-cancelled',
                 };
+                if ($isCompPending) {
+                    $statusClass = 'status-pending';
+                    $statusBadgeText = !empty($job['confirmed_by_worker_at']) ? 'Awaiting Client' : 'Confirm Complete';
+                }
             @endphp
             <div class="job-card" data-status="{{ $job['raw_status'] }}" onclick="openJobModal({{ $i }})">
                 <div class="schedule-date-box">
@@ -264,6 +270,7 @@
                         <span class="job-card-service">{{ $job['service'] }}</span>
                         <span class="job-card-time"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ $job['time'] }}</span>
                         <span class="status-badge {{ $statusClass }}">{{ $job['status'] }}</span>
+                        <span class="status-badge {{ $statusClass }}">{{ $statusBadgeText }}</span>
                     </div>
                     <div class="job-card-bottom">
                         <span><i class="fa-regular fa-user" aria-hidden="true"></i> {{ $job['client'] }}</span>
@@ -678,6 +685,18 @@ document.addEventListener('DOMContentLoaded', function () {
                     setTimeout(function () { toast.remove(); }, 6000);
                     var badge = document.querySelector('.badge-dot');
                     if (badge) badge.style.display = '';
+                })
+                .listen('BookingStatusUpdated', function (e) {
+                    if (window.showToast) {
+                        window.showToast('Job status updated: ' + (e.new_status || 'updated'), 'info');
+                    }
+                    setTimeout(function () { location.reload(); }, 1200);
+                })
+                .listen('JobCompletionStatusUpdated', function (e) {
+                    if (window.showToast) {
+                        window.showToast(e.fully_completed ? 'Job #' + e.booking_id + ' is fully completed!' : 'Job #' + e.booking_id + ' completion status updated.', 'info');
+                    }
+                    setTimeout(function () { location.reload(); }, 1200);
                 });
         } else if (checkCount >= 50) {
             clearInterval(checkEcho);
@@ -845,8 +864,24 @@ function openJobModal(index) {
         '</div>';
     }
 
+    var completionBanner = '';
+    if (job.is_completion_pending) {
+        if (job.confirmed_by_worker_at) {
+            completionBanner = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;color:#92400e;font-size:.85rem;display:flex;align-items:center;gap:10px;">' +
+                '<i class="fa-solid fa-hourglass-half" style="font-size:1.1rem;color:#d97706;"></i>' +
+                '<div><strong>Awaiting Client Confirmation:</strong> You have marked this job as complete. The client has been notified to verify and confirm completion.</div>' +
+            '</div>';
+        } else {
+            completionBanner = '<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:10px 14px;margin-bottom:14px;color:#065f46;font-size:.85rem;display:flex;align-items:center;gap:10px;">' +
+                '<i class="fa-solid fa-circle-check" style="font-size:1.1rem;color:#16a34a;"></i>' +
+                '<div><strong>Client Verified Completion!</strong> The client has marked this job as complete. Click "Confirm Completion" below to finalize and receive your earnings.</div>' +
+            '</div>';
+        }
+    }
+
     document.getElementById('jobModalTitle').textContent = 'Job Details';
     document.getElementById('jobModalDetails').innerHTML =
+        completionBanner +
         enRouteBanner +
         '<div class="detail-grid-compact">' +
             '<span class="detail-label">Reference</span>' +
@@ -926,6 +961,16 @@ function openJobModal(index) {
             ? '<a href="{{ route('worker.testimonials.create') }}" class="btn btn-outline"><i class="fa-solid fa-quote-left" aria-hidden="true"></i> Share a Testimonial</a>'
             : '';
         footer.innerHTML = testimonialLink + '<button type="button" class="btn btn-outline" onclick="closeJobModal()">Close</button>';
+    } else if (job.raw_status === 'in_progress' && job.is_completion_pending) {
+        if (job.confirmed_by_worker_at) {
+            footer.innerHTML =
+                '<button type="button" class="btn btn-outline" onclick="closeJobModal()">Close</button>' +
+                '<button type="button" class="btn btn-outline" disabled style="opacity:.8;cursor:not-allowed;"><i class="fa-solid fa-clock"></i> Awaiting Client Confirmation</button>';
+        } else {
+            footer.innerHTML =
+                '<button type="button" class="btn btn-outline" onclick="closeJobModal(); showCancelModal(' + index + ')">Cancel Job</button>' +
+                '<button type="button" class="btn btn-solid" style="background:#16a34a;" onclick="closeJobModal(); showConfirmModal(' + index + ')"><i class="fa-regular fa-circle-check"></i> Confirm Completion</button>';
+        }
     } else {
         var nextLabels = { 'new':'Accept', 'accepted':'Mark En Route', 'en_route':'Start Job', 'in_progress':'Complete' };
         var nextLabel = nextLabels[job.raw_status] || 'Next';
@@ -1269,12 +1314,29 @@ function showConfirmModal(index) {
     var step = { 'new':{a:'accepted',l:'Accept',v:'accepting'}, 'accepted':{a:'en_route',l:'Mark as En Route',v:'marking as en route'}, 'en_route':{a:'in_progress',l:'Start',v:'starting'}, 'in_progress':{a:'completed',l:'Complete',v:'completing'} }[job.raw_status];
     if (!step) return;
     var titles = { 'new':'Accept Job Request', 'accepted':'Mark as En Route', 'en_route':'Start Job', 'in_progress':'Complete Job' };
+
+    var actionNotice = 'You are about to <strong>' + step.v + '</strong> the following job:';
+    if (job.raw_status === 'in_progress') {
+        if (job.confirmed_by_client_at) {
+            titles['in_progress'] = 'Confirm Job Completion';
+            step.l = 'Confirm & Finalize';
+            step.v = 'confirming completion of';
+            actionNotice = 'The client has verified completion. Confirming will finalize this booking and record your earnings:';
+        } else {
+            titles['in_progress'] = 'Request Job Completion';
+            step.l = 'Send Completion Request';
+            step.v = 'requesting completion of';
+            actionNotice = 'You are marking this job as complete. A confirmation request will be sent to the client to verify:';
+        }
+    }
+
     var agreeHtml = (job.raw_status === 'new')
         ? '<div class="agreement-check-wrap"><label class="agreement-check"><input type="checkbox" id="agree-terms-worker"><span>I agree to the <a href="{{ url('/terms') }}" target="_blank">Terms of Service</a> and confirm the details above to accept this booking.</span></label></div>'
         : '';
     document.getElementById('confirmModalTitle').textContent = titles[job.raw_status] || 'Confirm';
     document.getElementById('confirmModalBody').innerHTML =
         '<p style="margin:0 0 12px;color:var(--g6);">You are about to <strong>' + step.v + '</strong> the following job:</p>' +
+        '<p style="margin:0 0 12px;color:var(--g6);">' + actionNotice + '</p>' +
         '<div class="detail-grid-compact">' +
             '<span class="detail-label">Client</span><span class="detail-value">' + job.client + '</span>' +
             '<span class="detail-label">Service</span><span class="detail-value">' + job.service + '</span>' +
@@ -1284,14 +1346,57 @@ function showConfirmModal(index) {
         '<p style="margin:14px 0 0;font-size:.82rem;color:var(--g4);">This action cannot be undone.</p>' +
         agreeHtml;
     document.getElementById('confirmForm').action = '{{ route("worker.jobs.status", "__ID__") }}'.replace('__ID__', job.id);
+
+    var statusUrl = window.location.origin + '{{ route("worker.jobs.status", "__ID__", false) }}'.replace('__ID__', job.id);
+    document.getElementById('confirmForm').action = statusUrl;
     document.getElementById('confirmStatus').value = step.a;
     document.getElementById('confirmSubmit').textContent = step.l;
+
     document.getElementById('confirmForm').onsubmit = function(e) {
+        e.preventDefault();
         if (agreeHtml && !document.getElementById('agree-terms-worker').checked) {
             e.preventDefault();
             alert('Please agree to the Service Agreement before accepting.');
+            if (window.showToast) window.showToast('Please agree to the Service Agreement before accepting.', 'warning');
+            else alert('Please agree to the Service Agreement before accepting.');
             return false;
         }
+
+        var btn = document.getElementById('confirmSubmit');
+        var originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+        fetch(statusUrl, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ status: step.a })
+        })
+        .then(function(r) {
+            return r.json().then(function(data) { return { ok: r.ok, status: r.status, data: data }; });
+        })
+        .then(function(res) {
+            if (res.ok) {
+                if (window.showToast) window.showToast(res.data.message || 'Status updated successfully.', 'success');
+                setTimeout(function() { location.reload(); }, 600);
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                var errMsg = (res.data && res.data.message) ? res.data.message : 'Could not update job status.';
+                if (window.showToast) window.showToast(errMsg, 'error');
+                else alert(errMsg);
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            if (window.showToast) window.showToast('Network error while updating job status. Please try again.', 'error');
+            else alert('Network error while updating job status.');
+        });
     };
     document.getElementById('confirmModal').style.display = 'flex';
 }

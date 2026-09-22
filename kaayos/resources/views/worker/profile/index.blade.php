@@ -527,6 +527,7 @@
                         $savedPeers = old('recommended_peers', $workerProfile->recommended_peers ?? []);
                     @endphp
 
+                    @forelse($savedPeers as $pIdx => $rec)
                         @php
                             $peerWorkerModel = ($otherWorkers ?? collect())->firstWhere('id', $rec['worker_id'] ?? null);
                             $initialCat = $peerWorkerModel?->service_category ?? '';

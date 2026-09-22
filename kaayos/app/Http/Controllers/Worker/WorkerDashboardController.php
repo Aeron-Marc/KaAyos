@@ -167,6 +167,7 @@ class WorkerDashboardController extends Controller
 
         // Broadcast completion status if relevant
         if ($oldStatus !== $booking->status) {
+        if ($oldStatus !== $booking->status || $booking->isCompletionPending()) {
             if ($booking->isCompletionPending()) {
                 broadcast(new JobCompletionStatusUpdated(
                     $booking,
@@ -186,15 +187,26 @@ class WorkerDashboardController extends Controller
 
         BookingMessageService::post($booking, $booking->status);
 
+        if ($booking->isCompletionPending()) {
+            $successMessage = 'Completion request sent! Waiting for client confirmation to finalize.';
+        } elseif ($booking->status === Booking::STATUS_COMPLETED) {
+            $successMessage = 'Job completed successfully! Both parties have confirmed.';
+        } else {
+            $successMessage = 'Job status updated to ' . ucfirst(str_replace('_', ' ', $booking->status)) . '.';
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Job status updated successfully.',
+                'success' => true,
+                'message' => $successMessage,
                 'booking' => $booking->fresh()->load('earning'),
                 'completion_status' => $booking->getCompletionStatus(),
             ]);
         }
 
         return redirect()->back()->with('success', 'Job status updated successfully.');
+        return redirect()->back()->with('success', $successMessage);
     }
 
     public function confirmJobCompletion(Request $request, Booking $booking): JsonResponse|RedirectResponse

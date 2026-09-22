@@ -650,6 +650,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             card.dataset.status = e.new_status;
                         }
                     });
+                })
+                .listen('JobCompletionStatusUpdated', function (e) {
+                    if (window.showToast) {
+                        window.showToast(e.fully_completed ? 'Booking #' + e.booking_id + ' is fully completed!' : 'Worker marked Booking #' + e.booking_id + ' as complete. Please review and confirm!', 'info');
+                    }
+                    setTimeout(function () { location.reload(); }, 1200);
                 });
         } else if (checkCount >= 50) {
             clearInterval(checkEcho);
@@ -1119,8 +1125,15 @@ function markJobComplete(index) {
     if (confirm('Mark this job as complete? The worker will need to confirm.')) {
         var btn = document.activeElement;
         if (btn) btn.disabled = true;
+        var originalHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        }
         
         fetch('/client/bookings/' + b.id + '/mark-complete', {
+        var url = window.location.origin + '{{ route("client.bookings.mark-complete", "__ID__", false) }}'.replace('__ID__', b.id);
+        fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
         })
@@ -1128,8 +1141,17 @@ function markJobComplete(index) {
         .then(function (data) {
             if (data.success) {
                 location.reload();
+        .then(function (r) { return r.json().then(function(data){ return { ok: r.ok, data: data }; }); })
+        .then(function (res) {
+            if (res.ok && res.data.success) {
+                if (window.showToast) window.showToast(res.data.message || 'Marked as complete. Waiting for worker to confirm.', 'success');
+                setTimeout(function() { location.reload(); }, 600);
             } else {
                 alert(data.message || 'Failed to mark job as complete.');
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+                var msg = (res.data && res.data.message) ? res.data.message : 'Failed to mark job as complete.';
+                if (window.showToast) window.showToast(msg, 'error');
+                else alert(msg);
             }
         })
         .catch(function () { 
@@ -1137,6 +1159,9 @@ function markJobComplete(index) {
         })
         .finally(function () {
             if (btn) btn.disabled = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+            if (window.showToast) window.showToast('Network error while marking job complete.', 'error');
+            else alert('Something went wrong.'); 
         });
     }
 }
@@ -1148,8 +1173,15 @@ function confirmJobComplete(index) {
     if (confirm('Confirm job completion? This will finalize the booking.')) {
         var btn = document.activeElement;
         if (btn) btn.disabled = true;
+        var originalHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        }
         
         fetch('/client/bookings/' + b.id + '/confirm-complete', {
+        var url = window.location.origin + '{{ route("client.bookings.confirm-complete", "__ID__", false) }}'.replace('__ID__', b.id);
+        fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
         })
@@ -1157,8 +1189,17 @@ function confirmJobComplete(index) {
         .then(function (data) {
             if (data.success) {
                 location.reload();
+        .then(function (r) { return r.json().then(function(data){ return { ok: r.ok, data: data }; }); })
+        .then(function (res) {
+            if (res.ok && res.data.success) {
+                if (window.showToast) window.showToast(res.data.message || 'Job completion confirmed!', 'success');
+                setTimeout(function() { location.reload(); }, 600);
             } else {
                 alert(data.message || 'Failed to confirm job completion.');
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+                var msg = (res.data && res.data.message) ? res.data.message : 'Failed to confirm job completion.';
+                if (window.showToast) window.showToast(msg, 'error');
+                else alert(msg);
             }
         })
         .catch(function () { 
@@ -1166,6 +1207,9 @@ function confirmJobComplete(index) {
         })
         .finally(function () {
             if (btn) btn.disabled = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+            if (window.showToast) window.showToast('Network error while confirming job complete.', 'error');
+            else alert('Something went wrong.'); 
         });
     }
 }
