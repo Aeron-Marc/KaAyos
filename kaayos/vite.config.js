@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import { bunny } from 'laravel-vite-plugin/fonts';
 
 export default defineConfig({
     plugins: [
@@ -8,15 +7,8 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/css/landing.css',
-                'resources/js/echo.js',
-                'resources/js/chatbot.js',
             ],
             refresh: true,
-            fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
-                }),
-            ],
         }),
     ],
     server: {

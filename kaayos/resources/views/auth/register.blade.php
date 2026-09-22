@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KaAyos – Register</title>
+<link rel="icon" href="../images/KaAyos_logo.jpeg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -129,12 +130,75 @@ select{cursor:pointer;padding-right:38px}
 .step{display:none}
 .step.active{display:flex;flex-direction:column;flex:1}
 
-@media(max-width:540px){.auth-card{padding:28px 22px 24px;border-radius:14px}}
-@media(max-width:480px){.grid-2{grid-template-columns:1fr}.social-row{grid-template-columns:1fr}.hero-icon-f{opacity:.4}}
+/* ── Two-panel layout ── */
+.page{width:100%;max-width:960px;display:flex;min-height:540px;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.25),0 2px 8px rgba(0,0,0,.1);position:relative;z-index:1}
+
+.ticket-panel{width:380px;flex-shrink:0;background:linear-gradient(160deg,var(--ink) 0%,#063058 100%);color:#fff;padding:36px 32px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.ticket-panel::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,rgba(26,111,196,.18) 0%,transparent 50%),radial-gradient(circle at 80% 70%,rgba(245,166,35,.08) 0%,transparent 45%);pointer-events:none}
+
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;position:relative}
+.brand-icon{width:42px;height:42px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
+.brand-icon img{width:100%;height:100%;object-fit:cover}
+.brand-name{font-family:'Archivo',sans-serif;font-weight:800;font-size:1.15rem;color:#fff}
+
+.ticket-headline{font-family:'Archivo',sans-serif;font-weight:800;font-size:1.3rem;line-height:1.35;color:#fff;position:relative;margin-bottom:12px}
+.ticket-headline em{color:var(--amber);font-style:normal}
+
+.ticket-content{position:relative}
+
+.ticket-sub{font-size:.84rem;color:rgba(255,255,255,.7);line-height:1.5;margin-bottom:20px}
+
+.ticket-mock{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:16px;backdrop-filter:blur(4px)}
+.ticket-mock-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.ticket-mock-head .tag{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);background:rgba(242,163,61,.15);padding:4px 10px;border-radius:6px}
+.ticket-mock-status{display:flex;align-items:center;gap:6px;font-size:.74rem;color:rgba(255,255,255,.6)}
+.ticket-mock-status .dot{width:6px;height:6px;border-radius:50%;background:var(--amber);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.trade-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.trade-row{display:flex;align-items:center;gap:10px;font-size:.82rem;color:rgba(255,255,255,.85);padding:6px 0}
+.trade-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:rgba(255,255,255,.1);color:var(--amber);font-size:.78rem;flex-shrink:0}
+.trade-row .check{margin-left:auto;color:#6dd67a;font-size:.72rem}
+
+.ticket-stub{border-top:1px dashed rgba(255,255,255,.15);padding-top:12px;display:flex;flex-direction:column;gap:6px}
+.stub-item{display:flex;align-items:center;gap:8px;font-size:.74rem;color:rgba(255,255,255,.55)}
+.stub-item i{font-size:.72rem;color:var(--amber)}
+
+.form-panel{flex:1;background:#fff;display:flex;flex-direction:column;overflow-y:auto}
+.form-inner{padding:32px 36px;width:100%;max-width:520px;margin:0 auto}
+
+@media(max-width:860px){
+  .page{flex-direction:column;max-width:520px}
+  .ticket-panel{width:100%;padding:28px 24px;min-height:auto}
+  .ticket-headline{font-size:1.1rem}
+  .ticket-mock{display:none}
+  .form-inner{padding:28px 24px 24px}
+}
+@media(max-width:540px){
+  .form-inner{padding:24px 18px 20px}
+  .grid-2{grid-template-columns:1fr}
+  .social-row{grid-template-columns:1fr}
+  .hero-icon-f{opacity:.4}
+}
 </style>
 </head>
 <body>
 <div class="mouse-glow" id="mouseGlow"></div>
+
+<div class="hero-icons-floating" id="iconsWrap">
+  <div class="hero-icon-f" data-depth="0.03"><i class="fa-solid fa-wrench"></i></div>
+  <div class="hero-icon-f" data-depth="0.05"><i class="fa-solid fa-bolt"></i></div>
+  <div class="hero-icon-f" data-depth="0.02"><i class="fa-solid fa-paint-roller"></i></div>
+  <div class="hero-icon-f" data-depth="0.04"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+  <div class="hero-icon-f" data-depth="0.03"><i class="fa-solid fa-hammer"></i></div>
+  <div class="hero-icon-f" data-depth="0.05"><i class="fa-solid fa-broom"></i></div>
+  <div class="hero-icon-f" data-depth="0.04"><i class="fa-solid fa-fan"></i></div>
+  <div class="hero-icon-f" data-depth="0.02"><i class="fa-solid fa-plug"></i></div>
+  <div class="hero-icon-f" data-depth="0.05"><i class="fa-solid fa-house-chimney"></i></div>
+  <div class="hero-icon-f" data-depth="0.03"><i class="fa-solid fa-hard-hat"></i></div>
+  <div class="hero-icon-f" data-depth="0.04"><i class="fa-solid fa-shield-halved"></i></div>
+  <div class="hero-icon-f" data-depth="0.02"><i class="fa-solid fa-star"></i></div>
+</div>
 
 <div class="page">
 
@@ -235,11 +299,11 @@ select{cursor:pointer;padding-right:38px}
 
           <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line);">
             <div style="font-size:.82rem; font-weight:600; color:var(--slate); margin-bottom:10px; text-align:center;">{{ __('oauth.or_email') }}:</div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <a href="{{ route('auth.social.redirect', 'google') }}" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#374151; font-weight:600; font-size:.85rem; text-decoration:none;">
+            <div class="social-row">
+              <a href="{{ route('auth.social.redirect', 'google') }}" id="socialGoogle" class="social-btn google-btn">
                 <i class="fa-brands fa-google" style="color:#EA4335;"></i> Google
               </a>
-              <a href="{{ route('auth.social.redirect', 'facebook') }}" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#374151; font-weight:600; font-size:.85rem; text-decoration:none;">
+              <a href="{{ route('auth.social.redirect', 'facebook') }}" id="socialFacebook" class="social-btn facebook-btn">
                 <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Facebook
               </a>
             </div>
@@ -412,6 +476,16 @@ function setRole(role){
   const clientBlock = document.getElementById('clientBlock');
   if (clientBlock) clientBlock.style.display = (role==='client') ? 'block' : 'none';
   document.querySelectorAll('#workerBlock select, #workerBlock input').forEach(el=> el.required = (role==='worker'));
+  updateSocialLinks(role);
+}
+
+function updateSocialLinks(role) {
+  var baseGoogle = '{{ route("auth.social.redirect", "google") }}';
+  var baseFacebook = '{{ route("auth.social.redirect", "facebook") }}';
+  var google = document.getElementById('socialGoogle');
+  var facebook = document.getElementById('socialFacebook');
+  if (google) google.href = baseGoogle + '?role=' + role;
+  if (facebook) facebook.href = baseFacebook + '?role=' + role;
 }
 
 function toggleClientTypeFields(type) {
@@ -441,6 +515,7 @@ function goToStep(n){
 
 var savedRole=document.getElementById('roleInput').value;
 if(savedRole==='worker'){setRole('worker')}
+updateSocialLinks(savedRole);
 @if($errors->any())
   var targetStep=1;
   @if($errors->has('first_name')||$errors->has('last_name')||$errors->has('email')||$errors->has('phone')||$errors->has('service_category')||$errors->has('barangay'))

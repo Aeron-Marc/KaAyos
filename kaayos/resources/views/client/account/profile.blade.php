@@ -659,9 +659,9 @@
             headers: getHeaders(true),
             body: JSON.stringify({ current_password: pw })
         })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (!r.ok) throw new Error(data.message || 'Failed to send OTP.');
+        .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+        .then(function (result) {
+            if (!result.ok) throw new Error(result.data.message || 'Failed to send OTP.');
             pwCurrentVal = pw;
             document.getElementById('passwordFormStep').style.display = 'none';
             document.getElementById('passwordOtpStep').style.display = 'block';
@@ -689,9 +689,9 @@
             headers: getHeaders(true),
             body: JSON.stringify({ current_password: pwCurrentVal })
         })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (!r.ok) throw new Error(data.message || 'Failed to resend.');
+        .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+        .then(function (result) {
+            if (!result.ok) throw new Error(result.data.message || 'Failed to resend.');
             clearOtpInputs('pwOtpInputs');
             document.getElementById('pwVerifyError').style.display = 'none';
             startPwCountdown();
