@@ -63,7 +63,7 @@ class JobAcceptanceTest extends TestCase
             ]);
 
         $response->assertOk()
-            ->assertJsonPath('message', 'Job status updated successfully.');
+            ->assertJsonPath('message', 'Job status updated to Accepted.');
 
         $this->assertDatabaseHas('bookings', [
             'id'     => $booking->id,
