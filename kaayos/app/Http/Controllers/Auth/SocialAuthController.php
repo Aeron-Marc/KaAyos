@@ -75,6 +75,9 @@ class SocialAuthController extends Controller
         // 1. Check if user already linked with this OAuth provider
         $user = User::where('oauth_provider', $provider)
             ->where('oauth_id', $socialUser->getId())
+            ->orWhere(function ($q) use ($provider, $socialUser) {
+                $q->where('provider', $provider)->where('provider_id', $socialUser->getId());
+            })
             ->first();
 
         // 2. If not found by OAuth ID, check by email
@@ -82,11 +85,12 @@ class SocialAuthController extends Controller
             $user = User::where('email', $email)->first();
 
             if ($user) {
-                // Link account
                 $user->update([
-                    'oauth_provider' => $provider,
-                    'oauth_id'       => $socialUser->getId(),
-                    'oauth_avatar'   => $socialUser->getAvatar(),
+                    'oauth_provider'    => $provider,
+                    'oauth_id'          => $socialUser->getId(),
+                    'oauth_avatar'      => $socialUser->getAvatar(),
+                    'provider'          => $provider,
+                    'provider_id'       => $socialUser->getId(),
                     'email_verified_at' => $user->email_verified_at ?? now(),
                 ]);
             }
@@ -99,7 +103,7 @@ class SocialAuthController extends Controller
             $firstName = $parts[0] ?? 'KaAyos';
             $lastName = $parts[1] ?? 'User';
 
-            $role = session()->pull('oauth_intended_role', 'client');
+            $role = session()->pull('oauth_intended_role', session('social_role', 'client'));
             if (!in_array($role, ['client', 'worker'])) {
                 $role = 'client';
             }
@@ -115,6 +119,8 @@ class SocialAuthController extends Controller
                 'oauth_provider'    => $provider,
                 'oauth_id'          => $socialUser->getId(),
                 'oauth_avatar'      => $socialUser->getAvatar(),
+                'provider'          => $provider,
+                'provider_id'       => $socialUser->getId(),
                 'avatar'            => $socialUser->getAvatar(),
                 'email_verified_at' => now(),
                 'city'              => 'Tuy',

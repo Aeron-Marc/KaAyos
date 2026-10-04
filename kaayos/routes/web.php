@@ -22,7 +22,6 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\SocialAuthController;
-use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\Auth\CompleteProfileController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
@@ -44,6 +43,7 @@ Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('local
 
 // Social Authentication (Google & Facebook)
 Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirectToProvider'])->name('auth.social.redirect');
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'handleProviderCallback'])->name('social.callback');
 
 Route::get('/workers/{worker}', [PublicWorkerController::class, 'show'])->name('workers.public.show');
 
@@ -60,11 +60,6 @@ Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 Route::get('/register', [RegisterController::class, 'create'])->name('register');
 Route::post('/register', [RegisterController::class, 'store'])
     ->middleware('throttle:register');
-
-Route::get('/auth/{provider}', [SocialController::class, 'redirect'])
-    ->name('social.redirect');
-Route::get('/auth/{provider}/callback', [SocialController::class, 'callback'])
-    ->name('social.callback');
 
 Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
 Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->name('password.email');
