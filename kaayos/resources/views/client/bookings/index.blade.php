@@ -250,6 +250,45 @@
     </div>
 </div>
 
+{{-- Tip Modal (shown when completing a job) --}}
+<div id="tipModal" class="modal-overlay" style="display:none;" onclick="closeTipModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-hand-holding-heart" style="color:#16a34a;"></i> Add a Tip</h3>
+            <button type="button" class="modal-close" onclick="closeTipModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin:0 0 12px;color:var(--g6);font-size:.9rem;">
+                Optional — <strong>100% of your tip</strong> goes to <span id="tipWorkerName">your worker</span>.
+                The platform fee is never deducted from tips.
+            </p>
+
+            <div id="tipSummary" style="margin-bottom:14px;padding:10px 12px;background:var(--off,#F7F8FA);border:1px solid var(--g1,#E8ECF0);border-radius:8px;font-size:.875rem;"></div>
+
+            <div class="tip-chips" id="tipChips">
+                <button type="button" class="tip-chip" data-tip="0">No tip</button>
+                <button type="button" class="tip-chip" data-tip="20">&#8369;20</button>
+                <button type="button" class="tip-chip" data-tip="50">&#8369;50</button>
+                <button type="button" class="tip-chip" data-tip="100">&#8369;100</button>
+                <button type="button" class="tip-chip" data-tip="custom">Custom</button>
+            </div>
+
+            <div id="tipCustomWrap" style="display:none;margin-top:10px;">
+                <label style="font-size:.85rem;font-weight:500;color:var(--g6);display:block;margin-bottom:4px;">Tip amount (&#8369;)</label>
+                <input type="number" id="tipCustomInput" min="0" max="10000" step="1" placeholder="Enter amount"
+                    style="width:100%;padding:9px 12px;border:1px solid var(--g2,#D5DBE2);border-radius:8px;font-size:.9rem;">
+            </div>
+            <div id="tipError" style="display:none;margin-top:8px;font-size:.8rem;color:#dc2626;"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeTipModal()">Cancel</button>
+            <button type="button" class="btn btn-solid" id="tipConfirmBtn" onclick="submitTipFlow()">
+                <i class="fa-regular fa-circle-check"></i> <span id="tipConfirmLabel">Confirm Completion</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- Live Tracking Modal --}}
 <div id="liveTrackingModal" class="modal-overlay" style="display:none;" onclick="closeLiveTrackingModal(event)">
     <div class="modal-box modal-wide" onclick="event.stopPropagation()" style="max-width:720px;padding:0;overflow:hidden;border-radius:14px;">
@@ -520,6 +559,31 @@
 .modal-footer {
     display: flex; gap: 10px; justify-content: flex-end;
     padding: 0 20px 16px;
+}
+
+/* ── Tip chips ── */
+.tip-chips {
+    display: flex; flex-wrap: wrap; gap: 8px;
+}
+.tip-chip {
+    padding: 9px 16px;
+    border: 1px solid var(--g2, #D5DBE2);
+    background: #fff;
+    border-radius: 999px;
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--g7, #3D4A56);
+    cursor: pointer;
+    transition: all .15s;
+}
+.tip-chip:hover {
+    border-color: var(--b4, #378ADD);
+    color: var(--b6, #1A6FC4);
+}
+.tip-chip.active {
+    background: var(--b6, #1A6FC4);
+    border-color: var(--b6, #1A6FC4);
+    color: #fff;
 }
 
 .toast-notification {
@@ -892,6 +956,12 @@ function openBookingModal(index) {
             '<span class="detail-value">' + b.location + '</span>' +
             '<span class="detail-label">Amount</span>' +
             '<span class="detail-value" style="font-weight:600;">₱' + Number(b.price).toLocaleString() + '</span>' +
+            (Number(b.tip_amount) > 0
+                ? '<span class="detail-label">Tip</span>' +
+                  '<span class="detail-value" style="color:#16a34a;font-weight:600;">₱' + Number(b.tip_amount).toLocaleString() + '</span>' +
+                  '<span class="detail-label">Total</span>' +
+                  '<span class="detail-value" style="font-weight:700;">₱' + (Number(b.price) + Number(b.tip_amount)).toLocaleString() + '</span>'
+                : '') +
             '<span class="detail-label">Notes</span>' +
             '<span class="detail-value">' + notes + '</span>' +
             (cancelledAt ? '<span class="detail-label">Cancelled At</span><span class="detail-value">' + cancelledAt + '</span>' : '') +
@@ -1117,101 +1187,145 @@ function submitReport() {
     });
 }
 
-// ── Job Completion Confirmation ──
+// ── Tip + Job Completion Confirmation ──
+var tipFlow = null;        // { index, mode: 'mark' | 'confirm' }
+var selectedTip = 0;
+
+function initTipModal() {
+    document.querySelectorAll('#tipChips .tip-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            document.querySelectorAll('#tipChips .tip-chip').forEach(function (c) { c.classList.remove('active'); });
+            chip.classList.add('active');
+            var value = chip.dataset.tip;
+            var wrap = document.getElementById('tipCustomWrap');
+            if (value === 'custom') {
+                wrap.style.display = 'block';
+                var input = document.getElementById('tipCustomInput');
+                var parsed = parseFloat(input.value);
+                selectedTip = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+                input.focus();
+            } else {
+                wrap.style.display = 'none';
+                selectedTip = parseFloat(value) || 0;
+            }
+            updateTipSummary();
+        });
+    });
+
+    var customInput = document.getElementById('tipCustomInput');
+    if (customInput) {
+        customInput.addEventListener('input', function () {
+            var parsed = parseFloat(this.value);
+            selectedTip = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+            updateTipSummary();
+        });
+    }
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTipModal);
+} else {
+    initTipModal();
+}
+
+function updateTipSummary() {
+    if (!tipFlow) return;
+    var b = bookings[tipFlow.index];
+    if (!b) return;
+    var price = Number(b.price) || 0;
+    var tip = Number(selectedTip) || 0;
+    document.getElementById('tipSummary').innerHTML =
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Service amount</span><span>\u20B1' + price.toLocaleString() + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;color:#16a34a;"><span>Tip</span><span>\u20B1' + tip.toLocaleString() + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--g1,#E8ECF0);padding-top:6px;"><span>Total</span><span>\u20B1' + (price + tip).toLocaleString() + '</span></div>';
+}
+
+function openTipModal(index, mode) {
+    var b = bookings[index];
+    if (!b) return;
+
+    tipFlow = { index: index, mode: mode };
+    selectedTip = 0;
+
+    document.getElementById('tipWorkerName').textContent = b.worker || 'your worker';
+    document.getElementById('tipConfirmLabel').textContent = mode === 'mark' ? 'Mark Complete' : 'Confirm Complete';
+    document.getElementById('tipCustomWrap').style.display = 'none';
+    document.getElementById('tipCustomInput').value = '';
+    document.getElementById('tipError').style.display = 'none';
+    document.querySelectorAll('#tipChips .tip-chip').forEach(function (c) {
+        c.classList.toggle('active', c.dataset.tip === '0');
+    });
+
+    updateTipSummary();
+    document.getElementById('tipModal').style.display = 'flex';
+}
+
+function closeTipModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    var modal = document.getElementById('tipModal');
+    if (modal) modal.style.display = 'none';
+    tipFlow = null;
+}
+
+function submitTipFlow() {
+    var err = document.getElementById('tipError');
+    err.style.display = 'none';
+
+    if (selectedTip < 0 || selectedTip > 10000) {
+        err.textContent = 'Tip must be between \u20B10 and \u20B110,000.';
+        err.style.display = 'block';
+        return;
+    }
+
+    var flow = tipFlow;
+    var tip = Number(selectedTip) || 0;
+    closeTipModal();
+    if (flow) runCompletionRequest(flow.index, flow.mode, tip);
+}
+
+function runCompletionRequest(index, mode, tipAmount) {
+    var b = bookings[index];
+    if (!b) return;
+
+    var pathTemplate = mode === 'mark'
+        ? '{{ route("client.bookings.mark-complete", "__ID__", false) }}'
+        : '{{ route("client.bookings.confirm-complete", "__ID__", false) }}';
+    var url = window.location.origin + pathTemplate.replace('__ID__', b.id);
+    var fallbackMessage = mode === 'mark'
+        ? 'Marked as complete. Waiting for worker to confirm.'
+        : 'Job completion confirmed!';
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        body: JSON.stringify({ tip_amount: tipAmount }),
+    })
+    .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+    .then(function (res) {
+        if (res.ok && res.data.success) {
+            if (window.showToast) window.showToast(res.data.message || fallbackMessage, 'success');
+            setTimeout(function () { location.reload(); }, 600);
+        } else {
+            var msg = (res.data && res.data.message) ? res.data.message : fallbackMessage;
+            if (window.showToast) window.showToast(msg, 'error');
+            else alert(msg);
+        }
+    })
+    .catch(function () {
+        if (window.showToast) window.showToast('Network error. Please try again.', 'error');
+        else alert('Something went wrong.');
+    });
+}
+
 function markJobComplete(index) {
     var b = bookings[index];
     if (!b) return;
-    
-    if (confirm('Mark this job as complete? The worker will need to confirm.')) {
-        var btn = document.activeElement;
-        if (btn) btn.disabled = true;
-        var originalHtml = btn ? btn.innerHTML : '';
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
-        }
-        
-        fetch('/client/bookings/' + b.id + '/mark-complete', {
-        var url = window.location.origin + '{{ route("client.bookings.mark-complete", "__ID__", false) }}'.replace('__ID__', b.id);
-        fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (data.success) {
-                location.reload();
-        .then(function (r) { return r.json().then(function(data){ return { ok: r.ok, data: data }; }); })
-        .then(function (res) {
-            if (res.ok && res.data.success) {
-                if (window.showToast) window.showToast(res.data.message || 'Marked as complete. Waiting for worker to confirm.', 'success');
-                setTimeout(function() { location.reload(); }, 600);
-            } else {
-                alert(data.message || 'Failed to mark job as complete.');
-                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
-                var msg = (res.data && res.data.message) ? res.data.message : 'Failed to mark job as complete.';
-                if (window.showToast) window.showToast(msg, 'error');
-                else alert(msg);
-            }
-        })
-        .catch(function () { 
-            alert('Something went wrong.'); 
-        })
-        .finally(function () {
-            if (btn) btn.disabled = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
-            if (window.showToast) window.showToast('Network error while marking job complete.', 'error');
-            else alert('Something went wrong.'); 
-        });
-    }
+    openTipModal(index, 'mark');
 }
 
 function confirmJobComplete(index) {
     var b = bookings[index];
     if (!b) return;
-    
-    if (confirm('Confirm job completion? This will finalize the booking.')) {
-        var btn = document.activeElement;
-        if (btn) btn.disabled = true;
-        var originalHtml = btn ? btn.innerHTML : '';
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
-        }
-        
-        fetch('/client/bookings/' + b.id + '/confirm-complete', {
-        var url = window.location.origin + '{{ route("client.bookings.confirm-complete", "__ID__", false) }}'.replace('__ID__', b.id);
-        fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (data.success) {
-                location.reload();
-        .then(function (r) { return r.json().then(function(data){ return { ok: r.ok, data: data }; }); })
-        .then(function (res) {
-            if (res.ok && res.data.success) {
-                if (window.showToast) window.showToast(res.data.message || 'Job completion confirmed!', 'success');
-                setTimeout(function() { location.reload(); }, 600);
-            } else {
-                alert(data.message || 'Failed to confirm job completion.');
-                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
-                var msg = (res.data && res.data.message) ? res.data.message : 'Failed to confirm job completion.';
-                if (window.showToast) window.showToast(msg, 'error');
-                else alert(msg);
-            }
-        })
-        .catch(function () { 
-            alert('Something went wrong.'); 
-        })
-        .finally(function () {
-            if (btn) btn.disabled = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
-            if (window.showToast) window.showToast('Network error while confirming job complete.', 'error');
-            else alert('Something went wrong.'); 
-        });
-    }
+    openTipModal(index, 'confirm');
 }
 
 // Focus handler: ?focus=ID opens the booking modal on load

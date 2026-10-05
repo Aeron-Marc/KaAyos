@@ -1,4 +1,4 @@
-@extends('layouts.client')
+﻿@extends('layouts.client')
 
 @section('title', $worker->name)
 @section('page_title', $worker->name)
@@ -235,21 +235,27 @@
 
             {{-- Services Offered --}}
             @if($workerServices && $workerServices->count() > 0)
+                <style>
+                    .svc-tile { cursor: pointer; transition: border-color .15s, background .15s; }
+                    .svc-tile:hover { border-color: var(--b6, #2563eb); }
+                    .svc-tile.selected { border-color: #2563eb; background: #eff6ff; box-shadow: 0 0 0 1px #2563eb; }
+                </style>
                 <div class="card-panel">
                     <div class="card-panel-header">
                         <h3 class="section-title"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Services Offered</h3>
                     </div>
+                    <p style="font-size:.78rem;color:var(--g5,#64748b);margin:2px 0 0;">Tap a service to add it to your booking.</p>
                     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:8px;">
                         @foreach($workerServices as $ps)
-                            <div style="background:var(--off);border:1px solid var(--g1);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;">
+                            @php
+                                $svcPrice = $ps->custom_price ?? $ps->service->base_price;
+                                $billingLabel = ['fixed' => 'Fixed price', 'hourly' => 'Per hour', 'either' => 'Fixed or hourly'][$ps->service->billing_type ?? 'either'] ?? 'Fixed or hourly';
+                            @endphp
+                            <div class="svc-tile" id="svc-tile-{{ $ps->service_id }}" onclick="selectService({{ $ps->service_id }})"
+                                 style="background:var(--off);border:1px solid var(--g1);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;">
                                 <span style="font-size:.85rem;font-weight:600;color:var(--b9);">{{ $ps->service->name }}</span>
-                                <span style="font-size:.8rem;color:var(--b6);font-weight:500;">
-                                    @if($ps->custom_price)
-                                        ₱{{ number_format($ps->custom_price, 2) }}
-                                    @else
-                                        ₱{{ number_format($ps->service->base_price, 2) }}
-                                    @endif
-                                </span>
+                                <span style="font-size:.8rem;color:var(--b6);font-weight:500;">₱{{ number_format((float) $svcPrice, 2) }}</span>
+                                <span style="font-size:.68rem;color:var(--g4,#94a3b8);font-weight:500;">{{ $billingLabel }}</span>
                             </div>
                         @endforeach
                     </div>
@@ -389,7 +395,7 @@
                         @foreach($reviews as $review)
                             <div style="padding:14px 0;border-bottom:1px solid var(--g1);">
                                 <div style="display:flex;justify-content:space-between;align-items:center;">
-                                    <span style="font-weight:500;font-size:.88rem;">{{ $review->client?->name ?? 'Anonymous' }}</span>
+                                    <span style="font-weight:500;font-size:.88rem;">{{ $review->display_name }}</span>
                                     <div style="display:flex;gap:2px;">
                                         @for($s = 1; $s <= 5; $s++)
                                             <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" style="color:#f59e0b;font-size:.75rem;" aria-hidden="true"></i>
@@ -443,10 +449,22 @@
             <form id="book-form" onsubmit="submitBooking(event)">
                 @csrf
                 <input type="hidden" name="worker_id" value="{{ $worker->id }}">
+                <input type="hidden" name="price" id="booking_price" value="0">
 
                 <div class="form-group">
-                    <label>Service</label>
-                    <input type="text" class="form-control" value="{{ $worker->service_category ?? 'General' }}" readonly style="background:#f5f5f5;cursor:default;">
+                    <label for="service-select">Service</label>
+                    <select name="service_id" id="service-select" class="form-control" onchange="onServiceChange()">
+                        <option value="">General / {{ $worker->service_category ?? 'General' }}</option>
+                        @foreach($workerServices as $ps)
+                            @php $svcPrice = $ps->custom_price ?? $ps->service->base_price; @endphp
+                            <option value="{{ $ps->service_id }}"
+                                    data-name="{{ $ps->service->name }}"
+                                    data-price="{{ $svcPrice }}"
+                                    data-billing="{{ $ps->service->billing_type ?? 'either' }}">
+                                {{ $ps->service->name }} — ₱{{ number_format((float) $svcPrice, 2) }}
+                            </option>
+                        @endforeach
+                    </select>
                     <input type="hidden" name="service_category" value="{{ $worker->service_category ?? 'General' }}">
                 </div>
 
@@ -473,10 +491,13 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div class="form-group">
                         <label for="pricing_type">Billing Mode</label>
-                        <select name="pricing_type" id="pricing_type" class="form-control" onchange="recalculatePriceEstimate()">
-                            <option value="fixed" selected>Fixed Task Rate</option>
-                            <option value="hourly">Hourly Rate (₱{{ number_format($workerProfile->hourly_rate ?? 350) }}/hr)</option>
+                        <select name="pricing_type" id="pricing_type" class="form-control" onchange="recalculatePriceEstimate();updateRateDisplay();">
+                            <option id="opt-fixed" value="fixed" selected>Fixed Task Rate</option>
+                            <option id="opt-hourly" value="hourly">Hourly Rate (₱{{ number_format($workerProfile->hourly_rate ?? 350) }}/hr)</option>
                         </select>
+                        <div id="billing-lock-hint" style="display:none;margin-top:6px;font-size:.78rem;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:6px 8px;">
+                            <i class="fa-solid fa-lock" style="margin-right:4px;" aria-hidden="true"></i><span id="billing-lock-hint-text"></span>
+                        </div>
                     </div>
                     <div class="form-group" id="duration_group">
                         <label for="estimated_duration_hours">Estimated Hours</label>
@@ -493,6 +514,37 @@
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label for="address-select">Location</label>
+                    <select id="address-select" name="address_id" class="form-control" onchange="onAddressChange()">
+                        @forelse($clientAddresses as $addr)
+                            <option value="{{ $addr->id }}"
+                                    @selected($addr->is_default)
+                                    data-label="{{ $addr->label }}"
+                                    data-house="{{ $addr->house_no }}"
+                                    data-brgy="{{ $addr->barangay }}"
+                                    data-lat="{{ $addr->latitude }}"
+                                    data-lng="{{ $addr->longitude }}">
+                                {{ $addr->label }} — {{ $addr->house_no }}, Brgy. {{ $addr->barangay }}
+                            </option>
+                        @empty
+                            <option value="" selected>Other / new address</option>
+                        @endforelse
+                        @if($clientAddresses->isNotEmpty())
+                            <option value="">Other / new address</option>
+                        @endif
+                    </select>
+                    <div id="saved-addr-summary" style="display:none;margin-top:6px;font-size:.78rem;color:var(--g5);background:var(--off);border:1px solid var(--g1);border-radius:8px;padding:6px 8px;">
+                        <i class="fa-solid fa-location-dot" style="color:#2563eb;" aria-hidden="true"></i>
+                        <span id="saved-addr-summary-text"></span>
+                    </div>
+                    <button type="button" onclick="openAddAddressModal()"
+                            style="margin-top:8px;background:none;border:none;padding:0;color:#2563eb;font-size:.8rem;cursor:pointer;font-weight:600;">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Add new address
+                    </button>
+                </div>
+
+                <div id="manual-address-fields">
                 <div class="form-group">
                     <label for="house_no">House No. / Street</label>
                     <input type="text" id="house_no" name="house_no" class="form-control"
@@ -518,10 +570,15 @@
                             @endforeach
                         @endforelse
                     </select>
+                    <button type="button" onclick="fillBookingFromGps()"
+                            style="margin-top:6px;background:none;border:none;padding:0;color:#2563eb;font-size:.78rem;cursor:pointer;font-weight:600;">
+                        <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Use my current location
+                    </button>
                     <div id="loc-indicator" style="display:none;font-size:.78rem;color:var(--g5);margin-top:4px;align-items:center;gap:6px;">
                         <i class="fa-solid fa-location-dot" style="color:#2563eb;"></i> <span id="loc-indicator-text"></span>
                     </div>
                 </div>
+                </div>{{-- /#manual-address-fields --}}
 
                 <div class="form-group">
                     <label for="notes">Notes <small>(optional)</small></label>
@@ -533,7 +590,7 @@
                 </div>
 
                 @if($worker->workerProfile && $worker->workerProfile->hourly_rate)
-                    <div style="font-size:.85rem;color:var(--g5);margin-bottom:12px;">
+                    <div id="rate-display" style="font-size:.85rem;color:var(--g5);margin-bottom:12px;">
                         Rate: <strong>₱{{ number_format($worker->workerProfile->hourly_rate) }}/hr</strong>
                     </div>
                 @endif
@@ -562,6 +619,51 @@
     </div>
 </div>
 
+{{-- Add Address Modal (opened from the booking modal) --}}
+<div id="add-address-modal" class="modal-overlay" style="display:none;z-index:1300;" onclick="if(event.target===this)closeAddAddressModal()">
+    <div class="modal-box" style="max-width:460px;">
+        <div class="modal-header">
+            <h3>Add New Address</h3>
+            <button type="button" class="modal-close" onclick="closeAddAddressModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="new_addr_label">Label</label>
+                <input type="text" id="new_addr_label" class="form-control" maxlength="30" placeholder="e.g. Home, Office">
+            </div>
+            <div class="form-group">
+                <label for="new_addr_house">House No. / Street</label>
+                <input type="text" id="new_addr_house" class="form-control" placeholder="e.g. 123 Mabini St">
+            </div>
+            <div class="form-group">
+                <label for="new_addr_barangay">Barangay</label>
+                <select id="new_addr_barangay" class="form-control">
+                    <option value="" disabled selected>Select barangay…</option>
+                    @foreach($allBarangays as $barangay)
+                        <option value="{{ $barangay }}">{{ $barangay }}</option>
+                    @endforeach
+                </select>
+                <button type="button" onclick="fillAddrModalFromGps()"
+                        style="margin-top:6px;background:none;border:none;padding:0;color:#2563eb;font-size:.78rem;cursor:pointer;font-weight:600;">
+                    <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Use my location
+                </button>
+                <div id="new-addr-gps-status" style="display:none;font-size:.76rem;color:var(--g5);margin-top:4px;"></div>
+            </div>
+            <input type="hidden" id="new_addr_lat" value="">
+            <input type="hidden" id="new_addr_lng" value="">
+            <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="new_addr_default">
+                <label for="new_addr_default" style="margin:0;">Set as my default address</label>
+            </div>
+            <div id="new-addr-error" style="display:none;color:#dc2626;font-size:.8rem;"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeAddAddressModal()">Cancel</button>
+            <button type="button" class="btn btn-solid" id="save-addr-btn" onclick="submitAddAddress()">Save address</button>
+        </div>
+    </div>
+</div>
+
 {{-- Share Profile Modal --}}
 <div id="share-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeShareModal()">
     <div class="modal-box" style="max-width:420px;text-align:center;">
@@ -572,19 +674,19 @@
         <div class="modal-body" style="padding:20px;">
             <p style="font-size:.85rem;color:var(--g5);margin-bottom:14px;">Scan QR Code or share this link to book directly:</p>
             <div style="background:#f8fafc;padding:16px;border-radius:12px;display:inline-block;border:1px solid #e2e8f0;margin-bottom:16px;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode(url('/workers/' . $worker->id)) }}" alt="Worker QR Code" style="width:160px;height:160px;border-radius:6px;display:block;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($worker->share_url) }}" alt="Worker QR Code" style="width:160px;height:160px;border-radius:6px;display:block;">
             </div>
             <div style="display:flex;gap:6px;margin-bottom:16px;">
-                <input type="text" id="shareProfileUrl" value="{{ url('/workers/' . $worker->id) }}" readonly class="form-control" style="font-size:.82rem;">
+                <input type="text" id="shareProfileUrl" value="{{ $worker->share_url }}" readonly class="form-control" style="font-size:.82rem;">
                 <button type="button" class="btn btn-solid" onclick="copyShareUrl()" id="copyShareBtn">
                     <i class="fa-regular fa-copy"></i>
                 </button>
             </div>
             <div style="display:flex;gap:10px;justify-content:center;">
-                <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(url('/workers/' . $worker->id)) }}" target="_blank" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
+                <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($worker->share_url) }}" target="_blank" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
                     <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Facebook
                 </a>
-                <a href="https://api.whatsapp.com/send?text={{ urlencode('Book ' . $worker->name . ' on KaAyos: ' . url('/workers/' . $worker->id)) }}" target="_blank" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
+                <a href="https://api.whatsapp.com/send?text={{ urlencode('Book ' . $worker->name . ' on KaAyos: ' . $worker->share_url) }}" target="_blank" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
                     <i class="fa-brands fa-whatsapp" style="color:#22c55e;"></i> WhatsApp
                 </a>
             </div>
@@ -637,10 +739,214 @@ function openBookModal() {
         document.getElementById('client_lat').value = TUY_COORDS[bVal][0];
         document.getElementById('client_lng').value = TUY_COORDS[bVal][1];
     }
+    // Sync manual fields / hide them when a saved address is preselected.
+    onAddressChange();
 }
 
 function closeBookModal() {
     document.getElementById('book-modal').style.display = 'none';
+    closeAddAddressModal();
+}
+
+// ── Saved addresses (Shopee-style) ──────────────────────────
+
+function onAddressChange() {
+    var sel = document.getElementById('address-select');
+    if (!sel || sel.selectedIndex < 0) return;
+    var opt = sel.options[sel.selectedIndex];
+    var manual = document.getElementById('manual-address-fields');
+    var summary = document.getElementById('saved-addr-summary');
+    var house = document.getElementById('house_no');
+    var brgy = document.getElementById('barangay');
+    var latIn = document.getElementById('client_lat');
+    var lngIn = document.getElementById('client_lng');
+    var isSaved = opt && opt.value !== '';
+
+    if (isSaved) {
+        var b = opt.dataset.brgy || '';
+        if (house) { house.value = opt.dataset.house || ''; house.required = false; }
+        if (brgy) {
+            if (b && !Array.prototype.some.call(brgy.options, function(o) { return o.value === b; })) {
+                brgy.add(new Option(b, b));
+            }
+            brgy.value = b;
+            brgy.required = false;
+        }
+        var latv = opt.dataset.lat || '';
+        var lngv = opt.dataset.lng || '';
+        if ((!latv || !lngv) && TUY_COORDS[b]) {
+            latv = TUY_COORDS[b][0];
+            lngv = TUY_COORDS[b][1];
+        }
+        if (latIn) latIn.value = latv;
+        if (lngIn) lngIn.value = lngv;
+        if (manual) manual.style.display = 'none';
+        if (summary) {
+            document.getElementById('saved-addr-summary-text').textContent =
+                (opt.dataset.label || 'Saved address') + ': ' + (opt.dataset.house || '') + ', Brgy. ' + b;
+            summary.style.display = 'block';
+        }
+    } else {
+        if (house) house.required = true;
+        if (brgy) brgy.required = true;
+        if (manual) manual.style.display = '';
+        if (summary) summary.style.display = 'none';
+    }
+
+    checkTravelBuffer();
+    updateAgreementSummary();
+}
+
+function fillBookingFromGps() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        var lat = pos.coords.latitude, lng = pos.coords.longitude;
+        fetch('/api/location/reverse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({ latitude: lat, longitude: lng })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            var brgy = document.getElementById('barangay');
+            if (res.barangay && brgy) {
+                if (!Array.prototype.some.call(brgy.options, function(o) { return o.value === res.barangay; })) {
+                    brgy.add(new Option(res.barangay, res.barangay));
+                }
+                brgy.value = res.barangay;
+            }
+            document.getElementById('client_lat').value = lat.toFixed(7);
+            document.getElementById('client_lng').value = lng.toFixed(7);
+            var ind = document.getElementById('loc-indicator');
+            var indText = document.getElementById('loc-indicator-text');
+            if (ind && indText) {
+                indText.textContent = 'Using your current location (Brgy. ' + (res.barangay || '—') + ')';
+                ind.style.display = 'flex';
+            }
+            checkTravelBuffer();
+            updateAgreementSummary();
+        });
+    });
+}
+
+function openAddAddressModal() {
+    document.getElementById('add-address-modal').style.display = 'flex';
+    document.getElementById('new-addr-error').style.display = 'none';
+}
+
+function closeAddAddressModal() {
+    var modal = document.getElementById('add-address-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function fillAddrModalFromGps() {
+    var status = document.getElementById('new-addr-gps-status');
+    if (!navigator.geolocation) return;
+    status.textContent = 'Getting your location…';
+    status.style.display = 'block';
+    status.style.color = 'var(--g5)';
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        var lat = pos.coords.latitude, lng = pos.coords.longitude;
+        fetch('/api/location/reverse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({ latitude: lat, longitude: lng })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            var brgy = document.getElementById('new_addr_barangay');
+            if (res.barangay && brgy) brgy.value = res.barangay;
+            document.getElementById('new_addr_lat').value = lat.toFixed(7);
+            document.getElementById('new_addr_lng').value = lng.toFixed(7);
+            status.textContent = 'Location set to Brgy. ' + (res.barangay || '—');
+            status.style.color = '#166534';
+        })
+        .catch(function() {
+            status.textContent = 'Could not read your location.';
+            status.style.color = '#dc2626';
+        });
+    }, function() {
+        status.textContent = 'Location permission denied.';
+        status.style.color = '#dc2626';
+    });
+}
+
+function submitAddAddress() {
+    var label = document.getElementById('new_addr_label').value.trim();
+    var house = document.getElementById('new_addr_house').value.trim();
+    var brgy = document.getElementById('new_addr_barangay').value;
+    var err = document.getElementById('new-addr-error');
+    var btn = document.getElementById('save-addr-btn');
+    err.style.display = 'none';
+
+    if (!label || !house || !brgy) {
+        err.textContent = 'Label, House No. / Street, and Barangay are required.';
+        err.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    fetch('{{ route('client.account.addresses.store') }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        body: JSON.stringify({
+            label: label,
+            house_no: house,
+            barangay: brgy,
+            latitude: document.getElementById('new_addr_lat').value || null,
+            longitude: document.getElementById('new_addr_lng').value || null,
+            is_default: document.getElementById('new_addr_default').checked ? 1 : 0,
+        }),
+    })
+    .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+    .then(function(res) {
+        btn.disabled = false;
+        btn.textContent = 'Save address';
+        if (!res.ok || !res.data.success) {
+            var msgs = res.data.errors ? Object.keys(res.data.errors).map(function(k) { return res.data.errors[k][0]; }) : [res.data.message || 'Could not save the address.'];
+            err.textContent = msgs[0];
+            err.style.display = 'block';
+            return;
+        }
+        insertAddressOption(res.data.address);
+        closeAddAddressModal();
+        document.getElementById('new_addr_label').value = '';
+        document.getElementById('new_addr_house').value = '';
+        document.getElementById('new_addr_barangay').selectedIndex = 0;
+        document.getElementById('new_addr_default').checked = false;
+        document.getElementById('new_addr_lat').value = '';
+        document.getElementById('new_addr_lng').value = '';
+    })
+    .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Save address';
+        err.textContent = 'Network error. Please try again.';
+        err.style.display = 'block';
+    });
+}
+
+function insertAddressOption(addr) {
+    var sel = document.getElementById('address-select');
+    if (!sel) return;
+    var last = sel.options[sel.length - 1];
+    var isOtherLast = last && last.value === '';
+    var opt = document.createElement('option');
+    opt.value = String(addr.id);
+    opt.dataset.label = addr.label;
+    opt.dataset.house = addr.house_no;
+    opt.dataset.brgy = addr.barangay;
+    opt.dataset.lat = addr.latitude || '';
+    opt.dataset.lng = addr.longitude || '';
+    opt.textContent = addr.label + ' — ' + addr.house_no + ', Brgy. ' + addr.barangay;
+    if (isOtherLast) {
+        sel.insertBefore(opt, last);
+    } else {
+        sel.appendChild(opt);
+    }
+    sel.value = String(addr.id);
+    onAddressChange();
 }
 
 var scheduleCheckTimer = null;
@@ -762,48 +1068,57 @@ function recalculatePriceEstimate() {
     updateAgreementSummary();
 }
 
-function updateAgreementSummary() {
-    const select = document.getElementById('service-select');
-    const svcHidden = document.getElementById('service_category_hidden');
-    let svcName = '—';
-    let basePrice = 0;
+function getSelectedService() {
+    const sel = document.getElementById('service-select');
+    if (!sel || sel.selectedIndex < 0) return null;
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt.value) return null;
+    return {
+        id: opt.value,
+        name: opt.dataset.name || '',
+        price: parseFloat(opt.dataset.price) || 0,
+        billing: opt.dataset.billing || 'either'
+    };
+}
 
-    if (select && select.value) {
-        const opt = select.options[select.selectedIndex];
-        svcName = opt.textContent.split(' - ')[0].trim();
-        const svcs = JSON.parse(document.getElementById('worker-services-json')?.value || '[]');
-        const found = svcs.find(s => String(s.id) === String(select.value));
-        if (found) {
-            basePrice = found.price;
-            if (svcHidden) svcHidden.value = found.category;
-        }
-    } else {
-        const fallback = document.querySelector('[name="service_category"]');
-        if (fallback) svcName = fallback.value || '—';
-        basePrice = {{ (float) ($workerProfile->hourly_rate ?? 350) }};
-    }
+function selectService(serviceId) {
+    const sel = document.getElementById('service-select');
+    if (!sel) return;
+    sel.value = String(serviceId);
+    onServiceChange();
+    sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function updateAgreementSummary() {
+    const categoryFallback = document.querySelector('[name="service_category"]');
+    const category = categoryFallback && categoryFallback.value ? categoryFallback.value : '—';
+    const svc = getSelectedService();
+    const hourlyRate = {{ (float) ($workerProfile->hourly_rate ?? 350) }};
 
     const pricingType = document.getElementById('pricing_type')?.value || 'fixed';
     const hours = parseFloat(document.getElementById('estimated_duration_hours')?.value || '2');
     const complexity = document.getElementById('complexity_level')?.value || 'standard';
     const multiplier = complexity === 'high_hazard' ? 1.5 : (complexity === 'moderate' ? 1.2 : 1.0);
 
-    let laborPrice = basePrice;
+    let laborPrice = hourlyRate;
     if (pricingType === 'hourly') {
-        const hourlyRate = {{ (float) ($workerProfile->hourly_rate ?? 350) }};
         laborPrice = hourlyRate * hours;
+    } else if (svc) {
+        laborPrice = svc.price;
     }
 
     const finalEstimate = Math.round(laborPrice * multiplier);
 
+    // Send the pre-multiplier base: the server applies the complexity multiplier itself.
+    document.getElementById('booking_price').value = Math.round(laborPrice);
+
     const dt   = document.querySelector('[name="scheduled_at"]')?.value || '—';
     const addr = [document.querySelector('[name="house_no"]')?.value, document.querySelector('[name="street"]')?.value, document.querySelector('[name="barangay"]')?.value].filter(Boolean).join(', ') || '—';
-    const pr   = document.querySelector('[name="price"]')?.value;
-    document.getElementById('agree-service').textContent  = svcName;
+    document.getElementById('agree-service').textContent  = svc ? svc.name : category;
     document.getElementById('agree-date').textContent     = dt ? new Date(dt).toLocaleString('en-PH',{dateStyle:'long',timeStyle:'short'}) : '—';
     document.getElementById('agree-location').textContent = addr;
     document.getElementById('agree-price').innerHTML      = '\u20B1' + Number(finalEstimate).toLocaleString() +
-        ' <small style="font-weight:normal;color:#64748b;">(' + (pricingType === 'hourly' ? hours + ' hrs @ ₱' + {{ (float) ($workerProfile->hourly_rate ?? 350) }} + '/hr' : 'Fixed Task') + (multiplier > 1.0 ? ' &times; ' + multiplier + 'x diff.' : '') + ')</small>';
+        ' <small style="font-weight:normal;color:#64748b;">(' + (pricingType === 'hourly' ? hours + ' hrs @ ₱' + hourlyRate + '/hr' : (svc ? svc.name : 'Fixed Task')) + (multiplier > 1.0 ? ' &times; ' + multiplier + 'x diff.' : '') + ')</small>';
 }
 
 function openShareModal() {
@@ -825,7 +1140,55 @@ function copyShareUrl() {
 }
 
 function onServiceChange() {
+    const svc = getSelectedService();
+    const pricing = document.getElementById('pricing_type');
+    const optFixed = document.getElementById('opt-fixed');
+    const optHourly = document.getElementById('opt-hourly');
+    const hint = document.getElementById('billing-lock-hint');
+    const hintText = document.getElementById('billing-lock-hint-text');
+    const duration = document.getElementById('duration_group');
+
+    const billing = svc ? svc.billing : 'either';
+
+    // Lock the billing mode to what the service is designed for.
+    if (billing === 'fixed' && pricing && optHourly) {
+        optHourly.disabled = true;
+        if (optFixed) optFixed.disabled = false;
+        pricing.value = 'fixed';
+        if (hint) hint.style.display = '';
+        if (hintText) hintText.textContent = svc.name + ' has a fixed price — hourly billing isn\'t available.';
+        if (duration) duration.style.display = 'none';
+    } else if (billing === 'hourly' && pricing && optFixed) {
+        optFixed.disabled = true;
+        if (optHourly) optHourly.disabled = false;
+        pricing.value = 'hourly';
+        if (hint) hint.style.display = '';
+        if (hintText) hintText.textContent = svc.name + ' is billed hourly.';
+        if (duration) duration.style.display = '';
+    } else {
+        if (optFixed) optFixed.disabled = false;
+        if (optHourly) optHourly.disabled = false;
+        if (hint) hint.style.display = 'none';
+        if (duration) duration.style.display = '';
+    }
+
+    document.querySelectorAll('[id^="svc-tile-"]').forEach(el => el.classList.remove('selected'));
+    if (svc) {
+        const tile = document.getElementById('svc-tile-' + svc.id);
+        if (tile) tile.classList.add('selected');
+    }
+
     updateAgreementSummary();
+    updateRateDisplay();
+}
+
+function updateRateDisplay() {
+    const rateDisplay = document.getElementById('rate-display');
+    if (!rateDisplay) return;
+    const svc = getSelectedService();
+    const pricing = document.getElementById('pricing_type');
+    const pricingType = pricing ? pricing.value : 'fixed';
+    rateDisplay.style.display = (!svc || pricingType === 'hourly') ? '' : 'none';
 }
 
 function updateNotesCounter() {
@@ -838,6 +1201,7 @@ function updateNotesCounter() {
 
 function submitBooking(e) {
     e.preventDefault();
+    updateAgreementSummary();
     if (!document.getElementById('agree-terms').checked) {
         alert('Please agree to the Service Agreement before submitting.');
         return;
@@ -981,6 +1345,8 @@ document.addEventListener('DOMContentLoaded', function() {
 .modal-close:hover { color: var(--g8); }
 .modal-body { padding: 16px 22px; max-height: 60vh; overflow-y: auto; }
 #book-form .form-control { width: 100%; box-sizing: border-box; }
+#add-address-modal .form-group { margin-bottom: 12px; }
+#add-address-modal .form-control { width: 100%; box-sizing: border-box; }
 #book-form .notes-textarea-wrap { position: relative; background: #f8fafc; border: 1px solid var(--g1); border-radius: 8px; padding: 10px 14px; }
 #book-form .notes-textarea-wrap textarea { border: none; background: transparent; padding-bottom: 24px; resize: vertical; min-height: 80px; }
 .notes-counter { position: absolute; bottom: 8px; right: 10px; font-size: .8rem; color: var(--g4); pointer-events: none; }

@@ -15,11 +15,22 @@ class Review extends Model
         'rating',
         'comment',
         'photo_path',
+        'is_anonymous',
     ];
 
     protected $casts = [
         'rating' => 'integer',
+        'is_anonymous' => 'boolean',
     ];
+
+    public function getDisplayNameAttribute(): string
+    {
+        if ($this->is_anonymous) {
+            return 'Anonymous';
+        }
+
+        return $this->client?->name ?? 'Anonymous';
+    }
 
     protected $appends = ['photo_url'];
 

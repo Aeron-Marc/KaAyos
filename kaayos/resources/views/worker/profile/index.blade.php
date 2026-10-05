@@ -237,6 +237,11 @@
             <p>{{ auth()->user()->city ?: 'Location not set' }}</p>
             <span class="profile-role-tag">{{ __('role.worker') }}</span>
 
+            <button type="button" class="btn btn-outline" style="width:100%;margin-top:12px;justify-content:center;font-size:.82rem;"
+                onclick="document.getElementById('myShareModal').style.display='flex'">
+                <i class="fa-solid fa-qrcode" aria-hidden="true"></i> My Shareable ID
+            </button>
+
             <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--g1);">
                 <div style="display:flex;justify-content:center;gap:20px;">
                     <div>
@@ -255,6 +260,37 @@
             </div>
         </div>
     </aside>
+
+    {{-- Shareable profile ID / QR --}}
+    <div id="myShareModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal-box" style="max-width:420px;text-align:center;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-qrcode" style="color:var(--b6);"></i> My Shareable ID</h3>
+                <button type="button" class="modal-close" onclick="document.getElementById('myShareModal').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:18px 20px;">
+                <p style="font-size:.85rem;color:var(--g5);margin-bottom:12px;">
+                    Share this link or QR code so clients can open your profile from anywhere.
+                </p>
+                @if(auth()->user()->share_code)
+                    <div style="display:inline-block;background:var(--b0,#E6F1FB);color:var(--b7,#185FA5);border:1px dashed var(--b4,#378ADD);border-radius:8px;padding:6px 14px;font-weight:700;letter-spacing:.06em;font-size:.9rem;margin-bottom:12px;">
+                        {{ auth()->user()->share_code }}
+                    </div>
+                @endif
+                <div style="background:#f8fafc;padding:14px;border-radius:12px;display:inline-block;border:1px solid #e2e8f0;margin-bottom:14px;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode(auth()->user()->share_url) }}"
+                         alt="QR code for your profile" style="width:160px;height:160px;border-radius:6px;display:block;">
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <input type="text" id="myShareUrl" readonly value="{{ auth()->user()->share_url }}"
+                           style="flex:1;min-width:0;font-size:.8rem;padding:9px 10px;border:1px solid var(--g1,#E8ECF0);border-radius:8px;background:#fff;color:var(--g7,#3D4A56);">
+                    <button type="button" class="btn btn-solid" id="myShareCopyBtn" onclick="copyMyShareUrl()" style="padding:9px 14px;">
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div>
 
@@ -1642,9 +1678,33 @@ document.querySelectorAll('.tag-input-wrap').forEach(initTagInput);
         const row = btn.closest('.peer-rec-row');
         if (row) row.remove();
         const container = document.getElementById('recommendedPeersContainer');
-        if (container.querySelectorAll('.peer-rec-row').length === 0) {
+        if (container && container.querySelectorAll('.peer-rec-row').length === 0) {
             const notice = document.getElementById('noPeersNotice');
             if (notice) notice.style.display = 'block';
+        }
+    };
+</script>
+@endpush
+
+@push('scripts')
+<script>
+    window.copyMyShareUrl = function () {
+        var input = document.getElementById('myShareUrl');
+        if (!input) return;
+        input.select();
+        input.setSelectionRange(0, 99999);
+        var btn = document.getElementById('myShareCopyBtn');
+        var done = function () {
+            if (!btn) return;
+            var original = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i>';
+            setTimeout(function () { btn.innerHTML = original; }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(input.value).then(done).catch(function () { document.execCommand('copy'); done(); });
+        } else {
+            document.execCommand('copy');
+            done();
         }
     };
 </script>

@@ -45,6 +45,16 @@
             <input type="number" name="base_price" id="base_price" value="{{ old('base_price') }}" step="0.01" min="0" placeholder="0.00">
             @error('base_price') <div class="error">{{ $message }}</div> @enderror
         </div>
+        <div class="form-group">
+            <label for="billing_type">Billing Type</label>
+            <select name="billing_type" id="billing_type">
+                <option value="either" {{ old('billing_type', 'either') == 'either' ? 'selected' : '' }}>Fixed or hourly (client chooses)</option>
+                <option value="fixed" {{ old('billing_type') == 'fixed' ? 'selected' : '' }}>Fixed price</option>
+                <option value="hourly" {{ old('billing_type') == 'hourly' ? 'selected' : '' }}>Hourly</option>
+            </select>
+            <div style="font-size:.78rem;color:#64748b;margin-top:4px;">Sets the default billing mode when a client books this service.</div>
+            @error('billing_type') <div class="error">{{ $message }}</div> @enderror
+        </div>
         <div class="page-actions">
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Create Service</button>
             <a href="{{ route('admin.services.index') }}" class="btn btn-secondary">Cancel</a>

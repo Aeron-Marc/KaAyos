@@ -1,5 +1,5 @@
 @php
-    $moneyCols = ['Price', 'Total Value', 'Gross Amount', 'Platform Fee', 'Net Amount', 'Gross Revenue', 'Revenue'];
+    $moneyCols = ['Price', 'Total Value', 'Gross Amount', 'Platform Fee', 'Tip', 'Net Amount', 'Gross Revenue', 'Revenue'];
     $statusCols = ['new', 'accepted', 'en_route', 'in_progress', 'completed', 'cancelled'];
     $hasRows = count($data['rows']) > 0;
 @endphp

@@ -262,6 +262,10 @@ a{text-decoration:none;color:inherit}
           <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Book Now
         </button>
       @endauth
+
+      <button type="button" onclick="openShareModal()" class="btn btn-outline" style="width:100%;margin-top:10px;justify-content:center;">
+        <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Share Profile &amp; QR
+      </button>
     </div>
 
     <div class="profile-content">
@@ -326,7 +330,7 @@ a{text-decoration:none;color:inherit}
             @foreach($reviews as $review)
               <div class="review-item">
                 <div class="review-header">
-                  <span class="reviewer">{{ $review->client?->name ?? 'Anonymous' }}</span>
+                  <span class="reviewer">{{ $review->display_name }}</span>
                   <div class="stars">
                     @for($s = 1; $s <= 5; $s++)
                       <i class="fa-{{ $s <= $review->rating ? 'solid' : 'regular' }} fa-star" aria-hidden="true"></i>
@@ -386,7 +390,7 @@ a{text-decoration:none;color:inherit}
         <li><a href="{{ route('home') }}#faq"><i class="fa-solid fa-circle-question fa-fw" aria-hidden="true"></i> FAQ</a></li>
         <li><a href="/contact"><i class="fa-solid fa-envelope fa-fw" aria-hidden="true"></i> Contact</a></li>
         <li><a href="/privacy"><i class="fa-solid fa-shield fa-fw" aria-hidden="true"></i> Privacy Policy</a></li>
-        <li><a href="/terms"><i class="fa-solid fa-file-lines fa-fw" aria-hidden="true"></i> Terms of Service</a></li>
+        <li><a href="/terms"><i class="fa-solid fa-file-lines fa-fw" aria-hidden="true"></i> Terms &amp; Guidelines</a></li>
       </ul>
     </div>
   </div>
@@ -448,6 +452,41 @@ a{text-decoration:none;color:inherit}
     <div class="modal-actions">
       <button onclick="goToSignIn()" class="btn btn-solid"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign In</button>
       <button onclick="goToSignUp()" class="btn-ghost-dark"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Create Account</button>
+    </div>
+  </div>
+</div>
+
+<div id="shareModal" class="modal-overlay" onclick="if(event.target===this)hideShareModal()">
+  <div class="modal-box" style="max-width:420px;">
+    <button class="modal-close" onclick="hideShareModal()" aria-label="Close">&times;</button>
+    <div class="modal-icon"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></div>
+    <h2>Share {{ $worker->name }}'s Profile</h2>
+    <p style="margin-bottom:14px;">Scan the QR code or share this link to open the profile from any device.</p>
+
+    @if($worker->share_code)
+      <div style="display:inline-block;background:var(--b0,#E6F1FB);color:var(--b7,#185FA5);border:1px dashed var(--b4,#378ADD);border-radius:8px;padding:6px 14px;font-weight:700;letter-spacing:.06em;font-size:.9rem;margin-bottom:14px;">
+        {{ $worker->share_code }}
+      </div>
+    @endif
+
+    <div style="background:#f8fafc;padding:14px;border-radius:12px;display:inline-block;border:1px solid #e2e8f0;margin-bottom:14px;">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($worker->share_url) }}" alt="QR code for {{ $worker->name }}'s profile" style="width:160px;height:160px;border-radius:6px;display:block;">
+    </div>
+
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <input type="text" id="shareWorkerUrl" value="{{ $worker->share_url }}" readonly style="flex:1;min-width:0;font-size:.8rem;padding:9px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:var(--g7,#3D4A56);">
+      <button type="button" class="btn btn-solid" onclick="copyShareUrl()" id="copyShareBtn" style="padding:9px 14px;">
+        <i class="fa-regular fa-copy" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($worker->share_url) }}" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
+        <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Facebook
+      </a>
+      <a href="https://api.whatsapp.com/send?text={{ urlencode('Check out ' . $worker->name . ' on KaAyos: ' . $worker->share_url) }}" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
+        <i class="fa-brands fa-whatsapp" style="color:#22c55e;"></i> WhatsApp
+      </a>
     </div>
   </div>
 </div>
@@ -549,6 +588,28 @@ function goToSignUp() {
 }
 function showSignInModal() { document.getElementById('signInModal').classList.add('active'); }
 function hideSignInModal() { document.getElementById('signInModal').classList.remove('active'); }
+
+function openShareModal() { document.getElementById('shareModal').classList.add('active'); }
+function hideShareModal() { document.getElementById('shareModal').classList.remove('active'); }
+function copyShareUrl() {
+  var input = document.getElementById('shareWorkerUrl');
+  if (!input) return;
+  input.select();
+  input.setSelectionRange(0, 99999);
+  var done = function () {
+    var btn = document.getElementById('copyShareBtn');
+    if (!btn) return;
+    var original = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i>';
+    setTimeout(function () { btn.innerHTML = original; }, 1500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(input.value).then(done).catch(function () { document.execCommand('copy'); done(); });
+  } else {
+    document.execCommand('copy');
+    done();
+  }
+}
 
 (function() {
   var intent = null;

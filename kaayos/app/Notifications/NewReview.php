@@ -20,9 +20,13 @@ class NewReview extends Notification implements ShouldQueue
 
     public function toDatabase(object $notifiable): array
     {
+        $reviewer = $this->review->is_anonymous
+            ? 'A client'
+            : ($this->review->client->name ?? 'A client');
+
         return [
             'title'      => 'New Review',
-            'message'    => $this->review->client->name . ' gave you a ' . $this->review->rating . '-star review.',
+            'message'    => $reviewer . ' gave you a ' . $this->review->rating . '-star review.',
             'booking_id' => $this->review->booking_id,
             'type'       => 'review',
         ];

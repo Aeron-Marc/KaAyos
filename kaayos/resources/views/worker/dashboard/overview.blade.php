@@ -69,6 +69,8 @@
         || $profile->location_is_approximate === true;
 @endphp
 
+@include('worker.partials.verification-banner')
+
 <div class="welcome-banner">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <p class="welcome-location"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <span id="displayedResidence">{{ auth()->user()->residence }}</span></p>

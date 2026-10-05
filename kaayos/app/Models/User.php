@@ -23,6 +23,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'password',
         'role',
+        'share_code',
         'service_category',
         'city',
         'barangay',
@@ -60,7 +61,45 @@ class User extends Authenticatable implements MustVerifyEmail
             if (empty($user->name) && $user->first_name && $user->last_name) {
                 $user->name = "{$user->first_name} {$user->last_name}";
             }
+
+            if ($user->role === 'worker' && empty($user->share_code)) {
+                $user->share_code = static::uniqueShareCode();
+            }
         });
+    }
+
+    public const SHARE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+    public static function generateShareCode(): string
+    {
+        $code = '';
+        $max = strlen(static::SHARE_CODE_ALPHABET) - 1;
+
+        for ($i = 0; $i < 5; $i++) {
+            $code .= static::SHARE_CODE_ALPHABET[random_int(0, $max)];
+        }
+
+        return $code;
+    }
+
+    protected static function uniqueShareCode(): string
+    {
+        $attempts = 0;
+
+        do {
+            $code = 'ID-' . static::generateShareCode();
+            $attempts++;
+            $exists = static::where('share_code', $code)->exists();
+        } while ($exists && $attempts < 10);
+
+        return $code;
+    }
+
+    public function getShareUrlAttribute(): string
+    {
+        return $this->share_code
+            ? url('/worker/' . $this->share_code)
+            : url('/workers/' . $this->id);
     }
 
     protected $hidden = [
@@ -256,5 +295,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function bookingCrews(): HasMany
     {
         return $this->hasMany(BookingWorker::class, 'worker_id');
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(ClientAddress::class);
     }
 }

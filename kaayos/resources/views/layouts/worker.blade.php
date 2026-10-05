@@ -65,6 +65,17 @@
                 {{ __('nav.documents') }}
             </a>
 
+            <a href="{{ route('worker.services.index') }}"
+               class="nav-item {{ request()->routeIs('worker.services.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-list-check nav-icon" aria-hidden="true"></i>
+                {{ __('nav.my_services') }}
+            </a>
+
+            <a href="{{ route('terms') }}" target="_blank" rel="noopener" class="nav-item">
+                <i class="fa-solid fa-file-shield nav-icon" aria-hidden="true"></i>
+                Terms &amp; Guidelines
+            </a>
+
         </nav>
 
         <div class="sidebar-spacer"></div>

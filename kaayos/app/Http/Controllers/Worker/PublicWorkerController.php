@@ -13,6 +13,20 @@ class PublicWorkerController extends Controller
             abort(404);
         }
 
+        return $this->renderPublicProfile($worker);
+    }
+
+    public function showByCode(string $code)
+    {
+        $worker = User::where('share_code', strtoupper($code))
+            ->where('role', 'worker')
+            ->firstOrFail();
+
+        return $this->renderPublicProfile($worker);
+    }
+
+    protected function renderPublicProfile(User $worker)
+    {
         $worker->load('workerProfile.portfolios', 'workerDocuments');
 
         $reviews = $worker->reviewsReceived()->with('client')->latest()->get();

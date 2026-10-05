@@ -37,6 +37,8 @@
     <p>Submit the required documents to verify your identity and credentials. Verified workers get more booking requests and higher trust from clients.</p>
 </div>
 
+@include('worker.partials.verification-banner')
+
 <div class="card-panel">
     <div class="card-panel-header">
         <div>

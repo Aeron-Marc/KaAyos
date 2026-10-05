@@ -16,11 +16,14 @@ class Booking extends Model
         'client_id',
         'worker_id',
         'service_category',
+        'service_id',
+        'service_name',
         'scheduled_at',
         'address',
         'notes',
         'status',
         'price',
+        'tip_amount',
         'completed_at',
         'cancelled_at',
         'cancellation_reason',
@@ -122,10 +125,12 @@ class Booking extends Model
     protected $casts = [
         'client_id' => 'integer',
         'worker_id' => 'integer',
+        'service_id' => 'integer',
         'scheduled_at' => 'datetime',
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'price' => 'decimal:2',
+        'tip_amount' => 'decimal:2',
         'reschedule_proposed_at' => 'datetime',
         'reschedule_responded_at' => 'datetime',
         'agreed_by_client_at' => 'datetime',
@@ -189,6 +194,11 @@ class Booking extends Model
     public function worker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'worker_id');
+    }
+
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(Service::class, 'service_id');
     }
 
     public function earning(): HasOne

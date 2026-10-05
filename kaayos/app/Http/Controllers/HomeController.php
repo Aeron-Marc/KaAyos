@@ -49,7 +49,7 @@ class HomeController extends Controller
                 'recent_reviews' => $u->reviewsReceived->map(fn($r) => [
                     'rating'     => $r->rating,
                     'comment'    => $r->comment,
-                    'client_name' => $r->client?->name ?? 'Anonymous',
+                    'client_name' => $r->display_name,
                 ])->toArray(),
                 'latitude'  => $u->latitude ?? $u->workerProfile?->current_latitude
                     ?? (\App\Support\TuyBarangays::pointForStatic($u->barangay ?? 'Luna')[0]),

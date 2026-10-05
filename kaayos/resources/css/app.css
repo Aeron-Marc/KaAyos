@@ -1176,6 +1176,24 @@ a.notif-item { text-decoration: none; color: inherit; }
     background: var(--white);
 }
 
+/* Checkboxes/radios must not inherit the full-width text-input styling */
+.form-group input[type="checkbox"],
+.form-group input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    background: none;
+    accent-color: var(--b6, #2563eb);
+    flex-shrink: 0;
+}
+
+.form-group input[type="checkbox"]:focus,
+.form-group input[type="radio"]:focus {
+    border-color: transparent;
+    background: none;
+}
+
 /* ── Empty state ── */
 .empty-state {
     text-align: center;

@@ -82,6 +82,14 @@
                     <button type="button" class="photo-remove" data-pending="{{ $pi }}">&times;</button>
                 </div>
             </div>
+            <label class="anon-toggle" for="anonToggle{{ $pi }}">
+                <input type="checkbox" id="anonToggle{{ $pi }}" class="anon-checkbox" data-pending="{{ $pi }}">
+                <span class="anon-switch" aria-hidden="true"></span>
+                <span class="anon-text">
+                    <strong>Post anonymously</strong>
+                    <small>Your name will be hidden and shown as "Anonymous" on your worker's public profile.</small>
+                </span>
+            </label>
             <button type="button" class="btn btn-solid submit-review-btn" data-pending-index="{{ $pi }}">Submit Review</button>
         </div>
     @endforeach
@@ -100,6 +108,9 @@
                 @for($s = 1; $s <= 5; $s++)
                     <i class="fa-solid fa-star" style="{{ $s <= $review['rating'] ? '' : 'opacity:.25;' }}" aria-hidden="true"></i>
                 @endfor
+                @if(!empty($review['is_anonymous']))
+                    <span class="anon-badge"><i class="fa-solid fa-user-secret" aria-hidden="true"></i> Anonymous</span>
+                @endif
             </div>
             @if($review['photo_url'])
                 <div class="review-photo-wrap js-lightbox-trigger" data-photo-url="{{ $review['photo_url'] }}">
@@ -120,6 +131,30 @@
         </div>
     </div>
 @endif
+
+{{-- Pre-negative feedback: nudges the client to message the worker before submitting a 1-2 star review --}}
+<div id="negativeFeedbackModal" class="modal-overlay" style="display:none;" onclick="closeNegativeFeedbackModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> We're sorry it didn't go well</h3>
+            <button type="button" class="modal-close" onclick="closeNegativeFeedbackModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:.9rem;color:var(--g7);line-height:1.6;margin-bottom:10px;">
+                Before sharing your feedback, we encourage you to message <strong id="negativeFeedbackWorker">your worker</strong>
+                directly — most issues can be resolved quickly when both parties talk it out.
+            </p>
+            <p style="font-size:.82rem;color:var(--g4);line-height:1.6;">
+                Your rating and comment are saved and will still be there if you choose to continue.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeNegativeFeedbackModal()">Cancel</button>
+            <a id="negativeFeedbackMessageBtn" href="#" class="btn btn-outline"><i class="fa-regular fa-comment"></i> Message Worker</a>
+            <button type="button" class="btn btn-solid" id="negativeFeedbackContinueBtn">Continue &amp; Submit</button>
+        </div>
+    </div>
+</div>
 
 {{-- Lightbox --}}
 <div id="lightbox" class="lightbox-overlay" style="display:none;">
@@ -229,6 +264,76 @@
 }
 .review-photo-wrap:hover .review-photo-overlay {
     opacity: 1;
+}
+
+/* ── Anonymous review toggle ── */
+.anon-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    background: var(--off, #F7F8FA);
+    border: 1px solid var(--g1, #E8ECF0);
+    border-radius: 10px;
+    cursor: pointer;
+}
+.anon-toggle input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.anon-switch {
+    position: relative;
+    width: 34px;
+    height: 19px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    background: var(--g2, #D5DBE2);
+    border-radius: 999px;
+    transition: background .18s;
+}
+.anon-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 15px;
+    height: 15px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .18s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.anon-toggle input:checked + .anon-switch {
+    background: var(--b6, #1A6FC4);
+}
+.anon-toggle input:checked + .anon-switch::after {
+    transform: translateX(15px);
+}
+.anon-text strong {
+    display: block;
+    font-size: .85rem;
+    color: var(--g9, #1B2430);
+}
+.anon-text small {
+    display: block;
+    font-size: .75rem;
+    color: var(--g4, #8C97A4);
+    line-height: 1.4;
+}
+.anon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 2px 8px;
+    font-size: .7rem;
+    font-weight: 600;
+    color: var(--b7, #185FA5);
+    background: var(--b0, #E6F1FB);
+    border-radius: 999px;
+    vertical-align: middle;
 }
 
 /* ── Lightbox ── */
@@ -401,10 +506,34 @@ function submitReview(index) {
         return;
     }
 
+    if (rating <= 2 && pending.worker_id) {
+        openNegativeFeedbackModal(index, pending);
+        return;
+    }
+
+    doSubmitReview(index);
+}
+
+function doSubmitReview(index) {
+    const pending = pendingReviews[index];
+    if (!pending) return;
+
+    const card = document.querySelector('.review-card[data-pending-index="' + index + '"]');
+    if (!card) return;
+
+    const picker = card.querySelector('.star-picker');
+    const rating = parseInt((picker && picker.dataset && picker.dataset.rating) ? picker.dataset.rating : '0', 10);
+    if (!rating) {
+        alert('Please select a rating.');
+        return;
+    }
+
     const reviewTextarea = card.querySelector('.review-textarea');
     const comment = reviewTextarea ? reviewTextarea.value.trim() : '';
     const photoInput = card.querySelector('.review-photo-input');
     const photoFile = photoInput && photoInput.files ? (photoInput.files[0] || null) : null;
+    const anonInput = card.querySelector('.anon-checkbox');
+    const isAnonymous = anonInput && anonInput.checked ? '1' : '0';
 
     const btn = card.querySelector('.btn.btn-solid');
     btn.disabled = true;
@@ -413,6 +542,7 @@ function submitReview(index) {
     const formData = new FormData();
     formData.append('rating', rating);
     formData.append('comment', comment);
+    formData.append('is_anonymous', isAnonymous);
     if (photoFile) formData.append('photo', photoFile);
 
     fetch(submitUrlTemplate.replace('__BOOKING__', pending.booking_id), {
@@ -437,5 +567,44 @@ function submitReview(index) {
         btn.textContent = 'Submit Review';
     });
 }
+
+// ── Pre-negative feedback modal (1-2 stars) ──
+let negativeFeedbackIndex = null;
+
+function openNegativeFeedbackModal(index, pending) {
+    negativeFeedbackIndex = index;
+    const modal = document.getElementById('negativeFeedbackModal');
+    const workerName = document.getElementById('negativeFeedbackWorker');
+    const messageBtn = document.getElementById('negativeFeedbackMessageBtn');
+
+    if (workerName) workerName.textContent = pending.worker || 'your worker';
+    if (messageBtn) {
+        messageBtn.href = '{{ route('client.messages.start') }}?worker_id=' + pending.worker_id;
+    }
+
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeNegativeFeedbackModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    const modal = document.getElementById('negativeFeedbackModal');
+    if (modal) modal.style.display = 'none';
+    negativeFeedbackIndex = null;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const continueBtn = document.getElementById('negativeFeedbackContinueBtn');
+    if (continueBtn) {
+        continueBtn.addEventListener('click', function () {
+            const index = negativeFeedbackIndex;
+            closeNegativeFeedbackModal();
+            if (index !== null) doSubmitReview(index);
+        });
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeNegativeFeedbackModal();
+    });
+});
 </script>
 @endpush

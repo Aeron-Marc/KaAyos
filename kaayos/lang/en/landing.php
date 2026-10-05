@@ -103,7 +103,7 @@ return [
     'footer_about' => 'About KaAyos',
     'footer_contact' => 'Contact',
     'footer_privacy' => 'Privacy Policy',
-    'footer_terms' => 'Terms of Service',
+    'footer_terms' => 'Terms & Guidelines',
     'footer_safety' => 'Safety',
 
     // AI Assistant

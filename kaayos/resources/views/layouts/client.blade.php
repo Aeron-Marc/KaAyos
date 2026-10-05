@@ -65,10 +65,21 @@
                 {{ __('nav.suggestions') }}
             </a>
 
+            <a href="{{ route('client.account.addresses') }}"
+               class="nav-item {{ request()->routeIs('client.account.addresses*') ? 'active' : '' }}">
+                <i class="fa-solid fa-map-location-dot nav-icon" aria-hidden="true"></i>
+                {{ __('nav.addresses') }}
+            </a>
+
             <a href="{{ route('client.account.profile') }}"
-               class="nav-item {{ request()->routeIs('client.account*') ? 'active' : '' }}">
+               class="nav-item {{ request()->routeIs('client.account.profile*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user nav-icon" aria-hidden="true"></i>
                 {{ __('nav.account') }}
+            </a>
+
+            <a href="{{ route('terms') }}" target="_blank" rel="noopener" class="nav-item">
+                <i class="fa-solid fa-file-shield nav-icon" aria-hidden="true"></i>
+                Terms &amp; Guidelines
             </a>
 
         </nav>

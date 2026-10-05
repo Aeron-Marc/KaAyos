@@ -103,7 +103,7 @@ return [
     'footer_about' => 'Tungkol sa KaAyos',
     'footer_contact' => 'Kontak',
     'footer_privacy' => 'Patakaran sa Privacy',
-    'footer_terms' => 'Kasunduan sa Serbisyo',
+    'footer_terms' => 'Mga Tuntunin at Alituntunin',
     'footer_safety' => 'Kaligtasan',
 
     // AI Assistant

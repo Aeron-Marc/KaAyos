@@ -9,7 +9,7 @@
         ? $routeWith(['type' => $key, 'preset' => $preset])
         : $routeWith(['type' => $key, 'date_from' => $from, 'date_to' => $to]);
     $exportParams = ['type' => $type, 'date_from' => $from, 'date_to' => $to];
-    $moneyCols = ['Price', 'Total Value', 'Gross Amount', 'Platform Fee', 'Net Amount', 'Gross Revenue', 'Revenue'];
+    $moneyCols = ['Price', 'Total Value', 'Gross Amount', 'Platform Fee', 'Tip', 'Net Amount', 'Gross Revenue', 'Revenue'];
     $statusCols = ['new', 'accepted', 'en_route', 'in_progress', 'completed', 'cancelled'];
 @endphp
 <div class="header">

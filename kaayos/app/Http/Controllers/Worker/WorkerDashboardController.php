@@ -100,20 +100,7 @@ class WorkerDashboardController extends Controller
                 $afterSave = function (Booking $fresh) use ($user) {
                     // Only record earnings if job is fully completed (both parties confirmed)
                     if ($fresh->status === Booking::STATUS_COMPLETED) {
-                        $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                        $gross = $fresh->price ?? 0;
-                        $fee = round($gross * ($platformFeePercent / 100), 2);
-                        $net = $gross - $fee;
-
-                        Earning::updateOrCreate(
-                            ['booking_id' => $fresh->id],
-                            [
-                                'worker_id' => $user->id,
-                                'gross_amount' => $gross,
-                                'platform_fee' => $fee,
-                                'net_amount' => $net,
-                            ]
-                        );
+                        Earning::recordForBooking($fresh, $user->id);
                     }
                 };
 
@@ -227,20 +214,7 @@ class WorkerDashboardController extends Controller
             $afterSave = function (Booking $fresh) use ($user) {
                 // Record earnings if job is now fully completed
                 if ($fresh->status === Booking::STATUS_COMPLETED) {
-                    $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                    $gross = $fresh->price ?? 0;
-                    $fee = round($gross * ($platformFeePercent / 100), 2);
-                    $net = $gross - $fee;
-
-                    Earning::updateOrCreate(
-                        ['booking_id' => $fresh->id],
-                        [
-                            'worker_id' => $user->id,
-                            'gross_amount' => $gross,
-                            'platform_fee' => $fee,
-                            'net_amount' => $net,
-                        ]
-                    );
+                    Earning::recordForBooking($fresh, $user->id);
                 }
             };
 

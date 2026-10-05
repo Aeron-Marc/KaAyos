@@ -145,6 +145,7 @@ class ClientController extends Controller
                     'status'        => ucfirst($b->status),
                     'raw_status'    => $b->status,
                     'price'         => $b->price ?? 0,
+                    'tip_amount'    => (float) ($b->tip_amount ?? 0),
                     'property_type' => $b->property_type ?? 'residential',
                     'pricing_type'  => $b->pricing_type ?? 'fixed',
                     'estimated_duration_hours' => $b->estimated_duration_hours ?? 2.0,
@@ -313,6 +314,7 @@ class ClientController extends Controller
             ->get()
             ->map(fn ($b) => [
                 'worker'  => $b->worker->name ?? 'Unknown',
+                'worker_id' => $b->worker_id,
                 'service' => $b->service_category,
                 'date'    => $b->completed_at?->format('M d, Y') ?? $b->scheduled_at->format('M d, Y'),
                 'booking_id' => $b->id,
@@ -327,6 +329,7 @@ class ClientController extends Controller
                 'rating'    => $r->rating,
                 'comment'   => $r->comment,
                 'photo_url' => $r->photo_url,
+                'is_anonymous' => (bool) $r->is_anonymous,
             ])->toArray(),
         ];
     }
@@ -638,17 +641,36 @@ class ClientController extends Controller
             'worker_id'        => ['required', 'exists:users,id'],
             'service_category' => ['required', 'string', 'max:255'],
             'scheduled_at'     => ['required', 'date', 'after:now'],
-            'house_no'         => ['required', 'string', 'max:255'],
-            'barangay'         => ['required', 'string', 'max:255'],
+            'house_no'         => ['required_without:address_id', 'string', 'max:255'],
+            'barangay'         => ['required_without:address_id', 'string', 'max:255'],
+            'address_id'       => ['nullable', 'integer'],
             'property_type'    => ['nullable', 'string', 'in:residential,apartment,commercial,industrial,tenant,property_manager'],
             'pricing_type'     => ['nullable', 'string', 'in:fixed,hourly'],
             'estimated_duration_hours' => ['nullable', 'numeric', 'min:0.5', 'max:24'],
             'complexity_level' => ['nullable', 'string', 'in:standard,moderate,complex,high_hazard,hazardous'],
             'notes'            => ['nullable', 'string', 'max:2000'],
             'price'            => ['nullable', 'numeric', 'min:0'],
+            'service_id'       => ['nullable', 'integer', 'exists:services,id'],
             'latitude'         => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'        => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+
+        // A saved address snapshot overrides the client-sent fields (anti-tamper).
+        if (!empty($validated['address_id'])) {
+            $addressRecord = auth()->user()->addresses()->find($validated['address_id']);
+
+            if (! $addressRecord) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The selected address is invalid.',
+                ], 422);
+            }
+
+            $validated['house_no']  = $addressRecord->house_no;
+            $validated['barangay']  = $addressRecord->barangay;
+            $validated['latitude']  = $addressRecord->latitude;
+            $validated['longitude'] = $addressRecord->longitude;
+        }
 
         $worker = User::findOrFail($validated['worker_id']);
         if ($worker->role !== 'worker') {
@@ -668,6 +690,8 @@ class ClientController extends Controller
         // Resolve service and price from provider_services
         $price = $validated['price'] ?? 0;
         $serviceCategory = $validated['service_category'];
+        $selectedServiceId = null;
+        $selectedServiceName = null;
 
         if (!empty($validated['service_id'])) {
             $providerService = \App\Models\ProviderService::where('user_id', $worker->id)
@@ -676,14 +700,30 @@ class ClientController extends Controller
                 ->with('service')
                 ->first();
 
-            if ($providerService && $providerService->service) {
-                $serviceCategory = $providerService->service->name;
-                $price = $providerService->custom_price ?? $providerService->service->base_price ?? 0;
+            if (! $providerService || ! $providerService->service) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This worker does not offer the selected service right now.',
+                ], 422);
             }
+
+            $selectedServiceId = $providerService->service_id;
+            $selectedServiceName = $providerService->service->name;
+            $price = $providerService->custom_price ?? $providerService->service->base_price ?? 0;
         }
 
         // Pricing, Duration, and Complexity Calculations
         $pricingType = $validated['pricing_type'] ?? 'fixed';
+
+        // A service's billing type overrides the client-selected mode (anti-tamper).
+        // 'either' keeps the client's choice; no service selected keeps today's behavior.
+        if ($selectedServiceId !== null) {
+            $serviceBilling = $providerService->service->billing_type ?? 'either';
+            if (in_array($serviceBilling, ['fixed', 'hourly'], true)) {
+                $pricingType = $serviceBilling;
+            }
+        }
+
         $durationHours = (float) ($validated['estimated_duration_hours'] ?? 2.0);
         $complexityLevel = $validated['complexity_level'] ?? 'standard';
         $complexityMultiplier = match($complexityLevel) {
@@ -699,19 +739,6 @@ class ClientController extends Controller
         }
 
         $finalPrice = round($basePrice * $complexityMultiplier, 2);
-
-        // Validate price against service min/max range
-        if ($finalPrice > 0) {
-            $service = \App\Models\Service::where('name', $serviceCategory)->first();
-            if ($service) {
-                if ($service->min_price !== null && $finalPrice < $service->min_price) {
-                    return response()->json(['success' => false, 'message' => "The minimum price for {$service->name} is ₱" . number_format($service->min_price, 2) . "."], 422);
-                }
-                if ($service->max_price !== null && $finalPrice > $service->max_price) {
-                    return response()->json(['success' => false, 'message' => "The maximum price for {$service->name} is ₱" . number_format($service->max_price, 2) . "."], 422);
-                }
-            }
-        }
 
         $newStart = Carbon::parse($validated['scheduled_at']);
 
@@ -797,11 +824,13 @@ class ClientController extends Controller
 
         $address = $validated['house_no'] . ', ' . $validated['barangay'] . ', ' . config('kaayos.default_location');
 
-        $booking = DB::transaction(function () use ($validated, $address, $worker, $serviceCategory, $finalPrice, $pricingType, $durationHours, $complexityLevel, $complexityMultiplier, $clientLat, $clientLng, $travelMetrics) {
+        $booking = DB::transaction(function () use ($validated, $address, $worker, $serviceCategory, $selectedServiceId, $selectedServiceName, $finalPrice, $pricingType, $durationHours, $complexityLevel, $complexityMultiplier, $clientLat, $clientLng, $travelMetrics) {
             $booking = Booking::create([
                 'client_id'                    => auth()->id(),
                 'worker_id'                    => $validated['worker_id'],
                 'service_category'             => $serviceCategory,
+                'service_id'                   => $selectedServiceId,
+                'service_name'                 => $selectedServiceName,
                 'scheduled_at'                 => $validated['scheduled_at'],
                 'address'                      => $address,
                 'house_no'                     => $validated['house_no'],
@@ -926,6 +955,7 @@ class ClientController extends Controller
             'rating'  => ['required', 'integer', 'min:1', 'max:5'],
             'comment' => ['nullable', 'string', 'max:2000'],
             'photo'   => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'is_anonymous' => ['nullable', 'boolean'],
         ]);
 
         $photoPath = $request->hasFile('photo')
@@ -940,6 +970,7 @@ class ClientController extends Controller
                 'rating'     => $validated['rating'],
                 'comment'    => $validated['comment'] ?? null,
                 'photo_path' => $photoPath,
+                'is_anonymous' => $request->boolean('is_anonymous'),
             ]
         );
 
@@ -956,6 +987,20 @@ class ClientController extends Controller
         return response()->json(['success' => true, 'review' => $review]);
     }
 
+    protected function persistTip(Request $request, Booking $booking): void
+    {
+        if (!$request->filled('tip_amount')) {
+            return;
+        }
+
+        $validated = $request->validate([
+            'tip_amount' => ['nullable', 'numeric', 'min:0', 'max:10000'],
+        ]);
+
+        $booking->tip_amount = round((float) $validated['tip_amount'], 2);
+        $booking->save();
+    }
+
     public function markJobComplete(Request $request, Booking $booking): JsonResponse
     {
         if ($booking->client_id !== auth()->id()) {
@@ -968,6 +1013,8 @@ class ClientController extends Controller
                 'message' => 'Can only mark complete jobs that are in progress.',
             ], 422);
         }
+
+        $this->persistTip($request, $booking);
 
         try {
             $booking->markComplete(auth()->user());
@@ -1021,23 +1068,12 @@ class ClientController extends Controller
             ], 422);
         }
 
+        $this->persistTip($request, $booking);
+
         try {
             $afterSave = function (Booking $fresh) {
                 if ($fresh->status === Booking::STATUS_COMPLETED) {
-                    $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                    $gross = $fresh->price ?? 0;
-                    $fee = round($gross * ($platformFeePercent / 100), 2);
-                    $net = $gross - $fee;
-
-                    Earning::updateOrCreate(
-                        ['booking_id' => $fresh->id],
-                        [
-                            'worker_id'    => $fresh->worker_id,
-                            'gross_amount' => $gross,
-                            'platform_fee' => $fee,
-                            'net_amount'   => $net,
-                        ]
-                    );
+                    Earning::recordForBooking($fresh);
                 }
             };
 

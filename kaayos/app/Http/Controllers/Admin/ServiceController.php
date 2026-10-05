@@ -44,6 +44,7 @@ class ServiceController extends Controller
             'slug'        => Str::slug($request->input('slug')),
             'description' => $request->input('description'),
             'base_price'  => $request->input('base_price'),
+            'billing_type' => $request->input('billing_type', 'either'),
         ]);
 
         return redirect()->route('admin.services.index')
@@ -64,6 +65,7 @@ class ServiceController extends Controller
             'slug'        => Str::slug($request->input('slug')),
             'description' => $request->input('description'),
             'base_price'  => $request->input('base_price'),
+            'billing_type' => $request->input('billing_type', 'either'),
             'is_active'   => $request->boolean('is_active', true),
         ]);
 

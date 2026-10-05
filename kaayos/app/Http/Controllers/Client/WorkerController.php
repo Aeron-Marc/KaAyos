@@ -198,6 +198,11 @@ class WorkerController extends Controller
             ->filter(fn ($ps) => $ps->service && $ps->is_available)
             ->values();
 
+        $clientAddresses = auth()->user()->addresses()
+            ->orderByDesc('is_default')
+            ->orderBy('id')
+            ->get();
+
         return view('client.workers.show', [
             'worker'              => $worker,
             'workerProfile'       => $worker->workerProfile,
@@ -205,6 +210,7 @@ class WorkerController extends Controller
             'reviews'             => $reviews,
             'canMessage'          => (bool) $existingBooking,
             'workerServices'      => $workerServices,
+            'clientAddresses'     => $clientAddresses,
         ]);
     }
 }

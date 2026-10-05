@@ -174,6 +174,7 @@ class ReportService
             'Service Category' => $b->service_category,
             'Gross Amount' => (float) $b->price,
             'Platform Fee' => $b->earning?->platform_fee !== null ? (float) $b->earning->platform_fee : null,
+            'Tip' => (float) ($b->tip_amount ?? 0),
             'Net Amount' => $b->earning?->net_amount !== null ? (float) $b->earning->net_amount : null,
             'Paid At' => $b->earning?->paid_at?->format('Y-m-d H:i'),
             'Completed At' => $b->completed_at?->format('Y-m-d H:i'),
@@ -190,7 +191,7 @@ class ReportService
                 $this->kpi('Avg Booking Value', $total ? round($gross / $total, 2) : 0, 'fa-chart-simple', 'blue', true),
             ],
             'chart' => $this->trendChart($from, $to, $trend, 'Revenue (₱)', '#10B981', 'bar'),
-            'columns' => ['Booking Ref', 'Client', 'Worker', 'Service Category', 'Gross Amount', 'Platform Fee', 'Net Amount', 'Paid At', 'Completed At'],
+            'columns' => ['Booking Ref', 'Client', 'Worker', 'Service Category', 'Gross Amount', 'Platform Fee', 'Tip', 'Net Amount', 'Paid At', 'Completed At'],
             'rows' => $rows,
             'total_rows' => $total,
         ];
@@ -446,7 +447,7 @@ class ReportService
 
         $rows = $collection->map(fn (Review $r) => [
             'Date' => $r->created_at->format('Y-m-d H:i'),
-            'Client' => $r->client->name ?? 'N/A',
+            'Client' => ($r->client->name ?? 'N/A').($r->is_anonymous ? ' (posted anonymously)' : ''),
             'Worker' => $r->worker->name ?? 'N/A',
             'Booking Ref' => $r->booking?->booking_ref ?? 'N/A',
             'Rating' => $r->rating.' / 5',

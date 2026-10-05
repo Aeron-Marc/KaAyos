@@ -73,6 +73,7 @@
                 <th>Client</th>
                 <th>Job</th>
                 <th>Amount</th>
+                <th>Tip</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -84,6 +85,13 @@
                     <td>{{ $payout['job'] }}</td>
                     <td>₱{{ number_format($payout['amount']) }}</td>
                     <td>
+                        @if(!empty($payout['tip']))
+                            <span style="color:#16a34a;font-weight:600;">₱{{ number_format($payout['tip']) }}</span>
+                        @else
+                            <span style="color:var(--g4);">—</span>
+                        @endif
+                    </td>
+                    <td>
                         @php
                             $statusClass = $payout['status'] === 'Completed' ? 'status-done' : 'status-pending';
                         @endphp
@@ -92,7 +100,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5">
+                    <td colspan="6">
                         <div class="empty-state">
                             <i class="fa-regular fa-coins" aria-hidden="true"></i>
                             <h3>No earnings yet</h3>

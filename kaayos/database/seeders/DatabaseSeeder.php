@@ -186,6 +186,10 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        foreach (\App\Support\BillingTypeCatalog::MAP as $serviceName => $billingType) {
+            Service::where('name', $serviceName)->update(['billing_type' => $billingType]);
+        }
+
         // ═══════════════════════════════════════════════════════════
         //  3. ADMIN USER
         // ═══════════════════════════════════════════════════════════

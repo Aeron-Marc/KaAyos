@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\CompleteProfileController;
+use App\Http\Controllers\Client\AddressController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
 use App\Http\Controllers\HomeController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\Worker\MyServicesController;
 use App\Http\Controllers\Worker\PublicWorkerController;
 use App\Http\Controllers\Worker\WorkerController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
@@ -46,6 +48,11 @@ Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirectT
 Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'handleProviderCallback'])->name('social.callback');
 
 Route::get('/workers/{worker}', [PublicWorkerController::class, 'show'])->name('workers.public.show');
+
+// Shareable worker profile link, e.g. /worker/ID-4K7QP
+Route::get('/worker/{code}', [PublicWorkerController::class, 'showByCode'])
+    ->where('code', 'ID-[A-Z0-9]{4,12}')
+    ->name('workers.share');
 
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 
@@ -92,6 +99,11 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::get('/reviews', [ClientController::class, 'reviews'])->name('reviews');
     Route::get('/suggestions', [ClientController::class, 'suggestions'])->name('suggestions');
     Route::get('/account/profile', [ClientController::class, 'profile'])->name('account.profile');
+    Route::get('/account/addresses', [AddressController::class, 'index'])->name('account.addresses');
+    Route::post('/account/addresses', [AddressController::class, 'store'])->name('account.addresses.store');
+    Route::put('/account/addresses/{address}', [AddressController::class, 'update'])->name('account.addresses.update');
+    Route::delete('/account/addresses/{address}', [AddressController::class, 'destroy'])->name('account.addresses.destroy');
+    Route::patch('/account/addresses/{address}/default', [AddressController::class, 'setDefault'])->name('account.addresses.default');
 
     Route::get('/testimonials', [TestimonialController::class, 'index'])->name('testimonials.index');
     Route::get('/testimonials/create', [TestimonialController::class, 'create'])->name('testimonials.create');
@@ -144,6 +156,13 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::delete('/profile/portfolio/{id}', [WorkerController::class, 'deletePortfolio'])->name('profile.portfolio.delete');
     Route::post('/profile/document', [WorkerController::class, 'uploadDocument'])->name('profile.document');
     Route::get('/documents', [WorkerController::class, 'documents'])->name('documents');
+
+    // My Services (manage offered services, prices, availability)
+    Route::get('/services', [MyServicesController::class, 'index'])->name('services.index');
+    Route::post('/services', [MyServicesController::class, 'add'])->name('services.add');
+    Route::put('/services/{service}', [MyServicesController::class, 'updatePrice'])->name('services.price');
+    Route::patch('/services/{service}/toggle', [MyServicesController::class, 'toggle'])->name('services.toggle');
+    Route::delete('/services/{service}', [MyServicesController::class, 'destroy'])->name('services.remove');
 
     // Dashboard API endpoints
     Route::get('/dashboard/data', [WorkerDashboardController::class, 'dashboard'])->name('dashboard.data');
@@ -199,9 +218,7 @@ Route::post('/contact', function (Illuminate\Http\Request $request) {
     return redirect()->route('contact')->with('success', 'Thank you for your message! We will get back to you within 24 hours.');
 });
 Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
-Route::get('/terms', function () {
-    return view('pages.terms');
-})->name('terms');
+Route::get('/terms', [PageController::class, 'terms'])->name('terms');
 Route::get('/safety', [PageController::class, 'safety'])->name('safety');
 
 // Admin Routes

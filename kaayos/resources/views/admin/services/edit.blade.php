@@ -45,6 +45,16 @@
             @error('base_price') <div class="error">{{ $message }}</div> @enderror
         </div>
         <div class="form-group">
+            <label for="billing_type">Billing Type</label>
+            <select name="billing_type" id="billing_type">
+                <option value="either" {{ old('billing_type', $service->billing_type ?? 'either') == 'either' ? 'selected' : '' }}>Fixed or hourly (client chooses)</option>
+                <option value="fixed" {{ old('billing_type', $service->billing_type) == 'fixed' ? 'selected' : '' }}>Fixed price</option>
+                <option value="hourly" {{ old('billing_type', $service->billing_type) == 'hourly' ? 'selected' : '' }}>Hourly</option>
+            </select>
+            <div style="font-size:.78rem;color:#64748b;margin-top:4px;">Sets the default billing mode when a client books this service.</div>
+            @error('billing_type') <div class="error">{{ $message }}</div> @enderror
+        </div>
+        <div class="form-group">
             <label class="toggle-label">
                 <input type="checkbox" name="is_active" value="1" {{ old('is_active', $service->is_active) ? 'checked' : '' }}>
                 Active

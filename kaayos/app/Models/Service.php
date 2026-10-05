@@ -14,6 +14,7 @@ class Service extends Model
         'slug',
         'description',
         'base_price',
+        'billing_type',
         'is_active',
     ];
 
@@ -21,6 +22,8 @@ class Service extends Model
         'base_price' => 'decimal:2',
         'is_active'  => 'boolean',
     ];
+
+    const BILLING_TYPES = ['fixed', 'hourly', 'either'];
 
     public function category(): BelongsTo
     {

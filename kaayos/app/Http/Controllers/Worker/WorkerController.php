@@ -106,6 +106,7 @@ class WorkerController extends Controller
                     'status'         => $labelMap[$booking->status] ?? ucfirst($booking->status),
                     'raw_status'     => $booking->status,
                     'price'          => $booking->price ?? 0,
+                    'tip_amount'     => (float) ($booking->tip_amount ?? 0),
                     'property_type'  => $booking->property_type ?? 'residential',
                     'pricing_type'   => $booking->pricing_type ?? 'fixed',
                     'estimated_duration_hours' => $booking->estimated_duration_hours ?? 2.0,
@@ -353,6 +354,7 @@ class WorkerController extends Controller
             'status'              => $labelMap[$booking->status] ?? ucfirst($booking->status),
             'raw_status'          => $booking->status,
             'price'               => $booking->price ?? 0,
+            'tip_amount'          => (float) ($booking->tip_amount ?? 0),
             'property_type'       => $booking->property_type ?? 'residential',
             'pricing_type'        => $booking->pricing_type ?? 'fixed',
             'estimated_duration_hours' => $booking->estimated_duration_hours ?? 2.0,
@@ -564,16 +566,21 @@ class WorkerController extends Controller
 
         $completed = $user->bookingsAsWorker()->completed()->take(50)->get();
 
-        $total = (int) ($completed->sum('price') ?? 0);
-        $thisMonth = (int) ($completed->filter(function ($b) use ($now) {
+        $paidTotal = fn ($collection) => (float) $collection->sum('price') + (float) $collection->sum('tip_amount');
+
+        $thisMonthBookings = $completed->filter(function ($b) use ($now) {
             return $b->completed_at
                 && $b->completed_at->month === $now->month
                 && $b->completed_at->year === $now->year;
-        })->sum('price') ?? 0);
+        });
 
-        $pendingPayout = (int) ($user->bookingsAsWorker()
+        $activeBookings = $user->bookingsAsWorker()
             ->whereIn('status', [Booking::STATUS_ACCEPTED, Booking::STATUS_EN_ROUTE, Booking::STATUS_IN_PROGRESS])
-            ->sum('price') ?? 0);
+            ->get();
+
+        $total = (int) round($paidTotal($completed));
+        $thisMonth = (int) round($paidTotal($thisMonthBookings));
+        $pendingPayout = (int) round($paidTotal($activeBookings));
 
         $count = $completed->count();
         $avgPerJob = $count > 0 ? round($total / $count) : 0;
@@ -585,6 +592,7 @@ class WorkerController extends Controller
                     'client' => $booking->client->name ?? 'Unknown',
                     'job'    => $booking->service_category,
                     'amount' => $booking->price ?? 0,
+                    'tip'    => (float) ($booking->tip_amount ?? 0),
                     'status' => 'Completed',
                 ];
             })
@@ -612,10 +620,13 @@ class WorkerController extends Controller
                 'name'        => $type['name'],
                 'description' => $type['description'],
                 'icon'        => $type['icon'],
-                'status'      => $userDoc
-                    ? ($userDoc->status === 'verified' ? 'Verified'
-                        : ($userDoc->status === 'pending' ? 'Pending' : 'Not Submitted'))
-                    : 'Not Submitted',
+                'status'      => match (true) {
+                    !$userDoc => 'Not Submitted',
+                    $userDoc->status === 'verified' => 'Verified',
+                    $userDoc->status === 'pending' => 'Pending',
+                    $userDoc->status === 'rejected' => 'Rejected',
+                    default => 'Not Submitted',
+                },
                 'file'        => $userDoc?->file_path
                     ? basename($userDoc->file_path)
                     : null,
@@ -759,7 +770,7 @@ class WorkerController extends Controller
         $callback = function () use ($payouts) {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, ['Date', 'Client', 'Job', 'Amount (₱)', 'Status']);
+            fputcsv($handle, ['Date', 'Client', 'Job', 'Amount (₱)', 'Tip (₱)', 'Status']);
 
             foreach ($payouts as $row) {
                 fputcsv($handle, [
@@ -767,6 +778,7 @@ class WorkerController extends Controller
                     $row['client'],
                     $row['job'],
                     number_format($row['amount'], 2),
+                    number_format($row['tip'] ?? 0, 2),
                     $row['status'],
                 ]);
             }
@@ -858,7 +870,23 @@ class WorkerController extends Controller
             $updates['city'] = $data['city'];
         }
 
+        $oldCategory = $user->getOriginal('service_category');
         $user->update($updates);
+
+        // Specialty change: non-destructively link the new category's services
+        // (never removes existing links or custom prices).
+        $newCategory = $data['service_category'] ?? null;
+        if ($newCategory && $newCategory !== $oldCategory) {
+            $category = \App\Models\ServiceCategory::where('name', $newCategory)->first();
+            if ($category) {
+                foreach ($category->services()->active()->get() as $service) {
+                    \App\Models\ProviderService::firstOrCreate(
+                        ['user_id' => $user->id, 'service_id' => $service->id],
+                        ['is_available' => true]
+                    );
+                }
+            }
+        }
 
         $profile = $user->workerProfile ?? new WorkerProfile(['user_id' => $user->id]);
 

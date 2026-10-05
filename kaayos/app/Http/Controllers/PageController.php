@@ -42,6 +42,11 @@ class PageController extends Controller
         return view('pages.privacy');
     }
 
+    public function terms()
+    {
+        return view('pages.terms');
+    }
+
     public function safety()
     {
         return view('pages.safety');

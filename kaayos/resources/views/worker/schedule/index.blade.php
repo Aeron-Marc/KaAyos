@@ -905,6 +905,12 @@ function openJobModal(index) {
             '<span class="detail-value"><a href="' + navUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;font-size:.78rem;"><i class="fa-solid fa-diamond-turn-right" style="color:#2563eb;"></i> Open in Google Maps</a></span>' +
             '<span class="detail-label">Amount</span>' +
             '<span class="detail-value" style="font-weight:600;">₱' + Number(job.price).toLocaleString() + '</span>' +
+            (Number(job.tip_amount) > 0
+                ? '<span class="detail-label">Client Tip</span>' +
+                  '<span class="detail-value" style="color:#16a34a;font-weight:600;">₱' + Number(job.tip_amount).toLocaleString() + '</span>' +
+                  '<span class="detail-label">Total</span>' +
+                  '<span class="detail-value" style="font-weight:700;">₱' + (Number(job.price) + Number(job.tip_amount)).toLocaleString() + '</span>'
+                : '') +
             '<span class="detail-label">Description</span>' +
             '<span class="detail-value">' + desc + '</span>' +
             (cancelledAt ? '<span class="detail-label">Cancelled At</span><span class="detail-value">' + cancelledAt + '</span>' : '') +
@@ -1343,6 +1349,9 @@ function showConfirmModal(index) {
             '<span class="detail-label">Service</span><span class="detail-value">' + job.service + '</span>' +
             '<span class="detail-label">Schedule</span><span class="detail-value">' + job.date + '</span>' +
             '<span class="detail-label">Amount</span><span class="detail-value">₱' + Number(job.price).toLocaleString() + '</span>' +
+            (Number(job.tip_amount) > 0
+                ? '<span class="detail-label">Client Tip</span><span class="detail-value" style="color:#16a34a;">₱' + Number(job.tip_amount).toLocaleString() + '</span>'
+                : '') +
         '</div>' +
         '<p style="margin:14px 0 0;font-size:.82rem;color:var(--g4);">This action cannot be undone.</p>' +
         agreeHtml;
