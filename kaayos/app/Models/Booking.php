@@ -15,12 +15,19 @@ class Booking extends Model
         'booking_ref',
         'client_id',
         'worker_id',
+        'service_id',
         'service_category',
         'scheduled_at',
         'address',
         'notes',
         'status',
         'price',
+        'payment_scheme',
+        'agreed_rate',
+        'extras_total',
+        'payment_method',
+        'payment_status',
+        'payment_settled_at',
         'completed_at',
         'cancelled_at',
         'cancellation_reason',
@@ -146,6 +153,9 @@ class Booking extends Model
         'worker_live_updated_at' => 'datetime',
         'estimated_duration_hours' => 'decimal:2',
         'complexity_multiplier' => 'decimal:2',
+        'agreed_rate' => 'decimal:2',
+        'extras_total' => 'decimal:2',
+        'payment_settled_at' => 'datetime',
         'scope_amendment_price' => 'decimal:2',
         'scope_amendment_requested_at' => 'datetime',
         'team_suggested_at' => 'datetime',
@@ -191,9 +201,24 @@ class Booking extends Model
         return $this->belongsTo(User::class, 'worker_id');
     }
 
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(Service::class);
+    }
+
+    public function quote(): HasOne
+    {
+        return $this->hasOne(BookingQuote::class);
+    }
+
     public function earning(): HasOne
     {
-        return $this->hasOne(Earning::class);
+        return $this->hasOne(BookingQuote::class);
+    }
+
+    public function extras(): HasMany
+    {
+        return $this->hasMany(BookingExtra::class);
     }
 
     public function messages(): HasMany

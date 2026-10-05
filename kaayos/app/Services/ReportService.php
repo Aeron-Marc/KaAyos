@@ -161,21 +161,16 @@ class ReportService
             ->where('status', 'completed')
             ->whereBetween('completed_at', [$from.' 00:00:00', $end]);
 
-        $collection = (clone $base)->with(['client', 'worker', 'earning'])->latest('completed_at')->when($limit, fn ($q) => $q->limit($limit))->get();
+        $collection = (clone $base)->with(['client', 'worker', 'quote'])->latest('completed_at')->when($limit, fn ($q) => $q->limit($limit))->get();
         $total = (int) $base->count();
-        $gross = (float) $base->sum('price');
-        $platformFees = (float) $collection->sum(fn (Booking $b) => (float) ($b->earning?->platform_fee ?? 0));
-        $net = (float) $collection->sum(fn (Booking $b) => (float) ($b->earning?->net_amount ?? 0));
+        $totalQuoted = (float) $base->sum('price');
 
         $rows = $collection->map(fn (Booking $b) => [
             'Booking Ref' => $b->booking_ref,
             'Client' => $b->client->name ?? 'N/A',
             'Worker' => $b->worker->name ?? 'N/A',
             'Service Category' => $b->service_category,
-            'Gross Amount' => (float) $b->price,
-            'Platform Fee' => $b->earning?->platform_fee !== null ? (float) $b->earning->platform_fee : null,
-            'Net Amount' => $b->earning?->net_amount !== null ? (float) $b->earning->net_amount : null,
-            'Paid At' => $b->earning?->paid_at?->format('Y-m-d H:i'),
+            'Quoted Amount' => (float) ($b->quote?->total_amount ?? $b->price ?? 0),
             'Completed At' => $b->completed_at?->format('Y-m-d H:i'),
         ])->values()->all();
 
@@ -184,13 +179,11 @@ class ReportService
         return [
             'summary' => [
                 $this->kpi('Completed Bookings', $total, 'fa-circle-check', 'blue'),
-                $this->kpi('Gross Revenue', $gross, 'fa-coins', 'green', true),
-                $this->kpi('Platform Fees', $platformFees, 'fa-hand-holding-dollar', 'orange', true),
-                $this->kpi('Net Payout', $net, 'fa-wallet', 'purple', true),
-                $this->kpi('Avg Booking Value', $total ? round($gross / $total, 2) : 0, 'fa-chart-simple', 'blue', true),
+                $this->kpi('Total Quoted Value', $totalQuoted, 'fa-coins', 'green', true),
+                $this->kpi('Avg Job Value', $total ? round($totalQuoted / $total, 2) : 0, 'fa-chart-simple', 'blue', true),
             ],
-            'chart' => $this->trendChart($from, $to, $trend, 'Revenue (₱)', '#10B981', 'bar'),
-            'columns' => ['Booking Ref', 'Client', 'Worker', 'Service Category', 'Gross Amount', 'Platform Fee', 'Net Amount', 'Paid At', 'Completed At'],
+            'chart' => $this->trendChart($from, $to, $trend, 'Job Value (₱)', '#10B981', 'bar'),
+            'columns' => ['Booking Ref', 'Client', 'Worker', 'Service Category', 'Quoted Amount', 'Completed At'],
             'rows' => $rows,
             'total_rows' => $total,
         ];

@@ -7,6 +7,7 @@ use App\Events\JobCompletionStatusUpdated;
 use App\Exceptions\BookingStateException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\BookingQuote;
 use App\Models\Earning;
 use App\Notifications\BookingCancelled;
 use App\Notifications\BookingStatusChanged;
@@ -35,7 +36,7 @@ class WorkerDashboardController extends Controller
             ->latest()
             ->get();
 
-        $recentEarnings = Earning::where('worker_id', $user->id)
+        $recentEarnings = BookingQuote::where('worker_id', $user->id)
             ->latest()
             ->take(5)
             ->get();
@@ -43,7 +44,7 @@ class WorkerDashboardController extends Controller
         $stats = [
             'active_jobs' => $activeJobs->count(),
             'completed_jobs' => $user->bookingsAsWorker()->completed()->count(),
-            'total_earnings' => Earning::where('worker_id', $user->id)->sum('net_amount'),
+            'total_earnings' => BookingQuote::where('worker_id', $user->id)->sum('total_amount'),
             'average_rating' => $profile?->average_rating ?? 0.00,
         ];
 
@@ -98,20 +99,15 @@ class WorkerDashboardController extends Controller
             // Handle completion confirmation workflow
             if ($validated['status'] === Booking::STATUS_COMPLETED) {
                 $afterSave = function (Booking $fresh) use ($user) {
-                    // Only record earnings if job is fully completed (both parties confirmed)
+                    // Only record quote/settlement if job is fully completed (both parties confirmed)
                     if ($fresh->status === Booking::STATUS_COMPLETED) {
-                        $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                        $gross = $fresh->price ?? 0;
-                        $fee = round($gross * ($platformFeePercent / 100), 2);
-                        $net = $gross - $fee;
+                        $total = $fresh->price ?? 0;
 
-                        Earning::updateOrCreate(
+                        BookingQuote::updateOrCreate(
                             ['booking_id' => $fresh->id],
                             [
-                                'worker_id' => $user->id,
-                                'gross_amount' => $gross,
-                                'platform_fee' => $fee,
-                                'net_amount' => $net,
+                                'worker_id'    => $user->id,
+                                'total_amount' => $total,
                             ]
                         );
                     }
@@ -225,20 +221,15 @@ class WorkerDashboardController extends Controller
 
         try {
             $afterSave = function (Booking $fresh) use ($user) {
-                // Record earnings if job is now fully completed
+                // Record quote/settlement if job is now fully completed
                 if ($fresh->status === Booking::STATUS_COMPLETED) {
-                    $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                    $gross = $fresh->price ?? 0;
-                    $fee = round($gross * ($platformFeePercent / 100), 2);
-                    $net = $gross - $fee;
+                    $total = $fresh->price ?? 0;
 
-                    Earning::updateOrCreate(
+                    BookingQuote::updateOrCreate(
                         ['booking_id' => $fresh->id],
                         [
-                            'worker_id' => $user->id,
-                            'gross_amount' => $gross,
-                            'platform_fee' => $fee,
-                            'net_amount' => $net,
+                            'worker_id'    => $user->id,
+                            'total_amount' => $total,
                         ]
                     );
                 }

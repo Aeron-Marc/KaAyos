@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Client;
 use App\Exceptions\BookingStateException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\BookingExtra;
+use App\Models\BookingQuote;
 use App\Models\Conversation;
 use App\Models\Earning;
 use App\Models\Message;
 use App\Models\Review;
+use App\Models\Service;
+use App\Models\ServiceExtra;
 use App\Models\WorkerProfile;
 use App\Models\BookingHistory;
 use App\Models\Dispute;
@@ -636,18 +640,26 @@ class ClientController extends Controller
     {
         $validated = $request->validate([
             'worker_id'        => ['required', 'exists:users,id'],
+            'service_id'       => ['nullable', 'exists:services,id'],
             'service_category' => ['required', 'string', 'max:255'],
             'scheduled_at'     => ['required', 'date', 'after:now'],
             'house_no'         => ['required', 'string', 'max:255'],
             'barangay'         => ['required', 'string', 'max:255'],
             'property_type'    => ['nullable', 'string', 'in:residential,apartment,commercial,industrial,tenant,property_manager'],
             'pricing_type'     => ['nullable', 'string', 'in:fixed,hourly'],
+            'payment_scheme'   => ['nullable', 'string', 'in:hourly,daily,task'],
+            'payment_method'   => ['nullable', 'string', 'max:30'],
             'estimated_duration_hours' => ['nullable', 'numeric', 'min:0.5', 'max:24'],
             'complexity_level' => ['nullable', 'string', 'in:standard,moderate,complex,high_hazard,hazardous'],
             'notes'            => ['nullable', 'string', 'max:2000'],
             'price'            => ['nullable', 'numeric', 'min:0'],
             'latitude'         => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'        => ['nullable', 'numeric', 'between:-180,180'],
+            'extras'           => ['nullable', 'array'],
+            'extras.*.service_extra_id' => ['nullable', 'exists:service_extras,id'],
+            'extras.*.name'    => ['required_with:extras', 'string', 'max:255'],
+            'extras.*.cost'    => ['required_with:extras', 'numeric', 'min:0'],
+            'extras.*.source'  => ['nullable', 'in:catalog,custom'],
         ]);
 
         $worker = User::findOrFail($validated['worker_id']);
@@ -683,7 +695,13 @@ class ClientController extends Controller
         }
 
         // Pricing, Duration, and Complexity Calculations
-        $pricingType = $validated['pricing_type'] ?? 'fixed';
+        // Scheme & Rate Calculations
+        $paymentScheme = $validated['payment_scheme'] ?? ($validated['pricing_type'] === 'hourly' ? 'hourly' : ($worker->workerProfile?->preferred_payment_scheme ?? 'task'));
+        if ($paymentScheme === 'fixed') {
+            $paymentScheme = 'task';
+        }
+        $pricingType = $paymentScheme === 'hourly' ? 'hourly' : 'fixed';
+
         $durationHours = (float) ($validated['estimated_duration_hours'] ?? 2.0);
         $complexityLevel = $validated['complexity_level'] ?? 'standard';
         $complexityMultiplier = match($complexityLevel) {
@@ -692,13 +710,29 @@ class ClientController extends Controller
             default                    => 1.00,
         };
 
-        if ($pricingType === 'hourly' && $worker->workerProfile?->hourly_rate) {
-            $basePrice = (float) $worker->workerProfile->hourly_rate * $durationHours;
+        $agreedRate = null;
+        if ($paymentScheme === 'hourly') {
+            $agreedRate = (float) ($worker->workerProfile?->hourly_rate ?? 0);
+            $basePrice = $agreedRate * $durationHours;
+        } elseif ($paymentScheme === 'daily') {
+            $days = ceil($durationHours / 8.0);
+            if ($days < 1) $days = 1;
+            $agreedRate = (float) ($worker->workerProfile?->daily_rate ?? ($worker->workerProfile?->hourly_rate ? $worker->workerProfile->hourly_rate * 8 : $price));
+            $basePrice = $agreedRate * $days;
         } else {
-            $basePrice = (float) $price;
+            // Task scheme
+            $agreedRate = (float) ($worker->workerProfile?->task_base_rate ?? $price);
+            $basePrice = $agreedRate;
         }
 
-        $finalPrice = round($basePrice * $complexityMultiplier, 2);
+        // Calculate Extras Total
+        $extrasList = $validated['extras'] ?? [];
+        $extrasTotal = 0;
+        foreach ($extrasList as $extra) {
+            $extrasTotal += (float) ($extra['cost'] ?? 0);
+        }
+
+        $finalPrice = round(($basePrice * $complexityMultiplier) + $extrasTotal, 2);
 
         // Validate price against service min/max range
         if ($finalPrice > 0) {
@@ -797,10 +831,11 @@ class ClientController extends Controller
 
         $address = $validated['house_no'] . ', ' . $validated['barangay'] . ', ' . config('kaayos.default_location');
 
-        $booking = DB::transaction(function () use ($validated, $address, $worker, $serviceCategory, $finalPrice, $pricingType, $durationHours, $complexityLevel, $complexityMultiplier, $clientLat, $clientLng, $travelMetrics) {
+        $booking = DB::transaction(function () use ($validated, $address, $worker, $serviceCategory, $finalPrice, $pricingType, $paymentScheme, $agreedRate, $extrasTotal, $extrasList, $durationHours, $complexityLevel, $complexityMultiplier, $clientLat, $clientLng, $travelMetrics) {
             $booking = Booking::create([
                 'client_id'                    => auth()->id(),
                 'worker_id'                    => $validated['worker_id'],
+                'service_id'                   => $validated['service_id'] ?? null,
                 'service_category'             => $serviceCategory,
                 'scheduled_at'                 => $validated['scheduled_at'],
                 'address'                      => $address,
@@ -808,6 +843,11 @@ class ClientController extends Controller
                 'barangay'                     => $validated['barangay'],
                 'property_type'                => $validated['property_type'] ?? 'residential',
                 'pricing_type'                 => $pricingType,
+                'payment_scheme'               => $paymentScheme,
+                'agreed_rate'                  => $agreedRate,
+                'extras_total'                 => $extrasTotal,
+                'payment_method'               => $validated['payment_method'] ?? 'cash',
+                'payment_status'               => 'pending',
                 'estimated_duration_hours'     => $durationHours,
                 'complexity_level'             => $complexityLevel,
                 'complexity_multiplier'        => $complexityMultiplier,
@@ -820,6 +860,15 @@ class ClientController extends Controller
                 'status'                       => Booking::STATUS_NEW,
                 'agreed_by_client_at'          => now(),
             ]);
+
+            foreach ($extrasList as $extraItem) {
+                $booking->extras()->create([
+                    'service_extra_id' => $extraItem['service_extra_id'] ?? null,
+                    'name'             => $extraItem['name'],
+                    'cost'             => $extraItem['cost'],
+                    'source'           => $extraItem['source'] ?? 'catalog',
+                ]);
+            }
 
             $booking->history()->create([
                 'old_status' => null,
@@ -1024,18 +1073,13 @@ class ClientController extends Controller
         try {
             $afterSave = function (Booking $fresh) {
                 if ($fresh->status === Booking::STATUS_COMPLETED) {
-                    $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                    $gross = $fresh->price ?? 0;
-                    $fee = round($gross * ($platformFeePercent / 100), 2);
-                    $net = $gross - $fee;
+                    $total = $fresh->price ?? 0;
 
-                    Earning::updateOrCreate(
+                    BookingQuote::updateOrCreate(
                         ['booking_id' => $fresh->id],
                         [
                             'worker_id'    => $fresh->worker_id,
-                            'gross_amount' => $gross,
-                            'platform_fee' => $fee,
-                            'net_amount'   => $net,
+                            'total_amount' => $total,
                         ]
                     );
                 }

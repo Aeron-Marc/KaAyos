@@ -32,6 +32,16 @@ class Service extends Model
         return $this->hasMany(ProviderService::class);
     }
 
+    public function extras(): HasMany
+    {
+        return $this->hasMany(ServiceExtra::class);
+    }
+
+    public function activeExtras(): HasMany
+    {
+        return $this->hasMany(ServiceExtra::class)->where('is_active', true);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

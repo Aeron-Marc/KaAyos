@@ -2,34 +2,38 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-class Earning extends Model
+/**
+ * Backward compatibility wrapper for BookingQuote.
+ * Preserves legacy accessors so any unmigrated views/controllers don't break.
+ */
+class Earning extends BookingQuote
 {
+    protected $table = 'booking_quotes';
+
     protected $fillable = [
         'worker_id',
         'booking_id',
-        'gross_amount',
-        'platform_fee',
-        'net_amount',
+        'total_amount',
         'paid_at',
     ];
 
-    protected $casts = [
-        'gross_amount'  => 'decimal:2',
-        'platform_fee'  => 'decimal:2',
-        'net_amount'    => 'decimal:2',
-        'paid_at'       => 'datetime',
-    ];
-
-    public function worker(): BelongsTo
+    public function getGrossAmountAttribute()
     {
-        return $this->belongsTo(User::class, 'worker_id');
+        return $this->total_amount;
     }
 
-    public function booking(): BelongsTo
+    public function setGrossAmountAttribute($value)
     {
-        return $this->belongsTo(Booking::class);
+        $this->attributes['total_amount'] = $value;
+    }
+
+    public function getPlatformFeeAttribute()
+    {
+        return '0.00';
+    }
+
+    public function getNetAmountAttribute()
+    {
+        return $this->total_amount;
     }
 }

@@ -78,4 +78,54 @@ class ServiceController extends Controller
         return redirect()->route('admin.services.index')
             ->with('success', 'Service deleted successfully.');
     }
+
+    public function extras(Service $service)
+    {
+        $extras = $service->extras()->latest()->paginate(15);
+        return view('admin.services.extras', compact('service', 'extras'));
+    }
+
+    public function storeExtra(Request $request, Service $service)
+    {
+        $validated = $request->validate([
+            'name'           => ['required', 'string', 'max:255'],
+            'suggested_cost' => ['required', 'numeric', 'min:0'],
+            'is_active'      => ['nullable', 'boolean'],
+        ]);
+
+        $service->extras()->create([
+            'name'           => $validated['name'],
+            'suggested_cost' => $validated['suggested_cost'],
+            'is_active'      => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->route('admin.services.extras.index', $service)
+            ->with('success', 'Extra add-on created successfully.');
+    }
+
+    public function updateExtra(Request $request, Service $service, \App\Models\ServiceExtra $extra)
+    {
+        $validated = $request->validate([
+            'name'           => ['required', 'string', 'max:255'],
+            'suggested_cost' => ['required', 'numeric', 'min:0'],
+            'is_active'      => ['nullable', 'boolean'],
+        ]);
+
+        $extra->update([
+            'name'           => $validated['name'],
+            'suggested_cost' => $validated['suggested_cost'],
+            'is_active'      => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->route('admin.services.extras.index', $service)
+            ->with('success', 'Extra add-on updated successfully.');
+    }
+
+    public function destroyExtra(Service $service, \App\Models\ServiceExtra $extra)
+    {
+        $extra->delete();
+
+        return redirect()->route('admin.services.extras.index', $service)
+            ->with('success', 'Extra add-on deleted successfully.');
+    }
 }

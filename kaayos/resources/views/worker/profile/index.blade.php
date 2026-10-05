@@ -365,10 +365,30 @@
                                value="{{ old('years_of_experience', $workerProfile->years_of_experience) }}" placeholder="e.g. 5">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="hourly_rate">Hourly Rate (₱)</label>
-                    <input type="number" id="hourly_rate" name="hourly_rate" min="0" step="0.01"
-                           value="{{ old('hourly_rate', $workerProfile->hourly_rate) }}" placeholder="e.g. 400">
+                <div class="form-row" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label for="hourly_rate">Hourly Rate (₱/hr)</label>
+                        <input type="number" id="hourly_rate" name="hourly_rate" min="0" step="0.01"
+                               value="{{ old('hourly_rate', $workerProfile->hourly_rate) }}" placeholder="e.g. 150">
+                    </div>
+                    <div class="form-group">
+                        <label for="daily_rate">Daily Wage Rate (₱/day)</label>
+                        <input type="number" id="daily_rate" name="daily_rate" min="0" step="0.01"
+                               value="{{ old('daily_rate', $workerProfile->daily_rate) }}" placeholder="e.g. 600">
+                    </div>
+                    <div class="form-group">
+                        <label for="task_base_rate">Standard Task Rate (₱/job)</label>
+                        <input type="number" id="task_base_rate" name="task_base_rate" min="0" step="0.01"
+                               value="{{ old('task_base_rate', $workerProfile->task_base_rate) }}" placeholder="e.g. 450">
+                    </div>
+                    <div class="form-group">
+                        <label for="preferred_payment_scheme">Preferred Compensation Scheme</label>
+                        <select id="preferred_payment_scheme" name="preferred_payment_scheme" style="width:100%; height:42px; border-radius:8px; border:1px solid #d1d5db; padding:0 10px;">
+                            <option value="task" {{ old('preferred_payment_scheme', $workerProfile->preferred_payment_scheme ?? 'task') === 'task' ? 'selected' : '' }}>Per Task / Fixed Job</option>
+                            <option value="daily" {{ old('preferred_payment_scheme', $workerProfile->preferred_payment_scheme) === 'daily' ? 'selected' : '' }}>Daily Wage (8 hrs)</option>
+                            <option value="hourly" {{ old('preferred_payment_scheme', $workerProfile->preferred_payment_scheme) === 'hourly' ? 'selected' : '' }}>Hourly Rate</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
