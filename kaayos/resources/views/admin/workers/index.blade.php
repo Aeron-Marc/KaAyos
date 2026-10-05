@@ -61,7 +61,7 @@
                     <th>Worker</th>
                     <th>Service Category</th>
                     <th>Services</th>
-                    <th>Hourly Rate</th>
+                    <th>Rates & Scheme</th>
                     <th>Status</th>
                     <th>Joined</th>
                     <th style="text-align: center;">Actions</th>
@@ -103,9 +103,20 @@
                             <span class="text-muted">—</span>
                         @endif
                     </td>
-                    <td class="table-col-price">
-                        @if($worker->workerProfile && $worker->workerProfile->hourly_rate)
-                            ₱{{ number_format((float)$worker->workerProfile->hourly_rate, 2) }}
+                    <td class="table-col-price" style="font-size: .85rem;">
+                        @if($worker->workerProfile)
+                            <div><strong style="font-size: .9rem;">₱{{ number_format((float)($worker->workerProfile->hourly_rate ?? 0), 2) }}</strong><span class="text-muted">/hr</span></div>
+                            @if($worker->workerProfile->daily_rate)
+                                <div class="text-muted" style="font-size:.78rem;">₱{{ number_format((float)$worker->workerProfile->daily_rate, 2) }}/day</div>
+                            @endif
+                            @if($worker->workerProfile->task_base_rate)
+                                <div class="text-muted" style="font-size:.78rem;">₱{{ number_format((float)$worker->workerProfile->task_base_rate, 2) }}/task</div>
+                            @endif
+                            <div style="margin-top: 2px;">
+                                <span class="badge" style="background: #eef2ff; color: #4338ca; font-size: .7rem; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+                                    {{ $worker->workerProfile->preferred_payment_scheme ?? 'task' }}
+                                </span>
+                            </div>
                         @else
                             <span class="text-muted">—</span>
                         @endif

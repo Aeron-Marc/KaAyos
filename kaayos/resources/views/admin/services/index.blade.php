@@ -56,7 +56,8 @@
                         @endif
                     </td>
                     <td style="text-align: center;">
-                        <div class="actions-cell" style="justify-content: center;">
+                        <div class="actions-cell" style="justify-content: center; gap: 6px;">
+                            <a href="{{ route('admin.services.extras.index', $service) }}" class="btn btn-outline btn-sm" title="Manage Extras Catalog"><i class="fa-solid fa-list-check"></i> Extras</a>
                             <a href="{{ route('admin.services.edit', $service) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i> Edit</a>
                             <form method="POST" action="{{ route('admin.services.destroy', $service) }}" style="display:inline" onsubmit="return confirm('Delete this service?')">
                                 @csrf @method('DELETE')

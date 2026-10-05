@@ -22,7 +22,6 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $password = Hash::make('password');
-        $platformFeePercent = config('kaayos.platform_fee_percent', 10);
 
         // ── Barangays of Tuy, Batangas ────────────────────────────
 
@@ -1060,16 +1059,10 @@ class DatabaseSeeder extends Seeder
         // ═══════════════════════════════════════════════════════════
 
         foreach ($completedBookings as $booking) {
-            $gross = $booking->price;
-            $fee = round($gross * ($platformFeePercent / 100), 2);
-            $net = $gross - $fee;
-
             Earning::create([
                 'worker_id'    => $booking->worker_id,
                 'booking_id'   => $booking->id,
-                'gross_amount' => $gross,
-                'platform_fee' => $fee,
-                'net_amount'   => $net,
+                'total_amount' => $booking->price,
                 'paid_at'      => $booking->completed_at,
             ]);
         }

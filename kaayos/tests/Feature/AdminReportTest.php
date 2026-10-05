@@ -204,9 +204,7 @@ class AdminReportTest extends TestCase
         Earning::create([
             'worker_id' => $worker->id,
             'booking_id' => $completed->id,
-            'gross_amount' => 1000.00,
-            'platform_fee' => 100.00,
-            'net_amount' => 900.00,
+            'total_amount' => 1000.00,
             'paid_at' => now(),
         ]);
 

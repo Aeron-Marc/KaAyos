@@ -165,9 +165,9 @@ a{text-decoration:none;color:inherit}
 <h2 id="payments">6. Payments, Fees &amp; Tips</h2>
 <p>KaAyos currently does not process payments on the Platform. Clients and Workers agree on payment terms directly. All payment arrangements are solely between the Client and the Worker. KaAyos is not responsible for any disputes regarding payment.</p>
 <h3>6.1 Platform Fee</h3>
-<p>A platform fee (configured as a percentage of the agreed service price, currently <strong>10%</strong>) is deducted from the Worker's earnings when a job is completed. This fee funds platform maintenance, verification, and support.</p>
+<p>KaAyos charges <strong>no platform fee</strong>. When a job is completed, the Worker receives <strong>100% of the agreed service price</strong>. The Platform is a display-only marketplace with off-platform settlements between Client and Worker.</p>
 <h3>6.2 Tips</h3>
-<p>Clients may leave an <strong>optional tip</strong> when confirming job completion (preset amounts or a custom amount). Tips are entirely voluntary and are passed through to the Worker in full — <strong>the platform fee is never deducted from tips</strong>. Tips are recorded on the booking for transparency in both parties' records.</p>
+<p>Clients may leave an <strong>optional tip</strong> when confirming job completion (preset amounts or a custom amount). Tips are entirely voluntary and are passed through to the Worker in full. Tips are recorded on the booking for transparency in both parties' records.</p>
 
 <h2 id="cancellation">7. Cancellation &amp; Rescheduling</h2>
 <h3>7.1 By the Client</h3>

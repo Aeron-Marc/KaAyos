@@ -151,12 +151,10 @@ class JobAcceptanceTest extends TestCase
             'status' => Booking::STATUS_COMPLETED,
         ]);
 
-        $this->assertDatabaseHas('earnings', [
+        $this->assertDatabaseHas('booking_quotes', [
             'booking_id'   => $booking->id,
             'worker_id'    => $this->worker->id,
-            'gross_amount' => 500.00,
-            'platform_fee' => 50.00,
-            'net_amount'   => 450.00,
+            'total_amount' => 500.00,
         ]);
 
         $this->assertNotNull($booking->fresh()->completed_at);

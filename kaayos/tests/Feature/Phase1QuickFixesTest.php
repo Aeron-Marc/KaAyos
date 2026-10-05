@@ -170,13 +170,11 @@ class Phase1QuickFixesTest extends TestCase
             'tip_amount'  => 100.00,
         ]);
 
-        $this->assertDatabaseHas('earnings', [
+        $this->assertDatabaseHas('booking_quotes', [
             'booking_id'   => $booking->id,
             'worker_id'    => $this->worker->id,
-            'gross_amount' => 500.00,
-            'platform_fee' => 50.00,
+            'total_amount' => 500.00,
             'tip_amount'   => 100.00,
-            'net_amount'   => 550.00,
         ]);
     }
 
@@ -196,12 +194,10 @@ class Phase1QuickFixesTest extends TestCase
             ->postJson("/client/bookings/{$booking->id}/confirm-complete")
             ->assertOk();
 
-        $this->assertDatabaseHas('earnings', [
+        $this->assertDatabaseHas('booking_quotes', [
             'booking_id'   => $booking->id,
-            'gross_amount' => 500.00,
-            'platform_fee' => 50.00,
+            'total_amount' => 500.00,
             'tip_amount'   => 0.00,
-            'net_amount'   => 450.00,
         ]);
     }
 

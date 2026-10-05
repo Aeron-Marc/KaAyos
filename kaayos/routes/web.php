@@ -255,6 +255,10 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
     Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+    Route::get('/services/{service}/extras', [ServiceController::class, 'extras'])->name('services.extras.index');
+    Route::post('/services/{service}/extras', [ServiceController::class, 'storeExtra'])->name('services.extras.store');
+    Route::put('/services/{service}/extras/{extra}', [ServiceController::class, 'updateExtra'])->name('services.extras.update');
+    Route::delete('/services/{service}/extras/{extra}', [ServiceController::class, 'destroyExtra'])->name('services.extras.destroy');
 
     // Provider Services
     Route::get('/provider-services', [ProviderServiceController::class, 'index'])->name('provider-services.index');
