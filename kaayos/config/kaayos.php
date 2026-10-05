@@ -1,5 +1,6 @@
 <?php
 
+return [
     // KaAyos is a display-only marketplace with off-platform settlements (no platform fees)
     'platform_fee_percent'   => env('KAAYOS_PLATFORM_FEE_PERCENT', 0),
     'booking_expiry_hours'   => env('KAAYOS_BOOKING_EXPIRY_HOURS', 24),
