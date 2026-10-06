@@ -64,6 +64,7 @@
                     <th>Client</th>
                     <th>Worker</th>
                     <th>Service</th>
+                    <th>Urgency</th>
                     <th>Schedule</th>
                     <th>Price</th>
                     <th>Status</th>
@@ -77,6 +78,18 @@
                     <td class="text-sm">{{ $booking->client->name ?? 'N/A' }}</td>
                     <td class="text-sm">{{ $booking->worker->name ?? 'N/A' }}</td>
                     <td class="text-sm">{{ $booking->service_category }}</td>
+                    <td>
+                        @php
+                            $listUrgency = match($booking->urgency ?? 'normal') {
+                                'emergency' => ['background:#fee2e2', 'color:#b91c1c', 'fa-triangle-exclamation'],
+                                'soon'      => ['background:#fef3c7', 'color:#b45309', 'fa-clock'],
+                                default     => ['background:#f1f5f9', 'color:#475569', 'fa-circle'],
+                            };
+                        @endphp
+                        <span class="status-badge" style="{{ $listUrgency[0] }};{{ $listUrgency[1] }};">
+                            <i class="fa-solid {{ $listUrgency[2] }}"></i> {{ $booking->urgencyLabel() }}
+                        </span>
+                    </td>
                     <td class="text-sm text-muted">{{ $booking->scheduled_at?->format('M d, Y h:i A') ?? 'N/A' }}</td>
                     <td class="table-col-price">₱{{ number_format((float)$booking->price, 2) }}</td>
                     <td><span class="status-badge status-{{ $booking->status }}">{{ str_replace('_', ' ', ucfirst($booking->status)) }}</span></td>

@@ -128,10 +128,12 @@ class GeoTravelSchedulingTest extends TestCase
         $response = $this->actingAs($this->client)->postJson(route('client.bookings.store'), [
             'worker_id'        => $this->worker->id,
             'service_category' => 'Plumbing',
+            'issue_category_id' => \App\Models\IssueCategory::first()->id,
+            'urgency'          => 'normal',
             'scheduled_at'     => Carbon::tomorrow()->setTime(11, 5)->format('Y-m-d H:i:s'),
             'house_no'         => '456',
             'barangay'         => 'Guinhawa',
-            'notes'            => 'Pipe leak',
+            'notes'            => 'Pipe leak under the kitchen sink needs repair.',
             'price'            => 600,
         ]);
 
@@ -151,10 +153,12 @@ class GeoTravelSchedulingTest extends TestCase
         $response = $this->actingAs($this->client)->postJson(route('client.bookings.store'), [
             'worker_id'        => $this->worker->id,
             'service_category' => 'Plumbing',
+            'issue_category_id' => \App\Models\IssueCategory::first()->id,
+            'urgency'          => 'normal',
             'scheduled_at'     => $feasibleTime->format('Y-m-d H:i:s'),
             'house_no'         => '456',
             'barangay'         => 'Luna',
-            'notes'            => 'Pipe leak repair',
+            'notes'            => 'Pipe leak repair for the kitchen sink area.',
             'price'            => 600,
         ]);
 
@@ -181,10 +185,12 @@ class GeoTravelSchedulingTest extends TestCase
         $response = $this->actingAs($this->client)->postJson(route('client.bookings.store'), [
             'worker_id'        => $this->worker->id,
             'service_category' => 'Plumbing',
+            'issue_category_id' => \App\Models\IssueCategory::first()->id,
+            'urgency'          => 'normal',
             'scheduled_at'     => $farTime->format('Y-m-d H:i:s'),
             'house_no'         => '999',
             'barangay'         => 'Sabang',
-            'notes'            => 'Remote farm work',
+            'notes'            => 'Remote farm work requiring a full day of repairs.',
             'price'            => 700,
         ]);
 

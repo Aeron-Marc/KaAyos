@@ -68,7 +68,12 @@
                     </td>
                     <td class="text-sm">{{ $dispute->raisedBy->name ?? 'N/A' }}</td>
                     <td class="text-sm" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $dispute->reason }}</td>
-                    <td><span class="status-badge status-{{ $dispute->status }}">{{ str_replace('_', ' ', ucfirst($dispute->status)) }}</span></td>
+                    <td>
+                        <span class="status-badge status-{{ $dispute->status }}">{{ str_replace('_', ' ', ucfirst($dispute->status)) }}</span>
+                        @if($dispute->hasCounterClaim())
+                            <br><span class="status-badge" style="background:#eff6ff;color:#1e40af;" title="Counter-claim filed by the worker"><i class="fa-solid fa-reply"></i> Counter-claim</span>
+                        @endif>
+                    </td>
                     <td class="text-sm text-muted">{{ $dispute->created_at->format('M d, Y') }}</td>
                     <td style="text-align: center;">
                         <a href="{{ route('admin.disputes.show', $dispute) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-eye"></i> View</a>

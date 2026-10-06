@@ -121,6 +121,14 @@
                     <td style="text-align: center;">
                         <div class="actions-cell" style="justify-content: center;">
                             <a href="{{ route('admin.users.show', $worker) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-eye"></i> View</a>
+                            @if($worker->suspended_at)
+                                <form method="POST" action="{{ route('admin.users.reactivate', $worker) }}" style="display:inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Reactivate this worker?')"><i class="fa-solid fa-rotate-left"></i> Reactivate</button>
+                                </form>
+                            @else
+                                <button type="button" class="btn btn-warning btn-sm" onclick="document.getElementById('suspend-worker-{{ $worker->id }}').style.display='block'"><i class="fa-solid fa-ban"></i> Suspend</button>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -136,4 +144,25 @@
         </div>
     @endif
 </div>
+
+@foreach($workers as $worker)
+@if(!$worker->suspended_at)
+<div id="suspend-worker-{{ $worker->id }}" style="display:none;margin-top:16px;">
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-ban" style="color:var(--d10)"></i> Suspend Worker: {{ $worker->name }}</div>
+        <form method="POST" action="{{ route('admin.users.suspend', $worker) }}">
+            @csrf
+            <div class="form-group">
+                <label for="suspend-reason-{{ $worker->id }}">Suspension Reason <span style="color:var(--d10)">*</span></label>
+                <textarea name="reason" id="suspend-reason-{{ $worker->id }}" rows="3" placeholder="Why is this worker being suspended?" required></textarea>
+            </div>
+            <div class="page-actions">
+                <button type="submit" class="btn btn-danger"><i class="fa-solid fa-ban"></i> Confirm Suspension</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('suspend-worker-{{ $worker->id }}').style.display='none'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+@endforeach
 @endsection

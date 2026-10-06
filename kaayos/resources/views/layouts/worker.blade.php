@@ -53,6 +53,12 @@
                 {{ __('nav.earnings') }}
             </a>
 
+            <a href="{{ route('worker.claims.index') }}"
+               class="nav-item {{ request()->routeIs('worker.claims*') ? 'active' : '' }}">
+                <i class="fa-solid fa-scale-balanced nav-icon" aria-hidden="true"></i>
+                {{ __('nav.claims') }}
+            </a>
+
             <a href="{{ route('worker.profile') }}"
                class="nav-item {{ request()->routeIs('worker.profile*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user-gear nav-icon" aria-hidden="true"></i>

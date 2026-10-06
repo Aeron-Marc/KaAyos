@@ -44,6 +44,8 @@ class Phase2WorkerAndBookingEnhancementsTest extends TestCase
         $response = $this->actingAs($this->client)->postJson(route('client.bookings.store'), [
             'worker_id'               => $this->worker->id,
             'service_category'        => 'Electrical',
+            'issue_category_id'       => \App\Models\IssueCategory::first()->id,
+            'urgency'                 => 'normal',
             'scheduled_at'            => $scheduledTime->format('Y-m-d H:i:s'),
             'house_no'                => 'Unit 4B',
             'barangay'                => 'Brgy. Poblacion',
@@ -51,7 +53,7 @@ class Phase2WorkerAndBookingEnhancementsTest extends TestCase
             'pricing_type'            => 'hourly',
             'estimated_duration_hours'=> 3,
             'complexity_level'        => 'complex',
-            'notes'                   => 'Need commercial 3-phase rewire',
+            'notes'                   => 'Need commercial 3-phase rewire for the whole floor.',
             'price'                   => 1000,
         ]);
 

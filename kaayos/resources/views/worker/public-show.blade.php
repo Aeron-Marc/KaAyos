@@ -225,8 +225,14 @@ a{text-decoration:none;color:inherit}
       <div class="profile-details">
         @if($workerProfile && $workerProfile->hourly_rate)
           <div class="detail-row">
-            <span class="label">Rate</span>
-            <span class="value">₱{{ number_format($workerProfile->hourly_rate) }}/hr</span>
+            <span class="label">Rate <span style="font-size:.72rem;color:var(--g5);font-weight:normal;">(Estimate)</span></span>
+            <span class="value">
+              Est. ₱{{ number_format($workerProfile->hourly_rate) }}/hr
+              <span class="badge" style="background:#fef3c7;color:#92400e;font-size:.68rem;padding:2px 7px;border-radius:99px;margin-left:4px;font-weight:600;" title="Price is an estimate until job scope is confirmed">Estimate</span>
+            </span>
+          </div>
+          <div style="font-size:.75rem;color:var(--g5);margin-top:-6px;margin-bottom:8px;line-height:1.3;">
+            <i class="fa-solid fa-circle-info" style="color:#2563eb;font-size:.7rem;"></i> Initial rates are estimates until job scope is confirmed with the worker.
           </div>
         @endif
         @if($workerProfile && $workerProfile->years_of_experience)
@@ -342,7 +348,7 @@ a{text-decoration:none;color:inherit}
                 @if($review->comment)
                   <p class="review-comment">{{ $review->comment }}</p>
                 @endif
-                <p class="review-date">{{ $review->created_at->diffForHumans() }}</p>
+                <p class="review-date">{{ $review->created_at->diffForHumans() }}@if($review->edited) <span style="font-size:.66rem;background:#f1f5f9;color:var(--g6);padding:1px 7px;border-radius:99px;margin-left:6px;font-weight:600;letter-spacing:.03em;">Edited</span>@endif</p>
               </div>
             @endforeach
           @else

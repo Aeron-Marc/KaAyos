@@ -11,6 +11,7 @@ class BookingPhoto extends Model
         'booking_id',
         'photo_path',
         'caption',
+        'uploaded_by',
     ];
 
     public function booking(): BelongsTo

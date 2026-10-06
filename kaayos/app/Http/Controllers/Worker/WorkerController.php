@@ -46,6 +46,22 @@ class WorkerController extends Controller
             ->where('completed_at', '>=', $weekStart)
             ->sum('price') ?? 0;
 
+        $completedEarnings = (float) ($user->bookingsAsWorker()->completed()
+            ->get()
+            ->sum(fn ($b) => $b->invoice_total) ?? 0);
+
+        $pipelineEarnings = (float) ($user->bookingsAsWorker()
+            ->whereIn('status', [
+                Booking::STATUS_NEW,
+                Booking::STATUS_ACCEPTED,
+                Booking::STATUS_EN_ROUTE,
+                Booking::STATUS_IN_PROGRESS,
+            ])
+            ->get()
+            ->sum(fn ($b) => $b->invoice_total) ?? 0);
+
+        $totalEstimatedEarnings = $completedEarnings + $pipelineEarnings;
+
         $activeJobs = $user->bookingsAsWorker()
             ->whereIn('status', [Booking::STATUS_ACCEPTED, Booking::STATUS_EN_ROUTE, Booking::STATUS_IN_PROGRESS])
             ->count();
@@ -53,16 +69,34 @@ class WorkerController extends Controller
         $totalCompleted = $user->bookingsAsWorker()->completed()->count();
 
         return [
-            ['label' => 'Earnings This Week', 'value' => '₱' . number_format($weeklyEarnings), 'icon' => 'fa-coins', 'accent' => true],
-            ['label' => 'Active Jobs',       'value' => $activeJobs,                         'icon' => 'fa-briefcase'],
-            ['label' => 'Rating',            'value' => number_format($user->workerProfile?->average_rating ?? 0, 1) . ' ★', 'icon' => 'fa-star'],
-            ['label' => 'Completed Jobs',    'value' => $totalCompleted,                     'icon' => 'fa-circle-check'],
+            [
+                'label'   => 'Total Estimated Earnings',
+                'value'   => '₱' . number_format($totalEstimatedEarnings, 2),
+                'icon'    => 'fa-coins',
+                'accent'  => true,
+                'subtext' => '₱' . number_format($completedEarnings, 2) . ' confirmed + ₱' . number_format($pipelineEarnings, 2) . ' pipeline',
+            ],
+            [
+                'label'   => 'Earnings This Week',
+                'value'   => '₱' . number_format($weeklyEarnings, 2),
+                'icon'    => 'fa-calendar-week',
+            ],
+            [
+                'label'   => 'Active Jobs',
+                'value'   => $activeJobs,
+                'icon'    => 'fa-briefcase',
+            ],
+            [
+                'label'   => 'Completed Jobs',
+                'value'   => $totalCompleted,
+                'icon'    => 'fa-circle-check',
+            ],
         ];
     }
 
     protected function getJobRequests(?string $filter = null): array
     {
-        $query = auth()->user()->bookingsAsWorker()->with('client', 'history');
+        $query = auth()->user()->bookingsAsWorker()->with(['client', 'history', 'issueCategory', 'photos', 'materials']);
 
         if ($filter && in_array($filter, Booking::STATUSES)) {
             $query->where('status', $filter);
@@ -106,11 +140,34 @@ class WorkerController extends Controller
                     'status'         => $labelMap[$booking->status] ?? ucfirst($booking->status),
                     'raw_status'     => $booking->status,
                     'price'          => $booking->price ?? 0,
+                    'is_scope_confirmed' => $booking->isScopeConfirmed(),
+                    'is_price_estimated' => $booking->isPriceEstimated(),
+                    'materials'      => $booking->materials->map(fn ($m) => [
+                        'id'          => $m->id,
+                        'name'        => $m->name,
+                        'qty'         => (float) $m->qty,
+                        'unit_price'  => (float) $m->unit_price,
+                        'line_total'  => (float) $m->line_total,
+                        'receipt_url' => $m->receipt_url,
+                    ])->values()->toArray(),
+                    'materials_total'   => (float) ($booking->materials_total ?? 0),
+                    'invoice_total'     => $booking->invoice_total,
+                    'invoice_url'       => route('bookings.invoice', $booking),
+                    'materials_editable' => in_array($booking->status, Booking::MATERIALS_EDITABLE_STATUSES, true),
                     'property_type'  => $booking->property_type ?? 'residential',
                     'pricing_type'   => $booking->pricing_type ?? 'fixed',
                     'estimated_duration_hours' => $booking->estimated_duration_hours ?? 2.0,
                     'complexity_level' => $booking->complexity_level ?? 'standard',
                     'complexity_multiplier' => $booking->complexity_multiplier ?? 1.0,
+                    'issue_type'       => $booking->issueCategory?->name,
+                    'urgency'          => $booking->urgency ?? 'normal',
+                    'urgency_label'    => $booking->urgencyLabel(),
+                    'urgency_multiplier' => (float) ($booking->urgency_multiplier ?? 1.0),
+                    'photos'           => $booking->photos->map(fn ($p) => [
+                        'path'        => asset('storage/' . $p->photo_path),
+                        'caption'     => $p->caption,
+                        'uploaded_by' => $p->uploaded_by,
+                    ])->values()->toArray(),
                     'work_started_at' => $booking->work_started_at?->format('g:i A'),
                     'work_ended_at'   => $booking->work_ended_at?->format('g:i A'),
                     'scope_amendment_status' => $booking->scope_amendment_status,
@@ -250,6 +307,7 @@ class WorkerController extends Controller
                     'status'               => $labelMap[$booking->status] ?? ucfirst($booking->status),
                     'raw_status'           => $booking->status,
                     'price'                => $booking->price ?? 0,
+                    'is_price_estimated'   => $booking->isPriceEstimated(),
                     'booking_ref'          => $booking->booking_ref ?? 'BK-' . str_pad($booking->id, 5, '0', STR_PAD_LEFT),
                     'travel_from_prev'     => $wp['travel_prev'] ?? null,
                     'feasibility'          => $wp['feasibility'] ?? 'feasible',
@@ -322,7 +380,7 @@ class WorkerController extends Controller
             Booking::STATUS_COMPLETED  => 'Completed',
         ];
 
-        $booking->load('client', 'history');
+        $booking->load('client', 'history', 'issueCategory', 'photos', 'materials');
 
         $statusHistory = [];
         foreach ($booking->history as $h) {
@@ -353,11 +411,34 @@ class WorkerController extends Controller
             'status'              => $labelMap[$booking->status] ?? ucfirst($booking->status),
             'raw_status'          => $booking->status,
             'price'               => $booking->price ?? 0,
+            'is_scope_confirmed'  => $booking->isScopeConfirmed(),
+            'is_price_estimated'  => $booking->isPriceEstimated(),
+            'materials'           => $booking->materials->map(fn ($m) => [
+                'id'            => $m->id,
+                'name'          => $m->name,
+                'qty'           => (float) $m->qty,
+                'unit_price'    => (float) $m->unit_price,
+                'line_total'    => (float) $m->line_total,
+                'receipt_url'   => $m->receipt_url,
+            ])->values()->toArray(),
+            'materials_total'     => (float) ($booking->materials_total ?? 0),
+            'invoice_total'       => $booking->invoice_total,
+            'invoice_url'         => route('bookings.invoice', $booking),
+            'materials_editable'  => in_array($booking->status, Booking::MATERIALS_EDITABLE_STATUSES, true),
             'property_type'       => $booking->property_type ?? 'residential',
             'pricing_type'        => $booking->pricing_type ?? 'fixed',
             'estimated_duration_hours' => $booking->estimated_duration_hours ?? 2.0,
             'complexity_level'    => $booking->complexity_level ?? 'standard',
             'complexity_multiplier' => $booking->complexity_multiplier ?? 1.0,
+            'issue_type'          => $booking->issueCategory?->name,
+            'urgency'             => $booking->urgency ?? 'normal',
+            'urgency_label'       => $booking->urgencyLabel(),
+            'urgency_multiplier'  => (float) ($booking->urgency_multiplier ?? 1.0),
+            'photos'              => $booking->photos->map(fn ($p) => [
+                'path'        => asset('storage/' . $p->photo_path),
+                'caption'     => $p->caption,
+                'uploaded_by' => $p->uploaded_by,
+            ])->values()->toArray(),
             'work_started_at'     => $booking->work_started_at?->format('g:i A'),
             'work_ended_at'       => $booking->work_ended_at?->format('g:i A'),
             'scope_amendment_status' => $booking->scope_amendment_status,
@@ -564,16 +645,17 @@ class WorkerController extends Controller
 
         $completed = $user->bookingsAsWorker()->completed()->take(50)->get();
 
-        $total = (int) ($completed->sum('price') ?? 0);
+        $total = (int) ($completed->sum(fn ($b) => $b->invoice_total) ?? 0);
         $thisMonth = (int) ($completed->filter(function ($b) use ($now) {
             return $b->completed_at
                 && $b->completed_at->month === $now->month
                 && $b->completed_at->year === $now->year;
-        })->sum('price') ?? 0);
+        })->sum(fn ($b) => $b->invoice_total) ?? 0);
 
         $pendingPayout = (int) ($user->bookingsAsWorker()
             ->whereIn('status', [Booking::STATUS_ACCEPTED, Booking::STATUS_EN_ROUTE, Booking::STATUS_IN_PROGRESS])
-            ->sum('price') ?? 0);
+            ->get()
+            ->sum(fn ($b) => $b->invoice_total) ?? 0);
 
         $count = $completed->count();
         $avgPerJob = $count > 0 ? round($total / $count) : 0;
@@ -581,21 +663,32 @@ class WorkerController extends Controller
         $payouts = $completed->sortByDesc('completed_at')->values()
             ->map(function ($booking) {
                 return [
-                    'date'   => $booking->completed_at?->format('M d, Y') ?? 'N/A',
-                    'client' => $booking->client->name ?? 'Unknown',
-                    'job'    => $booking->service_category,
-                    'amount' => $booking->price ?? 0,
-                    'status' => 'Completed',
+                    'date'      => $booking->completed_at?->format('M d, Y') ?? 'N/A',
+                    'client'    => $booking->client->name ?? 'Unknown',
+                    'job'       => $booking->service_category,
+                    'service'   => (float) ($booking->price ?? 0),
+                    'materials' => (float) ($booking->materials_total ?? 0),
+                    'amount'    => $booking->invoice_total,
+                    'status'    => 'Completed',
                 ];
             })
             ->toArray();
 
+        $pipelineEstimated = (int) ($user->bookingsAsWorker()
+            ->whereIn('status', [Booking::STATUS_NEW, Booking::STATUS_ACCEPTED, Booking::STATUS_EN_ROUTE, Booking::STATUS_IN_PROGRESS])
+            ->get()
+            ->sum(fn ($b) => $b->invoice_total) ?? 0);
+
+        $totalEstimated = $total + $pipelineEstimated;
+
         return [
-            'total'          => $total,
-            'this_month'     => $thisMonth,
-            'pending_payout' => $pendingPayout,
-            'avg_per_job'    => $avgPerJob,
-            'payouts'        => $payouts,
+            'total'              => $total,
+            'total_estimated'    => $totalEstimated,
+            'pipeline_estimated' => $pipelineEstimated,
+            'this_month'         => $thisMonth,
+            'pending_payout'     => $pendingPayout,
+            'avg_per_job'        => $avgPerJob,
+            'payouts'            => $payouts,
         ];
     }
 
@@ -759,13 +852,15 @@ class WorkerController extends Controller
         $callback = function () use ($payouts) {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, ['Date', 'Client', 'Job', 'Amount (₱)', 'Status']);
+            fputcsv($handle, ['Date', 'Client', 'Job', 'Service (₱)', 'Materials (₱)', 'Total Payout (₱)', 'Status']);
 
             foreach ($payouts as $row) {
                 fputcsv($handle, [
                     $row['date'],
                     $row['client'],
                     $row['job'],
+                    number_format($row['service'], 2),
+                    number_format($row['materials'], 2),
                     number_format($row['amount'], 2),
                     $row['status'],
                 ]);

@@ -267,6 +267,14 @@
                 <div class="job-card-body">
                     <div class="job-card-top">
                         <span class="job-card-service">{{ $job['service'] }}</span>
+                        @if(($job['urgency'] ?? 'normal') !== 'normal')
+                            @php
+                                $urgencyStyle = ($job['urgency'] === 'emergency')
+                                    ? 'background:#fee2e2;color:#b91c1c;'
+                                    : 'background:#fef3c7;color:#b45309;';
+                            @endphp
+                            <span class="status-badge" style="{{ $urgencyStyle }}text-transform:uppercase;font-size:.65rem;"><i class="fa-solid {{ ($job['urgency'] === 'emergency') ? 'fa-triangle-exclamation' : 'fa-clock' }}" aria-hidden="true"></i> {{ $job['urgency_label'] ?? 'Soon' }}</span>
+                        @endif
                         <span class="job-card-time"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ $job['time'] }}</span>
                         <span class="status-badge {{ $statusClass }}">{{ $job['status'] }}</span>
                         @if($isCompPending)
@@ -278,7 +286,13 @@
                         <span class="meta-sep">·</span>
                         <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $job['location'] }}</span>
                         <span class="meta-sep">·</span>
-                        <span class="job-card-amount">₱{{ number_format($job['price']) }}</span>
+                        <span class="job-card-amount">
+                            @if(!empty($job['is_price_estimated']))
+                                <span title="Estimate until scope confirmation">Est. ₱{{ number_format($job['price']) }}</span>
+                            @else
+                                <span>₱{{ number_format($job['price']) }}</span>
+                            @endif
+                        </span>
                     </div>
                 </div>
             </div>
@@ -808,6 +822,25 @@ function openJobModal(index) {
     };
     var complexityHtml = complexityLabels[job.complexity_level] || '<span class="badge" style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:99px;font-size:.72rem;">Standard</span>';
 
+    var urgencyStyles = {
+        'normal':    { label: 'Normal',    bg: '#f1f5f9', color: '#475569', icon: 'fa-circle' },
+        'soon':      { label: 'Soon',      bg: '#fef3c7', color: '#b45309', icon: 'fa-clock' },
+        'emergency': { label: 'Emergency', bg: '#fee2e2', color: '#b91c1c', icon: 'fa-triangle-exclamation' }
+    };
+    var uStyle = urgencyStyles[job.urgency || 'normal'] || urgencyStyles.normal;
+    var urgencyHtml = '<span class="badge" style="background:' + uStyle.bg + ';color:' + uStyle.color + ';padding:2px 8px;border-radius:99px;font-size:.72rem;"><i class="fa-solid ' + uStyle.icon + '" style="margin-right:4px;"></i>' + (job.urgency_label || uStyle.label) + '</span>';
+
+    var jobPhotosHtml = '';
+    if (job.photos && job.photos.length) {
+        jobPhotosHtml = '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            job.photos.map(function(p) {
+                return '<a href="' + p.path + '" target="_blank" rel="noopener" title="' + (p.caption || 'Job photo') + '">' +
+                    '<img src="' + p.path + '" alt="Job photo" style="width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;display:block;">' +
+                '</a>';
+            }).join('') +
+        '</div>';
+    }
+
     // Work Timer Section
     var timerSection = '';
     if (['accepted', 'en_route', 'in_progress'].includes(job.raw_status)) {
@@ -865,6 +898,81 @@ function openJobModal(index) {
         '</div>';
     }
 
+    // Materials & Supplies (BOM) Section
+    var mats = job.materials || [];
+    var matEditable = job.materials_editable === true;
+    var matHead = '<tr style="border-bottom:2px solid #e2e8f0;">' +
+        '<th style="padding:6px 4px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;text-align:left;">Item</th>' +
+        '<th style="padding:6px 4px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;text-align:right;">Qty × Unit</th>' +
+        '<th style="padding:6px 4px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;text-align:right;">Amount</th>' +
+        '<th style="padding:6px 4px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;text-align:center;">Receipt</th>' +
+        (matEditable ? '<th style="padding:6px 4px;width:56px;"></th>' : '') +
+    '</tr>';
+    var matRows = '';
+    if (mats.length) {
+        matRows = mats.map(function (m, mi) {
+            var receiptCell = m.receipt_url
+                ? '<a href="' + m.receipt_url + '" target="_blank" rel="noopener" title="View receipt"><img src="' + m.receipt_url + '" alt="Receipt" style="width:32px;height:32px;object-fit:cover;border-radius:5px;border:1px solid #e2e8f0;display:block;margin:0 auto;"></a>'
+                : '<span style="color:#cbd5e1;font-size:.72rem;">—</span>';
+            var actions = matEditable
+                ? '<button type="button" title="Edit item" onclick="bomEditItem(' + index + ',' + mi + ')" style="background:none;border:none;cursor:pointer;color:#2563eb;padding:2px 4px;"><i class="fa-solid fa-pen"></i></button>' +
+                  '<button type="button" title="Remove item" onclick="bomDeleteItem(' + index + ',' + mi + ')" style="background:none;border:none;cursor:pointer;color:#dc2626;padding:2px 4px;"><i class="fa-solid fa-trash"></i></button>'
+                : '';
+            return '<tr style="border-bottom:1px solid #f1f5f9;">' +
+                '<td style="padding:7px 4px;font-size:.82rem;color:#0f172a;">' + m.name + '</td>' +
+                '<td style="padding:7px 4px;font-size:.76rem;color:#475569;text-align:right;white-space:nowrap;">' + m.qty + ' × ₱' + Number(m.unit_price).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>' +
+                '<td style="padding:7px 4px;font-size:.82rem;font-weight:700;color:#0f172a;text-align:right;white-space:nowrap;">₱' + Number(m.line_total).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>' +
+                '<td style="padding:7px 4px;text-align:center;">' + receiptCell + '</td>' +
+                (matEditable ? '<td style="padding:7px 4px;text-align:right;white-space:nowrap;">' + actions + '</td>' : '') +
+            '</tr>';
+        }).join('');
+    } else {
+        matRows = '<tr><td colspan="' + (matEditable ? 5 : 4) + '" style="padding:14px 6px;text-align:center;color:#94a3b8;font-size:.8rem;">No material line items yet.</td></tr>';
+    }
+
+    var matFormHtml = '';
+    if (matEditable) {
+        var lblStyle = 'font-size:.66rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;';
+        var inputStyle = 'width:100%;margin-top:3px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font-size:.83rem;background:#fff;';
+        matFormHtml =
+        '<div id="bomFormNote" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px;padding:6px 10px;margin-top:10px;font-size:.76rem;color:#1e40af;justify-content:space-between;align-items:center;gap:8px;">' +
+            '<span><i class="fa-solid fa-pen"></i> Editing an existing item.</span>' +
+            '<button type="button" onclick="bomCancelEdit()" style="background:none;border:none;color:#2563eb;font-weight:700;cursor:pointer;font-size:.76rem;">Cancel</button>' +
+        '</div>' +
+        '<form id="bomForm" onsubmit="return bomSave(event, ' + index + ')" style="display:flex;flex-wrap:wrap;gap:9px;align-items:flex-end;margin-top:10px;padding-top:10px;border-top:1px dashed #cbd5e1;">' +
+            '<div style="flex:2 1 150px;min-width:130px;"><label style="' + lblStyle + '">Item</label>' +
+                '<input name="name" required maxlength="120" placeholder="e.g. PVC pipe 1/2" style="' + inputStyle + '"></div>' +
+            '<div style="flex:1 1 70px;min-width:64px;"><label style="' + lblStyle + '">Qty</label>' +
+                '<input name="qty" type="number" step="0.01" min="0.01" required placeholder="1" style="' + inputStyle + '"></div>' +
+            '<div style="flex:1 1 95px;min-width:86px;"><label style="' + lblStyle + '">Unit price (₱)</label>' +
+                '<input name="unit_price" type="number" step="0.01" min="0" required placeholder="0.00" style="' + inputStyle + '"></div>' +
+            '<div style="flex:1 1 120px;min-width:110px;"><label style="' + lblStyle + '">Receipt (optional)</label>' +
+                '<input name="receipt" type="file" accept="image/jpeg,image/png,image/webp" style="' + inputStyle + 'padding:5px 7px;font-size:.75rem;"></div>' +
+            '<label id="bomRemoveReceiptWrap" style="display:none;flex:1 1 100%;font-size:.74rem;color:#64748b;gap:6px;align-items:center;">' +
+                '<input type="checkbox" name="remove_receipt" value="1"> Remove saved receipt on save</label>' +
+            '<button type="submit" class="btn btn-sm btn-solid" style="background:#2563eb;padding:8px 14px;font-size:.8rem;gap:5px;flex:0 0 auto;"><i class="fa-solid fa-plus"></i> <span id="bomFormBtnLabel">Add item</span></button>' +
+        '</form>';
+    }
+
+    var materialsSection =
+        '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-top:12px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
+                '<div style="font-size:.8rem;font-weight:700;color:#1e293b;"><i class="fa-solid fa-boxes-stacked" style="color:#2563eb;margin-right:5px;"></i> Materials &amp; Supplies (BOM)</div>' +
+                '<div style="font-size:.76rem;color:#475569;">Materials total: <strong style="color:#0f172a;">₱' + Number(job.materials_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</strong></div>' +
+            '</div>' +
+            '<table style="width:100%;border-collapse:collapse;">' +
+                '<thead>' + matHead + '</thead>' +
+                '<tbody>' + matRows + '</tbody>' +
+            '</table>' +
+            '<div style="margin-top:9px;border-top:1px solid #e2e8f0;padding-top:8px;font-size:.8rem;">' +
+                '<div style="display:flex;justify-content:space-between;padding:2px 4px;color:#475569;"><span>Service charge</span><span>₱' + Number(job.price).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:2px 4px;color:#475569;"><span>Materials (' + mats.length + ' item' + (mats.length === 1 ? '' : 's') + ')</span><span>₱' + Number(job.materials_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:5px 4px 2px;font-weight:800;color:#0f172a;border-top:2px solid #0f172a;margin-top:4px;"><span>Total due</span><span>₱' + Number(job.invoice_total != null ? job.invoice_total : (Number(job.price) + Number(job.materials_total || 0))).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span></div>' +
+            '</div>' +
+            (job.invoice_url ? '<div style="margin-top:8px;"><a href="' + job.invoice_url + '" target="_blank" rel="noopener" style="font-size:.78rem;color:#2563eb;font-weight:600;display:inline-flex;gap:6px;align-items:center;"><i class="fa-solid fa-file-invoice"></i> View printable invoice</a></div>' : '') +
+            matFormHtml +
+        '</div>';
+
     var completionBanner = '';
     if (job.is_completion_pending) {
         if (job.confirmed_by_worker_at) {
@@ -895,6 +1003,10 @@ function openJobModal(index) {
             '<span class="detail-value">' + pricingType + '</span>' +
             '<span class="detail-label">Complexity</span>' +
             '<span class="detail-value">' + complexityHtml + '</span>' +
+            '<span class="detail-label">Issue Type</span>' +
+            '<span class="detail-value">' + (job.issue_type || '—') + '</span>' +
+            '<span class="detail-label">Urgency</span>' +
+            '<span class="detail-value">' + urgencyHtml + '</span>' +
             '<span class="detail-label">Service</span>' +
             '<span class="detail-value">' + job.service + '</span>' +
             '<span class="detail-label">Schedule</span>' +
@@ -904,7 +1016,11 @@ function openJobModal(index) {
             '<span class="detail-label">Navigation</span>' +
             '<span class="detail-value"><a href="' + navUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;font-size:.78rem;"><i class="fa-solid fa-diamond-turn-right" style="color:#2563eb;"></i> Open in Google Maps</a></span>' +
             '<span class="detail-label">Amount</span>' +
-            '<span class="detail-value" style="font-weight:600;">₱' + Number(job.price).toLocaleString() + '</span>' +
+            '<span class="detail-value" style="font-weight:600;">' +
+            (job.is_price_estimated ? 'Est. ₱' : '₱') + Number(job.price).toLocaleString() +
+            (job.is_price_estimated ? ' <span class="badge" style="background:#fef3c7;color:#92400e;font-size:.7rem;padding:2px 7px;border-radius:99px;margin-left:5px;font-weight:600;" title="Price is an estimate until job scope is confirmed">Estimate until scope confirmation</span>' : ' <span class="badge" style="background:#dcfce7;color:#166534;font-size:.7rem;padding:2px 7px;border-radius:99px;margin-left:5px;font-weight:600;"><i class="fa-solid fa-check"></i> Scope Confirmed</span>') +
+            '</span>' +
+            (jobPhotosHtml ? '<span class="detail-label">Photos</span><span class="detail-value">' + jobPhotosHtml + '</span>' : '') +
             '<span class="detail-label">Description</span>' +
             '<span class="detail-value">' + desc + '</span>' +
             (cancelledAt ? '<span class="detail-label">Cancelled At</span><span class="detail-value">' + cancelledAt + '</span>' : '') +
@@ -912,7 +1028,8 @@ function openJobModal(index) {
         '</div>' +
         timerSection +
         scopeSection +
-        teamSection;
+        teamSection +
+        materialsSection;
 
     // Timeline
     var timelineHtml = '<div class="timeline">';
@@ -996,6 +1113,101 @@ function formatTime(ts) {
     var ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12 || 12;
     return hours + ':' + String(mins).padStart(2,'0') + ' ' + ampm;
+}
+
+// ── Materials & Supplies (BOM) ──
+function bomCsrf() { return '{{ csrf_token() }}'; }
+
+function bomSave(e, index) {
+    e.preventDefault();
+    var job = jobs[index];
+    if (!job) return false;
+    var form = e.target;
+    var id = form.dataset.matId || '';
+    var fd = new FormData(form);
+    var url = '/worker/bookings/' + job.id + '/materials' + (id ? '/' + id : '');
+    if (id) fd.append('_method', 'PATCH');
+
+    fetch(url, { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': bomCsrf(), 'Accept': 'application/json' } })
+        .then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; });
+        })
+        .then(function (res) {
+            if (!res.ok) {
+                var msg = res.d && res.d.message;
+                if (!msg && res.d && res.d.errors) { msg = Object.keys(res.d.errors).map(function (k) { return res.d.errors[k].join(' '); }).join('\n'); }
+                alert(msg || 'Could not save the material item.');
+                return;
+            }
+            bomReload(index);
+        })
+        .catch(function () { alert('Network error. Please try again.'); });
+    return false;
+}
+
+function bomEditItem(index, matIndex) {
+    var m = (jobs[index] && jobs[index].materials || [])[matIndex];
+    var form = document.getElementById('bomForm');
+    if (!m || !form) return;
+    form.dataset.matId = String(m.id);
+    form.elements['name'].value = m.name;
+    form.elements['qty'].value = m.qty;
+    form.elements['unit_price'].value = m.unit_price;
+    var wrap = document.getElementById('bomRemoveReceiptWrap');
+    var removeBox = form.elements['remove_receipt'];
+    if (removeBox) removeBox.checked = false;
+    if (wrap) wrap.style.display = m.receipt_url ? 'flex' : 'none';
+    var note = document.getElementById('bomFormNote');
+    if (note) note.style.display = 'flex';
+    var btnLabel = document.getElementById('bomFormBtnLabel');
+    if (btnLabel) btnLabel.textContent = 'Save changes';
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    form.elements['name'].focus();
+}
+
+function bomCancelEdit() {
+    var form = document.getElementById('bomForm');
+    if (!form) return;
+    delete form.dataset.matId;
+    form.reset();
+    var wrap = document.getElementById('bomRemoveReceiptWrap');
+    if (wrap) wrap.style.display = 'none';
+    var note = document.getElementById('bomFormNote');
+    if (note) note.style.display = 'none';
+    var btnLabel = document.getElementById('bomFormBtnLabel');
+    if (btnLabel) btnLabel.textContent = 'Add item';
+}
+
+function bomDeleteItem(index, matIndex) {
+    var job = jobs[index];
+    var m = (job && job.materials || [])[matIndex];
+    if (!job || !m) return;
+    if (!confirm('Remove "' + m.name + '" from this booking\'s materials?')) return;
+
+    fetch('/worker/bookings/' + job.id + '/materials/' + m.id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': bomCsrf(), 'Accept': 'application/json' }
+    })
+        .then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; });
+        })
+        .then(function (res) {
+            if (!res.ok) {
+                alert((res.d && res.d.message) || 'Could not remove the material item.');
+                return;
+            }
+            bomReload(index);
+        })
+        .catch(function () { alert('Network error. Please try again.'); });
+}
+
+function bomReload(index) {
+    var job = jobs[index];
+    if (!job) return;
+    fetch('/worker/jobs/' + job.id + '/details')
+        .then(function (r) { return r.json(); })
+        .then(function (full) { jobs[index] = full; openJobModal(index); })
+        .catch(function () { alert('Failed to refresh job details.'); });
 }
 
 // ── Confirm / Cancel / Scope / Team ──
@@ -1342,7 +1554,7 @@ function showConfirmModal(index) {
             '<span class="detail-label">Client</span><span class="detail-value">' + job.client + '</span>' +
             '<span class="detail-label">Service</span><span class="detail-value">' + job.service + '</span>' +
             '<span class="detail-label">Schedule</span><span class="detail-value">' + job.date + '</span>' +
-            '<span class="detail-label">Amount</span><span class="detail-value">₱' + Number(job.price).toLocaleString() + '</span>' +
+            '<span class="detail-label">Amount</span><span class="detail-value">' + (job.is_price_estimated ? 'Est. ₱' : '₱') + Number(job.price).toLocaleString() + '</span>' +
         '</div>' +
         '<p style="margin:14px 0 0;font-size:.82rem;color:var(--g4);">This action cannot be undone.</p>' +
         agreeHtml;
@@ -1411,7 +1623,7 @@ function showCancelModal(index) {
             '<span class="detail-label">Client</span><span class="detail-value">' + job.client + '</span>' +
             '<span class="detail-label">Service</span><span class="detail-value">' + job.service + '</span>' +
             '<span class="detail-label">Schedule</span><span class="detail-value">' + job.date + '</span>' +
-            '<span class="detail-label">Amount</span><span class="detail-value">₱' + Number(job.price).toLocaleString() + '</span>' +
+            '<span class="detail-label">Amount</span><span class="detail-value">' + (job.is_price_estimated ? 'Est. ₱' : '₱') + Number(job.price).toLocaleString() + '</span>' +
         '</div>';
     document.getElementById('cancelReason').value = '';
     document.getElementById('cancelModal').style.display = 'flex';
@@ -1822,9 +2034,13 @@ function confirmCancel() {
                 ? '<a href="' + job.gmaps_nav_url + '" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline cal-nav-btn" onclick="event.stopPropagation()"><i class="fa-solid fa-diamond-turn-right" style="color:#2563eb;"></i> Navigate</a>'
                 : '';
 
+            var calUrgencyHtml = (job.urgency && job.urgency !== 'normal')
+                ? '<span style="font-size:.62rem;padding:1px 6px;border-radius:99px;font-weight:700;margin-right:6px;' + (job.urgency === 'emergency' ? 'background:#fee2e2;color:#b91c1c;' : 'background:#fef3c7;color:#b45309;') + ';">' + String(job.urgency_label || job.urgency).toUpperCase() + '</span>'
+                : '';
+
             card.innerHTML =
                 '<div class="cal-job-card-header">' +
-                    '<span class="cal-job-service"><span class="job-order-num">#' + (idx + 1) + '</span> ' + job.service + '</span>' +
+                    '<span class="cal-job-service">' + calUrgencyHtml + '<span class="job-order-num">#' + (idx + 1) + '</span> ' + job.service + '</span>' +
                     '<span class="cal-job-status-badge status-' + job.raw_status + '">' + job.status + '</span>' +
                 '</div>' +
                 '<div class="cal-job-details">' +
@@ -1832,7 +2048,7 @@ function confirmCancel() {
                     '<div class="cal-job-row"><i class="fa-regular fa-user"></i> ' + job.client + '</div>' +
                     '<div class="cal-job-row"><i class="fa-solid fa-location-dot"></i> ' + (job.barangay ? job.barangay + ', ' : '') + job.location + '</div>' +
                     '<div class="cal-job-row" style="display:flex;justify-content:space-between;align-items:center;">' +
-                        '<span><i class="fa-solid fa-peso-sign"></i> ' + Number(job.price).toLocaleString('en-PH', {minimumFractionDigits: 2}) + '</span>' +
+                        '<span><i class="fa-solid fa-peso-sign"></i> ' + (job.is_price_estimated ? 'Est. ' : '') + Number(job.price).toLocaleString('en-PH', {minimumFractionDigits: 2}) + '</span>' +
                         navBtnHtml +
                     '</div>' +
                 '</div>';

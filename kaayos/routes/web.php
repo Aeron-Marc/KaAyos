@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DisputeController;
 use App\Http\Controllers\Admin\ProviderServiceController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ServiceCategoryController;
+use App\Http\Controllers\Admin\IssueCategoryController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\Admin\UserController;
@@ -23,13 +24,16 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\CompleteProfileController;
+use App\Http\Controllers\BookingMaterialController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\Worker\ClaimController;
 use App\Http\Controllers\Worker\PublicWorkerController;
 use App\Http\Controllers\Worker\WorkerController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
@@ -52,6 +56,15 @@ Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/services', function () {
     return redirect('/#services');
 })->name('services.index');
+
+Route::get('/calculator', function () {
+    $services = \App\Models\Service::where('is_active', true)
+        ->with('category:id,name')
+        ->orderBy('name')
+        ->get(['id', 'category_id', 'name', 'base_price']);
+
+    return view('calculator.index', ['services' => $services]);
+})->name('calculator.index');
 
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store'])
@@ -145,6 +158,10 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::post('/profile/document', [WorkerController::class, 'uploadDocument'])->name('profile.document');
     Route::get('/documents', [WorkerController::class, 'documents'])->name('documents');
 
+    // Claims & counter-claims
+    Route::get('/claims', [ClaimController::class, 'index'])->name('claims.index');
+    Route::post('/claims/{dispute}/counter-claim', [ClaimController::class, 'storeCounterClaim'])->name('claims.counter');
+
     // Dashboard API endpoints
     Route::get('/dashboard/data', [WorkerDashboardController::class, 'dashboard'])->name('dashboard.data');
     Route::patch('/jobs/{booking}/status', [WorkerDashboardController::class, 'updateJobStatus'])->name('jobs.status');
@@ -155,6 +172,11 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::post('/jobs/{booking}/reschedule-respond', [WorkerDashboardController::class, 'respondReschedule'])->name('jobs.reschedule-respond');
     Route::post('/jobs/{booking}/confirm-complete', [WorkerDashboardController::class, 'confirmJobCompletion'])->name('jobs.confirm-complete');
     Route::get('/jobs/{booking}/details', [WorkerController::class, 'jobDetails'])->name('jobs.details');
+
+    // Billing of Materials (BOM)
+    Route::post('/bookings/{booking}/materials', [BookingMaterialController::class, 'store'])->name('bookings.materials.store');
+    Route::patch('/bookings/{booking}/materials/{material}', [BookingMaterialController::class, 'update'])->name('bookings.materials.update');
+    Route::delete('/bookings/{booking}/materials/{material}', [BookingMaterialController::class, 'destroy'])->name('bookings.materials.destroy');
     Route::post('/jobs/{booking}/start-timer', [WorkerDashboardController::class, 'startTimer'])->name('jobs.start-timer');
     Route::post('/jobs/{booking}/end-timer', [WorkerDashboardController::class, 'endTimer'])->name('jobs.end-timer');
     Route::post('/jobs/{booking}/request-scope-amendment', [WorkerDashboardController::class, 'requestScopeAmendment'])->name('jobs.request-scope-amendment');
@@ -231,6 +253,14 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::put('/service-categories/{serviceCategory}', [ServiceCategoryController::class, 'update'])->name('service-categories.update');
     Route::delete('/service-categories/{serviceCategory}', [ServiceCategoryController::class, 'destroy'])->name('service-categories.destroy');
 
+    // Issue Categories
+    Route::get('/issue-categories', [IssueCategoryController::class, 'index'])->name('issue-categories.index');
+    Route::get('/issue-categories/create', [IssueCategoryController::class, 'create'])->name('issue-categories.create');
+    Route::post('/issue-categories', [IssueCategoryController::class, 'store'])->name('issue-categories.store');
+    Route::get('/issue-categories/{issueCategory}/edit', [IssueCategoryController::class, 'edit'])->name('issue-categories.edit');
+    Route::put('/issue-categories/{issueCategory}', [IssueCategoryController::class, 'update'])->name('issue-categories.update');
+    Route::delete('/issue-categories/{issueCategory}', [IssueCategoryController::class, 'destroy'])->name('issue-categories.destroy');
+
     // Services
     Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
     Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
@@ -247,6 +277,11 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
 
+    // Billing of Materials (BOM)
+    Route::post('/bookings/{booking}/materials', [BookingMaterialController::class, 'store'])->name('bookings.materials.store');
+    Route::patch('/bookings/{booking}/materials/{material}', [BookingMaterialController::class, 'update'])->name('bookings.materials.update');
+    Route::delete('/bookings/{booking}/materials/{material}', [BookingMaterialController::class, 'destroy'])->name('bookings.materials.destroy');
+
     // Disputes
     Route::get('/disputes', [DisputeController::class, 'index'])->name('disputes.index');
     Route::get('/disputes/{dispute}', [DisputeController::class, 'show'])->name('disputes.show');
@@ -261,3 +296,6 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::get('/testimonials', [AdminTestimonialController::class, 'index'])->name('testimonials.index');
     Route::get('/testimonials/{testimonial}', [AdminTestimonialController::class, 'show'])->name('testimonials.show');
 });
+
+// Job invoice — accessible to the client, the worker, and admins (authorized in-controller)
+Route::middleware(['auth', 'verified', 'no-cache'])->get('/bookings/{booking}/invoice', [InvoiceController::class, 'show'])->name('bookings.invoice');

@@ -88,7 +88,7 @@ class UserController extends Controller
             }
         }
 
-        return redirect()->route('admin.users.index')->with('success', "User {$user->name} has been suspended. " . $activeBookings->count() . " active booking(s) cancelled.");
+        return back()->with('success', "User {$user->name} has been suspended. " . $activeBookings->count() . " active booking(s) cancelled.");
     }
 
     public function reactivate(User $user)
@@ -98,6 +98,6 @@ class UserController extends Controller
             'suspended_reason' => null,
         ]);
 
-        return redirect()->route('admin.users.index')->with('success', "User {$user->name} has been reactivated.");
+        return back()->with('success', "User {$user->name} has been reactivated.");
     }
 }

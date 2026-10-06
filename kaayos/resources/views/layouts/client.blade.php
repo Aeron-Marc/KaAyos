@@ -41,6 +41,12 @@
                 {{ __('nav.find_workers') }}
             </a>
 
+            <a href="{{ route('calculator.index') }}"
+               class="nav-item {{ request()->routeIs('calculator*') ? 'active' : '' }}">
+                <i class="fa-solid fa-calculator nav-icon" aria-hidden="true"></i>
+                {{ __('nav.calculator') }}
+            </a>
+
             <a href="{{ route('client.bookings') }}"
                class="nav-item {{ request()->routeIs('client.bookings*') ? 'active' : '' }}">
                 <i class="fa-solid fa-calendar-check nav-icon" aria-hidden="true"></i>

@@ -1,6 +1,7 @@
 {
     "nav.dashboard": "Dashboard",
     "nav.find_workers": "Find Workers",
+    "nav.calculator": "Job Calculator",
     "nav.bookings": "Bookings",
     "nav.messages": "Messages",
     "nav.reviews": "Reviews",
@@ -8,6 +9,7 @@
     "nav.account": "Account",
     "nav.my_schedule": "My Schedule",
     "nav.earnings": "Earnings",
+    "nav.claims": "Claims",
     "nav.my_profile": "My Profile",
     "nav.documents": "Documents",
     "nav.testimonials": "Testimonials",
@@ -91,7 +93,7 @@
 
     "badges.tesda_certified": "TESDA Certified",
     "badges.barangay_verified": "Barangay Verified",
-    "badges.id_verified": "ID Verified",
+    "badges.id_verified": "Verified",
     "badges.top_rated": "Top Rated Worker",
     "badges.tools_equipped": "Tools & Equipment Equipped",
 

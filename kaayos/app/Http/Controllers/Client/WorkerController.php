@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\IssueCategory;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Services\GeoTravelService;
@@ -82,7 +83,7 @@ class WorkerController extends Controller
             ->withCount('reviewsReceived')
             ->active()
             ->whereHas('workerProfile', function ($q) {
-                $q->whereRaw("JSON_CONTAINS(availability->'$[*].active', 'true') = 1");
+                $q->whereRaw("JSON_CONTAINS(availability, '{\"active\":true}') = 1");
             });
 
         if ($category = $request->query('category')) {
@@ -205,6 +206,37 @@ class WorkerController extends Controller
             'reviews'             => $reviews,
             'canMessage'          => (bool) $existingBooking,
             'workerServices'      => $workerServices,
+            'issueGroups'         => $this->buildIssueGroups($worker),
         ]);
+    }
+
+    /**
+     * Group active issue types for the booking form by the worker's trade:
+     * "For {trade}" (trade issues + always an "Other / Not Listed" chip) for
+     * concrete trades, flat list otherwise.
+     *
+     * @return array<int, array{label: string|null, items: \Illuminate\Support\Collection}>
+     */
+    private function buildIssueGroups(User $worker): array
+    {
+        $allIssues = IssueCategory::active()->orderBy('name')->get();
+        $trade = strtolower(trim((string) $worker->service_category));
+
+        if (in_array($trade, IssueCategory::GROUPABLE_TRADES, true)) {
+            $forTrade = $allIssues
+                ->filter(fn (IssueCategory $i) => $i->service_category && strtolower($i->service_category) === $trade)
+                ->values();
+
+            $other = $allIssues->firstWhere('slug', 'other-not-listed');
+            if ($other && !$forTrade->contains('slug', 'other-not-listed')) {
+                $forTrade->push($other);
+            }
+
+            if ($forTrade->isNotEmpty()) {
+                return [['label' => 'For ' . ucfirst($trade), 'items' => $forTrade]];
+            }
+        }
+
+        return [['label' => null, 'items' => $allIssues]];
     }
 }

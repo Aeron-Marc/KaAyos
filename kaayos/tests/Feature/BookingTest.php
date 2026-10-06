@@ -48,10 +48,12 @@ class BookingTest extends TestCase
         return array_merge([
             'worker_id'       => $this->worker->id,
             'service_category' => 'Plumbing',
+            'issue_category_id' => \App\Models\IssueCategory::first()->id,
+            'urgency'         => 'normal',
             'scheduled_at'    => now()->addDay()->format('Y-m-d H:i:s'),
             'house_no'        => '123',
             'barangay'        => 'Brgy. Bayanan',
-            'notes'           => 'Please bring tools.',
+            'notes'           => 'Please bring the proper tools for this repair job.',
             'price'           => 500.00,
         ], $overrides);
     }

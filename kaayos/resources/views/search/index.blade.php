@@ -154,6 +154,7 @@ a{text-decoration:none;color:inherit}
   <ul class="nav-links">
     <li><a href="/">Home</a></li>
     <li><a href="/services">Services</a></li>
+    <li><a href="/calculator">Calculator</a></li>
   </ul>
   <div class="nav-cta">
     <a href="/login" class="btn btn-ghost"><i class="fa-regular fa-user" aria-hidden="true"></i> Log In</a>
@@ -232,6 +233,11 @@ a{text-decoration:none;color:inherit}
       <p class="location-hint"><i class="fa-solid fa-map-pin" aria-hidden="true"></i> Showing workers near <strong>Brgy. {{ $locationBarangay }}, Tuy, Batangas</strong> — sorted by distance.</p>
     @endif
 
+    <div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--g5);background:#f8fafc;border:1px solid #e2e8f0;padding:6px 12px;border-radius:8px;margin-bottom:14px;">
+      <i class="fa-solid fa-circle-info" style="color:#2563eb;"></i>
+      <span>Public rates are <strong>estimates</strong> until job scope is confirmed between client and worker.</span>
+    </div>
+
     @if($workers->count() > 0)
       <div class="worker-grid">
         @foreach($workers as $w)
@@ -259,7 +265,7 @@ a{text-decoration:none;color:inherit}
                     <span><i class="fa-regular fa-comment"></i> {{ $w['reviews'] }}</span>
                   @endif
                   @if($w['price'] > 0)
-                    <span class="w-price">₱{{ number_format($w['price']) }}/hr</span>
+                    <span class="w-price" title="Rate is an estimate until job scope is confirmed"><span style="font-size:.72rem;font-weight:600;color:var(--g5);text-transform:uppercase;margin-right:2px;">Est.</span>₱{{ number_format($w['price']) }}/hr</span>
                   @endif
                 </div>
               </div>

@@ -35,8 +35,9 @@
 <div class="stats-grid">
     <div class="stat-card accent">
         <div class="stat-icon"><i class="fa-solid fa-coins" aria-hidden="true"></i></div>
-        <div class="stat-value">₱{{ number_format($earnings['total']) }}</div>
-        <div class="stat-label">Total Earnings</div>
+        <div class="stat-value">₱{{ number_format($earnings['total_estimated'] ?? $earnings['total']) }}</div>
+        <div class="stat-label">Total Estimated Earnings</div>
+        <div style="font-size:.73rem;color:var(--g5);margin-top:4px;">₱{{ number_format($earnings['total']) }} confirmed + ₱{{ number_format($earnings['pipeline_estimated'] ?? 0) }} pipeline</div>
     </div>
     <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-calendar-week" aria-hidden="true"></i></div>
@@ -46,7 +47,7 @@
     <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></div>
         <div class="stat-value">₱{{ number_format($earnings['pending_payout']) }}</div>
-        <div class="stat-label">Pending Payout</div>
+        <div class="stat-label">Active Job Pipeline</div>
     </div>
     <div class="stat-card">
         <div class="stat-icon"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></div>
@@ -72,7 +73,9 @@
                 <th>Date</th>
                 <th>Client</th>
                 <th>Job</th>
-                <th>Amount</th>
+                <th>Service</th>
+                <th>Materials</th>
+                <th>Total Payout</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -82,7 +85,9 @@
                     <td>{{ $payout['date'] }}</td>
                     <td><span class="booking-worker">{{ $payout['client'] }}</span></td>
                     <td>{{ $payout['job'] }}</td>
-                    <td>₱{{ number_format($payout['amount']) }}</td>
+                    <td>₱{{ number_format($payout['service'] ?? $payout['amount'], 2) }}</td>
+                    <td>₱{{ number_format($payout['materials'] ?? 0, 2) }}</td>
+                    <td>₱{{ number_format($payout['amount'], 2) }}</td>
                     <td>
                         @php
                             $statusClass = $payout['status'] === 'Completed' ? 'status-done' : 'status-pending';
@@ -92,7 +97,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5">
+                    <td colspan="7">
                         <div class="empty-state">
                             <i class="fa-regular fa-coins" aria-hidden="true"></i>
                             <h3>No earnings yet</h3>

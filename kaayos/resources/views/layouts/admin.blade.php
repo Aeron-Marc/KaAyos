@@ -295,6 +295,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('admin.issue-categories.index') }}" class="{{ request()->routeIs('admin.issue-categories.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Issue Categories</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('admin.services.index') }}" class="{{ request()->routeIs('admin.services.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-wrench"></i>
                     <span>Services</span>

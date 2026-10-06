@@ -12,6 +12,7 @@ use App\Models\Review;
 use App\Models\WorkerProfile;
 use App\Models\BookingHistory;
 use App\Models\Dispute;
+use App\Models\IssueCategory;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Events\BookingCreated;
@@ -35,6 +36,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ClientController extends Controller
@@ -120,7 +123,7 @@ class ClientController extends Controller
     protected function getBookings(): array
     {
         return auth()->user()->bookingsAsClient()
-            ->with('worker', 'history')
+            ->with(['worker', 'history', 'issueCategory', 'photos', 'materials'])
             ->latest()
             ->take(20)
             ->get()
@@ -145,11 +148,32 @@ class ClientController extends Controller
                     'status'        => ucfirst($b->status),
                     'raw_status'    => $b->status,
                     'price'         => $b->price ?? 0,
+                    'is_scope_confirmed' => $b->isScopeConfirmed(),
+                    'is_price_estimated' => $b->isPriceEstimated(),
+                    'materials'     => $b->materials->map(fn ($m) => [
+                        'name'        => $m->name,
+                        'qty'         => (float) $m->qty,
+                        'unit_price'  => (float) $m->unit_price,
+                        'line_total'  => (float) $m->line_total,
+                        'receipt_url' => $m->receipt_url,
+                    ])->values()->toArray(),
+                    'materials_total' => (float) ($b->materials_total ?? 0),
+                    'invoice_total'   => round((float) ($b->price ?? 0) + (float) ($b->materials_total ?? 0), 2),
+                    'invoice_url'     => route('bookings.invoice', $b),
                     'property_type' => $b->property_type ?? 'residential',
                     'pricing_type'  => $b->pricing_type ?? 'fixed',
                     'estimated_duration_hours' => $b->estimated_duration_hours ?? 2.0,
                     'complexity_level' => $b->complexity_level ?? 'standard',
                     'complexity_multiplier' => $b->complexity_multiplier ?? 1.0,
+                    'issue_type'       => $b->issueCategory?->name,
+                    'urgency'          => $b->urgency ?? 'normal',
+                    'urgency_label'    => $b->urgencyLabel(),
+                    'urgency_multiplier' => (float) ($b->urgency_multiplier ?? 1.0),
+                    'photos'           => $b->photos->map(fn ($p) => [
+                        'path'      => asset('storage/' . $p->photo_path),
+                        'caption'   => $p->caption,
+                        'uploaded_by' => $p->uploaded_by,
+                    ])->values()->toArray(),
                     'work_started_at' => $b->work_started_at?->format('g:i A'),
                     'work_ended_at'   => $b->work_ended_at?->format('g:i A'),
                     'scope_amendment_status' => $b->scope_amendment_status,
@@ -321,12 +345,16 @@ class ClientController extends Controller
         return [
             'pending' => $pending,
             'past'    => $user->reviews()->with('worker', 'booking')->latest()->take(20)->get()->map(fn ($r) => [
-                'worker'    => $r->worker->name ?? 'Unknown',
-                'service'   => $r->booking->service_category ?? '',
-                'date'      => $r->created_at->format('M d, Y'),
-                'rating'    => $r->rating,
-                'comment'   => $r->comment,
-                'photo_url' => $r->photo_url,
+                'worker'        => $r->worker->name ?? 'Unknown',
+                'service'       => $r->booking->service_category ?? '',
+                'date'          => $r->created_at->format('M d, Y'),
+                'rating'        => $r->rating,
+                'comment'       => $r->comment,
+                'photo_url'     => $r->photo_url,
+                'booking_id'    => $r->booking_id,
+                'can_edit'      => $r->canBeEdited(),
+                'editable_until' => $r->editableUntil()->format('M d, Y g:i A'),
+                'edited'        => $r->edited,
             ])->toArray(),
         ];
     }
@@ -637,6 +665,8 @@ class ClientController extends Controller
         $validated = $request->validate([
             'worker_id'        => ['required', 'exists:users,id'],
             'service_category' => ['required', 'string', 'max:255'],
+            'issue_category_id' => ['required', 'integer', 'exists:issue_categories,id'],
+            'urgency'          => ['required', 'string', Rule::in(array_keys(Booking::URGENCY_MULTIPLIERS))],
             'scheduled_at'     => ['required', 'date', 'after:now'],
             'house_no'         => ['required', 'string', 'max:255'],
             'barangay'         => ['required', 'string', 'max:255'],
@@ -644,15 +674,36 @@ class ClientController extends Controller
             'pricing_type'     => ['nullable', 'string', 'in:fixed,hourly'],
             'estimated_duration_hours' => ['nullable', 'numeric', 'min:0.5', 'max:24'],
             'complexity_level' => ['nullable', 'string', 'in:standard,moderate,complex,high_hazard,hazardous'],
-            'notes'            => ['nullable', 'string', 'max:2000'],
+            'notes'            => ['required', 'string', 'min:20', 'max:2000'],
+            'photos'           => [Rule::requiredIf(fn () => $request->input('urgency') === Booking::URGENCY_EMERGENCY), 'array', 'max:5'],
+            'photos.*'         => ['file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'price'            => ['nullable', 'numeric', 'min:0'],
             'latitude'         => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'        => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
+        $issueCategory = IssueCategory::where('is_active', true)->find($validated['issue_category_id']);
+        if (!$issueCategory) {
+            return response()->json(['success' => false, 'message' => 'The selected issue type is no longer available.'], 422);
+        }
+
         $worker = User::findOrFail($validated['worker_id']);
         if ($worker->role !== 'worker') {
             return response()->json(['success' => false, 'message' => 'Invalid worker.'], 422);
+        }
+
+        // The chosen issue type must belong to the worker's trade (null trade = all trades)
+        $workerTrade = strtolower(trim((string) $worker->service_category));
+        if (
+            in_array($workerTrade, IssueCategory::GROUPABLE_TRADES, true)
+            && $issueCategory->service_category
+            && strcasecmp($issueCategory->service_category, $workerTrade) !== 0
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The selected issue type is not offered by this worker.',
+                'errors'  => ['issue_category_id' => ['The selected issue type is not offered by this worker.']],
+            ], 422);
         }
 
         if ($worker->suspended_at) {
@@ -692,13 +743,16 @@ class ClientController extends Controller
             default                    => 1.00,
         };
 
+        $urgency = $validated['urgency'];
+        $urgencyMultiplier = (float) (Booking::URGENCY_MULTIPLIERS[$urgency] ?? 1.00);
+
         if ($pricingType === 'hourly' && $worker->workerProfile?->hourly_rate) {
             $basePrice = (float) $worker->workerProfile->hourly_rate * $durationHours;
         } else {
             $basePrice = (float) $price;
         }
 
-        $finalPrice = round($basePrice * $complexityMultiplier, 2);
+        $finalPrice = round($basePrice * $complexityMultiplier * $urgencyMultiplier, 2);
 
         // Validate price against service min/max range
         if ($finalPrice > 0) {
@@ -797,11 +851,14 @@ class ClientController extends Controller
 
         $address = $validated['house_no'] . ', ' . $validated['barangay'] . ', ' . config('kaayos.default_location');
 
-        $booking = DB::transaction(function () use ($validated, $address, $worker, $serviceCategory, $finalPrice, $pricingType, $durationHours, $complexityLevel, $complexityMultiplier, $clientLat, $clientLng, $travelMetrics) {
+        $booking = DB::transaction(function () use ($request, $validated, $address, $worker, $serviceCategory, $finalPrice, $pricingType, $durationHours, $complexityLevel, $complexityMultiplier, $urgency, $urgencyMultiplier, $clientLat, $clientLng, $travelMetrics) {
             $booking = Booking::create([
                 'client_id'                    => auth()->id(),
                 'worker_id'                    => $validated['worker_id'],
                 'service_category'             => $serviceCategory,
+                'issue_category_id'            => $validated['issue_category_id'],
+                'urgency'                      => $urgency,
+                'urgency_multiplier'           => $urgencyMultiplier,
                 'scheduled_at'                 => $validated['scheduled_at'],
                 'address'                      => $address,
                 'house_no'                     => $validated['house_no'],
@@ -815,11 +872,19 @@ class ClientController extends Controller
                 'longitude'                    => $clientLng,
                 'travel_distance_from_prev_km' => $travelMetrics['road_distance_km'] ?? null,
                 'estimated_transit_minutes'    => $travelMetrics['estimated_minutes'] ?? null,
-                'notes'                        => $validated['notes'] ?? null,
+                'notes'                        => $validated['notes'],
                 'price'                        => $finalPrice,
                 'status'                       => Booking::STATUS_NEW,
                 'agreed_by_client_at'          => now(),
             ]);
+
+            foreach ($request->file('photos', []) as $photo) {
+                $booking->photos()->create([
+                    'photo_path'  => $photo->store('booking-photos', 'public'),
+                    'caption'     => null,
+                    'uploaded_by' => 'client',
+                ]);
+            }
 
             $booking->history()->create([
                 'old_status' => null,
@@ -923,14 +988,34 @@ class ClientController extends Controller
         }
 
         $validated = $request->validate([
-            'rating'  => ['required', 'integer', 'min:1', 'max:5'],
-            'comment' => ['nullable', 'string', 'max:2000'],
-            'photo'   => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'rating'       => ['required', 'integer', 'min:1', 'max:5'],
+            'comment'      => ['nullable', 'string', 'max:2000'],
+            'photo'        => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'remove_photo' => ['nullable', 'boolean'],
         ]);
 
-        $photoPath = $request->hasFile('photo')
-            ? $request->file('photo')->store('review-photos', 'public')
-            : null;
+        $existing = Review::where('booking_id', $booking->id)->first();
+
+        if ($existing && !$existing->canBeEdited()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The edit window for this review has expired.',
+            ], 422);
+        }
+
+        if ($request->hasFile('photo')) {
+            if ($existing?->photo_path) {
+                Storage::disk('public')->delete($existing->photo_path);
+            }
+            $photoPath = $request->file('photo')->store('review-photos', 'public');
+        } elseif ($existing && $request->boolean('remove_photo')) {
+            if ($existing->photo_path) {
+                Storage::disk('public')->delete($existing->photo_path);
+            }
+            $photoPath = null;
+        } else {
+            $photoPath = $existing?->photo_path;
+        }
 
         $review = Review::updateOrCreate(
             ['booking_id' => $booking->id],
@@ -951,7 +1036,9 @@ class ClientController extends Controller
             ['average_rating' => round($averageRating, 2)]
         );
 
-        Notification::send($booking->worker, new NewReview($review));
+        if (!$existing) {
+            Notification::send($booking->worker, new NewReview($review));
+        }
 
         return response()->json(['success' => true, 'review' => $review]);
     }
@@ -1024,20 +1111,7 @@ class ClientController extends Controller
         try {
             $afterSave = function (Booking $fresh) {
                 if ($fresh->status === Booking::STATUS_COMPLETED) {
-                    $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                    $gross = $fresh->price ?? 0;
-                    $fee = round($gross * ($platformFeePercent / 100), 2);
-                    $net = $gross - $fee;
-
-                    Earning::updateOrCreate(
-                        ['booking_id' => $fresh->id],
-                        [
-                            'worker_id'    => $fresh->worker_id,
-                            'gross_amount' => $gross,
-                            'platform_fee' => $fee,
-                            'net_amount'   => $net,
-                        ]
-                    );
+                    $fresh->syncEarning();
                 }
             };
 

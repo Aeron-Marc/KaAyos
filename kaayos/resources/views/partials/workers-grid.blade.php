@@ -25,7 +25,7 @@
                   <span><i class="fa-regular fa-comment"></i> {{ $w['reviews'] }}</span>
                 @endif
                 @if($w['price'] > 0)
-                  <span class="w-price">₱{{ number_format($w['price']) }}/hr</span>
+                  <span class="w-price" title="Rate is an estimate until job scope is confirmed"><span style="font-size:.72rem;font-weight:600;color:var(--g5);text-transform:uppercase;margin-right:2px;">Est.</span>₱{{ number_format($w['price']) }}/hr</span>
                 @endif
               </div>
             </div>

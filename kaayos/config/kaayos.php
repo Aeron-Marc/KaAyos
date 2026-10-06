@@ -6,6 +6,7 @@ return [
     'max_concurrent_jobs'    => env('KAAYOS_MAX_CONCURRENT_JOBS', 3),
     'no_show_minutes'        => env('KAAYOS_NO_SHOW_MINUTES', 60),
     'default_location'       => env('KAAYOS_DEFAULT_LOCATION', 'Tuy, Batangas'),
+    'review_edit_grace_hours' => env('KAAYOS_REVIEW_EDIT_GRACE_HOURS', 72),
 
     /*
     | Chatbot (AI Assistant) configuration

@@ -126,7 +126,7 @@
                     default      => 'status-cancelled',
                 };
             @endphp
-            <div class="booking-card" data-status="{{ $booking['raw_status'] }}" data-booking-id="{{ $booking['id'] }}" onclick="openBookingModal({{ $i }})">
+            <div class="booking-card" data-status="{{ $booking['raw_status'] }}" data-booking-id="{{ $booking['id'] }}" onclick="openBookingModal(@js($i))">
                 <div class="schedule-date-box">
                     <span class="schedule-month">{{ $booking['month'] }}</span>
                     <span class="schedule-day">{{ $booking['day'] }}</span>
@@ -160,6 +160,14 @@
                         <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $booking['location'] }}</span>
                         <span class="meta-sep">·</span>
                         <span class="booking-card-amount">₱{{ number_format($booking['price']) }}</span>
+                        <span class="booking-card-amount">
+                            @if(!empty($booking['is_price_estimated']))
+                                <span title="Estimate until scope confirmation">Est. ₱{{ number_format($booking['price']) }}</span>
+                                <span style="background:#fef3c7;color:#92400e;font-size:.65rem;padding:1px 6px;border-radius:99px;margin-left:2px;font-weight:600;">Est</span>
+                            @else
+                                ₱{{ number_format($booking['price']) }}
+                            @endif
+                        </span>
                     </div>
                 </div>
             </div>
@@ -775,6 +783,25 @@ function openBookingModal(index) {
     };
     var complexityHtml = complexityLabels[b.complexity_level] || '<span class="badge" style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:99px;font-size:.72rem;">Standard</span>';
 
+    var urgencyStyles = {
+        'normal':    { label: 'Normal',    bg: '#f1f5f9', color: '#475569', icon: 'fa-circle' },
+        'soon':      { label: 'Soon',      bg: '#fef3c7', color: '#b45309', icon: 'fa-clock' },
+        'emergency': { label: 'Emergency', bg: '#fee2e2', color: '#b91c1c', icon: 'fa-triangle-exclamation' }
+    };
+    var u = urgencyStyles[b.urgency || 'normal'] || urgencyStyles.normal;
+    var urgencyHtml = '<span class="badge" style="background:' + u.bg + ';color:' + u.color + ';padding:2px 8px;border-radius:99px;font-size:.72rem;"><i class="fa-solid ' + u.icon + '" style="margin-right:4px;"></i>' + (b.urgency_label || u.label) + '</span>';
+
+    var photosHtml = '';
+    if (b.photos && b.photos.length) {
+        photosHtml = '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            b.photos.map(function(p) {
+                return '<a href="' + p.path + '" target="_blank" rel="noopener" title="' + (p.caption || 'Booking photo') + '">' +
+                    '<img src="' + p.path + '" alt="Booking photo" style="width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;display:block;">' +
+                '</a>';
+            }).join('') +
+        '</div>';
+    }
+
     // Work Timer Section
     var timerSection = '';
     if (b.work_started_at) {
@@ -870,6 +897,38 @@ function openBookingModal(index) {
         '</div>';
     }
 
+    // Materials & Supplies (read-only breakdown + invoice link)
+    var mats = b.materials || [];
+    var matRowsHtml = mats.map(function (m) {
+        var receiptHtml = m.receipt_url
+            ? ' <a href="' + m.receipt_url + '" target="_blank" rel="noopener" title="View receipt" style="color:#2563eb;"><i class="fa-solid fa-receipt"></i></a>'
+            : '';
+        return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:.8rem;padding:5px 0;border-bottom:1px solid #f1f5f9;">' +
+            '<span style="color:#0f172a;">' + m.name + receiptHtml +
+                '<span style="color:#64748b;font-size:.74rem;"> · ' + m.qty + ' × ₱' + Number(m.unit_price).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span>' +
+            '</span>' +
+            '<span style="font-weight:700;white-space:nowrap;">₱' + Number(m.line_total).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span>' +
+        '</div>';
+    }).join('');
+    if (!matRowsHtml) {
+        matRowsHtml = '<div style="font-size:.78rem;color:#94a3b8;padding:6px 0;">No material line items were billed for this job.</div>';
+    }
+    var bomInvoiceTotal = b.invoice_total != null ? Number(b.invoice_total) : (Number(b.price) + Number(b.materials_total || 0));
+    var bomCard =
+        '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-top:12px;">' +
+            '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:700;color:#1e293b;font-size:.88rem;">' +
+                '<span><i class="fa-solid fa-boxes-stacked" style="color:#2563eb;margin-right:6px;"></i>Materials &amp; Supplies</span>' +
+                '<span style="font-weight:600;color:#475569;font-size:.78rem;">Materials total: ₱' + Number(b.materials_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span>' +
+            '</div>' +
+            '<div style="margin-top:8px;">' + matRowsHtml + '</div>' +
+            '<div style="margin-top:8px;border-top:1px solid #e2e8f0;padding-top:7px;font-size:.8rem;">' +
+                '<div style="display:flex;justify-content:space-between;padding:2px 0;color:#475569;"><span>Service charge</span><span>₱' + Number(b.price).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:2px 0;color:#475569;"><span>Materials (' + mats.length + ' item' + (mats.length === 1 ? '' : 's') + ')</span><span>₱' + Number(b.materials_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:5px 0 0;font-weight:800;color:#0f172a;border-top:2px solid #0f172a;margin-top:4px;"><span>Total due</span><span>₱' + bomInvoiceTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span></div>' +
+            '</div>' +
+            (b.invoice_url ? '<div style="margin-top:8px;"><a href="' + b.invoice_url + '" target="_blank" rel="noopener" style="font-size:.8rem;color:#2563eb;font-weight:600;display:inline-flex;gap:6px;align-items:center;"><i class="fa-solid fa-file-invoice"></i> View printable invoice</a></div>' : '') +
+        '</div>';
+
     document.getElementById('bookingModalTitle').textContent = 'Booking Details';
     document.getElementById('bookingModalDetails').innerHTML =
         enRouteBanner +
@@ -884,6 +943,10 @@ function openBookingModal(index) {
             '<span class="detail-value">' + pricingType + '</span>' +
             '<span class="detail-label">Complexity</span>' +
             '<span class="detail-value">' + complexityHtml + '</span>' +
+            '<span class="detail-label">Issue Type</span>' +
+            '<span class="detail-value">' + (b.issue_type || '—') + '</span>' +
+            '<span class="detail-label">Urgency</span>' +
+            '<span class="detail-value">' + urgencyHtml + '</span>' +
             '<span class="detail-label">Service</span>' +
             '<span class="detail-value">' + b.service + '</span>' +
             '<span class="detail-label">Schedule</span>' +
@@ -892,14 +955,24 @@ function openBookingModal(index) {
             '<span class="detail-value">' + b.location + '</span>' +
             '<span class="detail-label">Amount</span>' +
             '<span class="detail-value" style="font-weight:600;">₱' + Number(b.price).toLocaleString() + '</span>' +
-            '<span class="detail-label">Notes</span>' +
+            '<span class="detail-value" style="font-weight:600;">' +
+                (b.is_price_estimated
+                    ? '<span title="Estimate until scope confirmation">Est. ₱' + Number(b.price).toLocaleString() + '</span>' +
+                      '<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:.65rem;padding:1px 6px;border-radius:99px;margin-left:6px;font-weight:600;">Estimate until scope confirmation</span>'
+                    : '₱' + Number(b.price).toLocaleString() +
+                      '<span style="display:inline-block;background:#dcfce7;color:#166534;font-size:.65rem;padding:1px 6px;border-radius:99px;margin-left:6px;font-weight:600;">✓ Scope Confirmed</span>'
+                ) +
+            '</span>' +
+            (photosHtml ? '<span class="detail-label">Photos</span><span class="detail-value">' + photosHtml + '</span>' : '') +
+            '<span class="detail-label">Problem Description</span>' +
             '<span class="detail-value">' + notes + '</span>' +
             (cancelledAt ? '<span class="detail-label">Cancelled At</span><span class="detail-value">' + cancelledAt + '</span>' : '') +
             (cancelReason ? '<span class="detail-label">Cancel Reason</span><span class="detail-value">' + cancelReason + '</span>' : '') +
         '</div>' +
         timerSection +
         scopeCard +
-        teamCard;
+        teamCard +
+        bomCard;
 
     // Timeline
     var timelineHtml = '<div class="timeline">';
@@ -1124,44 +1197,33 @@ function markJobComplete(index) {
     
     if (confirm('Mark this job as complete? The worker will need to confirm.')) {
         var btn = document.activeElement;
-        if (btn) btn.disabled = true;
         var originalHtml = btn ? btn.innerHTML : '';
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
         }
-        
-        fetch('/client/bookings/' + b.id + '/mark-complete', {
+
         var url = window.location.origin + '{{ route("client.bookings.mark-complete", "__ID__", false) }}'.replace('__ID__', b.id);
         fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
         })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (data.success) {
-                location.reload();
         .then(function (r) { return r.json().then(function(data){ return { ok: r.ok, data: data }; }); })
         .then(function (res) {
             if (res.ok && res.data.success) {
                 if (window.showToast) window.showToast(res.data.message || 'Marked as complete. Waiting for worker to confirm.', 'success');
                 setTimeout(function() { location.reload(); }, 600);
             } else {
-                alert(data.message || 'Failed to mark job as complete.');
-                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
                 var msg = (res.data && res.data.message) ? res.data.message : 'Failed to mark job as complete.';
                 if (window.showToast) window.showToast(msg, 'error');
                 else alert(msg);
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
             }
         })
         .catch(function () { 
-            alert('Something went wrong.'); 
-        })
-        .finally(function () {
-            if (btn) btn.disabled = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
             if (window.showToast) window.showToast('Network error while marking job complete.', 'error');
             else alert('Something went wrong.'); 
+            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
         });
     }
 }
@@ -1172,44 +1234,33 @@ function confirmJobComplete(index) {
     
     if (confirm('Confirm job completion? This will finalize the booking.')) {
         var btn = document.activeElement;
-        if (btn) btn.disabled = true;
         var originalHtml = btn ? btn.innerHTML : '';
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
         }
-        
-        fetch('/client/bookings/' + b.id + '/confirm-complete', {
+
         var url = window.location.origin + '{{ route("client.bookings.confirm-complete", "__ID__", false) }}'.replace('__ID__', b.id);
         fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
         })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (data.success) {
-                location.reload();
         .then(function (r) { return r.json().then(function(data){ return { ok: r.ok, data: data }; }); })
         .then(function (res) {
             if (res.ok && res.data.success) {
                 if (window.showToast) window.showToast(res.data.message || 'Job completion confirmed!', 'success');
                 setTimeout(function() { location.reload(); }, 600);
             } else {
-                alert(data.message || 'Failed to confirm job completion.');
-                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
                 var msg = (res.data && res.data.message) ? res.data.message : 'Failed to confirm job completion.';
                 if (window.showToast) window.showToast(msg, 'error');
                 else alert(msg);
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
             }
         })
         .catch(function () { 
-            alert('Something went wrong.'); 
-        })
-        .finally(function () {
-            if (btn) btn.disabled = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
             if (window.showToast) window.showToast('Network error while confirming job complete.', 'error');
             else alert('Something went wrong.'); 
+            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
         });
     }
 }

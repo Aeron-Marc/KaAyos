@@ -24,7 +24,7 @@
             </div>
             <div class="worker-details">
                 <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $worker['distance'] }}</span>
-                <span class="price">₱{{ number_format($worker['price']) }}/hr</span>
+                <span class="price" title="Rate is an estimate until scope confirmation"><span style="font-size:.72rem;font-weight:600;opacity:.8;margin-right:2px;">Est.</span>₱{{ number_format($worker['price']) }}/hr</span>
             </div>
         </div>
     </div>

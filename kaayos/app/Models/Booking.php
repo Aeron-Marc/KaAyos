@@ -16,11 +16,15 @@ class Booking extends Model
         'client_id',
         'worker_id',
         'service_category',
+        'issue_category_id',
+        'urgency',
+        'urgency_multiplier',
         'scheduled_at',
         'address',
         'notes',
         'status',
         'price',
+        'materials_total',
         'completed_at',
         'cancelled_at',
         'cancellation_reason',
@@ -119,6 +123,24 @@ class Booking extends Model
         self::STATUS_IN_PROGRESS => self::STATUS_COMPLETED,
     ];
 
+    const URGENCY_NORMAL = 'normal';
+
+    const URGENCY_SOON = 'soon';
+
+    const URGENCY_EMERGENCY = 'emergency';
+
+    const URGENCIES = [
+        self::URGENCY_NORMAL,
+        self::URGENCY_SOON,
+        self::URGENCY_EMERGENCY,
+    ];
+
+    const URGENCY_MULTIPLIERS = [
+        self::URGENCY_NORMAL    => 1.00,
+        self::URGENCY_SOON      => 1.10,
+        self::URGENCY_EMERGENCY => 1.25,
+    ];
+
     protected $casts = [
         'client_id' => 'integer',
         'worker_id' => 'integer',
@@ -126,6 +148,7 @@ class Booking extends Model
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'price' => 'decimal:2',
+        'materials_total' => 'decimal:2',
         'reschedule_proposed_at' => 'datetime',
         'reschedule_responded_at' => 'datetime',
         'agreed_by_client_at' => 'datetime',
@@ -146,6 +169,7 @@ class Booking extends Model
         'worker_live_updated_at' => 'datetime',
         'estimated_duration_hours' => 'decimal:2',
         'complexity_multiplier' => 'decimal:2',
+        'urgency_multiplier' => 'decimal:2',
         'scope_amendment_price' => 'decimal:2',
         'scope_amendment_requested_at' => 'datetime',
         'team_suggested_at' => 'datetime',
@@ -196,6 +220,51 @@ class Booking extends Model
         return $this->hasOne(Earning::class);
     }
 
+    public function materials(): HasMany
+    {
+        return $this->hasMany(BookingMaterial::class);
+    }
+
+    /**
+     * Statuses in which the worker may still manage BOM line items.
+     */
+    const MATERIALS_EDITABLE_STATUSES = [
+        self::STATUS_ACCEPTED,
+        self::STATUS_EN_ROUTE,
+        self::STATUS_IN_PROGRESS,
+    ];
+
+    /**
+     * Client-facing total: agreed service price + itemized materials.
+     */
+    public function getInvoiceTotalAttribute(): float
+    {
+        return round((float) $this->price + (float) $this->materials_total, 2);
+    }
+
+    /**
+     * Create/refresh this booking's earning. The platform fee is charged on
+     * the service price only; materials are passed through to the worker.
+     */
+    public function syncEarning(): Earning
+    {
+        $service   = (float) $this->price;
+        $materials = (float) $this->materials_total;
+        $gross     = round($service + $materials, 2);
+        $fee       = round($service * ((int) config('kaayos.platform_fee_percent', 10) / 100), 2);
+        $net       = round($gross - $fee, 2);
+
+        return Earning::updateOrCreate(
+            ['booking_id' => $this->id],
+            [
+                'worker_id'    => $this->worker_id,
+                'gross_amount' => $gross,
+                'platform_fee' => $fee,
+                'net_amount'   => $net,
+            ]
+        );
+    }
+
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
@@ -209,6 +278,25 @@ class Booking extends Model
     public function photos(): HasMany
     {
         return $this->hasMany(BookingPhoto::class);
+    }
+
+    public function issueCategory(): BelongsTo
+    {
+        return $this->belongsTo(IssueCategory::class, 'issue_category_id');
+    }
+
+    public function urgencyLabel(): string
+    {
+        return match ($this->urgency) {
+            self::URGENCY_SOON      => 'Soon',
+            self::URGENCY_EMERGENCY => 'Emergency',
+            default                 => 'Normal',
+        };
+    }
+
+    public function clientPhotos(): HasMany
+    {
+        return $this->photos()->where('uploaded_by', 'client');
     }
 
     public function rescheduleRequestedBy(): BelongsTo
@@ -314,6 +402,35 @@ class Booking extends Model
             self::STATUS_EN_ROUTE,
             self::STATUS_IN_PROGRESS,
         ]);
+    }
+
+    /**
+     * Determine if mutual agreement / scope of work has been confirmed by both parties.
+     */
+    public function isScopeConfirmed(): bool
+    {
+        if (in_array($this->status, [self::STATUS_NEW, self::STATUS_DECLINED, self::STATUS_CANCELLED], true)) {
+            return false;
+        }
+
+        if ($this->scope_amendment_status === 'pending') {
+            return false;
+        }
+
+        return $this->agreed_by_worker_at !== null || in_array($this->status, [
+            self::STATUS_ACCEPTED,
+            self::STATUS_EN_ROUTE,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_COMPLETED,
+        ], true);
+    }
+
+    /**
+     * Determine if the price shown is an estimate rather than a finalized binding price.
+     */
+    public function isPriceEstimated(): bool
+    {
+        return ! $this->isScopeConfirmed();
     }
 
     public function canTransitionTo(string $nextStatus): bool

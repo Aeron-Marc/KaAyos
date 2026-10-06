@@ -14,13 +14,16 @@ class Dispute extends Model
         'reported_worker_id',
         'status',
         'reason',
+        'counter_claim',
+        'counter_claim_submitted_at',
         'resolution_notes',
         'resolved_at',
         'resolved_by',
     ];
 
     protected $casts = [
-        'resolved_at' => 'datetime',
+        'resolved_at'               => 'datetime',
+        'counter_claim_submitted_at' => 'datetime',
     ];
 
     public function booking(): BelongsTo
@@ -66,5 +69,10 @@ class Dispute extends Model
     public function scopeWorkerReports($query)
     {
         return $query->where('type', 'worker_report');
+    }
+
+    public function hasCounterClaim(): bool
+    {
+        return !empty($this->counter_claim);
     }
 }

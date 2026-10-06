@@ -138,6 +138,9 @@
             <div class="stat-icon"><i class="fa-solid {{ $stat['icon'] }}" aria-hidden="true"></i></div>
             <div class="stat-value">{{ $stat['value'] }}</div>
             <div class="stat-label">{{ $stat['label'] }}</div>
+            @if(!empty($stat['subtext']))
+                <div class="stat-subtext" style="font-size:.73rem;color:var(--g5);margin-top:4px;line-height:1.3;">{{ $stat['subtext'] }}</div>
+            @endif
         </div>
     @endforeach
 </div>
@@ -162,7 +165,12 @@
             @foreach(array_slice($jobRequests, 0, 3) as $job)
                 <tr>
                     <td><span class="booking-worker">{{ $job['client'] }}</span></td>
-                    <td>{{ $job['service'] }}</td>
+                    <td>
+                        {{ $job['service'] }}
+                        @if(($job['urgency'] ?? 'normal') !== 'normal')
+                            <span class="status-badge" style="{{ ($job['urgency'] === 'emergency') ? 'background:#fee2e2;color:#b91c1c;' : 'background:#fef3c7;color:#b45309;' }}font-size:.65rem;text-transform:uppercase;">{{ $job['urgency_label'] ?? 'Soon' }}</span>
+                        @endif
+                    </td>
                     <td>{{ $job['date'] }}</td>
                     <td>
                         @php
@@ -175,7 +183,14 @@
                         @endphp
                         <span class="status-badge {{ $statusClass }}">{{ $job['status'] }}</span>
                     </td>
-                    <td>₱{{ number_format($job['price']) }}</td>
+                    <td>
+                        @if(!empty($job['is_price_estimated']))
+                            <span title="Estimate until scope confirmation">Est. ₱{{ number_format($job['price']) }}</span>
+                            <span class="badge" style="background:#fef3c7;color:#92400e;font-size:.65rem;padding:1px 6px;border-radius:99px;margin-left:2px;" title="Estimate until scope confirmation">Est</span>
+                        @else
+                            <span>₱{{ number_format($job['price']) }}</span>
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>

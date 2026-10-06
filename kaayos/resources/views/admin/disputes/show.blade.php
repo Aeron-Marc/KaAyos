@@ -111,6 +111,64 @@
     </div>
 </div>
 
+<div class="card">
+    <div class="card-title"><i class="fa-solid fa-reply" style="color:var(--b6)"></i> Worker Counter-Claim</div>
+    @if($dispute->hasCounterClaim())
+        <div class="detail-section">
+            <div class="detail-row"><span class="detail-label">Submitted At</span><span class="detail-value">{{ $dispute->counter_claim_submitted_at?->format('F d, Y \a\t g:i A') ?? '—' }}</span></div>
+        </div>
+        <div class="detail-section">
+            <div class="detail-row"><span class="detail-label">Statement</span></div>
+            <p style="margin-top:8px;font-size:.95rem;color:var(--g9);line-height:1.6">{{ $dispute->counter_claim }}</p>
+        </div>
+    @else
+        <div class="info-box">
+            <i class="fa-solid fa-circle-info" style="color:var(--b6)"></i>
+            <span>No counter-claim submitted yet.</span>
+        </div>
+    @endif
+</div>
+
+@if($dispute->reportedWorker)
+<div class="card">
+    <div class="card-title"><i class="fa-solid fa-user-shield" style="color:var(--d10)"></i> Worker Actions</div>
+    <div class="detail-section">
+        <div class="detail-row"><span class="detail-label">Worker</span><span class="detail-value">{{ $dispute->reportedWorker->name }}</span></div>
+        <div class="detail-row"><span class="detail-label">Status</span>
+            <span class="detail-value">
+                @if($dispute->reportedWorker->suspended_at)
+                    <span class="status-badge status-suspended"><i class="fa-solid fa-ban"></i> Suspended</span>
+                @else
+                    <span class="status-badge status-active"><i class="fa-solid fa-check-circle"></i> Active</span>
+                @endif
+            </span>
+        </div>
+    </div>
+    @if($dispute->reportedWorker->suspended_at)
+        <form method="POST" action="{{ route('admin.users.reactivate', $dispute->reportedWorker) }}">
+            @csrf
+            <button type="submit" class="btn btn-success" onclick="return confirm('Reactivate this worker?')"><i class="fa-solid fa-rotate-left"></i> Reactivate Worker</button>
+        </form>
+    @else
+        <button type="button" class="btn btn-danger" onclick="document.getElementById('dispute-suspend-form').style.display='block'"><i class="fa-solid fa-ban"></i> Suspend Worker</button>
+        <div id="dispute-suspend-form" style="display:none;margin-top:12px;">
+            <form method="POST" action="{{ route('admin.users.suspend', $dispute->reportedWorker) }}">
+                @csrf
+                <div class="form-group">
+                    <label for="dispute-suspend-reason">Suspension Reason <span style="color:var(--d10)">*</span></label>
+                    <textarea name="reason" id="dispute-suspend-reason" rows="3" required>Non-compliance — Dispute #{{ $dispute->id }}</textarea>
+                    @error('reason') <div class="error">{{ $message }}</div> @enderror
+                </div>
+                <div class="page-actions">
+                    <button type="submit" class="btn btn-danger"><i class="fa-solid fa-ban"></i> Confirm Suspension</button>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('dispute-suspend-form').style.display='none'">Cancel</button>
+                </div>
+            </form>
+        </div>
+    @endif
+</div>
+@endif
+
 @if($dispute->booking_id)
 <div class="card">
     <div class="card-title"><i class="fa-solid fa-receipt"></i> Booking Information</div>

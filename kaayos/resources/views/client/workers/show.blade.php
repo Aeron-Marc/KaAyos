@@ -73,8 +73,8 @@
 
             <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;">
                 @if($workerProfile && $workerProfile->government_id_verified)
-                    <span style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:.76rem;font-weight:600;" title="Government Valid ID Verified">
-                        <i class="fa-solid fa-id-card" aria-hidden="true"></i> ID Verified
+                    <span style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;padding:4px 10px;border-radius:20px;font-size:.76rem;font-weight:600;" title="Government-issued ID verified">
+                        <i class="fa-solid fa-id-card" aria-hidden="true"></i> Verified
                     </span>
                 @endif
                 @if($workerProfile && $workerProfile->tesda_certified)
@@ -102,9 +102,9 @@
 
             <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px;text-align:left;">
                 @if($workerProfile && $workerProfile->hourly_rate)
-                    <div style="display:flex;justify-content:space-between;font-size:.88rem;">
-                        <span style="color:var(--g5);">Rate</span>
-                        <span style="font-weight:600;">₱{{ number_format($workerProfile->hourly_rate) }}/hr</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:.88rem;">
+                        <span style="color:var(--g5);">Rate <span style="font-size:.72rem;">(Estimate)</span></span>
+                        <span style="font-weight:600;">Est. ₱{{ number_format($workerProfile->hourly_rate) }}/hr</span>
                     </div>
                 @endif
                 @if($workerProfile && $workerProfile->years_of_experience)
@@ -405,7 +405,7 @@
                                 @if($review->comment)
                                     <p style="font-size:.85rem;color:var(--g7);margin-top:6px;line-height:1.5;">{{ $review->comment }}</p>
                                 @endif
-                                <p style="font-size:.75rem;color:var(--g4);margin-top:4px;">{{ $review->created_at->diffForHumans() }}</p>
+                                <p style="font-size:.75rem;color:var(--g4);margin-top:4px;">{{ $review->created_at->diffForHumans() }}@if($review->edited) <span style="font-size:.66rem;background:#f1f5f9;color:var(--g6);padding:1px 7px;border-radius:99px;margin-left:6px;font-weight:600;letter-spacing:.03em;">Edited</span>@endif</p>
                             </div>
                         @endforeach
                     @else
@@ -433,14 +433,16 @@
 </div>
 
 {{-- Book Now Modal --}}
-<div id="book-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeBookModal()">
+<div id="book-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="book-modal-title" onclick="if(event.target===this)closeBookModal()">
     <div class="modal-box">
         <div class="modal-header">
-            <h3>Book {{ $worker->name }}</h3>
-            <button type="button" class="modal-close" onclick="closeBookModal()">&times;</button>
+            <h3 id="book-modal-title">Book {{ $worker->name }}</h3>
+            <button type="button" class="modal-close" onclick="closeBookModal()" aria-label="Close dialog">&times;</button>
         </div>
         <div class="modal-body">
-            <form id="book-form" onsubmit="submitBooking(event)">
+            <div id="book-msg" style="display:none;"></div>
+
+            <form id="book-form" onsubmit="submitBooking(event)" novalidate>
                 @csrf
                 <input type="hidden" name="worker_id" value="{{ $worker->id }}">
 
@@ -450,114 +452,219 @@
                     <input type="hidden" name="service_category" value="{{ $worker->service_category ?? 'General' }}">
                 </div>
 
-                <div class="form-group">
-                    <label for="scheduled_at">Schedule</label>
-                    <input type="datetime-local" id="scheduled_at" name="scheduled_at"
-                           class="form-control" min="{{ now()->addHour()->format('Y-m-d\TH:i') }}" required>
-                    <div id="schedule-warning" style="display:none;margin-top:8px;padding:8px 12px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;font-size:.8rem;color:#856404;align-items:flex-start;gap:6px;">
-                        <i class="fa-solid fa-triangle-exclamation" style="margin-top:1px;" aria-hidden="true"></i>
-                        <span id="schedule-warning-text"></span>
+                {{-- ① Describe the problem --}}
+                <div class="book-section">
+                    <div class="book-section-title"><span class="book-section-num">1</span> Describe the problem</div>
+
+                    <div class="form-group">
+                        <label>Issue Type <span style="color:#dc2626;">*</span></label>
+                        <div class="issue-grid" id="issue-grid" role="radiogroup" aria-label="Issue Type">
+                            @foreach($issueGroups as $group)
+                                @if($group['label'])
+                                    <div class="issue-grid-head">{{ $group['label'] }}</div>
+                                @endif
+                                @foreach($group['items'] as $issueCat)
+                                    <label class="issue-chip">
+                                        <input type="radio" name="issue_category_id" value="{{ $issueCat->id }}" required>
+                                        <i class="fa-solid {{ $issueCat->icon ?: 'fa-circle-question' }}" aria-hidden="true"></i>
+                                        <span>{{ $issueCat->name }}</span>
+                                    </label>
+                                @endforeach
+                            @endforeach
+                        </div>
+                        <div id="issue-error" class="field-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Problem Description <span style="color:#dc2626;">*</span></label>
+                        <div class="notes-textarea-wrap">
+                            <textarea id="notes" name="notes" class="form-control" required minlength="20"
+                                      placeholder="Describe the problem — what happened, where it is, and when it started…" maxlength="2000"></textarea>
+                            <span class="notes-counter">0 / 2000</span>
+                        </div>
+                        <small style="color:#64748b;display:block;margin-top:4px;">At least 20 characters. Clear details help the worker come prepared.</small>
+                        <div id="notes-error" class="field-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Photos <span id="photos-req-label" style="color:#64748b;font-weight:normal;">(optional — required for Emergency)</span></label>
+                        <div class="dropzone" id="photos-dropzone">
+                            <input type="file" id="photos-input" multiple accept="image/jpeg,image/png,image/webp" style="display:none;">
+                            <div class="dropzone-actions">
+                                <button type="button" class="btn btn-outline" onclick="document.getElementById('photos-input').click()">
+                                    <i class="fa-solid fa-camera"></i> Add Photos
+                                </button>
+                                <span class="photo-count" id="photo-count">0 / 5</span>
+                            </div>
+                            <div id="photos-preview"></div>
+                        </div>
+                        <small style="color:#64748b;display:block;margin-top:4px;">Up to 5 photos (JPEG/PNG/WebP, max 5 MB each). At least 1 photo is required for Emergency urgency.</small>
+                        <div id="photos-error" class="field-error"></div>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="property_type">Property / Premises Type</label>
-                    <select name="property_type" id="property_type" class="form-control">
-                        <option value="residential" selected>Residential House</option>
-                        <option value="apartment">Apartment / Rental Unit</option>
-                        <option value="commercial">Commercial Shop / Store / Office</option>
-                        <option value="industrial">Warehouse / Industrial Facility</option>
-                    </select>
+                {{-- ② Urgency & schedule --}}
+                <div class="book-section">
+                    <div class="book-section-title"><span class="book-section-num">2</span> Urgency &amp; schedule</div>
+
+                    <div class="form-group">
+                        <label>Urgency <span style="color:#dc2626;">*</span></label>
+                        <div class="urgency-grid" id="urgency-grid" role="radiogroup" aria-label="Urgency">
+                            <label class="urgency-card urgency-normal">
+                                <input type="radio" name="urgency" id="urgency" value="normal" checked>
+                                <span class="urgency-name"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Normal</span>
+                                <span class="urgency-desc">Standard booking</span>
+                                <span class="urgency-mult">Base rate</span>
+                            </label>
+                            <label class="urgency-card urgency-soon">
+                                <input type="radio" name="urgency" value="soon">
+                                <span class="urgency-name"><i class="fa-solid fa-clock" aria-hidden="true"></i> Soon</span>
+                                <span class="urgency-desc">Within 24 hours</span>
+                                <span class="urgency-mult">&times;1.10</span>
+                            </label>
+                            <label class="urgency-card urgency-emg">
+                                <input type="radio" name="urgency" value="emergency">
+                                <span class="urgency-name"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Emergency</span>
+                                <span class="urgency-desc">Immediate attention</span>
+                                <span class="urgency-mult">&times;1.25</span>
+                                <span class="urgency-photo-note"><i class="fa-solid fa-camera" aria-hidden="true"></i> 1+ photo required</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="scheduled_at">Schedule</label>
+                        <input type="datetime-local" id="scheduled_at" name="scheduled_at"
+                               class="form-control" min="{{ now()->addHour()->format('Y-m-d\TH:i') }}" required>
+                        <div id="avail-hint" class="avail-hint" style="display:none;"></div>
+                        <div id="time-chips" class="time-chips" style="display:none;" role="group" aria-label="Quick time slots"></div>
+                        <div id="schedule-error" class="field-error"></div>
+                        <div id="schedule-warning" style="display:none;margin-top:8px;padding:8px 12px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;font-size:.8rem;color:#856404;align-items:flex-start;gap:6px;">
+                            <i class="fa-solid fa-triangle-exclamation" style="margin-top:1px;" aria-hidden="true"></i>
+                            <span id="schedule-warning-text"></span>
+                        </div>
+                    </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                {{-- ③ Location --}}
+                <div class="book-section">
+                    <div class="book-section-title"><span class="book-section-num">3</span> Location</div>
+
                     <div class="form-group">
-                        <label for="pricing_type">Billing Mode</label>
-                        <select name="pricing_type" id="pricing_type" class="form-control" onchange="recalculatePriceEstimate()">
-                            <option value="fixed" selected>Fixed Task Rate</option>
-                            <option value="hourly">Hourly Rate (₱{{ number_format($workerProfile->hourly_rate ?? 350) }}/hr)</option>
+                        <label for="house_no">House No. / Street <span style="color:#dc2626;">*</span></label>
+                        <input type="text" id="house_no" name="house_no" class="form-control" autocomplete="street-address"
+                               placeholder="e.g. 123 Mabini St" required>
+                    </div>
+
+                    @php
+                        $allBarangays = ['Acle','Bayudbud','Bolbok','Burgos','Dalima','Dao','Guinhawa','Lumbangan','Luna','Luntal','Magahis','Malibu','Mataywanac','Palincaro','Putol','Rillo','Rizal','Sabang','San Jose','Talon','Toong','Tuyon-Tuyon'];
+                        $coveredBarangays = $workerProfile ? ($workerProfile->service_areas ?? $workerProfile->service_zone ?? []) : [];
+                    @endphp
+                    <input type="hidden" name="latitude" id="client_lat" value="">
+                    <input type="hidden" name="longitude" id="client_lng" value="">
+
+                    <div class="form-group">
+                        <label for="barangay">Barangay <span style="color:#dc2626;">*</span></label>
+                        <select id="barangay" name="barangay" class="form-control" required onchange="onBarangayChange(this.value)">
+                            <option value="">Select barangay…</option>
+                            @forelse($coveredBarangays as $barangay)
+                                <option value="{{ $barangay }}">{{ $barangay }}</option>
+                            @empty
+                                @foreach($allBarangays as $barangay)
+                                    <option value="{{ $barangay }}">{{ $barangay }}</option>
+                                @endforeach
+                            @endforelse
+                        </select>
+                        <div id="loc-indicator" style="display:none;font-size:.78rem;color:var(--g5);margin-top:4px;align-items:center;gap:6px;">
+                            <i class="fa-solid fa-location-dot" style="color:#2563eb;"></i> <span id="loc-indicator-text"></span>
+                        </div>
+                        <div id="location-error" class="field-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="property_type">Property / Premises Type</label>
+                        <select name="property_type" id="property_type" class="form-control">
+                            <option value="residential" selected>Residential House</option>
+                            <option value="apartment">Apartment / Rental Unit</option>
+                            <option value="commercial">Commercial Shop / Store / Office</option>
+                            <option value="industrial">Warehouse / Industrial Facility</option>
                         </select>
                     </div>
-                    <div class="form-group" id="duration_group">
-                        <label for="estimated_duration_hours">Estimated Hours</label>
-                        <input type="number" step="0.5" min="1" max="24" id="estimated_duration_hours" name="estimated_duration_hours" value="2" class="form-control" onchange="recalculatePriceEstimate()">
+                </div>
+
+                {{-- ④ Pricing options --}}
+                <div class="book-section">
+                    <div class="book-section-title"><span class="book-section-num">4</span> Pricing options</div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group">
+                            <label for="pricing_type">Billing Mode</label>
+                            <select name="pricing_type" id="pricing_type" class="form-control" onchange="recalculatePriceEstimate()">
+                                <option value="fixed" selected>Fixed Task Rate</option>
+                                <option value="hourly">Hourly Rate (₱{{ number_format($workerProfile->hourly_rate ?? 350) }}/hr)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="duration_group">
+                            <label for="estimated_duration_hours">Estimated Hours</label>
+                            <input type="number" step="0.5" min="1" max="24" id="estimated_duration_hours" name="estimated_duration_hours" value="2" class="form-control" onchange="recalculatePriceEstimate()">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="complexity_level">Job Complexity / Difficulty</label>
+                        <select name="complexity_level" id="complexity_level" class="form-control" onchange="recalculatePriceEstimate()">
+                            <option value="standard" selected>Standard (1.0x - Routine maintenance / basic repair)</option>
+                            <option value="moderate">Moderate (1.2x - Multiple stages / ceiling / attic / tight access)</option>
+                            <option value="high_hazard">High Risk / Hazardous (1.5x - 2-story roof / 220V live panel / structural)</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="complexity_level">Job Complexity / Difficulty</label>
-                    <select name="complexity_level" id="complexity_level" class="form-control" onchange="recalculatePriceEstimate()">
-                        <option value="standard" selected>Standard (1.0x - Routine maintenance / basic repair)</option>
-                        <option value="moderate">Moderate (1.2x - Multiple stages / ceiling / attic / tight access)</option>
-                        <option value="high_hazard">High Risk / Hazardous (1.5x - 2-story roof / 220V live panel / structural)</option>
-                    </select>
-                </div>
+                {{-- ⑤ Review & agree --}}
+                <div class="book-section">
+                    <div class="book-section-title"><span class="book-section-num">5</span> Review &amp; agree</div>
 
-                <div class="form-group">
-                    <label for="house_no">House No. / Street</label>
-                    <input type="text" id="house_no" name="house_no" class="form-control"
-                           placeholder="e.g. 123 Mabini St" required>
-                </div>
-
-                @php
-                    $allBarangays = ['Acle','Bayudbud','Bolbok','Burgos','Dalima','Dao','Guinhawa','Lumbangan','Luna','Luntal','Magahis','Malibu','Mataywanac','Palincaro','Putol','Rillo','Rizal','Sabang','San Jose','Talon','Toong','Tuyon-Tuyon'];
-                    $coveredBarangays = $workerProfile ? ($workerProfile->service_areas ?? $workerProfile->service_zone ?? []) : [];
-                @endphp
-                <input type="hidden" name="latitude" id="client_lat" value="">
-                <input type="hidden" name="longitude" id="client_lng" value="">
-
-                <div class="form-group">
-                    <label for="barangay">Barangay</label>
-                    <select id="barangay" name="barangay" class="form-control" required onchange="onBarangayChange(this.value)">
-                        <option value="">Select barangay…</option>
-                        @forelse($coveredBarangays as $barangay)
-                            <option value="{{ $barangay }}">{{ $barangay }}</option>
-                        @empty
-                            @foreach($allBarangays as $barangay)
-                                <option value="{{ $barangay }}">{{ $barangay }}</option>
-                            @endforeach
-                        @endforelse
-                    </select>
-                    <div id="loc-indicator" style="display:none;font-size:.78rem;color:var(--g5);margin-top:4px;align-items:center;gap:6px;">
-                        <i class="fa-solid fa-location-dot" style="color:#2563eb;"></i> <span id="loc-indicator-text"></span>
+                    <div class="agreement-box">
+                        <p class="agreement-title">Service Agreement</p>
+                        <div class="agreement-summary">
+                            <span><strong>Service:</strong> <span id="agree-service">{{ $worker->service_category ?? '—' }}</span></span>
+                            <span><strong>Date:</strong> <span id="agree-date">—</span></span>
+                            <span><strong>Location:</strong> <span id="agree-location">—</span></span>
+                            <span><strong>Price:</strong> <span id="agree-price">—</span></span>
+                        </div>
+                        <label class="agreement-check">
+                            <input type="checkbox" id="agree-terms" required>
+                            <span>I agree to the <a href="{{ url('/terms') }}" target="_blank">Terms of Service</a> and confirm that the details above are accurate. I understand that this creates a binding service agreement with the worker.</span>
+                        </label>
+                        <div id="terms-error" class="field-error"></div>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="notes">Notes <small>(optional)</small></label>
-                    <div class="notes-textarea-wrap">
-                        <textarea id="notes" name="notes" class="form-control"
-                                  placeholder="Describe what you need done…" maxlength="2000"></textarea>
-                        <span class="notes-counter">0 / 2000</span>
-                    </div>
-                </div>
-
-                @if($worker->workerProfile && $worker->workerProfile->hourly_rate)
-                    <div style="font-size:.85rem;color:var(--g5);margin-bottom:12px;">
-                        Rate: <strong>₱{{ number_format($worker->workerProfile->hourly_rate) }}/hr</strong>
-                    </div>
-                @endif
-
-                <div class="agreement-box">
-                    <p class="agreement-title">Service Agreement</p>
-                    <div class="agreement-summary">
-                        <span><strong>Service:</strong> <span id="agree-service">{{ $worker->service_category ?? '—' }}</span></span>
-                        <span><strong>Date:</strong> <span id="agree-date">—</span></span>
-                        <span><strong>Location:</strong> <span id="agree-location">—</span></span>
-                        <span><strong>Price:</strong> <span id="agree-price">—</span></span>
-                    </div>
-                    <label class="agreement-check">
-                        <input type="checkbox" id="agree-terms" required>
-                        <span>I agree to the <a href="{{ url('/terms') }}" target="_blank">Terms of Service</a> and confirm that the details above are accurate. I understand that this creates a binding service agreement with the worker.</span>
-                    </label>
-                </div>
-
-                <div id="book-msg" style="display:none;"></div>
             </form>
+
+            {{-- Success state --}}
+            <div id="book-success" style="display:none;text-align:center;padding:18px 4px 6px;">
+                <div class="success-icon"><i class="fa-solid fa-check" aria-hidden="true"></i></div>
+                <h4 style="margin:12px 0 4px;font-size:1.02rem;">Booking request sent!</h4>
+                <p style="font-size:.84rem;color:var(--g5);margin:0;">{{ $worker->name }} will review and confirm your request shortly.</p>
+                <div class="success-summary" id="success-summary"></div>
+                <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
+                    <a class="btn btn-solid" id="success-view" href="#">View my bookings</a>
+                    <button type="button" class="btn btn-outline" onclick="closeBookModal()">Back to profile</button>
+                </div>
+            </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-outline" onclick="closeBookModal()">Cancel</button>
-            <button type="submit" class="btn btn-solid" id="book-submit-btn" form="book-form">Send Request</button>
+            <div class="sticky-price" id="sticky-price" aria-live="polite">
+                <div>
+                    <span class="sticky-price-label">Estimated total</span>
+                    <span class="sticky-price-amount" id="sticky-price-amount">₱—</span>
+                </div>
+                <span class="sticky-price-chips" id="sticky-price-chips"></span>
+            </div>
+            <div class="sticky-price-actions">
+                <button type="button" class="btn btn-outline" onclick="closeBookModal()">Cancel</button>
+                <button type="submit" class="btn btn-solid" id="book-submit-btn" form="book-form">Send Request</button>
+            </div>
         </div>
     </div>
 </div>
@@ -590,6 +697,12 @@
             </div>
         </div>
     </div>
+</div>
+
+{{-- Lightbox --}}
+<div id="lightbox" class="lightbox-overlay" style="display:none;" onclick="if(event.target===this)closeLightbox()">
+    <button type="button" class="lightbox-close" id="lightboxCloseBtn" aria-label="Close image" onclick="closeLightbox()">&times;</button>
+    <img id="lightboxImg" src="" alt="Photo preview">
 </div>
 
 @endsection
@@ -626,21 +739,128 @@ function onBarangayChange(val) {
     updateAgreementSummary();
 }
 
+var lastFocusBeforeModal = null;
+
+function getSelectedUrgency() {
+    const checked = document.querySelector('input[name="urgency"]:checked');
+    return checked ? checked.value : 'normal';
+}
+
+function formatTime12(hm) {
+    const parts = String(hm).split(':');
+    let h = parseInt(parts[0], 10);
+    const m = parts[1] || '00';
+    const ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + m + ' ' + ap;
+}
+
+function renderAvailabilityHint() {
+    const el = document.getElementById('avail-hint');
+    if (!el) return;
+    const actives = (WORKER_AVAILABILITY || []).filter(function (a) { return a.active; });
+    if (!actives.length) { el.style.display = 'none'; return; }
+    el.innerHTML = '<i class="fa-regular fa-clock" aria-hidden="true"></i><span>Available: ' +
+        actives.map(function (a) {
+            return (a.day || '').slice(0, 3) + ' ' + formatTime12(String(a.start).slice(0, 5)) + '\u2013' + formatTime12(String(a.end).slice(0, 5));
+        }).join(' &middot; ') + '</span>';
+    el.style.display = 'flex';
+}
+
+function renderTimeChips() {
+    const wrap = document.getElementById('time-chips');
+    const input = document.getElementById('scheduled_at');
+    if (!wrap || !input) return;
+    wrap.innerHTML = '';
+    const val = input.value;
+    if (!val || val.length < 16) { wrap.style.display = 'none'; return; }
+    const date = new Date(val);
+    const dayName = DAY_MAP[date.getDay()];
+    const slot = (WORKER_AVAILABILITY || []).find(function (a) { return a.day === dayName && a.active; });
+    if (!slot) { wrap.style.display = 'none'; return; }
+    const sh = parseInt(String(slot.start).slice(0, 2), 10);
+    const sm = parseInt(String(slot.start).slice(3, 5), 10) || 0;
+    const eh = parseInt(String(slot.end).slice(0, 2), 10);
+    const em = parseInt(String(slot.end).slice(3, 5), 10) || 0;
+    if (isNaN(sh) || isNaN(eh)) { wrap.style.display = 'none'; return; }
+    const selTime = val.slice(11, 16);
+    const isToday = new Date().toDateString() === date.toDateString();
+    const earliest = new Date(Date.now() + 60 * 60 * 1000);
+    for (let mins = sh * 60 + sm; mins + 30 <= eh * 60 + em; mins += 30) {
+        const hh = String(Math.floor(mins / 60)).padStart(2, '0');
+        const mm = String(mins % 60).padStart(2, '0');
+        const t = hh + ':' + mm;
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'time-chip';
+        chip.textContent = formatTime12(t);
+        const slotDate = new Date(date);
+        slotDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+        if (isToday && slotDate < earliest) { chip.disabled = true; }
+        if (t === selTime) chip.classList.add('active');
+        (function (time) {
+            chip.addEventListener('click', function () {
+                input.value = val.slice(0, 11) + time;
+                validateSchedule();
+                updateAgreementSummary();
+            });
+        })(t);
+        wrap.appendChild(chip);
+    }
+    wrap.style.display = 'flex';
+}
+
 function openBookModal() {
+    lastFocusBeforeModal = document.activeElement;
     document.getElementById('book-modal').style.display = 'flex';
     document.getElementById('book-msg').style.display = 'none';
     document.getElementById('schedule-warning').style.display = 'none';
     document.getElementById('book-submit-btn').disabled = false;
+    document.getElementById('book-success').style.display = 'none';
+    document.getElementById('book-form').style.display = '';
     // Set default coordinates if barangay selected
     var bVal = document.getElementById('barangay')?.value;
     if (bVal && TUY_COORDS[bVal]) {
         document.getElementById('client_lat').value = TUY_COORDS[bVal][0];
         document.getElementById('client_lng').value = TUY_COORDS[bVal][1];
     }
+    renderAvailabilityHint();
+    renderTimeChips();
+    updateAgreementSummary();
+    const firstField = document.querySelector('#book-form input:not([type="hidden"]), #book-form select, #book-form textarea');
+    if (firstField) { try { firstField.focus({ preventScroll: true }); } catch (e) { firstField.focus(); } }
 }
 
 function closeBookModal() {
+    const success = document.getElementById('book-success');
+    if (success && success.style.display !== 'none') {
+        resetBookingForm();
+    }
     document.getElementById('book-modal').style.display = 'none';
+    if (lastFocusBeforeModal && typeof lastFocusBeforeModal.focus === 'function') {
+        try { lastFocusBeforeModal.focus({ preventScroll: true }); } catch (e) { lastFocusBeforeModal.focus(); }
+    }
+}
+
+function resetBookingForm() {
+    const form = document.getElementById('book-form');
+    const success = document.getElementById('book-success');
+    success.style.display = 'none';
+    form.style.display = '';
+    form.reset();
+    photoFiles = [];
+    photoUrls = [];
+    renderPhotoPreviews();
+    updateNotesCounter();
+    ['issue-error', 'schedule-error', 'notes-error', 'photos-error', 'location-error', 'terms-error'].forEach(hideFieldError);
+    document.querySelector('.agreement-box')?.classList.remove('invalid');
+    const msg = document.getElementById('book-msg');
+    if (msg) msg.style.display = 'none';
+    const btn = document.getElementById('book-submit-btn');
+    btn.disabled = false;
+    btn.textContent = 'Send Request';
+    updateAgreementSummary();
+    updateUrgencyHint();
 }
 
 var scheduleCheckTimer = null;
@@ -722,6 +942,8 @@ function validateSchedule() {
     warning.style.borderColor = '#ffc107';
     warning.style.color = '#856404';
 
+    renderTimeChips();
+
     if (!input.value || WORKER_AVAILABILITY.length === 0) {
         warningText.textContent = 'This worker hasn\u2019t set their availability yet. Booking is currently unavailable.';
         warning.style.display = 'flex';
@@ -787,6 +1009,8 @@ function updateAgreementSummary() {
     const hours = parseFloat(document.getElementById('estimated_duration_hours')?.value || '2');
     const complexity = document.getElementById('complexity_level')?.value || 'standard';
     const multiplier = complexity === 'high_hazard' ? 1.5 : (complexity === 'moderate' ? 1.2 : 1.0);
+    const urgency = getSelectedUrgency();
+    const urgencyMult = urgency === 'emergency' ? 1.25 : (urgency === 'soon' ? 1.10 : 1.0);
 
     let laborPrice = basePrice;
     if (pricingType === 'hourly') {
@@ -794,7 +1018,7 @@ function updateAgreementSummary() {
         laborPrice = hourlyRate * hours;
     }
 
-    const finalEstimate = Math.round(laborPrice * multiplier);
+    const finalEstimate = Math.round(laborPrice * multiplier * urgencyMult);
 
     const dt   = document.querySelector('[name="scheduled_at"]')?.value || '—';
     const addr = [document.querySelector('[name="house_no"]')?.value, document.querySelector('[name="street"]')?.value, document.querySelector('[name="barangay"]')?.value].filter(Boolean).join(', ') || '—';
@@ -803,7 +1027,31 @@ function updateAgreementSummary() {
     document.getElementById('agree-date').textContent     = dt ? new Date(dt).toLocaleString('en-PH',{dateStyle:'long',timeStyle:'short'}) : '—';
     document.getElementById('agree-location').textContent = addr;
     document.getElementById('agree-price').innerHTML      = '\u20B1' + Number(finalEstimate).toLocaleString() +
-        ' <small style="font-weight:normal;color:#64748b;">(' + (pricingType === 'hourly' ? hours + ' hrs @ ₱' + {{ (float) ($workerProfile->hourly_rate ?? 350) }} + '/hr' : 'Fixed Task') + (multiplier > 1.0 ? ' &times; ' + multiplier + 'x diff.' : '') + ')</small>';
+        ' <small style="font-weight:normal;color:#64748b;">(' + (pricingType === 'hourly' ? hours + ' hrs @ ₱' + {{ (float) ($workerProfile->hourly_rate ?? 350) }} + '/hr' : 'Fixed Task') +
+        (multiplier > 1.0 ? ' &times; ' + multiplier + 'x diff.' : '') +
+        (urgencyMult > 1.0 ? ' &times; ' + urgencyMult + 'x ' + urgency + '' : '') + ')</small>';
+
+    updateStickyPrice(finalEstimate, pricingType, hours, multiplier, urgency, urgencyMult);
+}
+
+function updateStickyPrice(amount, pricingType, hours, multiplier, urgency, urgencyMult) {
+    const amtEl = document.getElementById('sticky-price-amount');
+    const chipsEl = document.getElementById('sticky-price-chips');
+    if (!amtEl) return;
+    const text = '\u20B1' + Number(amount).toLocaleString();
+    if (amtEl.textContent !== text) {
+        amtEl.textContent = text;
+        amtEl.classList.remove('pulse');
+        void amtEl.offsetWidth;
+        amtEl.classList.add('pulse');
+    }
+    if (chipsEl) {
+        const chips = [];
+        if (pricingType === 'hourly') chips.push(hours + ' hrs');
+        if (multiplier > 1.0) chips.push('\u00D7' + multiplier + ' diff');
+        if (urgencyMult > 1.0) chips.push('\u00D7' + urgencyMult + ' ' + urgency);
+        chipsEl.innerHTML = chips.map(function (c) { return '<span class="price-chip">' + c + '</span>'; }).join('');
+    }
 }
 
 function openShareModal() {
@@ -836,55 +1084,241 @@ function updateNotesCounter() {
     }
 }
 
+var photoFiles = [];
+var photoUrls = [];
+
+function updateUrgencyHint() {
+    const urgency = getSelectedUrgency();
+    const label = document.getElementById('photos-req-label');
+    if (label) {
+        label.textContent = urgency === 'emergency'
+            ? '(required — at least 1 photo)'
+            : '(optional — required for Emergency)';
+        label.style.color = urgency === 'emergency' ? '#b91c1c' : '#64748b';
+    }
+    if (urgency !== 'emergency') hideFieldError('photos-error');
+}
+
+function hideFieldError(id) {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; el.textContent = ''; }
+}
+
+function showFieldError(id, message) {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'block'; el.textContent = message; }
+}
+
+function handlePhotoSelection(input) {
+    addPhotoFiles(input.files);
+    input.value = '';
+}
+
+function addPhotoFiles(files) {
+    hideFieldError('photos-error');
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+
+    for (const file of files) {
+        if (photoFiles.length >= 5) {
+            showFieldError('photos-error', 'You can attach a maximum of 5 photos.');
+            break;
+        }
+        if (!allowed.includes(file.type)) {
+            showFieldError('photos-error', '"' + file.name + '" is not a JPEG, PNG, or WebP image.');
+            continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            showFieldError('photos-error', '"' + file.name + '" exceeds the 5 MB size limit.');
+            continue;
+        }
+        if (photoFiles.some(f => f.name === file.name && f.size === file.size)) continue;
+        photoFiles.push(file);
+    }
+    renderPhotoPreviews();
+}
+
+function removePhoto(index) {
+    photoFiles.splice(index, 1);
+    renderPhotoPreviews();
+    updateUrgencyHint();
+}
+
+function renderPhotoPreviews() {
+    const wrap = document.getElementById('photos-preview');
+    const count = document.getElementById('photo-count');
+    if (count) count.textContent = photoFiles.length + ' / 5';
+    if (!wrap) return;
+    photoUrls.forEach(function (u) { URL.revokeObjectURL(u); });
+    photoUrls = [];
+    wrap.innerHTML = '';
+    photoFiles.forEach(function(file, i) {
+        const url = URL.createObjectURL(file);
+        photoUrls.push(url);
+        const div = document.createElement('div');
+        div.style.cssText = 'position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;cursor:pointer;';
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = 'Selected photo ' + (i + 1);
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.title = 'Remove photo';
+        btn.setAttribute('aria-label', 'Remove photo ' + (i + 1));
+        btn.innerHTML = '&times;';
+        btn.style.cssText = 'position:absolute;top:2px;right:2px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(15,23,42,.75);color:#fff;font-size:.85rem;line-height:1;cursor:pointer;padding:0;';
+        btn.onclick = function(e) { e.stopPropagation(); removePhoto(i); };
+        div.onclick = function() { openLightbox(url); };
+        div.appendChild(img);
+        div.appendChild(btn);
+        wrap.appendChild(div);
+    });
+}
+
+function validateScopeFields() {
+    const notes = document.getElementById('notes');
+    const urgency = getSelectedUrgency();
+    let firstInvalid = null;
+
+    ['issue-error', 'schedule-error', 'notes-error', 'photos-error', 'location-error'].forEach(hideFieldError);
+    document.getElementById('issue-grid')?.classList.remove('invalid');
+    document.getElementById('scheduled_at')?.classList.remove('invalid');
+    document.getElementById('house_no')?.classList.remove('invalid');
+    document.getElementById('barangay')?.classList.remove('invalid');
+    if (notes) notes.classList.remove('invalid');
+
+    if (!document.querySelector('input[name="issue_category_id"]:checked')) {
+        showFieldError('issue-error', 'Please select the issue type.');
+        document.getElementById('issue-grid')?.classList.add('invalid');
+        firstInvalid = firstInvalid || document.querySelector('input[name="issue_category_id"]');
+    }
+
+    const dt = document.getElementById('scheduled_at');
+    if (!dt || !dt.value) {
+        showFieldError('schedule-error', 'Please pick a date and time for the job.');
+        dt?.classList.add('invalid');
+        firstInvalid = firstInvalid || dt;
+    }
+
+    if (!notes || notes.value.trim().length < 20) {
+        showFieldError('notes-error', 'Please describe the problem in at least 20 characters.');
+        notes?.classList.add('invalid');
+        firstInvalid = firstInvalid || notes;
+    }
+
+    const house = document.getElementById('house_no');
+    const brgy = document.getElementById('barangay');
+    if (!house || !house.value.trim() || !brgy || !brgy.value) {
+        showFieldError('location-error', 'Please complete the street address and barangay.');
+        if (!house || !house.value.trim()) house?.classList.add('invalid');
+        if (!brgy || !brgy.value) brgy?.classList.add('invalid');
+        firstInvalid = firstInvalid || (!house || !house.value.trim() ? house : brgy);
+    }
+
+    if (photoFiles.length > 5) {
+        showFieldError('photos-error', 'You can attach a maximum of 5 photos.');
+        firstInvalid = firstInvalid || document.getElementById('photos-input');
+    } else if (urgency === 'emergency' && photoFiles.length < 1) {
+        showFieldError('photos-error', 'At least 1 photo is required for Emergency urgency.');
+        document.getElementById('photos-dropzone')?.classList.add('invalid');
+        firstInvalid = firstInvalid || document.getElementById('photos-input');
+    } else {
+        document.getElementById('photos-dropzone')?.classList.remove('invalid');
+    }
+
+    if (firstInvalid) {
+        try { firstInvalid.focus({ preventScroll: true }); } catch (e) { try { firstInvalid.focus(); } catch (e2) {} }
+        firstInvalid.scrollIntoView ? firstInvalid.scrollIntoView({ block: 'center', behavior: 'smooth' }) : null;
+        return false;
+    }
+    return true;
+}
+
+function showSuccessPanel(res) {
+    const form = document.getElementById('book-form');
+    const panel = document.getElementById('book-success');
+    const b = res.booking || {};
+    const issueChip = document.querySelector('input[name="issue_category_id"]:checked');
+    const issueName = issueChip ? (issueChip.closest('.issue-chip')?.querySelector('span')?.textContent || '—') : '—';
+    const dtVal = document.getElementById('scheduled_at').value;
+    const rows = [
+        ['Worker', '{{ $worker->name }}'],
+        ['Issue', issueName.trim()],
+        ['Schedule', dtVal ? new Date(dtVal).toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' }) : '—'],
+        ['Urgency', getSelectedUrgency().charAt(0).toUpperCase() + getSelectedUrgency().slice(1)],
+        ['Price', (b.price ? 'Est. \u20B1' + Number(b.price).toLocaleString() : 'Est. ' + document.getElementById('sticky-price-amount').textContent)],
+    ];
+    if (b.booking_ref) rows.push(['Booking ref', b.booking_ref]);
+    document.getElementById('success-summary').innerHTML = rows.map(function (r) {
+        return '<div class="success-row"><span>' + r[0] + '</span><strong>' + r[1] + '</strong></div>';
+    }).join('');
+    document.getElementById('success-view').href = res.redirect || '{{ route('client.bookings') }}';
+    form.style.display = 'none';
+    panel.style.display = 'block';
+    panel.scrollIntoView ? panel.scrollIntoView({ block: 'nearest' }) : null;
+}
+
 function submitBooking(e) {
     e.preventDefault();
-    if (!document.getElementById('agree-terms').checked) {
-        alert('Please agree to the Service Agreement before submitting.');
+    const termsBox = document.querySelector('.agreement-box');
+    const termsCb = document.getElementById('agree-terms');
+    if (!termsCb.checked) {
+        termsBox?.classList.add('invalid');
+        showFieldError('terms-error', 'Please agree to the Service Agreement to continue.');
+        termsBox?.scrollIntoView ? termsBox.scrollIntoView({ behavior: 'smooth', block: 'center' }) : null;
+        termsCb.focus();
+        return;
+    }
+    termsBox?.classList.remove('invalid');
+    hideFieldError('terms-error');
+    if (!validateScopeFields()) {
         return;
     }
     const form = e.target;
     const btn = document.getElementById('book-submit-btn');
     const msg = document.getElementById('book-msg');
     btn.disabled = true;
-    btn.textContent = 'Sending…';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending…';
     msg.style.display = 'none';
 
     const formData = new FormData(form);
-    const data = {};
-    formData.forEach((v, k) => data[k] = v);
+    photoFiles.forEach(function(file) { formData.append('photos[]', file); });
 
     fetch('{{ route('client.bookings.store') }}', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
             'Accept': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: formData,
     })
-    .then(function(r) { return r.json(); })
-    .then(function(res) {
+    .then(function(r) { return r.json().then(function(res) { return { ok: r.ok, status: r.status, res: res }; }); })
+    .then(function(payload) {
+        const res = payload.res;
         if (res.success) {
-            msg.style.display = 'block';
-            msg.className = 'alert alert-success';
-            msg.innerHTML = 'Booking request sent! <a href="' + res.redirect + '" style="text-decoration:underline;">View my bookings</a>';
             btn.textContent = 'Sent!';
-            setTimeout(function() {
-                closeBookModal();
-                if (res.redirect) window.location.href = res.redirect;
-            }, 1500);
-        } else {
-            if (res.conflict && res.recommended_time) {
-                msg.style.display = 'block';
-                msg.className = 'alert alert-error';
-                msg.innerHTML = '<div>' + res.message + '</div>' +
-                    '<div style="margin-top:8px;"><button type="button" class="btn btn-sm btn-solid" onclick="applyRecommendedTime(\'' + res.recommended_time + '\')"><i class="fa-regular fa-clock"></i> Switch to ' + res.recommended_time + '</button></div>';
-                btn.disabled = false;
-                btn.textContent = 'Send Request';
-                return;
-            }
-            throw new Error(res.message || 'Something went wrong');
+            showSuccessPanel(res);
+            return;
         }
+        if (res.conflict && res.recommended_time) {
+            msg.style.display = 'block';
+            msg.className = 'alert alert-error';
+            msg.innerHTML = '<div>' + res.message + '</div>' +
+                '<div style="margin-top:8px;"><button type="button" class="btn btn-sm btn-solid" onclick="applyRecommendedTime(\'' + res.recommended_time + '\')"><i class="fa-regular fa-clock"></i> Switch to ' + res.recommended_time + '</button></div>';
+            btn.disabled = false;
+            btn.textContent = 'Send Request';
+            return;
+        }
+        if (res.errors && typeof res.errors === 'object') {
+            const lines = Object.values(res.errors).flat().map(function(m) { return '• ' + m; }).join('<br>');
+            msg.style.display = 'block';
+            msg.className = 'alert alert-error';
+            msg.innerHTML = lines;
+            msg.scrollIntoView ? msg.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) : null;
+            btn.disabled = false;
+            btn.textContent = 'Send Request';
+            return;
+        }
+        throw new Error(res.message || 'Something went wrong');
     })
     .catch(function(err) {
         msg.style.display = 'block';
@@ -902,21 +1336,117 @@ function openLightbox(url) {
 function closeLightbox() {
     document.getElementById('lightbox').style.display = 'none';
 }
+function isVisibleOverlay(id) {
+    const el = document.getElementById(id);
+    return !!el && el.style.display !== 'none';
+}
 document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'Escape') {
+        if (isVisibleOverlay('lightbox')) { closeLightbox(); return; }
+        if (isVisibleOverlay('share-modal')) { closeShareModal(); return; }
+        if (isVisibleOverlay('book-modal')) { closeBookModal(); return; }
+    }
+    if (e.key === 'Tab' && isVisibleOverlay('book-modal')) {
+        const modal = document.getElementById('book-modal');
+        const focusables = Array.prototype.filter.call(
+            modal.querySelectorAll('a[href], button:not([disabled]), input:not([type="hidden"]), select, textarea'),
+            function (el) { return el.offsetParent !== null; }
+        );
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
 });
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('scheduled_at').addEventListener('change', validateSchedule);
     document.getElementById('scheduled_at').addEventListener('input', validateSchedule);
 
-    document.querySelector('#book-form').addEventListener('input', updateAgreementSummary);
-    document.querySelector('#book-form').addEventListener('change', updateAgreementSummary);
+    const formEl = document.querySelector('#book-form');
+    formEl.addEventListener('input', updateAgreementSummary);
+    formEl.addEventListener('change', updateAgreementSummary);
 
+    // Clear a field's inline error as soon as the user edits it
+    function clearFieldFeedback(ev) {
+        const grp = ev.target.closest ? ev.target.closest('.form-group') : null;
+        if (grp) {
+            Array.prototype.forEach.call(grp.querySelectorAll('.field-error'), function (el) { el.style.display = 'none'; });
+        }
+        if (ev.target.classList) ev.target.classList.remove('invalid');
+        if (ev.target.name === 'issue_category_id') document.getElementById('issue-grid')?.classList.remove('invalid');
+        if (ev.target.name === 'urgency') document.getElementById('urgency-grid')?.classList.remove('invalid');
+        if (ev.target.id === 'scheduled_at') document.getElementById('scheduled_at')?.classList.remove('invalid');
+        if (ev.target.id === 'photos-input') document.getElementById('photos-dropzone')?.classList.remove('invalid');
+    }
+    formEl.addEventListener('input', clearFieldFeedback);
+    formEl.addEventListener('change', clearFieldFeedback);
+
+    // Urgency cards drive the photo hint
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="urgency"]'), function (r) {
+        r.addEventListener('change', updateUrgencyHint);
+    });
+
+    // Terms checkbox clears its error when ticked
+    const termsCb = document.getElementById('agree-terms');
+    if (termsCb) {
+        termsCb.addEventListener('change', function () {
+            if (termsCb.checked) {
+                document.querySelector('.agreement-box')?.classList.remove('invalid');
+                hideFieldError('terms-error');
+            }
+        });
+    }
+
+    // Notes blur-time length check
     const notesInput = document.getElementById('notes');
     if (notesInput) {
         notesInput.addEventListener('input', updateNotesCounter);
+        notesInput.addEventListener('blur', function () {
+            if (notesInput.value.trim().length > 0 && notesInput.value.trim().length < 20) {
+                showFieldError('notes-error', 'Please describe the problem in at least 20 characters.');
+                notesInput.classList.add('invalid');
+            } else {
+                hideFieldError('notes-error');
+                notesInput.classList.remove('invalid');
+            }
+        });
         updateNotesCounter();
     }
+
+    const photosInput = document.getElementById('photos-input');
+    if (photosInput) {
+        photosInput.addEventListener('change', function() { handlePhotoSelection(this); });
+    }
+
+    // Photo drop-zone
+    const dz = document.getElementById('photos-dropzone');
+    if (dz) {
+        ['dragenter', 'dragover'].forEach(function (ev) {
+            dz.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); dz.classList.add('dragover'); });
+        });
+        ['dragleave', 'drop'].forEach(function (ev) {
+            dz.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); dz.classList.remove('dragover'); });
+        });
+        dz.addEventListener('drop', function (e) {
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addPhotoFiles(e.dataTransfer.files);
+        });
+        dz.addEventListener('click', function (e) {
+            if (e.target === dz || e.target.id === 'photos-preview') photosInput.click();
+        });
+    }
+
+    // Hours only apply to hourly billing
+    const pricingSel = document.getElementById('pricing_type');
+    if (pricingSel) {
+        pricingSel.addEventListener('change', function () {
+            document.getElementById('duration_group').style.display = pricingSel.value === 'hourly' ? '' : 'none';
+        });
+        document.getElementById('duration_group').style.display = pricingSel.value === 'hourly' ? '' : 'none';
+    }
+
+    updateUrgencyHint();
+    renderAvailabilityHint();
 });
 </script>
 @endpush
@@ -963,7 +1493,7 @@ document.addEventListener('DOMContentLoaded', function() {
     display: flex; align-items: center; justify-content: center;
 }
 .modal-box {
-    background: #fff; border-radius: 14px; width: 90%; max-width: 520px;
+    background: #fff; border-radius: 14px; width: 90%; max-width: 680px;
     box-shadow: 0 20px 60px rgba(0,0,0,.2); animation: modalIn .2s ease;
 }
 @keyframes modalIn {
@@ -979,14 +1509,166 @@ document.addEventListener('DOMContentLoaded', function() {
     color: var(--g4); line-height: 1;
 }
 .modal-close:hover { color: var(--g8); }
-.modal-body { padding: 16px 22px; max-height: 60vh; overflow-y: auto; }
+.modal-body { padding: 16px 22px; max-height: 78vh; overflow-y: auto; }
 #book-form .form-control { width: 100%; box-sizing: border-box; }
 #book-form .notes-textarea-wrap { position: relative; background: #f8fafc; border: 1px solid var(--g1); border-radius: 8px; padding: 10px 14px; }
 #book-form .notes-textarea-wrap textarea { border: none; background: transparent; padding-bottom: 24px; resize: vertical; min-height: 80px; }
 .notes-counter { position: absolute; bottom: 8px; right: 10px; font-size: .8rem; color: var(--g4); pointer-events: none; }
 .modal-footer {
-    display: flex; gap: 10px; justify-content: flex-end;
+    display: flex; gap: 10px; justify-content: space-between; align-items: center;
     padding: 0 22px 18px;
+}
+.sticky-price { margin-right: auto; min-width: 0; }
+.sticky-price-label {
+    display: block; font-size: .66rem; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--g4); font-weight: 600;
+}
+.sticky-price-amount {
+    display: block; font-size: 1.1rem; font-weight: 800; color: #0f172a; line-height: 1.2;
+}
+.sticky-price-amount.pulse { animation: pricePulse .4s ease; }
+@keyframes pricePulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.12); color: var(--b6); }
+    100% { transform: scale(1); }
+}
+.sticky-price-chips { display: inline-block; margin-left: 8px; }
+.price-chip {
+    display: inline-block; font-size: .64rem; font-weight: 700;
+    background: #fef3c7; color: #92400e; border-radius: 999px; padding: 2px 7px; margin-right: 4px;
+    vertical-align: middle;
+}
+.sticky-price-actions { display: flex; gap: 10px; align-items: center; }
+
+/* ── Booking sections ── */
+.book-section + .book-section { border-top: 1px solid var(--g1); margin-top: 16px; padding-top: 14px; }
+.book-section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .82rem; font-weight: 700; color: var(--b8); margin: 0 0 12px;
+}
+.book-section-num {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--b6); color: #fff;
+    font-size: .72rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+}
+
+/* ── Issue type chips ── */
+.issue-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    max-height: 216px; overflow-y: auto; padding: 2px;
+}
+.issue-grid-head {
+    grid-column: 1 / -1;
+    font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--g4); margin-top: 6px;
+}
+.issue-grid-head:first-child { margin-top: 0; }
+.issue-chip {
+    position: relative; display: flex; align-items: center; gap: 8px;
+    padding: 9px 10px; border: 1.5px solid var(--g1); border-radius: 9px;
+    font-size: .79rem; color: var(--g6); background: #fff; cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+}
+.issue-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+.issue-chip i { color: var(--g4); width: 16px; text-align: center; font-size: .85rem; flex: none; }
+.issue-chip:hover { border-color: var(--g3); background: #f8fafc; }
+.issue-grid.invalid .issue-chip { border-color: #fca5a5; }
+.issue-chip:has(input:checked) {
+    border-color: var(--b6); background: #eff6ff; color: var(--b8); font-weight: 600;
+}
+.issue-chip:has(input:checked) i { color: var(--b6); }
+.issue-chip:has(input:focus) { outline: 2px solid var(--b6); outline-offset: 2px; }
+
+/* ── Urgency cards ── */
+.urgency-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.urgency-card { position: relative; cursor: pointer; }
+.urgency-card input { position: absolute; opacity: 0; width: 0; height: 0; }
+.urgency-card {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 10px; border: 1.5px solid var(--g1); border-radius: 10px;
+    background: #fff; transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.urgency-card:hover { border-color: var(--g3); }
+.urgency-card:has(input:checked) {
+    border-color: var(--b6); background: #eff6ff; box-shadow: 0 0 0 1px var(--b6);
+}
+.urgency-card.emg:has(input:checked) { border-color: #dc2626; background: #fef2f2; box-shadow: 0 0 0 1px #dc2626; }
+.urgency-card:has(input:focus) { outline: 2px solid var(--b6); outline-offset: 2px; }
+.urgency-name {
+    display: flex; align-items: center; gap: 6px;
+    font-size: .84rem; font-weight: 700; color: #0f172a;
+}
+.urgency-normal .urgency-name { color: #15803d; }
+.urgency-soon .urgency-name { color: #b45309; }
+.urgency-emg .urgency-name { color: #dc2626; }
+.urgency-desc { font-size: .7rem; color: var(--g5); line-height: 1.3; }
+.urgency-mult {
+    font-size: .68rem; font-weight: 700; color: var(--g6);
+    background: var(--g0); border-radius: 999px; padding: 1px 7px; align-self: flex-start;
+}
+.urgency-card:has(input:checked) .urgency-mult { background: #fff; }
+.urgency-photo-note { font-size: .66rem; color: #b91c1c; font-weight: 600; }
+
+/* ── Availability hint + time chips ── */
+.avail-hint {
+    align-items: center; gap: 6px; font-size: .74rem; color: #0369a1;
+    background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px;
+    padding: 6px 9px; margin-top: 6px;
+}
+.time-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.time-chip {
+    border: 1px solid var(--g1); background: #fff; border-radius: 999px;
+    padding: 4px 11px; font-size: .75rem; cursor: pointer; color: var(--g6);
+    transition: border-color .15s, color .15s, background .15s;
+}
+.time-chip:hover:not(:disabled) { border-color: var(--b6); color: var(--b6); }
+.time-chip.active { background: var(--b6); border-color: var(--b6); color: #fff; font-weight: 600; }
+.time-chip:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Inline field errors ── */
+.field-error { display: none; color: #b91c1c; font-size: .78rem; margin-top: 4px; }
+.form-control.invalid { border-color: #dc2626 !important; }
+#book-form .notes-textarea-wrap:has(.invalid) { border-color: #dc2626; }
+.agreement-box.invalid { border-color: #dc2626; background: #fef2f2; }
+.agreement-box.invalid .agreement-check { color: #b91c1c; }
+
+/* ── Photo drop-zone ── */
+.dropzone {
+    border: 1.5px dashed var(--g1); border-radius: 10px; padding: 12px;
+    background: #f8fafc; transition: border-color .15s, background .15s;
+}
+.dropzone.dragover { border-color: var(--b6); background: #eff6ff; }
+.dropzone.invalid { border-color: #dc2626; background: #fef2f2; }
+.dropzone-actions { display: flex; align-items: center; gap: 12px; }
+.photo-count { font-size: .75rem; font-weight: 700; color: var(--g4); }
+#photos-preview { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+#photos-preview:empty { display: none; }
+
+/* ── Success panel ── */
+.success-icon {
+    width: 56px; height: 56px; border-radius: 50%; background: #dcfce7; color: #16a34a;
+    font-size: 1.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto;
+}
+.success-summary {
+    margin-top: 14px; background: #f8fafc; border: 1px solid var(--g1);
+    border-radius: 10px; padding: 10px 12px; text-align: left;
+}
+.success-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    font-size: .8rem; padding: 4px 0; color: var(--g5);
+}
+.success-row strong { color: #0f172a; text-align: right; word-break: break-word; }
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+    .modal-box { max-height: 92vh; display: flex; flex-direction: column; width: 94%; }
+    .modal-body { flex: 1; min-height: 0; overflow-y: auto; max-height: none; }
+    .issue-grid { grid-template-columns: 1fr; }
+    .urgency-grid { grid-template-columns: 1fr; }
+    .modal-footer { flex-wrap: wrap; }
+    .sticky-price { width: 100%; margin-right: 0; order: -1; }
+    .sticky-price-actions { width: 100%; }
+    .sticky-price-actions .btn { flex: 1; }
 }
 
 /* ── Review photo ── */

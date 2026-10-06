@@ -118,20 +118,24 @@ class ReportService
         $end = $to.' 23:59:59';
         $base = Booking::query()->whereBetween('created_at', [$from.' 00:00:00', $end]);
 
-        $collection = (clone $base)->with(['client', 'worker'])->latest('created_at')->when($limit, fn ($q) => $q->limit($limit))->get();
+        $collection = (clone $base)->with(['client', 'worker', 'issueCategory'])->latest('created_at')->when($limit, fn ($q) => $q->limit($limit))->get();
         $total = (int) (clone $base)->count();
         $completed = (int) (clone $base)->where('status', 'completed')->count();
         $cancelled = (int) (clone $base)->where('status', 'cancelled')->count();
         $active = (int) (clone $base)->whereIn('status', ['new', 'accepted', 'en_route', 'in_progress'])->count();
-        $totalValue = (float) (clone $base)->sum('price');
+        $totalValue = (float) (clone $base)->sum('price') + (float) (clone $base)->sum('materials_total');
 
         $rows = $collection->map(fn (Booking $b) => [
             'Booking Ref' => $b->booking_ref,
             'Client' => $b->client->name ?? 'N/A',
             'Worker' => $b->worker->name ?? 'N/A',
             'Service Category' => $b->service_category,
+            'Issue Type' => $b->issueCategory?->name ?? 'N/A',
+            'Urgency' => $b->urgencyLabel(),
             'Status' => $b->status,
             'Price' => (float) $b->price,
+            'Materials' => (float) $b->materials_total,
+            'Total' => $b->invoice_total,
             'Scheduled At' => $b->scheduled_at?->format('Y-m-d H:i'),
             'Created At' => $b->created_at->format('Y-m-d H:i'),
         ])->values()->all();
@@ -148,7 +152,7 @@ class ReportService
                 $this->kpi('Total Value', $totalValue, 'fa-coins', 'green', true),
             ],
             'chart' => $this->trendChart($from, $to, $trend),
-            'columns' => ['Booking Ref', 'Client', 'Worker', 'Service Category', 'Status', 'Price', 'Scheduled At', 'Created At'],
+            'columns' => ['Booking Ref', 'Client', 'Worker', 'Service Category', 'Issue Type', 'Urgency', 'Status', 'Price', 'Materials', 'Total', 'Scheduled At', 'Created At'],
             'rows' => $rows,
             'total_rows' => $total,
         ];
@@ -161,9 +165,9 @@ class ReportService
             ->where('status', 'completed')
             ->whereBetween('completed_at', [$from.' 00:00:00', $end]);
 
-        $collection = (clone $base)->with(['client', 'worker', 'earning'])->latest('completed_at')->when($limit, fn ($q) => $q->limit($limit))->get();
+        $collection = (clone $base)->with(['client', 'worker', 'earning', 'issueCategory'])->latest('completed_at')->when($limit, fn ($q) => $q->limit($limit))->get();
         $total = (int) $base->count();
-        $gross = (float) $base->sum('price');
+        $gross = (float) $base->sum('price') + (float) $base->sum('materials_total');
         $platformFees = (float) $collection->sum(fn (Booking $b) => (float) ($b->earning?->platform_fee ?? 0));
         $net = (float) $collection->sum(fn (Booking $b) => (float) ($b->earning?->net_amount ?? 0));
 
@@ -172,7 +176,11 @@ class ReportService
             'Client' => $b->client->name ?? 'N/A',
             'Worker' => $b->worker->name ?? 'N/A',
             'Service Category' => $b->service_category,
-            'Gross Amount' => (float) $b->price,
+            'Issue Type' => $b->issueCategory?->name ?? 'N/A',
+            'Urgency' => $b->urgencyLabel(),
+            'Service Amount' => (float) $b->price,
+            'Materials' => (float) $b->materials_total,
+            'Gross Amount' => $b->invoice_total,
             'Platform Fee' => $b->earning?->platform_fee !== null ? (float) $b->earning->platform_fee : null,
             'Net Amount' => $b->earning?->net_amount !== null ? (float) $b->earning->net_amount : null,
             'Paid At' => $b->earning?->paid_at?->format('Y-m-d H:i'),
@@ -190,7 +198,7 @@ class ReportService
                 $this->kpi('Avg Booking Value', $total ? round($gross / $total, 2) : 0, 'fa-chart-simple', 'blue', true),
             ],
             'chart' => $this->trendChart($from, $to, $trend, 'Revenue (₱)', '#10B981', 'bar'),
-            'columns' => ['Booking Ref', 'Client', 'Worker', 'Service Category', 'Gross Amount', 'Platform Fee', 'Net Amount', 'Paid At', 'Completed At'],
+            'columns' => ['Booking Ref', 'Client', 'Worker', 'Service Category', 'Issue Type', 'Urgency', 'Service Amount', 'Materials', 'Gross Amount', 'Platform Fee', 'Net Amount', 'Paid At', 'Completed At'],
             'rows' => $rows,
             'total_rows' => $total,
         ];
@@ -256,7 +264,7 @@ class ReportService
             ])
             ->withSum([
                 'bookingsAsWorker as gross_revenue' => fn ($q) => $q->where('status', 'completed')->whereBetween('completed_at', [$from.' 00:00:00', $end]),
-            ], 'price')
+            ], DB::raw('price + materials_total'))
             ->withAvg([
                 'reviewsReceived as avg_rating' => fn ($q) => $q->whereBetween('created_at', [$from.' 00:00:00', $end]),
             ], 'rating')
@@ -396,7 +404,7 @@ class ReportService
                 COUNT(*) as total,
                 COALESCE(SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END), 0) as completed,
                 COALESCE(SUM(CASE WHEN status = "cancelled" THEN 1 ELSE 0 END), 0) as cancelled,
-                COALESCE(SUM(CAST(price AS DECIMAL(12,2))), 0) as revenue')
+                COALESCE(SUM(CAST(price + materials_total AS DECIMAL(12,2))), 0) as revenue')
             ->groupBy('service_category');
 
         $all = $base->get();
@@ -491,7 +499,7 @@ class ReportService
             : ($driver === 'mysql' ? "DATE({$dateColumn})" : "date({$dateColumn})");
         $select = $groupExpr.' as d, COUNT(*) as count';
         if ($metric === 'revenue') {
-            $select .= ', COALESCE(SUM(CAST(price AS DECIMAL(12,2))), 0) as revenue';
+            $select .= ', COALESCE(SUM(CAST(price + materials_total AS DECIMAL(12,2))), 0) as revenue';
         }
 
         $agg = (clone $query)

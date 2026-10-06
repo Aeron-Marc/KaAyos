@@ -61,7 +61,7 @@
         var verifiedBadge = w.verified
             ? '<span class="popup-verified"><i class="fa-solid fa-circle-check"></i></span>'
             : '';
-        var rateHtml = w.price > 0 ? '<span class="popup-rate">₱' + w.price.toLocaleString() + '/hr</span>' : '';
+        var rateHtml = w.price > 0 ? '<span class="popup-rate" title="Rate is an estimate until scope confirmation"><small style="font-size:.7rem;font-weight:600;opacity:.8;margin-right:2px;">Est.</small>₱' + w.price.toLocaleString() + '/hr</span>' : '';
         var reviewText = w.reviews > 0 ? w.reviews + ' review' + (w.reviews !== 1 ? 's' : '') : 'No reviews';
 
         return '<div class="worker-map-popup">'

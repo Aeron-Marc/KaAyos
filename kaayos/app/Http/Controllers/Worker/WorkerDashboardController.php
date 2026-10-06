@@ -19,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
@@ -26,7 +27,8 @@ class WorkerDashboardController extends Controller
 {
     public function dashboard(): View
     {
-        $user = auth()->user();
+        $user = Auth::user();
+        abort_unless($user, 401);
         $profile = $user->workerProfile;
 
         $activeJobs = $user->bookingsAsWorker()
@@ -40,11 +42,20 @@ class WorkerDashboardController extends Controller
             ->take(5)
             ->get();
 
+        $completedEarnings = (float) (Earning::where('worker_id', $user->id)->sum('net_amount') ?? 0);
+        $pipelineEarnings = (float) ($user->bookingsAsWorker()
+            ->whereIn('status', [Booking::STATUS_NEW, Booking::STATUS_ACCEPTED, Booking::STATUS_EN_ROUTE, Booking::STATUS_IN_PROGRESS])
+            ->get()
+            ->sum(fn ($b) => (float) ($b->invoice_total ?? 0)));
+        $totalEstimatedEarnings = $completedEarnings + $pipelineEarnings;
+
         $stats = [
-            'active_jobs' => $activeJobs->count(),
-            'completed_jobs' => $user->bookingsAsWorker()->completed()->count(),
-            'total_earnings' => Earning::where('worker_id', $user->id)->sum('net_amount'),
-            'average_rating' => $profile?->average_rating ?? 0.00,
+            'active_jobs'              => $activeJobs->count(),
+            'completed_jobs'           => $user->bookingsAsWorker()->completed()->count(),
+            'total_earnings'           => $completedEarnings,
+            'total_estimated_earnings' => $totalEstimatedEarnings,
+            'pipeline_earnings'        => $pipelineEarnings,
+            'average_rating'           => $profile?->average_rating ?? 0.00,
         ];
 
         return view('worker.dashboard.overview', compact('activeJobs', 'recentEarnings', 'stats'));
@@ -100,25 +111,12 @@ class WorkerDashboardController extends Controller
                 $afterSave = function (Booking $fresh) use ($user) {
                     // Only record earnings if job is fully completed (both parties confirmed)
                     if ($fresh->status === Booking::STATUS_COMPLETED) {
-                        $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                        $gross = $fresh->price ?? 0;
-                        $fee = round($gross * ($platformFeePercent / 100), 2);
-                        $net = $gross - $fee;
-
-                        Earning::updateOrCreate(
-                            ['booking_id' => $fresh->id],
-                            [
-                                'worker_id' => $user->id,
-                                'gross_amount' => $gross,
-                                'platform_fee' => $fee,
-                                'net_amount' => $net,
-                            ]
-                        );
+                        $fresh->syncEarning();
                     }
                 };
 
                 $booking->markComplete($user, $afterSave);
-                $booking->fresh();
+                $booking = $booking->fresh();
 
                 // Notify client if this was first request
                 if ($booking->completion_requested_by === $user->id && $booking->confirmed_by_client_at === null) {
@@ -227,25 +225,12 @@ class WorkerDashboardController extends Controller
             $afterSave = function (Booking $fresh) use ($user) {
                 // Record earnings if job is now fully completed
                 if ($fresh->status === Booking::STATUS_COMPLETED) {
-                    $platformFeePercent = config('kaayos.platform_fee_percent', 10);
-                    $gross = $fresh->price ?? 0;
-                    $fee = round($gross * ($platformFeePercent / 100), 2);
-                    $net = $gross - $fee;
-
-                    Earning::updateOrCreate(
-                        ['booking_id' => $fresh->id],
-                        [
-                            'worker_id' => $user->id,
-                            'gross_amount' => $gross,
-                            'platform_fee' => $fee,
-                            'net_amount' => $net,
-                        ]
-                    );
+                    $fresh->syncEarning();
                 }
             };
 
             $booking->markComplete($user, $afterSave);
-            $booking->fresh();
+            $booking = $booking->fresh();
             $isFullyCompleted = $booking->status === Booking::STATUS_COMPLETED;
 
             $booking->load('client');
@@ -444,6 +429,7 @@ class WorkerDashboardController extends Controller
         $photo = $booking->photos()->create([
             'photo_path' => $path,
             'caption' => $validated['caption'] ?? null,
+            'uploaded_by' => 'worker',
         ]);
 
         if ($request->expectsJson()) {

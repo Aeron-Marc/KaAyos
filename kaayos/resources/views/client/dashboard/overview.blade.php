@@ -168,7 +168,14 @@
                         @endphp
                         <span class="status-badge {{ $cls }}">{{ $label }}</span>
                     </td>
-                    <td>₱{{ number_format($booking['price']) }}</td>
+                    <td>
+                        @if(!empty($booking['is_price_estimated']))
+                            <span title="Estimate until scope confirmation" style="color:#92400e;">Est. ₱{{ number_format($booking['price']) }}</span>
+                            <span style="background:#fef3c7;color:#92400e;font-size:.65rem;padding:1px 5px;border-radius:99px;margin-left:2px;font-weight:600;">Est</span>
+                        @else
+                            ₱{{ number_format($booking['price']) }}
+                        @endif
+                    </td>
                 </tr>
             @empty
                 <tr>

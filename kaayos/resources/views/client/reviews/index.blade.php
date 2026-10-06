@@ -92,7 +92,7 @@
 </div>
 
 @if(!empty($reviews['past']))
-    @foreach($reviews['past'] as $review)
+    @foreach($reviews['past'] as $ri => $review)
         <div class="review-card">
             <div class="eyebrow">{{ $review['service'] }}</div>
             <h3 style="font-size:1rem;font-weight:700;color:var(--b9);">{{ $review['worker'] }}</h3>
@@ -100,6 +100,9 @@
                 @for($s = 1; $s <= 5; $s++)
                     <i class="fa-solid fa-star" style="{{ $s <= $review['rating'] ? '' : 'opacity:.25;' }}" aria-hidden="true"></i>
                 @endfor
+                @if(!empty($review['edited']))
+                    <span class="edited-badge">Edited</span>
+                @endif
             </div>
             @if($review['photo_url'])
                 <div class="review-photo-wrap js-lightbox-trigger" data-photo-url="{{ $review['photo_url'] }}">
@@ -108,7 +111,43 @@
                 </div>
             @endif
             <p style="font-size:.875rem;color:var(--g7);line-height:1.6;">{{ $review['comment'] }}</p>
-            <p style="font-size:.78rem;color:var(--g4);margin-top:8px;">{{ $review['date'] }}</p>
+            <div class="review-card-footer">
+                <p style="font-size:.78rem;color:var(--g4);margin-top:8px;">{{ $review['date'] }}</p>
+                @if(!empty($review['can_edit']))
+                    <div class="review-edit-actions">
+                        <span class="edit-hint">Editable until {{ $review['editable_until'] }}</span>
+                        <button type="button" class="btn btn-outline btn-sm review-edit-toggle" data-edit-index="{{ $ri }}">Edit</button>
+                    </div>
+                @endif
+            </div>
+
+            @if(!empty($review['can_edit']))
+                <div class="review-edit-form" id="reviewEditForm{{ $ri }}" style="display:none;" data-booking-id="{{ $review['booking_id'] }}">
+                    <div class="edit-form-title">Edit your review</div>
+                    <div class="star-picker" data-rating="{{ $review['rating'] }}">
+                        @for($s = 1; $s <= 5; $s++)
+                            <i class="fa-{{ $s <= $review['rating'] ? 'solid' : 'regular' }} fa-star" data-star="{{ $s }}" aria-hidden="true"></i>
+                        @endfor
+                    </div>
+                    <textarea class="review-textarea edit-comment" placeholder="Share your experience — it helps the community find trusted workers.">{{ $review['comment'] }}</textarea>
+                    <div class="review-photo-upload">
+                        <div class="review-photo-preview edit-photo-preview" id="editPhotoPreview{{ $ri }}" style="{{ $review['photo_url'] ? 'display:inline-flex;' : 'display:none;' }}">
+                            <img src="{{ $review['photo_url'] ?? '' }}" alt="Review photo">
+                            <button type="button" class="edit-photo-remove" data-edit-index="{{ $ri }}" aria-label="Remove photo">&times;</button>
+                        </div>
+                        <label class="photo-upload-label">
+                            <i class="fa-solid fa-camera" aria-hidden="true"></i>
+                            <span>{{ $review['photo_url'] ? 'Replace photo' : 'Add photo' }}</span>
+                            <input type="file" accept="image/jpeg,image/png,image/webp" class="edit-photo-input" data-edit-index="{{ $ri }}">
+                        </label>
+                        <input type="hidden" class="edit-remove-photo" data-edit-index="{{ $ri }}" value="0">
+                    </div>
+                    <div class="edit-actions">
+                        <button type="button" class="btn btn-solid edit-save-btn" data-edit-index="{{ $ri }}">Save changes</button>
+                        <button type="button" class="btn btn-outline edit-cancel-btn" data-edit-index="{{ $ri }}">Cancel</button>
+                    </div>
+                </div>
+            @endif
         </div>
     @endforeach
 @else
@@ -229,6 +268,72 @@
 }
 .review-photo-wrap:hover .review-photo-overlay {
     opacity: 1;
+}
+
+/* ── Review editing ── */
+.edited-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 8px;
+    border-radius: 99px;
+    font-size: .66rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    background: #f1f5f9;
+    color: var(--g6);
+    vertical-align: middle;
+}
+.review-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.review-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.edit-hint {
+    font-size: .74rem;
+    color: var(--g4);
+}
+.review-edit-form {
+    border-top: 1px dashed var(--g1);
+    margin-top: 12px;
+    padding-top: 12px;
+}
+.edit-form-title {
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--g5);
+    margin-bottom: 8px;
+}
+.edit-photo-remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    font-size: .8rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
 }
 
 /* ── Lightbox ── */
@@ -435,6 +540,107 @@ function submitReview(index) {
     .finally(function () {
         btn.disabled = false;
         btn.textContent = 'Submit Review';
+    });
+}
+
+// ── Review editing (within grace period) ──
+document.querySelectorAll('.review-edit-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var form = document.getElementById('reviewEditForm' + this.dataset.editIndex);
+        if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    });
+});
+
+document.querySelectorAll('.edit-cancel-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var form = document.getElementById('reviewEditForm' + this.dataset.editIndex);
+        if (form) form.style.display = 'none';
+    });
+});
+
+document.querySelectorAll('.edit-photo-input').forEach(function (input) {
+    input.addEventListener('change', function () {
+        var i = this.dataset.editIndex;
+        var preview = document.getElementById('editPhotoPreview' + i);
+        var file = this.files[0];
+        if (!file || !preview) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            preview.querySelector('img').src = e.target.result;
+            preview.style.display = 'inline-flex';
+        };
+        reader.readAsDataURL(file);
+        var removeFlag = document.querySelector('.edit-remove-photo[data-edit-index="' + i + '"]');
+        if (removeFlag) removeFlag.value = '0';
+    });
+});
+
+document.querySelectorAll('.edit-photo-remove').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var i = this.dataset.editIndex;
+        var input = document.querySelector('.edit-photo-input[data-edit-index="' + i + '"]');
+        var preview = document.getElementById('editPhotoPreview' + i);
+        var removeFlag = document.querySelector('.edit-remove-photo[data-edit-index="' + i + '"]');
+        if (input) input.value = '';
+        if (removeFlag) removeFlag.value = '1';
+        if (preview) preview.style.display = 'none';
+    });
+});
+
+document.querySelectorAll('.edit-save-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        saveReviewEdit(this.dataset.editIndex);
+    });
+});
+
+function saveReviewEdit(index) {
+    var form = document.getElementById('reviewEditForm' + index);
+    if (!form) return;
+
+    var picker = form.querySelector('.star-picker');
+    var rating = parseInt((picker && picker.dataset && picker.dataset.rating) ? picker.dataset.rating : '0', 10);
+    if (!rating) {
+        alert('Please select a rating.');
+        return;
+    }
+
+    var commentEl = form.querySelector('.edit-comment');
+    var comment = commentEl ? commentEl.value.trim() : '';
+    var photoInput = form.querySelector('.edit-photo-input');
+    var photoFile = photoInput && photoInput.files ? (photoInput.files[0] || null) : null;
+    var removeFlag = form.querySelector('.edit-remove-photo');
+    var removePhoto = !photoFile && removeFlag && removeFlag.value === '1';
+
+    var saveBtn = form.querySelector('.edit-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+
+    var formData = new FormData();
+    formData.append('rating', rating);
+    formData.append('comment', comment);
+    if (photoFile) formData.append('photo', photoFile);
+    if (removePhoto) formData.append('remove_photo', '1');
+
+    fetch(submitUrlTemplate.replace('__BOOKING__', form.dataset.bookingId), {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+        },
+        body: formData,
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Failed to update review.');
+        }
+    })
+    .catch(() => alert('Something went wrong.'))
+    .finally(function () {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save changes';
     });
 }
 </script>
