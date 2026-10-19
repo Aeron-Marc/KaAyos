@@ -1,0 +1,25 @@
+# Starts the KaAyos ML microservice using the project's virtual environment.
+# Usage (PowerShell):  .\start_ml.ps1
+# The venv is created automatically on the first run.
+
+$ErrorActionPreference = 'Stop'
+Set-Location -LiteralPath $PSScriptRoot
+
+# Shared secret with the Laravel app (kaayos/.env ML_API_KEY) for /cluster, /predict, /retrain
+if (-not $env:ML_API_KEY) {
+    $env:ML_API_KEY = 'ba469543eef62dbd16d423f15d5c636eb6ce862af4a220b8'
+}
+
+if (-not (Test-Path '.\.venv\Scripts\python.exe')) {
+    Write-Host 'Creating virtual environment...'
+    python -m venv .venv
+}
+
+Write-Host 'Installing dependencies...'
+& .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+Write-Host ''
+Write-Host 'Starting KaAyos ML Microservice on http://127.0.0.1:8001'
+Write-Host 'API Docs available at http://127.0.0.1:8001/docs'
+Write-Host ''
+& .\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8001 --reload
