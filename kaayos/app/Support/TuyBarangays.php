@@ -31,14 +31,35 @@ class TuyBarangays
 
     private const JITTER_RADIUS = 0.0005;
 
+    /** Historical/alternate barangay names -> canonical name (must exist in CENTERS). */
+    private const ALIASES = [
+        'Bolboc' => 'Bolbok',
+        'Maligas' => 'Bolbok',
+        'Putic' => 'San Jose',
+        'Obispo' => 'Tuyon-Tuyon',
+    ];
+
     public static function residenceFor(int $userId): string
     {
         $names = array_keys(self::CENTERS);
         return $names[crc32((string) $userId) % count($names)];
     }
 
+    /** Resolve an alternate/historical barangay name to its canonical name, if it is one. */
+    public static function canonicalFor(string $barangay): string
+    {
+        foreach (self::ALIASES as $alias => $canonical) {
+            if (strcasecmp($alias, $barangay) === 0) {
+                return $canonical;
+            }
+        }
+
+        return $barangay;
+    }
+
     public static function pointFor(string $barangay, int $seed): array
     {
+        $barangay = self::canonicalFor($barangay);
         if (!isset(self::CENTERS[$barangay])) {
             $barangay = 'Luna';
         }
@@ -57,6 +78,7 @@ class TuyBarangays
 
     public static function pointForStatic(string $barangay): array
     {
+        $barangay = self::canonicalFor($barangay);
         if (!isset(self::CENTERS[$barangay])) {
             $barangay = 'Luna';
         }
@@ -76,7 +98,7 @@ class TuyBarangays
 
     public static function isValidBarangay(?string $barangay): bool
     {
-        return $barangay !== null && isset(self::CENTERS[$barangay]);
+        return $barangay !== null && isset(self::CENTERS[self::canonicalFor($barangay)]);
     }
 
     public static function parseLocation(?string $location): ?string
@@ -93,12 +115,36 @@ class TuyBarangays
             }
         }
 
+        foreach (self::ALIASES as $alias => $canonical) {
+            if (strcasecmp($alias, $raw) === 0) {
+                return $canonical;
+            }
+        }
+
+        foreach (self::CENTERS as $name => $_center) {
+            if (stripos($raw, $name) !== false) {
+                return $name;
+            }
+        }
+
+        foreach (self::ALIASES as $alias => $canonical) {
+            if (stripos($raw, $alias) !== false) {
+                return $canonical;
+            }
+        }
+
         $parts = preg_split('/[,\s]+/', $raw) ?: [];
 
         foreach ($parts as $part) {
             foreach (self::CENTERS as $name => $_center) {
                 if (strcasecmp($name, $part) === 0) {
                     return $name;
+                }
+            }
+
+            foreach (self::ALIASES as $alias => $canonical) {
+                if (strcasecmp($alias, $part) === 0) {
+                    return $canonical;
                 }
             }
         }

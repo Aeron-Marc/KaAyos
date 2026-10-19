@@ -168,10 +168,10 @@
 
 <!-- STATS -->
 <div class="stats fade-up">
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num" data-count="500" data-suffix="+">0</div><div class="stat-label">{{ __('landing.stat_workers') }}</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num" data-count="1000" data-suffix="+">0</div><div class="stat-label">{{ __('landing.stat_jobs') }}</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num" data-count="22" data-suffix="">0</div><div class="stat-label">{{ __('landing.stat_barangays') }}</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num" data-count="4.8" data-suffix="★" data-decimal="1">0</div><div class="stat-label">{{ __('landing.stat_rating') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['workers'] }}" data-suffix="+">{{ number_format($stats['workers']) }}+</div><div class="stat-label">{{ __('landing.stat_workers') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['jobs'] }}" data-suffix="+">{{ number_format($stats['jobs']) }}+</div><div class="stat-label">{{ __('landing.stat_jobs') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['barangays'] }}" data-suffix="">{{ $stats['barangays'] }}</div><div class="stat-label">{{ __('landing.stat_barangays') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['rating'] }}" data-suffix="★" data-decimal="1">{{ number_format($stats['rating'], 1) }}★</div><div class="stat-label">{{ __('landing.stat_rating') }}</div></div>
 </div>
 
 <!-- TRUST -->
@@ -450,6 +450,7 @@ function toggleFaq(el){
   }
 
   function animateCount(el){
+    el.textContent = '0';
     var target = parseFloat(el.dataset.count);
     var suffix = el.dataset.suffix || '';
     var dec = parseInt(el.dataset.decimal) || 0;
