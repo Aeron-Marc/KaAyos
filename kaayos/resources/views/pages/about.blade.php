@@ -69,17 +69,24 @@ a{text-decoration:none;color:inherit}
 .team-name{font-size:.95rem;font-weight:600;color:var(--b9)}
 .team-role{font-size:.8rem;color:var(--g4);margin-top:3px}
 
-/* Capstone Team cards */
-.dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px;margin:22px 0}
-.dev-card{background:var(--white);border:1.5px solid var(--g1);border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(4,44,83,.06);transition:transform .25s,box-shadow .25s,border-color .25s}
+/* Capstone Team cards — single row, flex centered */
+.dev-grid{display:flex;justify-content:center;align-items:stretch;gap:22px;margin:22px 0;flex-wrap:nowrap}
+.dev-card{flex:0 1 240px;min-width:0;background:var(--white);border:1.5px solid var(--g1);border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(4,44,83,.06);transition:transform .25s,box-shadow .25s,border-color .25s}
 .dev-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(4,44,83,.12);border-color:var(--b2)}
 .dev-photo{aspect-ratio:1/1;border-radius:11px;background:var(--b0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;overflow:hidden}
 .dev-photo img{width:100%;height:100%;object-fit:cover;border-radius:11px}
 .dev-photo-empty i{font-size:1.6rem;color:var(--b4);opacity:.75}
 .dev-photo-empty span{font-size:.72rem;color:var(--g4);letter-spacing:.02em}
-.dev-info{text-align:center;padding:14px 6px 8px}
-.dev-name{font-size:.98rem;font-weight:700;color:var(--b9)}
-.dev-role{font-size:.8rem;color:var(--g4);margin-top:4px}
+.dev-info{text-align:center;padding:14px 4px 8px}
+.dev-name{font-size:.95rem;font-weight:700;color:var(--b9);line-height:1.3;hyphens:auto}
+.dev-role{font-size:.78rem;color:var(--g4);margin-top:4px;line-height:1.35}
+@media(max-width:820px){
+.dev-grid{flex-wrap:wrap}
+.dev-card{flex:1 1 46%}
+}
+@media(max-width:480px){
+.dev-card{flex:1 1 100%}
+}
 
 .footer{background:var(--g9);padding:40px 5% 20px;margin-top:48px}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:36px;margin-bottom:28px}
