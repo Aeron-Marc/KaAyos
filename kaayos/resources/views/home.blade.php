@@ -109,6 +109,7 @@
     <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {{ __('landing.hero_hire') }}</a>
     <a href="#join" class="btn-outline"><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{ __('landing.hero_join') }}</a>
   </div>
+  <div class="hero-micro">{{ __('landing.hero_micro') }}</div>
 </section>
 
 <!-- SEARCH + AI ASSISTANT -->
@@ -171,8 +172,9 @@
   <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['workers'] }}" data-suffix="+">{{ number_format($stats['workers']) }}+</div><div class="stat-label">{{ __('landing.stat_workers') }}</div></div>
   <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['jobs'] }}" data-suffix="+">{{ number_format($stats['jobs']) }}+</div><div class="stat-label">{{ __('landing.stat_jobs') }}</div></div>
   <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['barangays'] }}" data-suffix="">{{ $stats['barangays'] }}</div><div class="stat-label">{{ __('landing.stat_barangays') }}</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['rating'] }}" data-suffix="★" data-decimal="1">{{ number_format($stats['rating'], 1) }}★</div><div class="stat-label">{{ __('landing.stat_rating') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['rating'] }}" data-suffix="★" data-decimal="1">{{ number_format($stats['rating'], 1) }}&#9733;</div><div class="stat-label">{{ __('landing.stat_rating') }}</div></div>
 </div>
+<div class="stat-note fade-up">{{ __('landing.stat_note') }}</div>
 
 <!-- TRUST -->
 <div class="trust">
@@ -201,7 +203,7 @@
       <p class="step-desc">{{ __('landing.step2_desc') }}</p>
     </div>
     <div class="step fade-up stagger-child"><div class="step-n">03</div>
-      <div class="step-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></div>
+      <div class="step-icon"><i class="fa-solid fa-route" aria-hidden="true"></i></div>
       <h3 class="step-title">{{ __('landing.step3_title') }}</h3>
       <p class="step-desc">{{ __('landing.step3_desc') }}</p>
     </div>
@@ -272,15 +274,15 @@
   </div>
   <div class="faq-list">
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-circle-question" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q1') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-shield-halved" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q1') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">{{ __('landing.faq_a1') }}</div>
     </div>
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-id-card" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q2') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-certificate" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q2') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">{{ __('landing.faq_a2') }}</div>
     </div>
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-robot" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q3') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-coins" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q3') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">{{ __('landing.faq_a3') }}</div>
     </div>
     <div class="faq-item fade-up">
@@ -294,6 +296,17 @@
   </div>
   <div class="faq-contact fade-up">
     {{ __('landing.faq_contact') }} <a href="/contact">{{ __('landing.faq_contact_link') }}</a>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta" id="get-started">
+  <div class="final-cta-inner fade-up">
+    <h2>{{ __('landing.cta_title') }}</h2>
+    <p>{{ __('landing.cta_sub') }}</p>
+    <a href="/register" class="final-cta-btn"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {{ __('landing.cta_btn') }}</a>
+    <div class="final-cta-micro">{{ __('landing.cta_micro') }}</div>
+    <div class="final-cta-worker">{{ __('landing.cta_worker') }} <a href="/register?role=worker">{{ __('landing.cta_worker_link') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
   </div>
 </section>
 
