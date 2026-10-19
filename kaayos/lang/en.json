@@ -185,5 +185,16 @@
     "landing.cta_btn": "Book a Worker Today — It's Free",
     "landing.cta_micro": "No account needed to browse • Verified workers only • Cancel anytime",
     "landing.cta_worker": "Looking for work instead?",
-    "landing.cta_worker_link": "Apply as a Worker"
+    "landing.cta_worker_link": "Apply as a Worker",
+    "landing.smart_eyebrow": "Smart Local Matching",
+    "landing.smart_title": "Smart matching. Real neighbors. No exact addresses needed.",
+    "landing.smart_sub": "Tell us what’s broken in plain words — “my sink is leaking” — and KaAyos finds verified workers who can actually get to you. We match by skill and barangay, so you get help from your community without giving up your privacy.",
+    "landing.smart_say_title": "Say it your way",
+    "landing.smart_say_desc": "Type naturally, in English or Taglish. KaAyos understands “sira ang gripo” just as well as “leaking pipe.”",
+    "landing.smart_brgy_title": "Matched to your barangay",
+    "landing.smart_brgy_desc": "We use your barangay — not your street — to suggest workers nearby. Distance is shown as an estimate only.",
+    "landing.smart_privacy_title": "Privacy by default",
+    "landing.smart_privacy_desc": "Workers see only the barangay they’re serving. Your exact address is never shown and never shared.",
+    "landing.smart_trust": "Verified workers only • Approximate distance, never exact addresses • Free to search",
+    "landing.smart_cta": "Find a Worker Near Me"
 }

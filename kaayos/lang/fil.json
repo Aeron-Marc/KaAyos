@@ -185,5 +185,16 @@
     "landing.cta_btn": "Mag-book Ngayon — Libre",
     "landing.cta_micro": "Hindi kailangang mag-sign up para mag-browse • Beripikado lang ang mga manggagawa • Kanselahin anytime",
     "landing.cta_worker": "Naghahanap ng trabaho sa halip?",
-    "landing.cta_worker_link": "Mag-apply bilang Manggagawa"
+    "landing.cta_worker_link": "Mag-apply bilang Manggagawa",
+    "landing.smart_eyebrow": "Smart na Pagtutugma",
+    "landing.smart_title": "Matalinong matching. Tunay na kapitbahay. Hindi na kailangan ang eksaktong address.",
+    "landing.smart_sub": "Sabihin lang kung ano ang sira — “tumutulo ang gripo” — at hanapan ka ng KaAyos ng mga beripikadong manggagawang makakarating sa iyo. Tinutugma namin ayon sa kasanayan at barangay, nang hindi isinasangkot ang iyong privacy.",
+    "landing.smart_say_title": "Sabihin mo sa sarili mong paraan",
+    "landing.smart_say_desc": "Mag-type nang malaya — sa Ingles o Taglish. Naiintindihan ng KaAyos ang “sira ang gripo” gaya ng “leaking pipe.”",
+    "landing.smart_brgy_title": "Nakatugma sa iyong barangay",
+    "landing.smart_brgy_desc": "Barangay lang ang ginagamit namin — hindi ang iyong kalye — para imungkahi ang mga manggagawang malapit sa iyo. Tinatayang distansya lamang ang ipinapakita.",
+    "landing.smart_privacy_title": "Pribado sa simula pa lang",
+    "landing.smart_privacy_desc": "Ang barangay na sinasbihan lang ang nakikita ng manggagawa. Hindi ipinapakita at hindi ibinabahagi ang iyong eksaktong address.",
+    "landing.smart_trust": "Beripikado lang • Tinatayang distansya, hindi eksaktong address • Libreng maghanap",
+    "landing.smart_cta": "Maghanap ng Malapit na Manggagawa"
 }

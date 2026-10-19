@@ -56,6 +56,9 @@ a{text-decoration:none;color:inherit}
 .location-hint{font-size:.88rem;color:var(--g4);margin:0 0 18px}
 .location-hint i{color:var(--b6)}
 .location-hint strong{color:var(--b8)}
+.privacy-note{margin:12px auto 0;max-width:800px;font-size:.8rem;color:var(--g4);display:flex;align-items:baseline;gap:7px;justify-content:center;text-align:left}
+.privacy-note i{color:var(--b6);transform:translateY(1px)}
+.privacy-note em{color:var(--g7);font-style:italic}
 
 .layout{display:flex;gap:28px;max-width:1200px;margin:0 auto;padding:32px 5%}
 .sidebar{flex:0 0 220px}
@@ -170,7 +173,7 @@ a{text-decoration:none;color:inherit}
   <form class="search-bar" action="/search" method="GET">
     <div class="input-wrap">
       <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-      <input type="text" name="q" placeholder="e.g. leaking pipe, cleaning, painting..." value="{{ $query ?? '' }}" aria-label="Search workers" autocomplete="off">
+      <input type="text" name="q" id="nlQuery" placeholder="e.g. leaking pipe, cleaning, painting..." value="{{ $query ?? '' }}" aria-label="Search workers" autocomplete="off">
     </div>
     <div class="input-wrap loc-input">
       <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
@@ -178,6 +181,7 @@ a{text-decoration:none;color:inherit}
     </div>
     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Search</button>
   </form>
+  <p class="privacy-note"><i class="fa-solid fa-lock" aria-hidden="true"></i> Only your barangay is used to find nearby workers — never your exact address. You can also just describe the problem, like <em>"my sink is leaking in Bolbok."</em></p>
   <datalist id="barangayList">
     @foreach(\App\Support\TuyBarangays::allBarangays() as $barangayName)
       <option value="{{ $barangayName }}"></option>
@@ -229,7 +233,7 @@ a{text-decoration:none;color:inherit}
     </div>
 
     @if($locationBarangay)
-      <p class="location-hint"><i class="fa-solid fa-map-pin" aria-hidden="true"></i> Showing workers near <strong>Brgy. {{ $locationBarangay }}, Tuy, Batangas</strong> — sorted by distance.</p>
+      <p class="location-hint"><i class="fa-solid fa-map-pin" aria-hidden="true"></i> Showing workers near <strong>Brgy. {{ $locationBarangay }}, Tuy, Batangas</strong> — sorted by approximate distance. Exact addresses are never shared.</p>
     @endif
 
     @if($workers->count() > 0)
@@ -298,7 +302,7 @@ a{text-decoration:none;color:inherit}
       <div class="empty-state">
         <i class="fa-solid fa-users-slash"></i>
         <h3>No matching services/workers found</h3>
-        <p>Try adjusting your search term, location, or category filter to find available workers.</p>
+        <p>Try a nearby barangay, a simpler term like <em>"plumber"</em> or <em>"cleaning"</em>, or clear your filters. We're adding new verified workers every week.</p>
         <a href="{{ url('/search') }}" class="btn btn-primary" style="margin-top: 16px; display: inline-flex;"><i class="fa-solid fa-rotate-left"></i> Reset Filters</a>
       </div>
     @endif
@@ -341,6 +345,25 @@ a{text-decoration:none;color:inherit}
     </div>
   </div>
 </footer>
+
+<script>
+/* ROTATING NATURAL-LANGUAGE PLACEHOLDERS */
+(function(){
+  var el = document.getElementById('nlQuery');
+  if(!el || el.value) return;
+  var prompts = [
+    'Try: "I need a plumber"',
+    'Try: "My sink is leaking"',
+    'Try: "Aircon cleaning in Bolbok"',
+    'Try: "Electrician near Luna"'
+  ];
+  var i = 0;
+  setInterval(function(){
+    i = (i + 1) % prompts.length;
+    el.placeholder = prompts[i];
+  }, 3000);
+})();
+</script>
 
 </body>
 </html>

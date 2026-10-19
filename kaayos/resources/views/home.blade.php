@@ -184,6 +184,36 @@
   <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div><strong>{{ __('landing.trust_rated') }}</strong><span>{{ __('landing.trust_rated_sub') }}</span></div></div>
 </div>
 
+<!-- SMART LOCAL MATCHING -->
+<section class="section" id="smart-matching">
+  <div class="sec-header fade-up">
+    <div class="eyebrow">{{ __('landing.smart_eyebrow') }}</div>
+    <h2 class="sec-title">{{ __('landing.smart_title') }}</h2>
+    <p class="sec-sub">{{ __('landing.smart_sub') }}</p>
+  </div>
+  <div class="smart-grid">
+    <div class="smart-tile fade-up stagger-child">
+      <div class="smart-icon"><i class="fa-solid fa-comment-dots" aria-hidden="true"></i></div>
+      <h3>{{ __('landing.smart_say_title') }}</h3>
+      <p>{{ __('landing.smart_say_desc') }}</p>
+    </div>
+    <div class="smart-tile fade-up stagger-child">
+      <div class="smart-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div>
+      <h3>{{ __('landing.smart_brgy_title') }}</h3>
+      <p>{{ __('landing.smart_brgy_desc') }}</p>
+    </div>
+    <div class="smart-tile fade-up stagger-child">
+      <div class="smart-icon"><i class="fa-solid fa-user-shield" aria-hidden="true"></i></div>
+      <h3>{{ __('landing.smart_privacy_title') }}</h3>
+      <p>{{ __('landing.smart_privacy_desc') }}</p>
+    </div>
+  </div>
+  <div class="smart-trust fade-up">{{ __('landing.smart_trust') }}</div>
+  <div class="smart-cta fade-up">
+    <a href="/search" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {{ __('landing.smart_cta') }}</a>
+  </div>
+</section>
+
 <!-- HOW IT WORKS -->
 <section class="section section-alt" id="how-it-works">
   <div class="sec-header fade-up">
