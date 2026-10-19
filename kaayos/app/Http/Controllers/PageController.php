@@ -16,6 +16,41 @@ class PageController extends Controller
             'rating'     => '4.8',
         ];
 
+        /*
+         * Capstone Development Team — placeholders.
+         * To add a member: copy an RSS entry below. To add a photo, drop the
+         * file in `public/images/team/` (e.g. aeron.jpg) and set 'photo'
+         * to that file name (leave null to show the placeholder box).
+         * Recommended size: 600x600 (square), JPG or PNG.
+         */
+        $developers = [
+            [
+                'name'     => 'Aeron Marc M. Salanguit',
+                'role'     => 'Team Lead / Full-Stack Developer',
+                'photo'    => null,
+                'initials' => 'AS',
+            ],
+            [
+                'name'     => 'Jan Emmanuel Formentos',
+                'role'     => 'ML / AI Developer',
+                'photo'    => null,
+                'initials' => 'JF',
+            ],
+            [
+                'name'     => 'John Dave Briones',
+                'role'     => 'Frontend / UX Designer',
+                'photo'    => null,
+                'initials' => 'JB',
+            ],
+            // Copy the block below to add a 4th member:
+            // [
+            //     'name'     => 'Member Name',
+            //     'role'     => 'Role / Position',
+            //     'photo'    => null,
+            //     'initials' => 'XX',
+            // ],
+        ];
+
         $team = User::where('role', 'admin')->get()->map(fn ($u) => [
             'name'     => $u->name,
             'email'    => $u->email,
@@ -23,7 +58,7 @@ class PageController extends Controller
             'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
         ]);
 
-        return view('pages.about', compact('stats', 'team'));
+        return view('pages.about', compact('stats', 'team', 'developers'));
     }
 
     public function contact()

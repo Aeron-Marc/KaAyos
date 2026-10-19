@@ -69,6 +69,18 @@ a{text-decoration:none;color:inherit}
 .team-name{font-size:.95rem;font-weight:600;color:var(--b9)}
 .team-role{font-size:.8rem;color:var(--g4);margin-top:3px}
 
+/* Capstone Team cards */
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px;margin:22px 0}
+.dev-card{background:var(--white);border:1.5px solid var(--g1);border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(4,44,83,.06);transition:transform .25s,box-shadow .25s,border-color .25s}
+.dev-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(4,44,83,.12);border-color:var(--b2)}
+.dev-photo{aspect-ratio:1/1;border-radius:11px;background:var(--b0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;overflow:hidden}
+.dev-photo img{width:100%;height:100%;object-fit:cover;border-radius:11px}
+.dev-photo-empty i{font-size:1.6rem;color:var(--b4);opacity:.75}
+.dev-photo-empty span{font-size:.72rem;color:var(--g4);letter-spacing:.02em}
+.dev-info{text-align:center;padding:14px 6px 8px}
+.dev-name{font-size:.98rem;font-weight:700;color:var(--b9)}
+.dev-role{font-size:.8rem;color:var(--g4);margin-top:4px}
+
 .footer{background:var(--g9);padding:40px 5% 20px;margin-top:48px}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:36px;margin-bottom:28px}
 .f-brand p{font-size:.84rem;color:rgba(255,255,255,.45);line-height:1.65;max-width:280px;margin-top:10px}
@@ -145,10 +157,31 @@ a{text-decoration:none;color:inherit}
   <li><strong>Local First</strong> — We focus on Tuy, Batangas first, building a hyper-local service that understands the community.</li>
 </ul>
 
-<h2>Our Team</h2>
-<p>KaAyos is developed as a capstone project by students of Batangas State University ARASOF – Nasugbu Campus.</p>
+<h2>The Capstone Team</h2>
+<p>KaAyos was designed and built by students of <strong>Batangas State University ARASOF &ndash; Nasugbu Campus</strong>, in partnership with PESO Tuy.</p>
+
+<div class="dev-grid">
+  @foreach($developers as $dev)
+    @php $photoPath = $dev['photo'] ? public_path('images/team/' . $dev['photo']) : null; @endphp
+    <div class="dev-card">
+      <div class="dev-photo {{ $dev['photo'] && $photoPath && file_exists($photoPath) ? '' : 'dev-photo-empty' }}">
+        @if($dev['photo'] && $photoPath && file_exists($photoPath))
+          <img src="{{ asset('images/team/' . $dev['photo']) }}" alt="{{ $dev['name'] }}">
+        @else
+          <i class="fa-solid fa-camera" aria-hidden="true"></i>
+          <span>Photo coming soon</span>
+        @endif
+      </div>
+      <div class="dev-info">
+        <div class="dev-name">{{ $dev['name'] }}</div>
+        <div class="dev-role">{{ $dev['role'] }}</div>
+      </div>
+    </div>
+  @endforeach
+</div>
 
 @if($team->count() > 0)
+  <h2>Platform Admins</h2>
   <div class="team-grid">
     @foreach($team as $member)
       <div class="team-card">
