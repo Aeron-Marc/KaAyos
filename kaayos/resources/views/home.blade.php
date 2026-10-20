@@ -1,22 +1,10 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="csrf-token" content="{{ csrf_token() }}">
-<meta name="description" content="KaAyos – Find trusted, PESO-accredited skilled workers (trabahador) in Tuy, Batangas. AI-matched plumbing, electrical, carpentry &amp; cleaning services.">
-<meta property="og:title" content="KaAyos – Trusted Home Services in Tuy, Batangas">
-<meta property="og:description" content="Find verified skilled workers near you. AI-matched, PESO-accredited, and community-rated.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="{{ url()->current() }}">
-<title>KaAyos – Trusted Home Services</title>
-<link rel="icon" href="../images/KaAyos_logo.jpeg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-@vite(['resources/css/landing.css'])
-</head>
-<body>
+@extends('layouts.public')
+
+@section('title', 'KaAyos – Trusted Home Services')
+@section('meta_description', 'KaAyos – Find trusted, PESO-accredited skilled workers (trabahador) in Tuy, Batangas. AI-matched plumbing, electrical, carpentry & cleaning services.')
+@section('og_description', 'Find verified skilled workers near you. AI-matched, PESO-accredited, and community-rated.')
+
+@section('loader')
 
 <!-- PAGE LOADER -->
 <div id="pageLoader" class="page-loader">
@@ -44,43 +32,9 @@
   }
 </script>
 
-<!-- MOBILE OVERLAY -->
-<div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+@endsection
 
-<!-- MOBILE DRAWER -->
-<aside id="mobileDrawer" class="mobile-drawer" role="dialog" aria-label="Navigation menu">
-  <button class="drawer-close" onclick="closeMobileMenu()" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
-  <a href="#services" onclick="closeMobileMenu()"><i class="fa-solid fa-briefcase"></i> {{ __('landing.services') }}</a>
-  <a href="#how-it-works" onclick="closeMobileMenu()"><i class="fa-solid fa-list-ol"></i> {{ __('landing.how_it_works') }}</a>
-  <a href="#join" onclick="closeMobileMenu()"><i class="fa-solid fa-hammer"></i> {{ __('landing.join_worker') }}</a>
-  <a href="#faq" onclick="closeMobileMenu()"><i class="fa-solid fa-circle-question"></i> {{ __('landing.faq') }}</a>
-  <div class="drawer-cta">
-    <a href="/login" class="btn-ghost"><i class="fa-regular fa-user"></i> {{ __('landing.log_in') }}</a>
-    <a href="/register" class="btn-amber"><i class="fa-solid fa-arrow-right-to-bracket"></i> {{ __('landing.sign_up') }}</a>
-  </div>
-</aside>
-
-<!-- NAV -->
-<nav class="nav">
-  <div class="nav-logo">
-    <div class="logo-box"><img src="../images/logo-gs-removebg-preview.png" alt="KaAyos Logo" width="36" height="36"></div>
-    <span>KaAyos</span>
-  </div>
-  <ul class="nav-links">
-    <li><a href="#services">{{ __('landing.services') }}</a></li>
-    <li><a href="#how-it-works">{{ __('landing.how_it_works') }}</a></li>
-    <li><a href="#join">{{ __('landing.join_worker') }}</a></li>
-    <li><a href="#faq">{{ __('landing.faq') }}</a></li>
-  </ul>
-  <div class="nav-cta">
-    <x-language-switcher />
-    <a href="/login" class="btn btn-ghost"><i class="fa-regular fa-user" aria-hidden="true"></i> {{ __('landing.log_in') }}</a>
-    <a href="/register" class="btn btn-amber"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> {{ __('landing.sign_up') }}</a>
-    <button class="nav-toggle" id="navToggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</nav>
+@section('content')
 
 <!-- HERO -->
 <section class="hero" id="heroSection">
@@ -354,52 +308,6 @@
   </div>
 </div>
 
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="footer-grid">
-    <div class="f-brand">
-      <div class="brand">
-        <div class="flogo"><img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos" width="40" height="40" loading="lazy"></div>
-        <span>KaAyos</span>
-      </div>
-      <p>{{ __('landing.footer_desc') }}</p>
-      <div class="partner-logos">
-      <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy" width="48" height="48">
-      </div>
-    </div>
-    <div>
-      <div class="f-title">{{ __('landing.footer_services') }}</div>
-      <ul class="f-links">
-        <li><a href="/?category=plumbing"><i class="fa-solid fa-wrench fa-fw" aria-hidden="true"></i> Plumbing</a></li>
-        <li><a href="/?category=electrical"><i class="fa-solid fa-bolt fa-fw" aria-hidden="true"></i> Electrical</a></li>
-        <li><a href="/?category=carpentry"><i class="fa-solid fa-screwdriver-wrench fa-fw" aria-hidden="true"></i> Carpentry</a></li>
-        <li><a href="/?category=cleaning"><i class="fa-solid fa-broom fa-fw" aria-hidden="true"></i> Cleaning</a></li>
-        <li><a href="/#services"><i class="fa-solid fa-list fa-fw" aria-hidden="true"></i> {{ __('landing.footer_view_all') }}</a></li>
-      </ul>
-    </div>
-    <div>
-      <div class="f-title">{{ __('landing.footer_company') }}</div>
-      <ul class="f-links">
-        <li><a href="/about"><i class="fa-solid fa-circle-info fa-fw" aria-hidden="true"></i> {{ __('landing.footer_about') }}</a></li>
-        <li><a href="#how-it-works"><i class="fa-solid fa-list-ol fa-fw" aria-hidden="true"></i> {{ __('landing.how_it_works') }}</a></li>
-        <li><a href="/register?role=worker"><i class="fa-solid fa-hammer fa-fw" aria-hidden="true"></i> {{ __('landing.join_worker') }}</a></li>
-        <li><a href="#faq"><i class="fa-solid fa-circle-question fa-fw" aria-hidden="true"></i> {{ __('landing.faq') }}</a></li>
-        <li><a href="/contact"><i class="fa-solid fa-envelope fa-fw" aria-hidden="true"></i> {{ __('landing.footer_contact') }}</a></li>
-        <li><a href="/privacy"><i class="fa-solid fa-shield fa-fw" aria-hidden="true"></i> {{ __('landing.footer_privacy') }}</a></li>
-        <li><a href="/terms"><i class="fa-solid fa-file-lines fa-fw" aria-hidden="true"></i> {{ __('landing.footer_terms') }}</a></li>
-        <li><a href="/safety"><i class="fa-solid fa-shield-halved fa-fw" aria-hidden="true"></i> {{ __('landing.footer_safety') }}</a></li>
-      </ul>
-    </div>
-  </div>
-  <button class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
-  <div class="f-bottom">
-    <p>&copy; {{ date('Y') }} KaAyos &mdash; Capstone project by Salanguit, Formentos &amp; Briones &middot; Batangas State University ARASOF &ndash; Nasugbu Campus.</p>
-    <div class="socials">
-      <a href="https://facebook.com/kaayos" class="soc" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-      <a href="mailto:hello@kaayos.tech" class="soc" title="Email" aria-label="Email"><i class="fa-solid fa-envelope"></i></a>
-    </div>
-  </div>
-</footer>
 
 <!-- AI ASSISTANT FLOATING -->
 <div id="aiFab" class="ai-fab"><i class="fa-solid fa-robot"></i></div>
@@ -427,37 +335,16 @@
   </div>
 </div>
 
+@endsection
+
+@push('scripts')
 <script>
-function toggleMobileMenu() {
-  var open = document.getElementById('mobileDrawer').classList.toggle('open');
-  document.getElementById('mobileOverlay').classList.toggle('open');
-  document.getElementById('navToggle').classList.toggle('open');
-  document.body.style.overflow = open ? 'hidden' : '';
-}
-
-function closeMobileMenu() {
-  document.getElementById('mobileDrawer').classList.remove('open');
-  document.getElementById('mobileOverlay').classList.remove('open');
-  document.getElementById('navToggle').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
 function toggleFaq(el){
   var item = el.closest('.faq-item');
   var open = item.classList.contains('open');
   document.querySelectorAll('.faq-item.open').forEach(function(i){ i.classList.remove('open'); });
   if(!open) item.classList.add('open');
 }
-
-/* NAV SCROLL */
-(function(){
-  var nav = document.querySelector('.nav');
-  if(nav){
-    window.addEventListener('scroll',function(){
-      if(window.scrollY>40){nav.classList.add('scrolled');}else{nav.classList.remove('scrolled');}
-    });
-  }
-})();
 
 /* SCROLL ANIMATIONS */
 (function(){
@@ -914,5 +801,4 @@ function refreshMapFromSection() {
   }, 3000);
 })();
 </script>
-</body>
-</html>
+@endpush
