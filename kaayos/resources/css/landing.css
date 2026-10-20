@@ -887,7 +887,7 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
   .hero{padding:56px 5% 48px}
   .peso-stamp{display:none}
   .worker-grid{grid-template-columns:1fr}
-  .nav-cta .btn-ghost{display:none}
+  .nav-cta .btn-ghost,.nav-cta .btn-amber{display:none}
   .workers-map-container{height:320px}
   .view-toggle button{padding:7px 12px;font-size:.8rem}
 }
