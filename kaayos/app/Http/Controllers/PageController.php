@@ -17,8 +17,8 @@ class PageController extends Controller
         ];
 
         /*
-         * Capstone Development Team — placeholders.
-         * To add a member: copy an RSS entry below. To add a photo, drop the
+         * Capstone Development Team.
+         * To add a member: copy an array entry below. To add a photo, drop the
          * file in `public/images/team/` (e.g. aeron.jpg) and set 'photo'
          * to that file name (leave null to show the placeholder box).
          * Recommended size: 600x600 (square), JPG or PNG.
@@ -26,20 +26,20 @@ class PageController extends Controller
         $developers = [
             [
                 'name'     => 'Aeron Marc M. Salanguit',
-                'role'     => 'Team Lead / Full-Stack Developer',
-                'photo'    => null,
+                'role'     => 'Software Engineer',
+                'photo'    => 'Aeronmarcsalanguit.png',
                 'initials' => 'AS',
             ],
             [
                 'name'     => 'Jan Emmanuel Formentos',
-                'role'     => 'ML / AI Developer',
-                'photo'    => null,
+                'role'     => 'System Analyst',
+                'photo'    => 'Janemmanuelformentos.png',
                 'initials' => 'JF',
             ],
             [
                 'name'     => 'John Dave Briones',
-                'role'     => 'Frontend / UX Designer',
-                'photo'    => null,
+                'role'     => 'QA Tester',
+                'photo'    => 'Johndavebriones.png',
                 'initials' => 'JB',
             ],
             // Copy the block below to add a 4th member:
