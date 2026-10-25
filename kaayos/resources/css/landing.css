@@ -144,9 +144,8 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
 .btn-amber:hover{background:var(--amber-hover)}
 .btn-primary{
   background:var(--amber);color:#fff;
-  box-shadow:0 4px 16px rgba(245,166,35,.35);
 }
-.btn-primary:hover{background:var(--amber-hover);transform:translateY(-2px);box-shadow:0 6px 24px rgba(245,166,35,.45)}
+.btn-primary:hover{background:var(--amber-hover);transform:translateY(-2px)}
 .btn-lg{font-size:1rem;padding:13px 28px;border-radius:9px}
 .btn-outline{
   background:transparent;color:#fff;
@@ -695,11 +694,9 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
 /* Ã¢â€â‚¬Ã¢â€â‚¬ JOIN Ã¢â€â‚¬Ã¢â€â‚¬ */
 .join{
   background:linear-gradient(135deg,var(--b8) 0%,var(--b9) 100%);
-  padding:0;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:0;align-items:stretch;
+  padding:72px 5%;
   position:relative;overflow:hidden;
+  text-align:center;
 }
 .join::before{
   content:'';
@@ -707,24 +704,13 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
   background-image:radial-gradient(circle at 20% 80%,rgba(55,138,221,.08) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(245,166,35,.06) 0%,transparent 40%);
   pointer-events:none;
 }
-.join-text{padding:72px 5% 72px 5%}
+.join-text{max-width:640px;margin:0 auto;padding:72px 5%}
 .join-text>*{position:relative;z-index:1}
 .join-text h2{color:#fff;margin-bottom:16px;line-height:1.12}
-.join-badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px}
+.join-badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;justify-content:center}
 .join-badge img{width:40px;height:40px;border-radius:50%;object-fit:cover}
 .join-badge span{font-size:.75rem;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.05em;text-transform:uppercase}
-.join-text p{color:rgba(255,255,255,.7);font-size:.97rem;line-height:1.75;max-width:440px;margin-bottom:28px}
-.join-carousel{
-  position:relative;width:100%;height:100%;min-height:420px;
-  clip-path:polygon(10% 0,100% 0,100% 100%,0 100%);
-}
-.join-slide{
-  position:absolute;inset:0;
-  opacity:0;transform:translateX(30px);
-  transition:opacity 1.2s ease,transform 1.2s ease;
-}
-.join-slide.active{opacity:1;transform:translateX(0)}
-.join-slide img{width:100%;height:100%;object-fit:cover}
+.join-text p{color:rgba(255,255,255,.7);font-size:.97rem;line-height:1.75;max-width:440px;margin:0 auto 28px}
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ FAQ Ã¢â€â‚¬Ã¢â€â‚¬ */
 .faq-list{max-width:700px;margin:0 auto}
@@ -857,11 +843,6 @@ h3{font-size:clamp(1.1rem,1.6vw,1.3rem);font-weight:600;line-height:1.25;color:v
 @keyframes slideUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ RESPONSIVE Ã¢â€â‚¬Ã¢â€â‚¬ */
-@media(max-width:900px){
-  .join{grid-template-columns:1fr;gap:0}
-  .join-text{padding:72px 5% 36px}
-  .join-carousel{clip-path:none;border-radius:12px;min-height:280px;margin:0 5%}
-}
 @media(max-width:768px){
   .nav{height:60px}
   .nav-links{display:none}
@@ -1221,7 +1202,6 @@ body.loaded .ai-fab{opacity:1;visibility:visible;pointer-events:auto}
   background:var(--amber);color:var(--b9);
   font-weight:700;font-size:1.02rem;
   padding:16px 36px;border-radius:12px;
-  box-shadow:0 10px 30px rgba(245,166,35,.35);
   transition:transform .2s,background .2s;
   text-decoration:none;
 }

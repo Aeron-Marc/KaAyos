@@ -240,14 +240,6 @@
     <p>{{ __('landing.join_desc') }}</p>
     <a href="/register?role=worker" class="btn btn-primary btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{ __('landing.join_btn') }}</a>
   </div>
-  <div class="join-carousel" aria-hidden="true">
-    <div class="join-slide active"><img src="{{ asset('images/stock/work-1.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-2.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-3.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-4.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-5.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-6.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-  </div>
 </section>
 
 <!-- FAQ -->
@@ -789,16 +781,6 @@ function refreshMapFromSection() {
   });
 })();
 
-/* JOIN CAROUSEL */
-(function(){
-  var slides = document.querySelectorAll('.join-slide');
-  if(slides.length < 2) return;
-  var i = 0;
-  setInterval(function(){
-    slides[i].classList.remove('active');
-    i = (i + 1) % slides.length;
-    slides[i].classList.add('active');
-  }, 3000);
-})();
+/* JOIN CAROUSEL REMOVED */
 </script>
 @endpush
