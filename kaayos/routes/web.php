@@ -16,13 +16,13 @@ use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\PasswordOtpController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SuggestionController;
+use App\Http\Controllers\Auth\CompleteProfileController;
 use App\Http\Controllers\Auth\EmailOtpController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\SocialAuthController;
-use App\Http\Controllers\Auth\CompleteProfileController;
 use App\Http\Controllers\Client\AddressController;
 use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
@@ -37,6 +37,7 @@ use App\Http\Controllers\Worker\WorkerController;
 use App\Http\Controllers\Worker\WorkerDashboardController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -203,16 +204,18 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
 Route::post('/email/verification-notification', function (Request $request) {
     try {
         $request->user()->sendEmailVerificationNotification();
+
         return back()->with('message', 'Verification link sent!');
-    } catch (\Throwable $e) {
-        \Illuminate\Support\Facades\Log::error('Verification email resend failed: ' . $e->getMessage());
+    } catch (Throwable $e) {
+        Log::error('Verification email resend failed: '.$e->getMessage());
+
         return back()->with('error', 'Could not send verification email at this time. Please try again in a few moments.');
     }
 })->middleware(['auth', 'throttle:6,1', 'no-cache'])->name('verification.send');
 
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
-Route::post('/contact', function (Illuminate\Http\Request $request) {
+Route::post('/contact', function (Request $request) {
     $request->validate(['name' => 'required', 'email' => 'required|email', 'message' => 'required']);
 
     return redirect()->route('contact')->with('success', 'Thank you for your message! We will get back to you within 24 hours.');
@@ -224,6 +227,7 @@ Route::get('/safety', [PageController::class, 'safety'])->name('safety');
 // Admin Routes
 Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/action-queue/export', [DashboardController::class, 'exportQueue'])->name('dashboard.export');
 
     // Users
     Route::get('/users', [UserController::class, 'index'])->name('users.index');

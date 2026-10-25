@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ExportReportRequest;
 use App\Http\Requests\Admin\PrintReportRequest;
+use App\Http\Requests\Admin\ReportIndexRequest;
 use App\Services\ReportService;
 use App\Services\XlsxWriter;
 use Illuminate\Http\Request;
@@ -23,27 +24,48 @@ class ReportController extends Controller
 
     public function __construct(private ReportService $reports) {}
 
-    public function index(Request $request)
+    public static function presets(): array
+    {
+        return [
+            'today' => __('admin.reports.presets.today'),
+            '7d' => __('admin.reports.presets.7d'),
+            '30d' => __('admin.reports.presets.30d'),
+            'this_month' => __('admin.reports.presets.this_month'),
+            'last_month' => __('admin.reports.presets.last_month'),
+            'this_year' => __('admin.reports.presets.this_year'),
+            'all' => __('admin.reports.presets.all'),
+        ];
+    }
+
+    public function index(ReportIndexRequest $request)
     {
         $type = $request->input('type');
         $type = $type && in_array($type, ReportService::REPORT_KEYS, true) ? $type : null;
 
         [$from, $to, $preset] = $this->resolveRange($request);
+        [$sortCol, $sortDir, $sortLabel] = $this->sortParams($request, $type);
+
+        $hasErrors = $request->session()->has('errors');
 
         $preview = null;
-        if ($type) {
-            $preview = $this->reports->build($type, $from, $to, 100);
+        if ($type && ! $hasErrors) {
+            $preview = $this->reports->build($type, $from, $to, 100, $sortCol, $sortDir);
         }
 
         return view('admin.reports.index', [
             'groups' => $this->reports->groups(),
-            'presets' => self::PRESETS,
+            'presets' => self::presets(),
             'type' => $type,
             'preset' => $preset,
             'from' => $from,
             'to' => $to,
             'preview' => $preview,
+            'hasErrors' => $hasErrors,
             'meta' => $type ? $this->reports->catalog()[$type] : null,
+            'definition' => $type ? __('admin.reports.definitions.'.$type) : null,
+            'sortCol' => $sortCol,
+            'sortDir' => $sortDir,
+            'sortLabel' => $sortLabel,
         ]);
     }
 
@@ -53,17 +75,19 @@ class ReportController extends Controller
         $format = $request->input('format', 'csv');
         $from = $request->input('date_from');
         $to = $request->input('date_to');
+        [$sortCol, $sortDir, $sortLabel] = $this->sortParams($request, $type);
 
-        $data = $this->reports->build($type, $from, $to);
+        $data = $this->reports->build($type, $from, $to, null, $sortCol, $sortDir);
 
         $fileName = str_replace('_', '-', $type)."_report_{$from}_to_{$to}.{$format}";
+        $sortMeta = $sortLabel ? " | Sorted by {$sortLabel} (".ucfirst($sortDir).')' : '';
 
         if ($format === 'xlsx') {
             $label = $this->reports->catalog()[$type]['label'];
 
             $binary = XlsxWriter::binary($label, $data['columns'], $data['rows'], [
                 'title' => $label,
-                'period' => "{$from} to {$to}",
+                'period' => "{$from} to {$to}{$sortMeta}",
             ]);
 
             return response()->streamDownload(function () use ($binary) {
@@ -89,50 +113,46 @@ class ReportController extends Controller
         $type = $request->input('type');
         $from = $request->input('date_from');
         $to = $request->input('date_to');
+        [$sortCol, $sortDir, $sortLabel] = $this->sortParams($request, $type);
 
-        $data = $this->reports->build($type, $from, $to);
-
-        $sortCol = $request->input('sort_col');
-        $sortDir = $request->input('sort_dir', 'asc');
-        if ($sortCol !== null && isset($data['columns'][(int) $sortCol])) {
-            $colName = $data['columns'][(int) $sortCol];
-            $moneyCols = ['Price', 'Total Value', 'Gross Amount', 'Platform Fee', 'Net Amount', 'Gross Revenue', 'Revenue'];
-            $isMoney = in_array($colName, $moneyCols);
-            $isDate = (bool) preg_match('/date|at$/i', $colName);
-            $colKeys = array_keys($data['rows'][0] ?? []);
-            $key = $colKeys[(int) $sortCol] ?? null;
-
-            if ($key) {
-                usort($data['rows'], function ($a, $b) use ($key, $isMoney, $isDate, $sortDir) {
-                    $aVal = $a[$key] ?? null;
-                    $bVal = $b[$key] ?? null;
-                    if ($aVal === null && $bVal === null) return 0;
-                    if ($aVal === null) return 1;
-                    if ($bVal === null) return -1;
-
-                    if ($isMoney) {
-                        $cmp = (float) $aVal <=> (float) $bVal;
-                    } elseif ($isDate) {
-                        $cmp = strtotime($aVal) <=> strtotime($bVal);
-                    } elseif (is_numeric($aVal) && is_numeric($bVal)) {
-                        $cmp = (float) $aVal <=> (float) $bVal;
-                    } else {
-                        $cmp = strcasecmp((string) $aVal, (string) $bVal);
-                    }
-
-                    return $sortDir === 'desc' ? -$cmp : $cmp;
-                });
-            }
-        }
+        $data = $this->reports->build($type, $from, $to, null, $sortCol, $sortDir);
 
         return view('admin.reports.print', [
             'catalog' => $this->reports->catalog()[$type],
             'type' => $type,
             'from' => $from,
             'to' => $to,
+            'preset' => $request->input('preset'),
             'data' => $data,
+            'definition' => __('admin.reports.definitions.'.$type),
+            'sortCol' => $sortCol,
+            'sortDir' => $sortDir,
+            'sortLabel' => $sortLabel,
+            'includeChart' => $this->reports->printChart($type),
+            'autoprint' => $request->boolean('autoprint'),
             'generated_at' => now()->format('F d, Y h:i A'),
         ]);
+    }
+
+    /**
+     * @return array{0: int|null, 1: string, 2: string|null}
+     */
+    private function sortParams(Request $request, ?string $type): array
+    {
+        if ($type === null) {
+            return [null, 'asc', null];
+        }
+
+        $labels = array_keys($this->reports->columnMeta($type));
+        $rawCol = $request->input('sort_col');
+        $sortCol = is_numeric($rawCol) ? (int) $rawCol : null;
+        if ($sortCol === null || ! isset($labels[$sortCol])) {
+            return [null, 'asc', null];
+        }
+
+        $sortDir = $request->input('sort_dir') === 'desc' ? 'desc' : 'asc';
+
+        return [$sortCol, $sortDir, $labels[$sortCol]];
     }
 
     private function resolveRange(Request $request): array

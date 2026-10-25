@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Reports')
+@section('title', __('admin.reports.title'))
 @section('content')
 @php
     $routeWith = function (array $params) { return route('admin.reports.index', array_filter($params)); };
@@ -8,38 +8,50 @@
     $reportLink = fn ($key) => $preset
         ? $routeWith(['type' => $key, 'preset' => $preset])
         : $routeWith(['type' => $key, 'date_from' => $from, 'date_to' => $to]);
-    $exportParams = ['type' => $type, 'date_from' => $from, 'date_to' => $to];
-    $moneyCols = ['Price', 'Total Value', 'Gross Amount', 'Platform Fee', 'Tip', 'Net Amount', 'Gross Revenue', 'Revenue'];
-    $statusCols = ['new', 'accepted', 'en_route', 'in_progress', 'completed', 'cancelled'];
+    $exportParams = array_filter([
+        'type' => $type,
+        'date_from' => $from,
+        'date_to' => $to,
+        'sort_col' => $sortCol,
+        'sort_dir' => $sortCol !== null ? $sortDir : null,
+    ], fn ($value) => $value !== null && $value !== '');
+    $printParams = $exportParams + array_filter([
+        'preset' => $preset,
+    ], fn ($value) => $value !== null && $value !== '');
+    $columnMeta = is_array($preview) ? ($preview['column_meta'] ?? []) : [];
+    $alignClass = fn (string $col) => ($columnMeta[$col]['align'] ?? null) === 'right' ? 'text-right' : '';
 @endphp
 <div class="header">
     <div class="header-left">
-        <h1><i class="fa-solid fa-chart-column"></i> Reports</h1>
-        <p>Build, preview and export platform activity reports</p>
+        <h1><i class="fa-solid fa-chart-column" aria-hidden="true"></i> {{ __('admin.reports.title') }}</h1>
+        <p>{{ __('admin.reports.subtitle') }}</p>
     </div>
-    @if($type && $preview)
+    @if($type && $preview && !$errors->any())
     <div class="header-right">
-        <a href="{{ route('admin.reports.print', $exportParams) }}" id="printReportBtn" class="btn btn-secondary" target="_blank">
-            <i class="fa-solid fa-print"></i> Print
+        <a href="{{ route('admin.reports.print', $printParams) }}" id="printPreviewBtn" class="btn btn-secondary" target="_blank" rel="noopener">
+            <i class="fa-solid fa-eye" aria-hidden="true"></i> {{ __('admin.reports.print_preview') }}
+        </a>
+        <a href="{{ route('admin.reports.print', $printParams + ['autoprint' => 1]) }}" id="printReportBtn" class="btn btn-primary" target="_blank" rel="noopener">
+            <i class="fa-solid fa-print" aria-hidden="true"></i> {{ __('admin.reports.print_now') }}
         </a>
         <div class="rpt-export">
-            <button type="button" class="btn btn-success" id="exportToggle">
-                <i class="fa-solid fa-download"></i> Export
-                <i class="fa-solid fa-chevron-down" style="font-size:.7rem"></i>
+            <button type="button" class="btn btn-success" id="exportToggle" aria-expanded="false" aria-controls="exportMenu">
+                <i class="fa-solid fa-download" aria-hidden="true"></i> {{ __('admin.reports.export') }}
+                <i class="fa-solid fa-chevron-down" style="font-size:.7rem" aria-hidden="true"></i>
             </button>
-            <div class="rpt-export-menu" id="exportMenu">
-                <a href="{{ route('admin.reports.export', $exportParams + ['format' => 'csv']) }}">
-                    <i class="fa-solid fa-file-csv"></i>
+            <div class="rpt-export-menu" id="exportMenu" role="menu" aria-labelledby="exportToggle">
+                <a href="{{ route('admin.reports.export', $exportParams + ['format' => 'csv']) }}" role="menuitem">
+                    <i class="fa-solid fa-file-csv" aria-hidden="true"></i>
                     <span class="rpt-export-label">
                         <strong>CSV</strong>
-                        <small>Excel & Google Sheets compatible</small>
+                        <small>{{ __('admin.reports.csv_hint') }}</small>
                     </span>
                 </a>
-                <a href="{{ route('admin.reports.export', $exportParams + ['format' => 'xlsx']) }}">
-                    <i class="fa-solid fa-file-excel"></i>
+                <a href="{{ route('admin.reports.export', $exportParams + ['format' => 'xlsx']) }}" role="menuitem">
+                    <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
                     <span class="rpt-export-label">
                         <strong>Excel (XLSX)</strong>
-                        <small>Formatted spreadsheet</small>
+                        <small>{{ __('admin.reports.xlsx_hint') }}</small>
                     </span>
                 </a>
             </div>
@@ -48,75 +60,109 @@
     @endif
 </div>
 
+@if($errors->any())
+<div class="alert alert-danger" role="alert">
+    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+    {{ $errors->first() }}
+</div>
+@endif
+
 {{-- ── Date range bar ─────────────────────────────────────── --}}
 <div class="rpt-section-label">
-    <i class="fa-solid fa-calendar-range"></i> Date Range
+    <i class="fa-solid fa-calendar-range" aria-hidden="true"></i> {{ __('admin.reports.date_range') }}
 </div>
 <div class="rpt-bar">
     <form method="GET" action="{{ route('admin.reports.index') }}" id="reportForm" class="rpt-bar-form">
-        <input type="hidden" name="type" value="{{ $type ?? '' }}">
+        <input type="hidden" name="type" value="{{ old('type', $type ?? '') }}">
         <div class="rpt-presets">
             @foreach($presets as $key => $label)
-                <a href="{{ $presetLink($key) }}" class="rpt-chip {{ $preset === $key ? 'active' : '' }}">
+                <a href="{{ $presetLink($key) }}" class="rpt-chip {{ $preset === $key ? 'active' : '' }}"
+                   @if($preset === $key) aria-current="true" @endif>
                     {{ $label }}
                 </a>
             @endforeach
         </div>
         <div class="rpt-range">
             <div class="rpt-range-field">
-                <label for="date_from">From</label>
-                <input type="date" id="date_from" name="date_from" value="{{ $from }}">
+                <label for="date_from">{{ __('admin.reports.from') }}</label>
+                <input type="date" id="date_from" name="date_from" value="{{ old('date_from', $from) }}">
             </div>
             <div class="rpt-range-field">
-                <label for="date_to">To</label>
-                <input type="date" id="date_to" name="date_to" value="{{ $to }}">
+                <label for="date_to">{{ __('admin.reports.to') }}</label>
+                <input type="date" id="date_to" name="date_to" value="{{ old('date_to', $to) }}">
             </div>
-            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Apply</button>
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter" aria-hidden="true"></i> {{ __('admin.reports.apply') }}</button>
+            @if($type)
+            <a href="{{ route('admin.reports.index', ['type' => $type]) }}" class="btn btn-secondary btn-sm">{{ __('admin.reports.reset_dates') }}</a>
+            @endif
         </div>
     </form>
 </div>
 
 {{-- ── Report picker ──────────────────────────────────────── --}}
-<div class="rpt-section-label">
-    <i class="fa-solid fa-layer-group"></i> Report Type
-</div>
-<div class="rpt-section">
-    @foreach($groups as $gKey => $group)
-    <div class="rpt-group">
-        <div class="rpt-group-head">
-            <span class="rpt-group-icon"><i class="fa-solid {{ $group['icon'] }}"></i></span>
-            <h3>{{ $group['label'] }} Reports</h3>
+<details class="rpt-picker" @if(!$type) open @endif>
+    <summary class="rpt-section-label rpt-picker-summary">
+        <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+        <span>{{ __('admin.reports.report_type') }}</span>
+        <span class="rpt-picker-current">{{ $meta['label'] ?? __('admin.reports.choose_report') }}</span>
+        <i class="fa-solid fa-chevron-down rpt-picker-chevron" aria-hidden="true"></i>
+    </summary>
+    <div class="rpt-section">
+        @foreach($groups as $gKey => $group)
+        <div class="rpt-group">
+            <div class="rpt-group-head">
+                <span class="rpt-group-icon"><i class="fa-solid {{ $group['icon'] }}" aria-hidden="true"></i></span>
+                <h3>{{ $group['label'] }}</h3>
+            </div>
+            <div class="rpt-grid">
+                @foreach($group['reports'] as $rKey => $report)
+                <a href="{{ $reportLink($rKey) }}" class="rpt-card {{ $type === $rKey ? 'active' : '' }}"
+                   @if($type === $rKey) aria-current="true" @endif>
+                    <div class="rpt-card-top">
+                        <span class="rpt-card-icon"><i class="fa-solid {{ $report['icon'] }}" aria-hidden="true"></i></span>
+                        @if($type === $rKey)
+                            <span class="rpt-card-selected"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+                        @endif
+                    </div>
+                    <div class="rpt-card-title">{{ $report['label'] }}</div>
+                    <div class="rpt-card-desc">{{ $report['description'] }}</div>
+                </a>
+                @endforeach
+            </div>
         </div>
-        <div class="rpt-grid">
-            @foreach($group['reports'] as $rKey => $report)
-            <a href="{{ $reportLink($rKey) }}" class="rpt-card {{ $type === $rKey ? 'active' : '' }}">
-                <div class="rpt-card-top">
-                    <span class="rpt-card-icon"><i class="fa-solid {{ $report['icon'] }}"></i></span>
-                    @if($type === $rKey)
-                        <span class="rpt-card-selected"><i class="fa-solid fa-circle-check"></i></span>
-                    @endif
-                </div>
-                <div class="rpt-card-title">{{ $report['label'] }}</div>
-                <div class="rpt-card-desc">{{ $report['description'] }}</div>
-            </a>
-            @endforeach
-        </div>
+        @endforeach
     </div>
-    @endforeach
-</div>
+</details>
 
 <div class="rpt-divider"></div>
 
 {{-- ── Results ────────────────────────────────────────────── --}}
-@if($type && $preview)
+@if($errors->any())
+{{-- The validation alert above already explains why results are hidden. --}}
+@elseif($type && $preview)
 <div class="rpt-results">
+    <div class="rpt-results-head">
+        <div class="rpt-results-title">{{ $meta['label'] }}</div>
+        <div class="rpt-results-desc">{{ $meta['description'] }}</div>
+        <div class="rpt-results-meta">
+            <span><i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ $from }} &ndash; {{ $to }}</span>
+            @if($sortLabel)
+            <span><i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i> {{ __('admin.reports.sorted_by') }} {{ $sortLabel }} ({{ __('admin.reports.sort_'.$sortDir) }})</span>
+            @endif
+            <span><i class="fa-solid fa-table-list" aria-hidden="true"></i> {{ number_format($preview['total_rows']) }} {{ __('admin.reports.records') }}</span>
+        </div>
+        @if($definition)
+        <div class="rpt-definition"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> {{ $definition }}</div>
+        @endif
+    </div>
+
     @if(count($preview['summary']))
     <div class="metrics-grid">
         @foreach($preview['summary'] as $kpi)
         <div class="metric-card accent-{{ $kpi['accent'] }}">
-            <div class="metric-label"><i class="fa-solid {{ $kpi['icon'] }}" style="margin-right:6px"></i>{{ $kpi['label'] }}</div>
+            <div class="metric-label"><i class="fa-solid {{ $kpi['icon'] }}" style="margin-right:6px" aria-hidden="true"></i>{{ $kpi['label'] }}</div>
             <div class="metric-value">
-                @if($kpi['money'])₱{{ number_format((float)$kpi['value'], 2) }}
+                @if($kpi['money'])&#8369;{{ number_format((float)$kpi['value'], 2) }}
                 @else{{ $kpi['value'] }}@endif
             </div>
         </div>
@@ -126,76 +172,94 @@
 
     @if(!empty($preview['chart']) && !empty($preview['chart']['labels']))
     <div class="card" style="margin-bottom:20px">
-        <div class="card-title"><i class="fa-solid fa-chart-line"></i> {{ $meta['label'] }} Overview</div>
+        <div class="card-title"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> {{ $meta['label'] }} {{ __('admin.reports.overview') }}</div>
         <div style="height:250px;position:relative">
-            <canvas id="reportChart"></canvas>
+            <canvas id="reportChart" role="img" aria-label="{{ __('admin.reports.chart_aria', ['report' => $meta['label']]) }}"></canvas>
         </div>
+        <details class="rpt-chart-data">
+            <summary>{{ __('admin.dash.chart.data_table') }}</summary>
+            <div class="table-container">
+                <table>
+                    <caption>{{ __('admin.reports.chart_aria', ['report' => $meta['label']]) }}</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ __('admin.reports.chart_label') }}</th>
+                            @foreach($preview['chart']['datasets'] as $dataset)
+                            <th scope="col">{{ $dataset['label'] ?? __('admin.reports.chart_value') }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($preview['chart']['labels'] as $i => $label)
+                        <tr>
+                            <td>{{ $label }}</td>
+                            @foreach($preview['chart']['datasets'] as $dataset)
+                            <td>{{ $dataset['data'][$i] ?? '' }}</td>
+                            @endforeach
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </details>
     </div>
     @endif
 
     <div class="card">
         <div class="rpt-table-head">
-            <div class="card-title" style="margin-bottom:0"><i class="fa-solid fa-table"></i> {{ $meta['label'] }} Details</div>
-            <div class="rpt-sort-controls">
-                <div class="rpt-sort-field">
-                    <label for="sortSelect"><i class="fa-solid fa-arrow-down-wide-short"></i> Sort by</label>
-                    <div class="rpt-sort-select-wrap">
-                        <select id="sortSelect" onchange="applySort()">
-                            @foreach($preview['columns'] as $col)
-                            @php
-                                $sortType = 'text';
-                                if(in_array($col, $moneyCols)) $sortType = 'currency';
-                                elseif(preg_match('/date|at$/i', $col)) $sortType = 'date';
-                                elseif(in_array($col, ['Total Bookings','Completed','Cancelled','Active','Completion Rate','Avg Rating','Bookings','Total Reviews','Average Rating','5-Star Reviews','1-Star Reviews','Total Submissions','Pending','Verified','Rejected','Open','Under Review','Resolved','Categories Tracked'])) $sortType = 'number';
-                                elseif($col === 'Status') $sortType = 'status';
-                            @endphp
-                                <option value="{{ $loop->index }}" data-type="{{ $sortType }}">{{ $col }}</option>
-                            @endforeach
-                        </select>
-                        <i class="fa-solid fa-chevron-down rpt-sort-select-arrow"></i>
-                    </div>
-                </div>
-                <button type="button" class="btn btn-secondary btn-sm" id="sortDirBtn" onclick="toggleSortDir()" title="Toggle sort direction">
-                    <i class="fa-solid fa-arrow-up" id="sortDirIcon"></i>
-                </button>
-            </div>
-            <a href="{{ route('admin.reports.export', $exportParams + ['format' => 'xlsx']) }}" id="exportExcelBtn" class="btn btn-secondary btn-sm">
-                <i class="fa-solid fa-file-excel"></i> Export Excel
-            </a>
+            <div class="card-title" style="margin-bottom:0"><i class="fa-solid fa-table" aria-hidden="true"></i> {{ $meta['label'] }} {{ __('admin.reports.details') }}</div>
         </div>
         @if($preview['total_rows'] > count($preview['rows']))
         <div class="alert alert-info" style="margin-top:16px;margin-bottom:0">
-            <i class="fa-solid fa-circle-info"></i>
-            Showing the first {{ number_format(count($preview['rows'])) }} of {{ number_format($preview['total_rows']) }} records. Use the export button for the full dataset.
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            @if($sortLabel)
+                {{ __('admin.reports.showing_sorted', ['shown' => number_format(count($preview['rows'])), 'total' => number_format($preview['total_rows']), 'sort' => $sortLabel, 'direction' => __('admin.reports.sort_'.$sortDir)]) }}
+            @else
+                {{ __('admin.reports.showing_first', ['shown' => number_format(count($preview['rows'])), 'total' => number_format($preview['total_rows'])]) }}
+            @endif
         </div>
         @endif
         @if(count($preview['rows']))
         <div class="table-container" style="margin-top:16px">
             <table>
+                <caption class="visually-hidden">{{ __('admin.reports.caption', ['report' => $meta['label']]) }}</caption>
                 <thead>
                     <tr>
-                        @foreach($preview['columns'] as $col)<th>{{ $col }}</th>@endforeach
+                        @foreach($preview['columns'] as $col)
+                            @php
+                                $activeSort = $sortCol === $loop->index;
+                                $nextDir = $activeSort && $sortDir === 'asc' ? 'desc' : 'asc';
+                            @endphp
+                            <th scope="col" class="{{ $alignClass($col) }}" aria-sort="{{ $activeSort ? ($sortDir === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                                <a class="rpt-sort-link {{ $activeSort ? 'active' : '' }}" href="{{ request()->fullUrlWithQuery(['sort_col' => $loop->index, 'sort_dir' => $nextDir]) }}">
+                                    <span>{{ $col }}</span>
+                                    <i class="fa-solid {{ $activeSort ? ($sortDir === 'asc' ? 'fa-arrow-up-short-wide' : 'fa-arrow-down-wide-short') : 'fa-sort' }}" aria-hidden="true"></i>
+                                </a>
+                            </th>
+                        @endforeach
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($preview['rows'] as $row)
                     <tr>
                         @foreach($preview['columns'] as $col)
-                            @php $value = $row[$col] ?? null; @endphp
                             @php
-                                $sortVal = '';
-                                if(in_array($col, $moneyCols) && $value !== null) $sortVal = (float)preg_replace('/[^\d.\-]/', '', $value);
-                                elseif(preg_match('/date|at$/i', $col) && $value !== null) $sortVal = strtotime($value);
-                                elseif(is_numeric($value)) $sortVal = (float)$value;
-                                elseif($value !== null) $sortVal = $value;
+                                $value = $row[$col] ?? null;
+                                $cellMeta = $columnMeta[$col] ?? ['type' => 'text'];
                             @endphp
-                            <td class="text-sm" data-sort="{{ $sortVal }}">
-                                @if($col === 'Status' && in_array($value, $statusCols, true))
-                                    <span class="status-badge status-{{ $value }}">{{ str_replace('_', ' ', ucfirst($value)) }}</span>
-                                @elseif(in_array($col, $moneyCols, true) && $value !== null)
-                                    ₱{{ number_format((float)$value, 2) }}
-                                @elseif($value === null || $value === '')
-                                    <span class="text-muted">—</span>
+                            <td class="text-sm {{ $alignClass($col) }}">
+                                @if($value === null || $value === '')
+                                    <span class="text-muted">&mdash;</span>
+                                @elseif(($cellMeta['type'] ?? 'text') === 'status')
+                                    <x-status-badge :status="$value" />
+                                @elseif(($cellMeta['type'] ?? 'text') === 'money')
+                                    <x-money :value="$value" />
+                                @elseif(($cellMeta['type'] ?? 'text') === 'rating')
+                                    {{ (int) $value }} / 5
+                                @elseif(($cellMeta['type'] ?? 'text') === 'number')
+                                    {{ number_format((float) $value) }}
+                                @elseif(($cellMeta['type'] ?? 'text') === 'decimal')
+                                    {{ number_format((float) $value, 1) }}
                                 @else
                                     {{ $value }}
                                 @endif
@@ -204,24 +268,40 @@
                     </tr>
                     @endforeach
                 </tbody>
+                @if(!empty($preview['totals']))
+                <tfoot>
+                    <tr>
+                        @foreach($preview['columns'] as $col)
+                            @php $cellMeta = $columnMeta[$col] ?? ['type' => 'text']; @endphp
+                            @if($loop->first)
+                                <th scope="row">{{ __('admin.reports.total') }}</th>
+                            @elseif(array_key_exists($col, $preview['totals']))
+                                <td class="{{ $alignClass($col) }}">
+                                    @if(($cellMeta['type'] ?? 'text') === 'money')
+                                        <x-money :value="$preview['totals'][$col]" />
+                                    @elseif(($cellMeta['type'] ?? 'text') === 'number')
+                                        {{ number_format((float) $preview['totals'][$col]) }}
+                                    @else
+                                        {{ $preview['totals'][$col] }}
+                                    @endif
+                                </td>
+                            @else
+                                <td></td>
+                            @endif
+                        @endforeach
+                    </tr>
+                </tfoot>
+                @endif
             </table>
         </div>
         @else
-        <div class="empty-state">
-            <div class="empty-state-icon"><i class="fa-solid fa-file-circle-exclamation"></i></div>
-            <div class="empty-state-title">No data found</div>
-            <div class="empty-state-subtitle">No records match the selected period. Try a wider date range.</div>
-        </div>
+        <x-empty-state icon="fa-file-circle-exclamation" :title="__('admin.reports.no_data_title')" :subtitle="__('admin.reports.no_data_subtitle')" />
         @endif
     </div>
 </div>
 @else
 <div class="card">
-    <div class="empty-state">
-        <div class="empty-state-icon"><i class="fa-solid fa-chart-pie"></i></div>
-        <div class="empty-state-title">Build a report</div>
-        <div class="empty-state-subtitle">Pick a report type above, choose a date range, then preview it here. Export to CSV or Excel when you're ready.</div>
-    </div>
+    <x-empty-state icon="fa-chart-pie" :title="__('admin.reports.build_title')" :subtitle="__('admin.reports.build_subtitle')" />
 </div>
 @endif
 @endsection
@@ -270,136 +350,77 @@
     .rpt-export-label strong{font-size:.9rem}
     .rpt-export-label small{font-size:.74rem;color:var(--g4)}
 
+    .rpt-picker{margin:0}
+    .rpt-picker-summary{list-style:none;cursor:pointer;padding:2px 0}
+    .rpt-picker-summary::-webkit-details-marker{display:none}
+    .rpt-picker-summary::marker{content:''}
+    .rpt-picker-current{text-transform:none;letter-spacing:0;color:var(--b6);font-weight:700;margin-left:4px}
+    .rpt-picker-chevron{margin-left:auto;transition:transform .18s}
+    .rpt-picker[open] .rpt-picker-chevron{transform:rotate(180deg)}
+    .rpt-picker[open] .rpt-section{margin-top:12px}
+
+    .rpt-results-head{background:#fff;border-radius:14px;padding:18px 20px;border:1px solid rgba(0,0,0,.06);box-shadow:0 2px 8px rgba(0,0,0,.05);margin-bottom:16px}
+    .rpt-results-title{font-size:1.15rem;font-weight:800;color:var(--b9)}
+    .rpt-results-desc{font-size:.85rem;color:var(--g5);margin-top:3px}
+    .rpt-results-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:.78rem;color:var(--g5)}
+    .rpt-results-meta i{color:var(--b6);margin-right:4px}
+    .rpt-definition{margin-top:10px;padding:9px 12px;border-radius:8px;background:var(--off);font-size:.78rem;line-height:1.5;color:var(--g6)}
+    .rpt-definition i{color:var(--b6);margin-right:5px}
+
     .rpt-table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
     .rpt-results .metrics-grid{margin-bottom:24px}
+    .rpt-results th.text-right,.rpt-results td.text-right{text-align:right}
+    .rpt-sort-link{display:inline-flex;align-items:center;gap:5px;color:inherit;text-decoration:none;white-space:nowrap}
+    .rpt-sort-link i{font-size:.68rem;color:var(--g3)}
+    .rpt-sort-link:hover,.rpt-sort-link.active{color:var(--b6)}
+    .rpt-sort-link.active i{color:var(--b6)}
+    .rpt-results th.text-right .rpt-sort-link{justify-content:flex-end;width:100%}
+    .rpt-results tfoot th,.rpt-results tfoot td{background:var(--off);font-weight:700;border-top:2px solid var(--g1)}
+    .rpt-chart-data{margin-top:12px;font-size:.8rem;color:var(--g7)}
+    .rpt-chart-data summary{cursor:pointer;font-weight:600;color:var(--b6)}
+    .rpt-chart-data .table-container{margin-top:10px}
 
-    .rpt-sort-controls{display:flex;align-items:flex-end;gap:6px}
-    .rpt-sort-field{display:flex;flex-direction:column;gap:4px}
-    .rpt-sort-field label{font-size:.7rem;font-weight:700;color:var(--g4);text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:5px}
-    .rpt-sort-field label i{color:var(--b6);font-size:.72rem}
-    .rpt-sort-select-wrap{position:relative}
-    .rpt-sort-select-wrap select{appearance:none;-webkit-appearance:none;padding:8px 32px 8px 12px;border:1.5px solid var(--g1);border-radius:8px;font-size:.82rem;font-family:'Inter',sans-serif;font-weight:500;color:var(--g9);background:#fff;cursor:pointer;outline:none;transition:border-color .15s;min-width:160px}
-    .rpt-sort-select-wrap select:focus{border-color:var(--b4);box-shadow:0 0 0 3px rgba(26,111,196,.1)}
-    .rpt-sort-select-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--g4);font-size:.65rem}
     @media(max-width:768px){
         .rpt-bar-form{flex-direction:column;align-items:stretch}
         .rpt-range{width:100%}
         .rpt-range-field{flex:1}
         .rpt-section{grid-template-columns:1fr}
         .rpt-grid{grid-template-columns:1fr}
+        .rpt-results-head{padding:16px}
+        .rpt-results-title{font-size:1.05rem}
     }
 </style>
 @endpush
 
 @push('scripts')
 <script src="{{ asset('js/chart.umd.min.js') }}"></script>
-<script>
-var currentSortDir = 'asc';
-var baseExportUrl = '{{ route("admin.reports.export", $exportParams + ["format" => "xlsx"]) }}';
-
-function updateSortUrls() {
-    var col = document.getElementById('sortSelect').value;
-    var sep = baseExportUrl.includes('?') ? '&' : '?';
-    var sortParams = 'sort_col=' + col + '&sort_dir=' + currentSortDir;
-    document.getElementById('exportExcelBtn').href = baseExportUrl + sep + sortParams;
-}
-
-function applySort() {
-    var select = document.getElementById('sortSelect');
-    if (!select) return;
-    var option = select.options[select.selectedIndex];
-    var colIndex = parseInt(option.value);
-    var sortType = option.dataset.type;
-    var table = document.querySelector('.table-container table');
-    if (!table) return;
-    var tbody = table.querySelector('tbody');
-    var rows = Array.from(tbody.querySelectorAll('tr'));
-
-    rows.sort(function(a, b) {
-        var aCell = a.children[colIndex];
-        var bCell = b.children[colIndex];
-        var aVal = aCell ? aCell.dataset.sort || '' : '';
-        var bVal = bCell ? bCell.dataset.sort || '' : '';
-        var cmp = 0;
-
-        if (sortType === 'currency' || sortType === 'number') {
-            cmp = (parseFloat(aVal) || 0) - (parseFloat(bVal) || 0);
-        } else if (sortType === 'date') {
-            cmp = (parseInt(aVal) || 0) - (parseInt(bVal) || 0);
-        } else {
-            cmp = String(aVal).localeCompare(String(bVal), undefined, {sensitivity: 'base'});
-        }
-
-        return currentSortDir === 'asc' ? cmp : -cmp;
-    });
-
-    rows.forEach(function(row) { tbody.appendChild(row); });
-    updateSortUrls();
-}
-
-function toggleSortDir() {
-    currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
-    var icon = document.getElementById('sortDirIcon');
-    icon.className = currentSortDir === 'asc' ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down';
-    applySort();
-}
-</script>
+@include('admin.reports._chart')
 <script>
 function initReportChart() {
-    var el = document.getElementById('reportChart');
-    var data = @js($preview['chart'] ?? null);
-    if (!el || !data || !data.labels || !data.labels.length || typeof Chart === 'undefined') return;
-
-    Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
-    Chart.defaults.color = '#6B7280';
-
-    var isDonut = data.type === 'doughnut';
-    var isLine = data.type === 'line';
-
-    var datasets = data.datasets.map(function (ds) {
-        if (isDonut) {
-            return { data: ds.data, backgroundColor: ds.colors, borderWidth: 2, borderColor: '#fff' };
-        }
-        return {
-            label: ds.label,
-            data: ds.data,
-            borderColor: ds.color,
-            backgroundColor: isLine ? ds.color + '26' : ds.color,
-            borderWidth: 2,
-            fill: isLine,
-            tension: isLine ? .35 : 0,
-            pointRadius: isLine ? 2 : 0
-        };
-    });
-
-    var options = { responsive: true, maintainAspectRatio: false };
-
-    if (isDonut) {
-        options.cutout = '68%';
-        options.plugins = {
-            legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 12, font: { size: 11 } } }
-        };
-    } else {
-        options.scales = {
-            x: { grid: { display: false } },
-            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' } }
-        };
-        options.plugins = { legend: { display: false } };
-    }
-
-    new Chart(el, { type: isDonut ? 'doughnut' : data.type, data: { labels: data.labels, datasets: datasets }, options: options });
+    window.renderKaAyosReportChart('reportChart', @js($preview['chart'] ?? null));
 }
 
 (function () {
     var toggle = document.getElementById('exportToggle');
     var menu = document.getElementById('exportMenu');
     if (toggle && menu) {
+        function setExportOpen(open) {
+            menu.classList.toggle('open', open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (open) menu.querySelector('a')?.focus();
+        }
         toggle.addEventListener('click', function (e) {
             e.stopPropagation();
-            menu.classList.toggle('open');
+            setExportOpen(!menu.classList.contains('open'));
         });
         document.addEventListener('click', function (e) {
-            if (menu && !menu.contains(e.target) && e.target !== toggle) menu.classList.remove('open');
+            if (!menu.contains(e.target) && e.target !== toggle) setExportOpen(false);
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && menu.classList.contains('open')) {
+                setExportOpen(false);
+                toggle.focus();
+            }
         });
     }
 

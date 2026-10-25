@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
+use App\Models\BookingQuote;
 use App\Models\Dispute;
 use App\Models\Earning;
 use App\Models\Review;
@@ -93,6 +94,98 @@ class AdminReportTest extends TestCase
         $this->assertCount(3, $result['rows']);
     }
 
+    public function test_bookings_report_uses_terminal_outcomes_and_completed_value(): void
+    {
+        $this->seedReportData();
+
+        $result = app(ReportService::class)->build('bookings', '2000-01-01', now()->format('Y-m-d'));
+        $summary = collect($result['summary'])->keyBy('label');
+
+        $this->assertSame(3, $summary['Bookings Created']['value']);
+        $this->assertSame(1, $summary['Completed']['value']);
+        $this->assertSame(1, $summary['Cancelled']['value']);
+        $this->assertSame(0, $summary['Declined']['value']);
+        $this->assertSame('50%', $summary['Completion Rate']['value']);
+        $this->assertEquals(1000.0, $summary['Gross Value']['value']);
+    }
+
+    public function test_revenue_report_uses_completed_booking_price_instead_of_quote_amount(): void
+    {
+        $this->seedReportData();
+        $completed = Booking::where('status', Booking::STATUS_COMPLETED)->firstOrFail();
+
+        BookingQuote::create([
+            'worker_id' => $completed->worker_id,
+            'booking_id' => $completed->id,
+            'total_amount' => 9999.00,
+            'tip_amount' => 50.00,
+            'paid_at' => now(),
+        ]);
+
+        $result = app(ReportService::class)->build('revenue', '2000-01-01', now()->format('Y-m-d'));
+        $summary = collect($result['summary'])->keyBy('label');
+
+        $this->assertEquals(1000.0, $summary['Gross Value']['value']);
+        $this->assertEquals(0.0, $summary['Total Tips']['value']);
+        $this->assertEquals(1000.0, $summary['Gross Collected']['value']);
+        $this->assertEquals(1000.0, $result['rows'][0]['Gross Value']);
+        $this->assertSame('money', $result['column_meta']['Gross Value']['type']);
+    }
+
+    public function test_report_sort_is_applied_before_preview_limit_and_csv_export(): void
+    {
+        $this->seedReportData();
+
+        $result = app(ReportService::class)->build('bookings', '2000-01-01', now()->format('Y-m-d'), 2, 5, 'desc');
+        $this->assertCount(2, $result['rows']);
+        $this->assertEquals(1000.0, $result['rows'][0]['Price']);
+        $this->assertEquals(500.0, $result['rows'][1]['Price']);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.reports.export', [
+                'type' => 'bookings',
+                'format' => 'csv',
+                'date_from' => '2000-01-01',
+                'date_to' => now()->format('Y-m-d'),
+                'sort_col' => 5,
+                'sort_dir' => 'desc',
+            ]));
+
+        $response->assertOk();
+        $lines = preg_split('/\r\n|\n/', trim($response->streamedContent()));
+        $firstRow = str_getcsv($lines[1]);
+
+        $this->assertEquals(1000.0, (float) $firstRow[5]);
+    }
+
+    public function test_reports_reject_reversed_dates(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('admin.reports.index', [
+                'type' => 'bookings',
+                'date_from' => '2026-10-10',
+                'date_to' => '2026-10-01',
+            ]))
+            ->assertRedirect(route('admin.reports.index', ['type' => 'bookings']))
+            ->assertSessionHasErrors(['date_to']);
+    }
+
+    public function test_report_rejects_invalid_sort_columns(): void
+    {
+        $this->seedReportData();
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.reports.index', [
+                'type' => 'bookings',
+                'preset' => 'all',
+                'sort_col' => 999,
+                'sort_dir' => 'desc',
+            ]))
+            ->assertOk();
+
+        $this->assertNull($response->viewData('sortCol'));
+    }
+
     public function test_csv_export_returns_valid_csv(): void
     {
         $this->seedReportData();
@@ -181,6 +274,96 @@ class AdminReportTest extends TestCase
                 'date_to' => '1999-01-01',
             ]))
             ->assertSessionHasErrors(['date_to']);
+    }
+
+    public function test_print_actions_are_hidden_when_date_validation_fails(): void
+    {
+        $this->seedReportData();
+
+        $response = $this->actingAs($this->admin)
+            ->followingRedirects()
+            ->get(route('admin.reports.index', [
+                'type' => 'bookings',
+                'date_from' => '2026-10-10',
+                'date_to' => '2026-10-01',
+            ]));
+
+        $response->assertOk()
+            ->assertDontSee(__('admin.reports.print_now'))
+            ->assertDontSee(__('admin.reports.print_preview'));
+    }
+
+    public function test_print_view_includes_chart_only_for_financial_and_performance_reports(): void
+    {
+        $this->seedReportData();
+
+        $revenue = $this->actingAs($this->admin)->get(route('admin.reports.print', [
+            'type' => 'revenue',
+            'date_from' => '2000-01-01',
+            'date_to' => now()->format('Y-m-d'),
+        ]));
+
+        $revenue->assertOk()->assertSee('printReportChart', false);
+
+        $bookings = $this->actingAs($this->admin)->get(route('admin.reports.print', [
+            'type' => 'bookings',
+            'date_from' => '2000-01-01',
+            'date_to' => now()->format('Y-m-d'),
+        ]));
+
+        $bookings->assertOk()->assertDontSee('printReportChart', false);
+    }
+
+    public function test_print_view_autoprints_when_requested(): void
+    {
+        $this->seedReportData();
+
+        $auto = $this->actingAs($this->admin)->get(route('admin.reports.print', [
+            'type' => 'bookings',
+            'date_from' => '2000-01-01',
+            'date_to' => now()->format('Y-m-d'),
+            'autoprint' => 1,
+        ]));
+
+        $auto->assertOk()->assertSee('autoprint = true', false);
+
+        $manual = $this->actingAs($this->admin)->get(route('admin.reports.print', [
+            'type' => 'bookings',
+            'date_from' => '2000-01-01',
+            'date_to' => now()->format('Y-m-d'),
+        ]));
+
+        $manual->assertOk()->assertSee('autoprint = false', false);
+    }
+
+    public function test_print_back_link_preserves_preset(): void
+    {
+        $this->seedReportData();
+
+        $response = $this->actingAs($this->admin)->get(route('admin.reports.print', [
+            'type' => 'bookings',
+            'date_from' => now()->subDays(29)->format('Y-m-d'),
+            'date_to' => now()->format('Y-m-d'),
+            'preset' => '30d',
+        ]));
+
+        $response->assertOk()->assertSee('preset=30d', false);
+    }
+
+    public function test_print_view_applies_sort_before_output(): void
+    {
+        $this->seedReportData();
+
+        $response = $this->actingAs($this->admin)->get(route('admin.reports.print', [
+            'type' => 'bookings',
+            'date_from' => '2000-01-01',
+            'date_to' => now()->format('Y-m-d'),
+            'sort_col' => 5,
+            'sort_dir' => 'desc',
+        ]));
+
+        $response->assertOk()
+            ->assertSeeInOrder(['&#8369;500.00', '&#8369;0.00'], false);
     }
 
     private function seedReportData(): void

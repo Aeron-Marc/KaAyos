@@ -19,6 +19,8 @@ class PrintReportRequest extends FormRequest
             'date_to' => 'required|date|after_or_equal:date_from',
             'sort_col' => 'nullable|integer|min:0',
             'sort_dir' => 'nullable|in:asc,desc',
+            'preset' => 'nullable|in:today,7d,30d,this_month,last_month,this_year,all',
+            'autoprint' => 'nullable|boolean',
         ];
     }
 }

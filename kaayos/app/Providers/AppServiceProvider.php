@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\AdminDashboardMetrics;
 use App\Support\ClientSampleData;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -30,7 +31,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Registered::class, SendEmailVerificationNotification::class);
 
         RateLimiter::for('login', function (Request $request) {
-            return Limit::perMinute(5)->by($request->input('email') . '|' . $request->ip());
+            return Limit::perMinute(5)->by($request->input('email').'|'.$request->ip());
         });
 
         RateLimiter::for('register', function (Request $request) {
@@ -51,6 +52,10 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('layouts.client', function ($view) {
             $view->with('notifications', ClientSampleData::notifications());
+        });
+
+        View::composer('layouts.admin', function ($view) {
+            $view->with('adminNav', app(AdminDashboardMetrics::class)->navCounts());
         });
     }
 }

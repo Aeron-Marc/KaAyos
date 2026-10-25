@@ -35,14 +35,15 @@
 <div class="table-container">
     @if($testimonials->count())
         <table>
+            <caption class="visually-hidden">{{ __('admin.common.table_caption') }}</caption>
             <thead>
                 <tr>
-                    <th>User</th>
-                    <th>Rating</th>
-                    <th>Testimonial</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Actions</th>
+                    <th scope="col">User</th>
+                    <th scope="col">Rating</th>
+                    <th scope="col">Testimonial</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Actions</th>
                 </tr>
             </thead>
             <tbody>

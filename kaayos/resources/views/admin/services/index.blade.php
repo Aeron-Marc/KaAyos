@@ -25,20 +25,21 @@
     <div class="filter-group" style="margin-left: auto;">
         <input type="text" name="search" placeholder="Search services..." value="{{ request('search') }}" style="width: 200px;">
     </div>
-    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-search"></i></button>
+    <button type="submit" class="btn btn-primary btn-sm" aria-label="{{ __('admin.common.apply_filters') }}"><i class="fa-solid fa-search" aria-hidden="true"></i></button>
 </form>
 
 <div class="table-container">
     @if($services->count())
         <table>
+            <caption class="visually-hidden">{{ __('admin.common.table_caption') }}</caption>
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Base Price</th>
-                    <th>Billing</th>
-                    <th>Status</th>
-                    <th style="text-align: center;">Actions</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Base Price</th>
+                    <th scope="col">Billing</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" style="text-align:center;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -61,7 +62,7 @@
                             <a href="{{ route('admin.services.edit', $service) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i> Edit</a>
                             <form method="POST" action="{{ route('admin.services.destroy', $service) }}" style="display:inline" onsubmit="return confirm('Delete this service?')">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
+                                <button type="submit" class="btn btn-danger btn-sm" aria-label="{{ __('admin.common.delete') }}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
                             </form>
                         </div>
                     </td>

@@ -39,9 +39,7 @@ class SearchController extends Controller
             ->with(['workerProfile.portfolios'])
             ->withCount('reviewsReceived')
             ->active()
-            ->whereHas('workerProfile', function ($q) {
-                $q->whereRaw("JSON_CONTAINS(availability->'$[*].active', 'true') = 1");
-            });
+            ->whereHas('workerProfile', fn ($q) => $q->withActiveAvailability());
 
         if ($category) {
             $workersQuery->where('service_category', 'LIKE', $category);

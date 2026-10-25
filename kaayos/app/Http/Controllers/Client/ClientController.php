@@ -691,8 +691,7 @@ class ClientController extends Controller
             return response()->json(['success' => false, 'message' => 'This worker is currently unavailable.'], 422);
         }
 
-        $availability = $worker->workerProfile?->availability;
-        $hasActiveDay = is_array($availability) && collect($availability)->contains('active', true);
+        $hasActiveDay = $worker->workerProfile?->hasActiveAvailability() ?? false;
         if (!$hasActiveDay) {
             return response()->json(['success' => false, 'message' => "This worker hasn't set their availability yet. Booking is currently unavailable."], 422);
         }

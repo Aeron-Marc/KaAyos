@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ApproveRejectVerificationRequest;
 use App\Models\User;
 use App\Models\WorkerDocument;
+use App\Notifications\VerificationApproved;
+use App\Notifications\VerificationRejected;
 use App\Support\WorkerDocuments;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 
 class VerificationController extends Controller
 {
@@ -28,24 +29,24 @@ class VerificationController extends Controller
                 break;
             case 'rejected':
                 $query->whereHas('workerDocuments', fn ($q) => $q->where('status', 'rejected'))
-                      ->whereDoesntHave('workerDocuments', fn ($q) => $q->where('status', 'pending'));
+                    ->whereDoesntHave('workerDocuments', fn ($q) => $q->where('status', 'pending'));
                 break;
             case 'verified':
                 $query->whereHas('workerDocuments')
-                      ->whereDoesntHave('workerDocuments', fn ($q) => $q->whereIn('status', ['pending', 'rejected']));
+                    ->whereDoesntHave('workerDocuments', fn ($q) => $q->whereIn('status', ['pending', 'rejected', 'not_submitted']));
                 break;
         }
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
         $workers = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
-        $pendingCount = WorkerDocument::pending()->count();
+        $pendingCount = WorkerDocument::pending()->distinct()->count('user_id');
 
         return view('admin.verification.index', compact('workers', 'pendingCount'));
     }
@@ -53,29 +54,29 @@ class VerificationController extends Controller
     public function show(WorkerDocument $verification)
     {
         $verification->load('user.workerProfile', 'reviewedBy');
-        $types    = collect(WorkerDocuments::types());
+        $types = collect(WorkerDocuments::types());
         $userDocs = WorkerDocument::where('user_id', $verification->user_id)
             ->latest()
             ->get()
             ->keyBy('document_type');
 
         $slots = $types->map(fn ($type) => [
-            'name'        => $type['name'],
+            'name' => $type['name'],
             'description' => $type['description'],
-            'icon'        => $type['icon'],
-            'doc'         => $userDocs->get($type['name']),
+            'icon' => $type['icon'],
+            'doc' => $userDocs->get($type['name']),
         ]);
 
         return view('admin.verification.show', [
             'verification' => $verification,
-            'slots'        => $slots,
+            'slots' => $slots,
         ]);
     }
 
     public function approve(ApproveRejectVerificationRequest $request, WorkerDocument $verification)
     {
         $verification->update([
-            'status'      => 'verified',
+            'status' => 'verified',
             'admin_notes' => $request->input('notes'),
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
@@ -86,11 +87,11 @@ class VerificationController extends Controller
         $this->checkWorkerVerification($user);
 
         try {
-            $user->notify(new \App\Notifications\VerificationApproved($user));
+            $user->notify(new VerificationApproved($user));
         } catch (\Exception $e) {
             Log::warning('Failed to send verification approval notification', [
                 'user_id' => $user->id,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
 
@@ -101,10 +102,10 @@ class VerificationController extends Controller
     public function reject(ApproveRejectVerificationRequest $request, WorkerDocument $verification)
     {
         $reason = (string) $request->input('rejection_reason');
-        $notes  = (string) $request->input('notes');
+        $notes = (string) $request->input('notes');
 
         $verification->update([
-            'status'      => 'rejected',
+            'status' => 'rejected',
             'admin_notes' => trim($notes ? "{$reason}\n\nPrivate notes: {$notes}" : $reason),
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
@@ -116,11 +117,11 @@ class VerificationController extends Controller
         }
 
         try {
-            $user->notify(new \App\Notifications\VerificationRejected($user, $request->input('rejection_reason')));
+            $user->notify(new VerificationRejected($user, $request->input('rejection_reason')));
         } catch (\Exception $e) {
             Log::warning('Failed to send verification rejection notification', [
                 'user_id' => $user->id,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
 

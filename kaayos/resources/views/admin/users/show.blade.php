@@ -43,8 +43,9 @@
         <div class="card-title"><i class="fa-solid fa-calendar-check"></i> Booking History</div>
         @if($bookings->count())
             <table>
+                <caption class="visually-hidden">{{ __('admin.common.table_caption') }}</caption>
                 <thead>
-                    <tr><th>ID</th><th>With</th><th>Status</th><th>Price</th><th>Date</th></tr>
+                    <tr><th scope="col">ID</th><th scope="col">With</th><th scope="col">Status</th><th scope="col">Price</th><th scope="col">Date</th></tr>
                 </thead>
                 <tbody>
                     @foreach($bookings as $b)

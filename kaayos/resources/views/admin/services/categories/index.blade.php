@@ -15,14 +15,15 @@
 <div class="table-container">
     @if($categories->count())
         <table>
+            <caption class="visually-hidden">{{ __('admin.common.table_caption') }}</caption>
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Slug</th>
-                    <th>Services</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th style="text-align: center;">Actions</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Slug</th>
+                    <th scope="col">Services</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Created</th>
+                    <th scope="col" style="text-align:center;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -49,7 +50,7 @@
                             <a href="{{ route('admin.service-categories.edit', $cat) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i> Edit</a>
                             <form method="POST" action="{{ route('admin.service-categories.destroy', $cat) }}" style="display:inline" onsubmit="return confirm('Delete this category?')">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
+                                <button type="submit" class="btn btn-danger btn-sm" aria-label="{{ __('admin.common.delete') }}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
                             </form>
                         </div>
                     </td>

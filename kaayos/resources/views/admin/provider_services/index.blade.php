@@ -22,19 +22,20 @@
     <div class="filter-group" style="margin-left: auto;">
         <input type="text" name="search" placeholder="Search provider..." value="{{ request('search') }}" style="width: 200px;">
     </div>
-    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-search"></i></button>
+    <button type="submit" class="btn btn-primary btn-sm" aria-label="{{ __('admin.common.apply_filters') }}"><i class="fa-solid fa-search" aria-hidden="true"></i></button>
 </form>
 
 <div class="table-container">
     @if($providerServices->count())
         <table>
+            <caption class="visually-hidden">{{ __('admin.common.table_caption') }}</caption>
             <thead>
                 <tr>
-                    <th>Provider</th>
-                    <th>Service</th>
-                    <th>Category</th>
-                    <th>Custom Price</th>
-                    <th>Available</th>
+                    <th scope="col">Provider</th>
+                    <th scope="col">Service</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Custom Price</th>
+                    <th scope="col">Available</th>
                 </tr>
             </thead>
             <tbody>

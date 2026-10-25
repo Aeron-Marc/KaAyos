@@ -1,99 +1,110 @@
 @extends('layouts.admin')
 
-@section('title', 'Bookings')
+@section('title', __('admin.bookings.title'))
 @section('skeleton')
     <div class="sp-title-row">
         <div class="ad-sk ad-sk-title" style="width:140px;"></div>
     </div>
     <div class="sp-filter-bar">
-        <div class="ad-sk" style="height:38px;width:60px;border-radius:8px;"></div>
         <div class="ad-sk" style="height:38px;width:120px;border-radius:8px;"></div>
         <div class="ad-sk" style="height:38px;width:130px;border-radius:8px;"></div>
         <div class="ad-sk" style="height:38px;width:200px;border-radius:8px;"></div>
         <div class="ad-sk" style="height:38px;width:38px;border-radius:8px;"></div>
     </div>
     <div class="ad-sk-panel">
-        <div class="ad-sk ad-sk-row"></div>
-        <div class="ad-sk ad-sk-row"></div>
-        <div class="ad-sk ad-sk-row"></div>
-        <div class="ad-sk ad-sk-row"></div>
-        <div class="ad-sk ad-sk-row"></div>
+        @for($i = 0; $i < 5; $i++)
+            <div class="ad-sk ad-sk-row"></div>
+        @endfor
     </div>
 @endsection
 @section('content')
 <div class="header">
     <div class="header-left">
-        <h1><i class="fa-solid fa-calendar-check"></i> Bookings</h1>
-        <p>View all platform bookings</p>
+        <h1><i class="fa-solid fa-calendar-check" aria-hidden="true"></i> {{ __('admin.bookings.title') }}</h1>
+        <p>{{ __('admin.bookings.subtitle') }}</p>
     </div>
 </div>
 
-<form method="GET" action="{{ route('admin.bookings.index') }}" class="filters-bar">
+@if(request('date_basis') === 'outcome')
+    <div class="info-box">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        <span>{{ __('admin.bookings.outcome_basis_notice') }}</span>
+    </div>
+@endif
+
+<form method="GET" action="{{ route('admin.bookings.index') }}" class="filters-bar" role="search">
+    @if(request('date_basis') === 'outcome')
+        <input type="hidden" name="date_basis" value="outcome">
+    @endif
     <div class="filter-group">
-        <label for="status">Status:</label>
-        <select name="status" id="status" onchange="this.form.submit()">
-            <option value="">All Statuses</option>
-            <option value="new" {{ request('status') === 'new' ? 'selected' : '' }}>New</option>
-            <option value="accepted" {{ request('status') === 'accepted' ? 'selected' : '' }}>Accepted</option>
-            <option value="en_route" {{ request('status') === 'en_route' ? 'selected' : '' }}>En Route</option>
-            <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>In Progress</option>
-            <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
-            <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+        <label for="status">{{ __('admin.bookings.status') }}</label>
+        <select name="status" id="status">
+            <option value="">{{ __('admin.bookings.all_statuses') }}</option>
+            @foreach(['new', 'accepted', 'en_route', 'in_progress', 'completed', 'cancelled', 'declined', 'active', 'stuck', 'unassigned', 'other'] as $option)
+                <option value="{{ $option }}" @selected(request('status') === $option)>{{ $option === 'other' ? __('status.other') : __('status.'.$option) }}</option>
+            @endforeach
         </select>
     </div>
     <div class="filter-group">
-        <label for="date_from">From:</label>
+        <label for="date_from">{{ __('admin.bookings.from') }}</label>
         <input type="date" name="date_from" id="date_from" value="{{ request('date_from') }}">
     </div>
     <div class="filter-group">
-        <label for="date_to">To:</label>
+        <label for="date_to">{{ __('admin.bookings.to') }}</label>
         <input type="date" name="date_to" id="date_to" value="{{ request('date_to') }}">
     </div>
-    <div class="filter-group" style="margin-left: auto;">
-        <input type="text" name="search" placeholder="Search client or provider..." value="{{ request('search') }}" style="width: 220px;">
+    <div class="filter-group" style="margin-left:auto;">
+        <label for="search" class="visually-hidden">{{ __('admin.bookings.search_label') }}</label>
+        <input type="search" name="search" id="search" placeholder="{{ __('admin.bookings.search_placeholder') }}" value="{{ request('search') }}" style="width:220px;">
     </div>
-    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-search"></i></button>
+    <button type="submit" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-search" aria-hidden="true"></i>
+        {{ __('admin.common.apply') }}
+    </button>
+    @if(request()->hasAny(['status', 'date_from', 'date_to', 'search', 'date_basis']))
+        <a href="{{ route('admin.bookings.index') }}" class="btn btn-secondary btn-sm">{{ __('admin.common.reset') }}</a>
+    @endif
 </form>
 
 <div class="table-container">
     @if($bookings->count())
         <table>
+            <caption class="visually-hidden">{{ __('admin.bookings.caption') }}</caption>
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Client</th>
-                    <th>Worker</th>
-                    <th>Service</th>
-                    <th>Schedule</th>
-                    <th>Price</th>
-                    <th>Status</th>
-                    <th style="text-align: center;">Actions</th>
+                    <th scope="col">{{ __('admin.bookings.id') }}</th>
+                    <th scope="col">{{ __('admin.bookings.client') }}</th>
+                    <th scope="col">{{ __('admin.bookings.worker') }}</th>
+                    <th scope="col">{{ __('admin.bookings.service') }}</th>
+                    <th scope="col">{{ __('admin.bookings.schedule') }}</th>
+                    <th scope="col" class="table-col-price">{{ __('admin.bookings.price') }}</th>
+                    <th scope="col">{{ __('admin.bookings.status') }}</th>
+                    <th scope="col" style="text-align:center;">{{ __('admin.bookings.actions') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($bookings as $booking)
-                <tr>
-                    <td class="fw-600">#{{ $booking->id }}</td>
-                    <td class="text-sm">{{ $booking->client->name ?? 'N/A' }}</td>
-                    <td class="text-sm">{{ $booking->worker->name ?? 'N/A' }}</td>
-                    <td class="text-sm">{{ $booking->service_category }}</td>
-                    <td class="text-sm text-muted">{{ $booking->scheduled_at?->format('M d, Y h:i A') ?? 'N/A' }}</td>
-                    <td class="table-col-price">₱{{ number_format((float)$booking->price, 2) }}</td>
-                    <td><span class="status-badge status-{{ $booking->status }}">{{ str_replace('_', ' ', ucfirst($booking->status)) }}</span></td>
-                    <td style="text-align: center;">
-                        <a href="{{ route('admin.bookings.show', $booking) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-eye"></i> View</a>
-                    </td>
-                </tr>
+                    <tr>
+                        <td class="fw-600">#{{ $booking->id }}</td>
+                        <td class="text-sm">{{ $booking->client->name ?? __('admin.common.not_available') }}</td>
+                        <td class="text-sm">{{ $booking->worker->name ?? __('admin.common.not_available') }}</td>
+                        <td class="text-sm">{{ $booking->service_category ?: __('admin.dash.categories.uncategorized') }}</td>
+                        <td class="text-sm text-muted"><x-datetime :value="$booking->scheduled_at" format="M j, Y g:i A" /></td>
+                        <td class="table-col-price"><x-money :value="$booking->price" /></td>
+                        <td><x-status-badge :status="$booking->status" /></td>
+                        <td style="text-align:center;">
+                            <a href="{{ route('admin.bookings.show', $booking) }}" class="btn btn-primary btn-sm">
+                                <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                                {{ __('admin.common.view') }}
+                            </a>
+                        </td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
         <div class="pagination">{{ $bookings->links() }}</div>
     @else
-        <div class="empty-state">
-            <div class="empty-state-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
-            <div class="empty-state-title">No bookings found</div>
-            <div class="empty-state-subtitle">Try adjusting your search or filter criteria.</div>
-        </div>
+        <x-empty-state icon="fa-calendar-xmark" :title="__('admin.bookings.empty')" :subtitle="__('admin.bookings.empty_sub')" />
     @endif
 </div>
 @endsection

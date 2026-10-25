@@ -16,12 +16,13 @@
     <div class="table-container">
         @if($extras->count())
             <table>
+                <caption class="visually-hidden">{{ __('admin.common.table_caption') }}</caption>
                 <thead>
                     <tr>
-                        <th>Extra Name</th>
-                        <th>Suggested Cost</th>
-                        <th>Status</th>
-                        <th style="text-align: center;">Actions</th>
+                        <th scope="col">Extra Name</th>
+                        <th scope="col">Suggested Cost</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" style="text-align:center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,7 +41,7 @@
                             <div class="actions-cell" style="justify-content: center;">
                                 <form method="POST" action="{{ route('admin.services.extras.destroy', [$service, $extra]) }}" style="display:inline" onsubmit="return confirm('Delete this extra add-on?')">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
+                                    <button type="submit" class="btn btn-danger btn-sm" aria-label="{{ __('admin.common.delete') }}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
                                 </form>
                             </div>
                         </td>

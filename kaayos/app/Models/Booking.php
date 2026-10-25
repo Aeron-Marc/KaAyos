@@ -121,6 +121,24 @@ class Booking extends Model
         self::STATUS_DECLINED,
     ];
 
+    const WORK_STATUSES = [
+        self::STATUS_ACCEPTED,
+        self::STATUS_EN_ROUTE,
+        self::STATUS_IN_PROGRESS,
+    ];
+
+    const TERMINAL_STATUSES = [
+        self::STATUS_COMPLETED,
+        self::STATUS_CANCELLED,
+        self::STATUS_DECLINED,
+    ];
+
+    /**
+     * Timestamp of the last real status change. Note-only history rows use
+     * old_status = new_status, so they must not reset the stuck clock.
+     */
+    const LAST_STATUS_TRANSITION_SQL = 'COALESCE((SELECT MAX(h.created_at) FROM booking_histories h WHERE h.booking_id = bookings.id AND (h.old_status IS NULL OR h.old_status <> h.new_status)), bookings.created_at)';
+
     const STATUS_FLOW = [
         self::STATUS_NEW => self::STATUS_ACCEPTED,
         self::STATUS_ACCEPTED => self::STATUS_EN_ROUTE,
@@ -169,12 +187,12 @@ class Booking extends Model
 
     public function getHasCoordinatesAttribute(): bool
     {
-        return !is_null($this->latitude) && !is_null($this->longitude);
+        return ! is_null($this->latitude) && ! is_null($this->longitude);
     }
 
     public function getHasLiveLocationAttribute(): bool
     {
-        return !is_null($this->worker_live_latitude) && !is_null($this->worker_live_longitude);
+        return ! is_null($this->worker_live_latitude) && ! is_null($this->worker_live_longitude);
     }
 
     public function getIsActivelyTrackedAttribute(): bool
@@ -187,9 +205,10 @@ class Booking extends Model
 
     public function getGoogleMapsNavUrlAttribute(): ?string
     {
-        if (!$this->has_coordinates) {
+        if (! $this->has_coordinates) {
             return null;
         }
+
         return "https://www.google.com/maps/dir/?api=1&destination={$this->latitude},{$this->longitude}";
     }
 
@@ -287,6 +306,23 @@ class Booking extends Model
         return $query->where('status', self::STATUS_DECLINED);
     }
 
+    public function scopeWorkInProgress($query)
+    {
+        return $query->whereIn('status', self::WORK_STATUSES);
+    }
+
+    public function scopeStuck($query, int $hours = 24)
+    {
+        return $query->workInProgress()
+            ->whereRaw(self::LAST_STATUS_TRANSITION_SQL.' < ?', [now()->subHours($hours)]);
+    }
+
+    public function scopeUnassigned($query, int $hours = 12)
+    {
+        return $query->new()
+            ->where('created_at', '<', now()->subHours($hours));
+    }
+
     public function scopeForClient($query, $clientId)
     {
         return $query->where('client_id', $clientId);
@@ -338,11 +374,7 @@ class Booking extends Model
 
     public function isActive(): bool
     {
-        return in_array($this->status, [
-            self::STATUS_ACCEPTED,
-            self::STATUS_EN_ROUTE,
-            self::STATUS_IN_PROGRESS,
-        ]);
+        return in_array($this->status, self::WORK_STATUSES);
     }
 
     public function canTransitionTo(string $nextStatus): bool

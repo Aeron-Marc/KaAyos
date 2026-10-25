@@ -18,6 +18,8 @@ class ExportReportRequest extends FormRequest
             'format' => 'required|in:csv,xlsx',
             'date_from' => 'required|date',
             'date_to' => 'required|date|after_or_equal:date_from',
+            'sort_col' => 'nullable|integer|min:0',
+            'sort_dir' => 'nullable|in:asc,desc',
         ];
     }
 }

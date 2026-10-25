@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,8 +19,13 @@
         }
         html,body{height:100%;font-family:'Inter',sans-serif}
         body{background:var(--off);margin:0;padding:0}
+        a,button,input,select,textarea{outline-offset:2px}
+        :focus-visible{outline:3px solid var(--b4);outline-offset:2px}
+        .skip-link{position:fixed;left:16px;top:-80px;z-index:300;background:#fff;color:var(--b8);padding:12px 18px;border-radius:8px;font-weight:700;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:top .18s}
+        .skip-link:focus{top:16px}
+        .visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
         .admin-container{display:flex;min-height:100vh}
-        .sidebar{width:280px;background:var(--b9);padding:32px 24px;position:fixed;height:100vh;overflow-y:auto;box-shadow:2px 0 8px rgba(0,0,0,.15);z-index:100}
+        .sidebar{width:280px;background:var(--b9);padding:32px 24px;position:fixed;height:100vh;overflow-y:auto;box-shadow:2px 0 8px rgba(0,0,0,.15);z-index:100;display:flex;flex-direction:column}
         .main-content{margin-left:280px;flex:1;padding:32px;background:var(--off);min-height:100vh}
         .sidebar-brand{display:flex;align-items:center;gap:10px;margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,.1)}
         .sidebar-brand-icon{width:40px;height:40px;background:var(--b6);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
@@ -30,9 +35,13 @@
         .sidebar-menu li a:hover{background:rgba(255,255,255,.08);color:#fff;border-left-color:var(--b4)}
         .sidebar-menu li a.active{background:var(--b6);color:#fff;border-left-color:var(--b4)}
         .sidebar-menu li a i{font-size:1.1rem;width:20px;text-align:center}
+        .sidebar-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;font-size:.68rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+        .sidebar-menu li a.active .sidebar-badge{background:rgba(255,255,255,.25)}
         .sidebar-footer{margin-top:auto;padding-top:24px;border-top:1px solid rgba(255,255,255,.1)}
-        .sidebar-footer a{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:8px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.95rem;font-weight:500;transition:all .18s}
-        .sidebar-footer a:hover{background:rgba(255,255,255,.08);color:#fff}
+        .sidebar-footer a,.sidebar-logout{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:8px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.95rem;font-weight:500;transition:all .18s}
+        .sidebar-footer a:hover,.sidebar-logout:hover{background:rgba(255,255,255,.08);color:#fff}
+        .sidebar-logout{width:100%;border:none;background:none;font-family:'Inter',sans-serif;cursor:pointer}
+        .sidebar-spacer{flex:1}
         .header{margin-bottom:28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
         .header-left h1{font-size:1.8rem;font-weight:700;color:var(--b9);margin:0 0 4px 0;display:flex;align-items:center;gap:12px}
         .header-left p{font-size:.95rem;color:var(--g4);margin:0}
@@ -54,6 +63,13 @@
         .status-suspended{background:rgba(239,68,68,.1);color:var(--d8)}
         .status-active{background:rgba(16,185,129,.1);color:var(--s8)}
         .status-not_submitted{background:rgba(107,114,128,.1);color:#6B7280}
+        .status-client{background:rgba(26,111,196,.1);color:var(--b7)}
+        .status-worker{background:rgba(16,185,129,.1);color:var(--s8)}
+        .status-admin{background:rgba(239,68,68,.1);color:var(--d8)}
+        .status-new{background:rgba(75,85,99,.1);color:#4B5563}
+        .status-accepted{background:rgba(29,78,216,.1);color:#1D4ED8}
+        .status-en_route{background:rgba(13,148,136,.1);color:#0D9488}
+        .status-declined{background:rgba(124,58,237,.1);color:#7C3AED}
         .filters-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#fff;padding:16px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);margin-bottom:24px}
         .filter-group{display:flex;align-items:center;gap:8px}
         .filter-group label{font-size:.85rem;font-weight:600;color:var(--g7);white-space:nowrap}
@@ -86,6 +102,9 @@
         .empty-state-icon{font-size:3rem;color:var(--g4);margin-bottom:16px}
         .empty-state-title{font-size:1.2rem;font-weight:600;color:var(--g9);margin-bottom:8px}
         .empty-state-subtitle{font-size:.95rem;color:var(--g4);margin-bottom:24px}
+        dialog.admin-dialog{border:0;border-radius:16px;padding:0;width:min(480px,calc(100vw - 32px));box-shadow:0 24px 60px rgba(0,0,0,.24);background:#fff;color:var(--g9)}
+        dialog.admin-dialog::backdrop{background:rgba(9,30,66,.55)}
+        dialog.admin-dialog form{padding:28px}
         .pagination{display:flex;justify-content:center;align-items:center;gap:8px;padding:24px;flex-wrap:wrap}
         .pagination a,.pagination span{display:flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 8px;border-radius:6px;font-size:.9rem;font-weight:600;text-decoration:none;color:var(--b6);border:1px solid var(--g1);transition:all .18s}
         .pagination a:hover{background:var(--b0);border-color:var(--b4)}
@@ -230,6 +249,10 @@
             .form-row{grid-template-columns:1fr}
             th,td{padding:12px}
         }
+        @media (prefers-reduced-motion: reduce){
+            *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+            .ad-sk::after{animation:none}
+        }
         @media print{
             .sidebar,.admin-topbar,.sidebar-overlay,.skeleton-page,.filters-bar,.rpt-bar,.rpt-section,.header-right,.btn,.pagination,.actions-cell,.rpt-export-row{display:none!important}
             body{background:#fff}
@@ -246,109 +269,120 @@
     </style>
     @stack('styles')
 </head>
-<body>
+<body class="@yield('body_class')">
+<a class="skip-link" href="#main-content">{{ __('admin.shell.skip_to_content') }}</a>
 <div class="admin-topbar">
-    <button class="admin-hamburger" id="adminHamburger" aria-label="Toggle menu">
+    <button class="admin-hamburger" id="adminHamburger" type="button"
+            aria-label="{{ __('admin.shell.toggle_menu') }}" aria-expanded="false" aria-controls="adminSidebar">
         <span></span><span></span><span></span>
     </button>
     <div class="admin-topbar-brand">
         <img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos">
-        <span>Admin Panel</span>
+        <span>{{ __('admin.shell.admin_panel') }}</span>
     </div>
 </div>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
 <div class="admin-container">
     <aside class="sidebar" id="adminSidebar">
         <div class="sidebar-brand">
             <img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos" style="height:36px;width:auto;">
-            <span class="sidebar-brand-name">Admin Panel</span>
+            <span class="sidebar-brand-name">{{ __('admin.shell.admin_panel') }}</span>
         </div>
-        <ul class="sidebar-menu">
-            <li>
-                <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                    <i class="fa-solid fa-gauge-high"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-users"></i>
-                    <span>Users</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.workers.index') }}" class="{{ request()->routeIs('admin.workers.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-briefcase"></i>
-                    <span>Workers</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.verification.index') }}" class="{{ request()->routeIs('admin.verification.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-clipboard-check"></i>
-                    <span>Verifications</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.service-categories.index') }}" class="{{ request()->routeIs('admin.service-categories.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-layer-group"></i>
-                    <span>Service Categories</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.services.index') }}" class="{{ request()->routeIs('admin.services.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-wrench"></i>
-                    <span>Services</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.provider-services.index') }}" class="{{ request()->routeIs('admin.provider-services.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-handshake"></i>
-                    <span>Provider Services</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.bookings.index') }}" class="{{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-calendar-check"></i>
-                    <span>Bookings</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.disputes.index') }}" class="{{ request()->routeIs('admin.disputes.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-scale-balanced"></i>
-                    <span>Disputes</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.testimonials.index') }}" class="{{ request()->routeIs('admin.testimonials.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-quote-left"></i>
-                    <span>Testimonials</span>
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('admin.reports.index') }}" class="{{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-chart-simple"></i>
-                    <span>Reports</span>
-                </a>
-            </li>
-        </ul>
-        <div class="sidebar-spacer" style="flex:1"></div>
+        <nav aria-label="{{ __('admin.shell.main_navigation') }}">
+            <ul class="sidebar-menu">
+                @php
+                    $adminNav = $adminNav ?? ['disputes' => 0, 'verifications' => 0];
+                @endphp
+                <li>
+                    <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" @if(request()->routeIs('admin.dashboard')) aria-current="page" @endif>
+                        <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.dashboard') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}" @if(request()->routeIs('admin.users.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-users" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.users') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.workers.index') }}" class="{{ request()->routeIs('admin.workers.*') ? 'active' : '' }}" @if(request()->routeIs('admin.workers.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.workers') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.verification.index') }}" class="{{ request()->routeIs('admin.verification.*') ? 'active' : '' }}" @if(request()->routeIs('admin.verification.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.verifications') }}</span>
+                        @if(($adminNav['verifications'] ?? 0) > 0)
+                            <span class="sidebar-badge" aria-label="{{ __('admin.dash.nav.verifications_badge', ['count' => $adminNav['verifications']]) }}">{{ $adminNav['verifications'] }}</span>
+                        @endif
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.service-categories.index') }}" class="{{ request()->routeIs('admin.service-categories.*') ? 'active' : '' }}" @if(request()->routeIs('admin.service-categories.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.service_categories') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.services.index') }}" class="{{ request()->routeIs('admin.services.*') ? 'active' : '' }}" @if(request()->routeIs('admin.services.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-wrench" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.services') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.provider-services.index') }}" class="{{ request()->routeIs('admin.provider-services.*') ? 'active' : '' }}" @if(request()->routeIs('admin.provider-services.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-handshake" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.provider_services') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.bookings.index') }}" class="{{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}" @if(request()->routeIs('admin.bookings.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.bookings') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.disputes.index') }}" class="{{ request()->routeIs('admin.disputes.*') ? 'active' : '' }}" @if(request()->routeIs('admin.disputes.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.disputes') }}</span>
+                        @if(($adminNav['disputes'] ?? 0) > 0)
+                            <span class="sidebar-badge" aria-label="{{ __('admin.dash.nav.disputes_badge', ['count' => $adminNav['disputes']]) }}">{{ $adminNav['disputes'] }}</span>
+                        @endif
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.testimonials.index') }}" class="{{ request()->routeIs('admin.testimonials.*') ? 'active' : '' }}" @if(request()->routeIs('admin.testimonials.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-quote-left" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.testimonials') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.reports.index') }}" class="{{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" @if(request()->routeIs('admin.reports.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.reports') }}</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-spacer"></div>
         <div class="sidebar-footer">
             <div style="padding: 8px 16px; margin-bottom: 8px;">
                 <x-language-switcher />
             </div>
             <form method="POST" action="{{ route('logout') }}" style="display:block">
                 @csrf
-                <button type="submit" style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:8px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.95rem;font-weight:500;border:none;background:none;font-family:'Inter',sans-serif;width:100%;cursor:pointer;transition:all .18s;"
-                        onmouseover="this.style.background='rgba(255,255,255,.08)';this.style.color='#fff'"
-                        onmouseout="this.style.background='transparent';this.style.color='rgba(255,255,255,.7)'">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>Logout</span>
+                <button type="submit" class="sidebar-logout">
+                    <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                    <span>{{ __('admin.shell.logout') }}</span>
                 </button>
             </form>
         </div>
     </aside>
-    <main class="main-content">
-        <div class="skeleton-page" id="skeletonPage">
+    <main class="main-content" id="main-content" tabindex="-1">
+        <div class="skeleton-page" id="skeletonPage" aria-hidden="true">
             @hasSection('skeleton')
                 @yield('skeleton')
             @else
@@ -375,16 +409,16 @@
                 </div>
             @endif
         </div>
-        <div>
+        <div class="page-content">
             @if(session('success'))
-                <div class="alert alert-success">
-                    <i class="fa-solid fa-circle-check"></i>
+                <div class="alert alert-success" role="status">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
                     {{ session('success') }}
                 </div>
             @endif
             @if(session('error'))
-                <div class="alert alert-danger">
-                    <i class="fa-solid fa-circle-exclamation"></i>
+                <div class="alert alert-danger" role="alert">
+                    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
                     {{ session('error') }}
                 </div>
             @endif
@@ -398,14 +432,48 @@
     var sidebar=document.getElementById('adminSidebar');
     var overlay=document.getElementById('sidebarOverlay');
     if(!hamburger||!sidebar||!overlay)return;
-    function toggleMenu(){
-        hamburger.classList.toggle('active');
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('active');
-        document.body.style.overflow=sidebar.classList.contains('open')?'hidden':'';
+
+    function setMenu(open, restoreFocus){
+        hamburger.classList.toggle('active', open);
+        sidebar.classList.toggle('open', open);
+        overlay.classList.toggle('active', open);
+        hamburger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
+        document.body.style.overflow = open ? 'hidden' : '';
+        if (open) {
+            var first = sidebar.querySelector('a,button');
+            if (first) first.focus();
+        } else if (restoreFocus) {
+            hamburger.focus();
+        }
     }
-    hamburger.addEventListener('click',toggleMenu);
-    overlay.addEventListener('click',toggleMenu);
+
+    hamburger.addEventListener('click', function(){
+        setMenu(!sidebar.classList.contains('open'), false);
+    });
+    overlay.addEventListener('click', function(){
+        setMenu(false, true);
+    });
+    document.addEventListener('keydown', function(e){
+        if (!sidebar.classList.contains('open')) return;
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            setMenu(false, true);
+            return;
+        }
+        if (e.key !== 'Tab') return;
+        var focusable = Array.prototype.slice.call(sidebar.querySelectorAll('a[href],button:not([disabled]),input,select,textarea'));
+        if (!focusable.length) return;
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    });
 })();
 </script>
 @stack('scripts')
@@ -413,16 +481,15 @@
 (function() {
     var el = document.getElementById('skeletonPage');
     if (!el) return;
-    var loaded = sessionStorage.getItem('sk_' + window.location.pathname);
-    if (loaded) { el.style.display = 'none'; return; }
-    var delay = Math.max(400, 200 + Math.random() * 300);
-    setTimeout(function() {
+    function hideSkeleton() {
         el.classList.add('skeleton-page--loaded');
-        setTimeout(function() {
-            el.style.display = 'none';
-            try { sessionStorage.setItem('sk_' + window.location.pathname, '1'); } catch(e) {}
-        }, 450);
-    }, delay);
+        window.setTimeout(function() { el.style.display = 'none'; }, 350);
+    }
+    if (document.readyState === 'complete') {
+        hideSkeleton();
+    } else {
+        window.addEventListener('load', hideSkeleton, { once: true });
+    }
 })();
 </script>
 </body>

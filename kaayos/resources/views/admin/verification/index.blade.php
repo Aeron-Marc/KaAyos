@@ -1,108 +1,112 @@
 @extends('layouts.admin')
 
-@section('title', 'Worker Verifications')
+@section('title', __('admin.verification.title'))
 @section('content')
 <div class="header">
     <div class="header-left">
-        <h1><i class="fa-solid fa-clipboard-check"></i> Worker Verifications</h1>
-        <p>Review and approve pending service provider applications</p>
+        <h1><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> {{ __('admin.verification.title') }}</h1>
+        <p>{{ __('admin.verification.subtitle') }}</p>
     </div>
     <div class="header-right">
-        <span class="status-badge status-pending"><i class="fa-solid fa-hourglass-half"></i> {{ $pendingCount }} pending</span>
+        <span class="status-badge status-pending">
+            <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+            {{ __('admin.verification.pending_workers', ['count' => $pendingCount]) }}
+        </span>
     </div>
 </div>
 
-<form method="GET" action="{{ route('admin.verification.index') }}" class="filters-bar">
+<form method="GET" action="{{ route('admin.verification.index') }}" class="filters-bar" role="search">
     <div class="filter-group">
-        <label for="status">Status:</label>
-        <select name="status" id="status" onchange="this.form.submit()">
-            <option value="">All Statuses</option>
-            <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending Review</option>
-            <option value="verified" {{ request('status') === 'verified' ? 'selected' : '' }}>Verified</option>
-            <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
-            <option value="not_submitted" {{ request('status') === 'not_submitted' ? 'selected' : '' }}>Not Submitted</option>
+        <label for="status">{{ __('admin.verification.status') }}</label>
+        <select name="status" id="status">
+            <option value="">{{ __('admin.disputes.all_statuses') }}</option>
+            <option value="pending" @selected(request('status') === 'pending')>{{ __('admin.verification.pending_review') }}</option>
+            <option value="verified" @selected(request('status') === 'verified')>{{ __('status.verified') }}</option>
+            <option value="rejected" @selected(request('status') === 'rejected')>{{ __('status.rejected') }}</option>
+            <option value="not_submitted" @selected(request('status') === 'not_submitted')>{{ __('status.not_submitted') }}</option>
         </select>
     </div>
-    <div class="filter-group" style="margin-left: auto;">
-        <input type="text" name="search" placeholder="Search provider name or email..." value="{{ request('search') }}" style="width: 220px;">
+    <div class="filter-group" style="margin-left:auto;">
+        <label for="search" class="visually-hidden">{{ __('admin.verification.search_label') }}</label>
+        <input type="search" name="search" id="search" placeholder="{{ __('admin.verification.search_placeholder') }}" value="{{ request('search') }}" style="width:220px;">
     </div>
-    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-search"></i></button>
+    <button type="submit" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-search" aria-hidden="true"></i>
+        {{ __('admin.common.apply') }}
+    </button>
+    @if(request()->hasAny(['status', 'search']))
+        <a href="{{ route('admin.verification.index') }}" class="btn btn-secondary btn-sm">{{ __('admin.common.reset') }}</a>
+    @endif
 </form>
 
 <div class="table-container">
     @if($workers->count())
         <table>
+            <caption class="visually-hidden">{{ __('admin.verification.caption') }}</caption>
             <thead>
                 <tr>
-                    <th>Provider Name</th>
-                    <th>Documents</th>
-                    <th>Date Submitted</th>
-                    <th>Status</th>
-                    <th style="text-align: center;">Actions</th>
+                    <th scope="col">{{ __('admin.verification.provider') }}</th>
+                    <th scope="col">{{ __('admin.verification.documents') }}</th>
+                    <th scope="col">{{ __('admin.verification.submitted') }}</th>
+                    <th scope="col">{{ __('admin.verification.status') }}</th>
+                    <th scope="col" style="text-align:center;">{{ __('admin.verification.actions') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($workers as $worker)
-                @php
-                    $docs = $worker->workerDocuments;
-                    $status = $docs->isEmpty()
-                        ? 'not_submitted'
-                        : ($docs->contains('status', 'pending') ? 'pending'
-                            : ($docs->contains('status', 'rejected') ? 'rejected' : 'verified'));
-                    $reviewDoc = $docs->firstWhere('status', 'pending') ?? $docs->first();
-                @endphp
-                <tr>
-                    <td>
-                        <div class="user-cell">
-                            <div class="user-initials" style="background: linear-gradient(135deg, var(--b4), var(--b6));">
-                                {{ strtoupper(substr($worker->first_name ?? 'U', 0, 1)) }}{{ strtoupper(substr($worker->last_name ?? 'N', 0, 1)) }}
+                    @php
+                        $docs = $worker->workerDocuments;
+                        $status = $docs->isEmpty()
+                            ? 'not_submitted'
+                            : ($docs->contains('status', 'pending') ? 'pending'
+                                : ($docs->contains('status', 'rejected') ? 'rejected'
+                                    : ($docs->contains('status', 'not_submitted') ? 'not_submitted' : 'verified')));
+                        $reviewDoc = $docs->firstWhere('status', 'pending') ?? $docs->first();
+                        $required = count(\App\Support\WorkerDocuments::types());
+                    @endphp
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-initials" style="background:linear-gradient(135deg,var(--b4),var(--b6));" aria-hidden="true">
+                                    {{ strtoupper(substr($worker->first_name ?? 'U', 0, 1)) }}{{ strtoupper(substr($worker->last_name ?? 'N', 0, 1)) }}
+                                </div>
+                                <div class="user-cell-info">
+                                    <div class="user-cell-name">{{ $worker->name }}</div>
+                                    <div class="user-cell-email">{{ $worker->email ?? __('admin.common.not_available') }}</div>
+                                </div>
                             </div>
-                            <div class="user-cell-info">
-                                <div class="user-cell-name">{{ $worker->name }}</div>
-                                <div class="user-cell-email">{{ $worker->email ?? 'N/A' }}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-sm text-muted">
-                        {{ $docs->count() ? $docs->count() . ' doc' . ($docs->count() > 1 ? 's' : '') . ' / ' . count(\App\Support\WorkerDocuments::types()) . ' required' : '—' }}
-                    </td>
-                    <td class="text-sm text-muted">
-                        {{ $docs->count() ? $docs->first()->created_at->format('M d, Y H:i') : ($worker->created_at ? $worker->created_at->format('M d, Y H:i') : 'N/A') }}
-                    </td>
-                    <td>
-                        <span class="status-badge status-{{ $status === 'verified' ? 'approved' : $status }}">
-                            @if($status === 'pending')<i class="fa-solid fa-hourglass-half"></i>
-                            @elseif($status === 'verified')<i class="fa-solid fa-check-circle"></i>
-                            @elseif($status === 'rejected')<i class="fa-solid fa-x-circle"></i>
-                            @else<i class="fa-solid fa-circle"></i>
+                        </td>
+                        <td class="text-sm text-muted">
+                            {{ $docs->count() ? __('admin.verification.document_count', ['submitted' => $docs->count(), 'required' => $required]) : __('admin.common.not_available') }}
+                        </td>
+                        <td class="text-sm text-muted">
+                            @if($docs->count())
+                                <x-datetime :value="$docs->first()->created_at" format="M j, Y H:i" />
+                            @else
+                                <x-datetime :value="$worker->created_at" format="M j, Y H:i" />
                             @endif
-                            {{ ucfirst(str_replace('_', ' ', $status)) }}
-                        </span>
-                    </td>
-                    <td style="text-align: center;">
-                        @if($reviewDoc)
-                            <a href="{{ route('admin.verification.show', $reviewDoc) }}" class="btn btn-primary btn-sm">
-                                <i class="fa-solid fa-magnifying-glass"></i> Review
-                            </a>
-                        @else
-                            <a href="{{ route('admin.users.show', $worker) }}" class="btn btn-secondary btn-sm">
-                                <i class="fa-regular fa-user"></i> View Worker
-                            </a>
-                        @endif
-                    </td>
-                </tr>
+                        </td>
+                        <td><x-status-badge :status="$status" /></td>
+                        <td style="text-align:center;">
+                            @if($reviewDoc)
+                                <a href="{{ route('admin.verification.show', $reviewDoc) }}" class="btn btn-primary btn-sm">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    {{ __('admin.verification.review') }}
+                                </a>
+                            @else
+                                <a href="{{ route('admin.users.show', $worker) }}" class="btn btn-secondary btn-sm">
+                                    <i class="fa-regular fa-user" aria-hidden="true"></i>
+                                    {{ __('admin.verification.view_worker') }}
+                                </a>
+                            @endif
+                        </td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
-        <div class="pagination">
-            {{ $workers->links() }}
-        </div>
+        <div class="pagination">{{ $workers->links() }}</div>
     @else
-        <div class="empty-state">
-            <div class="empty-state-icon"><i class="fa-solid fa-clipboard-check"></i></div>
-            <div class="empty-state-title">No workers found</div>
-            <div class="empty-state-subtitle">Try adjusting your search or filter criteria.</div>
-        </div>
+        <x-empty-state icon="fa-clipboard-check" :title="__('admin.verification.empty')" :subtitle="__('admin.verification.empty_sub')" />
     @endif
 </div>
 @endsection

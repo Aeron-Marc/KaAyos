@@ -3,118 +3,132 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Booking;
-use App\Models\Dispute;
-use App\Models\User;
-use App\Models\WorkerDocument;
+use App\Services\AdminDashboardMetrics;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request, AdminDashboardMetrics $metrics)
     {
-        $totalUsers = User::count();
-        $totalClients = User::where('role', 'client')->count();
-        $totalWorkers = User::where('role', 'worker')->count();
-        $suspendedUsers = User::suspended()->count();
+        $period = $request->query('period');
+        $queueSort = $this->queueSort($request);
+        $data = $metrics->forPeriod(is_string($period) ? $period : null, $queueSort);
 
-        $totalBookings = Booking::count();
-        $activeBookings = Booking::whereNotIn('status', ['completed', 'cancelled'])->count();
-        $completedBookings = Booking::completed()->count();
-        $cancelledBookings = Booking::cancelled()->count();
-        $pendingVerifications = WorkerDocument::where('status', 'pending')->count();
-        $openDisputes = Dispute::open()->count();
-
-        $totalRevenue = Booking::completed()->sum('price');
-        $revenueThisMonth = Booking::completed()
-            ->whereBetween('completed_at', [now()->startOfMonth(), now()])
-            ->sum('price');
-        $avgBookingValue = Booking::completed()->avg('price');
-
-        $completionRate = $totalBookings > 0 ? round(($completedBookings / $totalBookings) * 100) : 0;
-
-        $recentBookings = Booking::with(['client', 'worker'])->latest()->take(5)->get();
-        $bookingTrend = $this->bookingTrend();
-        $bookingStatusDist = $this->bookingStatusDist();
-        $topCategories = $this->topCategories();
-
-        return view('admin.dashboard', compact(
-            'totalUsers', 'totalClients', 'totalWorkers', 'suspendedUsers',
-            'totalBookings', 'activeBookings', 'completedBookings', 'cancelledBookings',
-            'pendingVerifications', 'openDisputes',
-            'totalRevenue', 'revenueThisMonth', 'avgBookingValue',
-            'completionRate',
-            'recentBookings', 'bookingTrend', 'bookingStatusDist', 'topCategories'
-        ));
+        return view('admin.dashboard', [
+            'metrics' => $data,
+            'period' => $data['period'],
+            'targets' => config('dashboard.targets'),
+            'updatedAt' => $data['generated_at'],
+            'deltas' => $this->deltas($data['kpis']),
+            'queueSort' => $data['action_queue']['sort'],
+        ]);
     }
 
-    private function bookingStatusDist(): array
+    public function exportQueue(Request $request, AdminDashboardMetrics $metrics)
     {
-        $map = [
-            'new'         => ['label' => 'New',         'color' => '#4B5563'],
-            'accepted'    => ['label' => 'Accepted',    'color' => '#1A6FC4'],
-            'en_route'    => ['label' => 'En Route',    'color' => '#3B82F6'],
-            'in_progress' => ['label' => 'In Progress', 'color' => '#F59E0B'],
-            'completed'   => ['label' => 'Completed',   'color' => '#10B981'],
-            'cancelled'   => ['label' => 'Cancelled',   'color' => '#EF4444'],
+        $period = $request->query('period');
+        $data = $metrics->forPeriod(is_string($period) ? $period : null, $this->queueSort($request));
+        $items = $data['action_queue']['items'];
+
+        $filename = 'kaayos-action-queue-'.now()->format('Y-m-d-His').'.csv';
+
+        return response()->streamDownload(function () use ($items) {
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, [
+                __('admin.dash.queue.csv.priority'),
+                __('admin.dash.queue.csv.type'),
+                __('admin.dash.queue.csv.item'),
+                __('admin.dash.queue.csv.context'),
+                __('admin.dash.queue.csv.status'),
+                __('admin.dash.queue.csv.age_minutes'),
+                __('admin.dash.queue.csv.url'),
+            ]);
+
+            foreach ($items as $item) {
+                fputcsv($output, [
+                    $item['priority'],
+                    $item['type_label'],
+                    $item['title'],
+                    $item['context'],
+                    __('status.'.$item['status']),
+                    $item['age_minutes'],
+                    $item['href'],
+                ]);
+            }
+
+            fclose($output);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function queueSort(Request $request): string
+    {
+        $sort = $request->query('queue_sort');
+
+        return is_string($sort) && in_array($sort, ['age', 'priority', 'type'], true) ? $sort : 'age';
+    }
+
+    /**
+     * Period-over-period deltas for the KPI cards.
+     * Rates diff in percentage points, money as absolute currency, counts as absolute.
+     *
+     * @return array<string, array{dir: string, text: string}|null>
+     */
+    private function deltas(array $kpi): array
+    {
+        $formatters = [
+            'total_bookings' => fn (float $abs) => sprintf(
+                '%s%s',
+                $abs > 0 ? '+' : ($abs < 0 ? '-' : ''),
+                number_format(abs($abs))
+            ),
+            'completion_rate' => fn (float $abs) => sprintf(
+                '%s%d%%',
+                $abs > 0 ? '+' : ($abs < 0 ? '-' : ''),
+                (int) round(abs($abs))
+            ),
+            'cancellation_rate' => fn (float $abs) => sprintf(
+                '%s%d%%',
+                $abs > 0 ? '+' : ($abs < 0 ? '-' : ''),
+                (int) round(abs($abs))
+            ),
+            'revenue' => fn (float $abs) => sprintf(
+                '%s%s%s',
+                $abs > 0 ? '+' : ($abs < 0 ? '-' : ''),
+                "\u{20B1}",
+                number_format(abs($abs), 2)
+            ),
+            'gross_collected' => fn (float $abs) => sprintf(
+                '%s%s%s',
+                $abs > 0 ? '+' : ($abs < 0 ? '-' : ''),
+                "\u{20B1}",
+                number_format(abs($abs), 2)
+            ),
         ];
 
-        $raw = Booking::selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
+        $out = [];
+        foreach ($formatters as $key => $format) {
+            $current = $key === 'total_bookings'
+                ? ($kpi['total_bookings'] ?? null)
+                : ($kpi[$key]['value'] ?? null);
+            $previous = $key === 'total_bookings'
+                ? ($kpi['previous_total_bookings'] ?? null)
+                : ($kpi[$key]['previous'] ?? null);
 
-        $labels = [];
-        $values = [];
-        $colors = [];
-        foreach ($map as $key => $meta) {
-            $labels[] = $meta['label'];
-            $values[] = (int) ($raw[$key] ?? 0);
-            $colors[] = $meta['color'];
+            if ($current === null || $previous === null) {
+                $out[$key] = null;
+
+                continue;
+            }
+
+            $abs = (float) $current - (float) $previous;
+
+            $out[$key] = [
+                'dir' => abs($abs) < 0.005 ? 'same' : ($abs > 0 ? 'up' : 'down'),
+                'text' => $format($abs),
+            ];
         }
 
-        return ['labels' => $labels, 'values' => $values, 'colors' => $colors];
+        return $out;
     }
-
-    private function topCategories(): array
-    {
-        $raw = Booking::selectRaw('service_category, COUNT(*) as total')
-            ->whereNotNull('service_category')
-            ->where('service_category', '!=', '')
-            ->groupBy('service_category')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->pluck('total', 'service_category');
-
-        return [
-            'labels' => $raw->keys()->values()->all(),
-            'values' => $raw->values()->map(fn ($v) => (int) $v)->all(),
-        ];
-    }
-
-    private function bookingTrend(): array
-    {
-        $days = 14;
-        $rows = Booking::where('created_at', '>=', now()->subDays($days - 1)->startOfDay())
-            ->selectRaw('DATE(created_at) as date, COUNT(*) as count, COALESCE(SUM(CASE WHEN status = "completed" THEN CAST(price AS DECIMAL(12,2)) ELSE 0 END), 0) as revenue')
-            ->groupBy('date')
-            ->pluck('count', 'date');
-
-        $revenueRows = Booking::where('status', 'completed')
-            ->where('completed_at', '>=', now()->subDays($days - 1)->startOfDay())
-            ->selectRaw('DATE(completed_at) as date, COALESCE(SUM(CAST(price AS DECIMAL(12,2))), 0) as revenue')
-            ->groupBy('date')
-            ->pluck('revenue', 'date');
-
-        $labels = [];
-        $counts = [];
-        $revenues = [];
-        for ($i = $days - 1; $i >= 0; $i--) {
-            $date = now()->subDays($i)->format('Y-m-d');
-            $labels[] = $date;
-            $counts[] = (int) ($rows[$date] ?? 0);
-            $revenues[] = (float) ($revenueRows[$date] ?? 0);
-        }
-
-        return ['labels' => $labels, 'counts' => $counts, 'revenues' => $revenues];
-    }
-
 }

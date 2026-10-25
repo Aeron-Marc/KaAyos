@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -117,5 +118,16 @@ class WorkerProfile extends Model
     {
         $this->attributes['service_radius_km'] = $value;
         $this->attributes['service_radius'] = $value;
+    }
+
+    public function scopeWithActiveAvailability(Builder $query): Builder
+    {
+        return $query->whereRaw("JSON_CONTAINS(JSON_EXTRACT(availability, '$[*].active'), 'true') = 1");
+    }
+
+    public function hasActiveAvailability(): bool
+    {
+        return is_array($this->availability)
+            && collect($this->availability)->contains('active', true);
     }
 }

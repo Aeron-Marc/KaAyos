@@ -50,21 +50,22 @@
     <div class="filter-group" style="margin-left: auto;">
         <input type="text" name="search" placeholder="Search name or email..." value="{{ request('search') }}" style="width: 220px;">
     </div>
-    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-search"></i></button>
+    <button type="submit" class="btn btn-primary btn-sm" aria-label="{{ __('admin.common.apply_filters') }}"><i class="fa-solid fa-search" aria-hidden="true"></i></button>
 </form>
 
 <div class="table-container">
     @if($workers->count())
         <table>
+            <caption class="visually-hidden">{{ __('admin.common.table_caption') }}</caption>
             <thead>
                 <tr>
-                    <th>Worker</th>
-                    <th>Service Category</th>
-                    <th>Services</th>
-                    <th>Rates & Scheme</th>
-                    <th>Status</th>
-                    <th>Joined</th>
-                    <th style="text-align: center;">Actions</th>
+                    <th scope="col">Worker</th>
+                    <th scope="col">Service Category</th>
+                    <th scope="col">Services</th>
+                    <th scope="col">Rates & Scheme</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Joined</th>
+                    <th scope="col" style="text-align:center;">Actions</th>
                 </tr>
             </thead>
             <tbody>
