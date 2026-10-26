@@ -37,16 +37,6 @@
               @endforeach
             </div>
           @endif
-          @if(!empty($w['works']) && count(array_filter(array_column($w['works'],'photo'))) > 0)
-            <div class="w-works">
-              <div class="w-works-row">
-                @php $photos = array_filter(array_column($w['works'],'photo')); @endphp
-                @foreach(array_slice($photos, 0, 3) as $photo)
-                  <div class="w-work-thumb" style="background-image:url('{{ $photo }}')" title="Work sample"></div>
-                @endforeach
-              </div>
-            </div>
-          @endif
 
           <div class="w-card-actions">
             <span class="btn-outline-card" data-href="{{ route('workers.public.show', $w['id']) }}" onclick="event.stopPropagation();event.preventDefault();window.location.href=this.dataset.href"><i class="fa-regular fa-user" aria-hidden="true"></i> View Profile</span>
