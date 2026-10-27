@@ -84,16 +84,29 @@ php artisan storage:link    # required so uploaded files / avatars display
 
 ### Terminal 1 — ML Microservice (Python, port 8001)
 
-```bash
+**Recommended — PowerShell (one command)** (creates/uses `.venv`, sets the ML API key, installs deps, starts the server):
+
+```powershell
 cd ml_service
-.venv\Scripts\activate      # Windows. On macOS/Linux:  source .venv/bin/activate
+.\run.bat
+# PowerShell alternative:
+.\start_ml.ps1
+```
+
+**Manual alternative**:
+
+```powershell
+cd ml_service
+.\.venv\Scripts\Activate.ps1   # PowerShell
 pip install -r requirements.txt
 uvicorn main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
+> In PowerShell use `.\.venv\Scripts\Activate.ps1` (not `source ...` or bare `.\venv\Scripts\activate`).
+
 - API docs: `http://127.0.0.1:8001/docs`
-- Or double-click `run.bat` (does the same).
-- This must match `ML_SERVICE_URL` in `kaayos/.env`.
+- The service requires `ML_API_KEY` (shared with `kaayos/.env`); `run.bat` / `start_ml.ps1` set it automatically.
+- This must match `ML_SERVICE_URL` in `kaayos/.env` (default `http://127.0.0.1:8001`).
 
 ### Terminal 2 — Laravel Web Server (port 8000)
 

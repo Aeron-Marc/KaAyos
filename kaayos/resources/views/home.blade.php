@@ -1,22 +1,10 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="csrf-token" content="{{ csrf_token() }}">
-<meta name="description" content="KaAyos – Find trusted, PESO-accredited skilled workers (trabahador) in Tuy, Batangas. AI-matched plumbing, electrical, carpentry &amp; cleaning services.">
-<meta property="og:title" content="KaAyos – Trusted Home Services in Tuy, Batangas">
-<meta property="og:description" content="Find verified skilled workers near you. AI-matched, PESO-accredited, and community-rated.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="{{ url()->current() }}">
-<title>KaAyos – Trusted Home Services</title>
-<link rel="icon" href="../images/KaAyos_logo.jpeg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-@vite(['resources/css/landing.css'])
-</head>
-<body>
+@extends('layouts.public')
+
+@section('title', 'KaAyos – Trusted Home Services')
+@section('meta_description', 'KaAyos – Find trusted, PESO-accredited skilled workers (trabahador) in Tuy, Batangas. AI-matched plumbing, electrical, carpentry & cleaning services.')
+@section('og_description', 'Find verified skilled workers near you. AI-matched, PESO-accredited, and community-rated.')
+
+@section('loader')
 
 <!-- PAGE LOADER -->
 <div id="pageLoader" class="page-loader">
@@ -44,43 +32,9 @@
   }
 </script>
 
-<!-- MOBILE OVERLAY -->
-<div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+@endsection
 
-<!-- MOBILE DRAWER -->
-<aside id="mobileDrawer" class="mobile-drawer" role="dialog" aria-label="Navigation menu">
-  <button class="drawer-close" onclick="closeMobileMenu()" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
-  <a href="#services" onclick="closeMobileMenu()"><i class="fa-solid fa-briefcase"></i> {{ __('landing.services') }}</a>
-  <a href="#how-it-works" onclick="closeMobileMenu()"><i class="fa-solid fa-list-ol"></i> {{ __('landing.how_it_works') }}</a>
-  <a href="#join" onclick="closeMobileMenu()"><i class="fa-solid fa-hammer"></i> {{ __('landing.join_worker') }}</a>
-  <a href="#faq" onclick="closeMobileMenu()"><i class="fa-solid fa-circle-question"></i> {{ __('landing.faq') }}</a>
-  <div class="drawer-cta">
-    <a href="/login" class="btn-ghost"><i class="fa-regular fa-user"></i> {{ __('landing.log_in') }}</a>
-    <a href="/register" class="btn-amber"><i class="fa-solid fa-arrow-right-to-bracket"></i> {{ __('landing.sign_up') }}</a>
-  </div>
-</aside>
-
-<!-- NAV -->
-<nav class="nav">
-  <div class="nav-logo">
-    <div class="logo-box"><img src="../images/logo-gs-removebg-preview.png" alt="KaAyos Logo" width="36" height="36"></div>
-    <span>KaAyos</span>
-  </div>
-  <ul class="nav-links">
-    <li><a href="#services">{{ __('landing.services') }}</a></li>
-    <li><a href="#how-it-works">{{ __('landing.how_it_works') }}</a></li>
-    <li><a href="#join">{{ __('landing.join_worker') }}</a></li>
-    <li><a href="#faq">{{ __('landing.faq') }}</a></li>
-  </ul>
-  <div class="nav-cta">
-    <x-language-switcher />
-    <a href="/login" class="btn btn-ghost"><i class="fa-regular fa-user" aria-hidden="true"></i> {{ __('landing.log_in') }}</a>
-    <a href="/register" class="btn btn-amber"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> {{ __('landing.sign_up') }}</a>
-    <button class="nav-toggle" id="navToggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</nav>
+@section('content')
 
 <!-- HERO -->
 <section class="hero" id="heroSection">
@@ -109,6 +63,7 @@
     <a href="/register" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {{ __('landing.hero_hire') }}</a>
     <a href="#join" class="btn-outline"><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{ __('landing.hero_join') }}</a>
   </div>
+  <div class="hero-micro">{{ __('landing.hero_micro') }}</div>
 </section>
 
 <!-- SEARCH + AI ASSISTANT -->
@@ -168,11 +123,12 @@
 
 <!-- STATS -->
 <div class="stats fade-up">
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num" data-count="500" data-suffix="+">0</div><div class="stat-label">{{ __('landing.stat_workers') }}</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num" data-count="1000" data-suffix="+">0</div><div class="stat-label">{{ __('landing.stat_jobs') }}</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num" data-count="22" data-suffix="">0</div><div class="stat-label">{{ __('landing.stat_barangays') }}</div></div>
-  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num" data-count="4.8" data-suffix="★" data-decimal="1">0</div><div class="stat-label">{{ __('landing.stat_rating') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['workers'] }}" data-suffix="+">{{ number_format($stats['workers']) }}+</div><div class="stat-label">{{ __('landing.stat_workers') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['jobs'] }}" data-suffix="+">{{ number_format($stats['jobs']) }}+</div><div class="stat-label">{{ __('landing.stat_jobs') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['barangays'] }}" data-suffix="">{{ $stats['barangays'] }}</div><div class="stat-label">{{ __('landing.stat_barangays') }}</div></div>
+  <div class="stat-item"><div class="stat-icon"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div class="stat-num" data-count="{{ $stats['rating'] }}" data-suffix="★" data-decimal="1">{{ number_format($stats['rating'], 1) }}&#9733;</div><div class="stat-label">{{ __('landing.stat_rating') }}</div></div>
 </div>
+<div class="stat-note fade-up">{{ __('landing.stat_note') }}</div>
 
 <!-- TRUST -->
 <div class="trust">
@@ -181,6 +137,36 @@
   <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-certificate" aria-hidden="true"></i></div><div><strong>{{ __('landing.trust_peso') }}</strong><span>{{ __('landing.trust_peso_sub') }}</span></div></div>
   <div class="trust-item"><div class="trust-ico"><i class="fa-solid fa-star" aria-hidden="true"></i></div><div><strong>{{ __('landing.trust_rated') }}</strong><span>{{ __('landing.trust_rated_sub') }}</span></div></div>
 </div>
+
+<!-- SMART LOCAL MATCHING -->
+<section class="section" id="smart-matching">
+  <div class="sec-header fade-up">
+    <div class="eyebrow">{{ __('landing.smart_eyebrow') }}</div>
+    <h2 class="sec-title">{{ __('landing.smart_title') }}</h2>
+    <p class="sec-sub">{{ __('landing.smart_sub') }}</p>
+  </div>
+  <div class="smart-grid">
+    <div class="smart-tile fade-up stagger-child">
+      <div class="smart-icon"><i class="fa-solid fa-comment-dots" aria-hidden="true"></i></div>
+      <h3>{{ __('landing.smart_say_title') }}</h3>
+      <p>{{ __('landing.smart_say_desc') }}</p>
+    </div>
+    <div class="smart-tile fade-up stagger-child">
+      <div class="smart-icon"><i class="fa-solid fa-map-pin" aria-hidden="true"></i></div>
+      <h3>{{ __('landing.smart_brgy_title') }}</h3>
+      <p>{{ __('landing.smart_brgy_desc') }}</p>
+    </div>
+    <div class="smart-tile fade-up stagger-child">
+      <div class="smart-icon"><i class="fa-solid fa-user-shield" aria-hidden="true"></i></div>
+      <h3>{{ __('landing.smart_privacy_title') }}</h3>
+      <p>{{ __('landing.smart_privacy_desc') }}</p>
+    </div>
+  </div>
+  <div class="smart-trust fade-up">{{ __('landing.smart_trust') }}</div>
+  <div class="smart-cta fade-up">
+    <a href="/search" class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {{ __('landing.smart_cta') }}</a>
+  </div>
+</section>
 
 <!-- HOW IT WORKS -->
 <section class="section section-alt" id="how-it-works">
@@ -201,7 +187,7 @@
       <p class="step-desc">{{ __('landing.step2_desc') }}</p>
     </div>
     <div class="step fade-up stagger-child"><div class="step-n">03</div>
-      <div class="step-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></div>
+      <div class="step-icon"><i class="fa-solid fa-route" aria-hidden="true"></i></div>
       <h3 class="step-title">{{ __('landing.step3_title') }}</h3>
       <p class="step-desc">{{ __('landing.step3_desc') }}</p>
     </div>
@@ -254,14 +240,6 @@
     <p>{{ __('landing.join_desc') }}</p>
     <a href="/register?role=worker" class="btn btn-primary btn-lg"><i class="fa-solid fa-hammer" aria-hidden="true"></i> {{ __('landing.join_btn') }}</a>
   </div>
-  <div class="join-carousel" aria-hidden="true">
-    <div class="join-slide active"><img src="{{ asset('images/stock/work-1.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-2.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-3.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-4.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-5.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-    <div class="join-slide"><img src="{{ asset('images/stock/work-6.jpg') }}" alt="Skilled worker at work" width="400" height="300" loading="lazy"></div>
-  </div>
 </section>
 
 <!-- FAQ -->
@@ -272,15 +250,15 @@
   </div>
   <div class="faq-list">
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-circle-question" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q1') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-shield-halved" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q1') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">{{ __('landing.faq_a1') }}</div>
     </div>
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-regular fa-id-card" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q2') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-certificate" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q2') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">{{ __('landing.faq_a2') }}</div>
     </div>
     <div class="faq-item fade-up">
-      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-robot" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q3') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
+      <div class="faq-q" onclick="toggleFaq(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()"><span><i class="fa-solid fa-coins" style="color:var(--b6);margin-right:8px"></i>{{ __('landing.faq_q3') }}</span><i class="fa-solid fa-chevron-down faq-chev"></i></div>
       <div class="faq-a">{{ __('landing.faq_a3') }}</div>
     </div>
     <div class="faq-item fade-up">
@@ -294,6 +272,17 @@
   </div>
   <div class="faq-contact fade-up">
     {{ __('landing.faq_contact') }} <a href="/contact">{{ __('landing.faq_contact_link') }}</a>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta" id="get-started">
+  <div class="final-cta-inner fade-up">
+    <h2>{{ __('landing.cta_title') }}</h2>
+    <p>{{ __('landing.cta_sub') }}</p>
+    <a href="/register" class="final-cta-btn"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> {{ __('landing.cta_btn') }}</a>
+    <div class="final-cta-micro">{{ __('landing.cta_micro') }}</div>
+    <div class="final-cta-worker">{{ __('landing.cta_worker') }} <a href="/register?role=worker">{{ __('landing.cta_worker_link') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
   </div>
 </section>
 
@@ -311,52 +300,6 @@
   </div>
 </div>
 
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="footer-grid">
-    <div class="f-brand">
-      <div class="brand">
-        <div class="flogo"><img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos" width="40" height="40" loading="lazy"></div>
-        <span>KaAyos</span>
-      </div>
-      <p>{{ __('landing.footer_desc') }}</p>
-      <div class="partner-logos">
-      <img src="{{ asset('images/peso-logo.jpg') }}" alt="PESO Tuy" width="48" height="48">
-      </div>
-    </div>
-    <div>
-      <div class="f-title">{{ __('landing.footer_services') }}</div>
-      <ul class="f-links">
-        <li><a href="/?category=plumbing"><i class="fa-solid fa-wrench fa-fw" aria-hidden="true"></i> Plumbing</a></li>
-        <li><a href="/?category=electrical"><i class="fa-solid fa-bolt fa-fw" aria-hidden="true"></i> Electrical</a></li>
-        <li><a href="/?category=carpentry"><i class="fa-solid fa-screwdriver-wrench fa-fw" aria-hidden="true"></i> Carpentry</a></li>
-        <li><a href="/?category=cleaning"><i class="fa-solid fa-broom fa-fw" aria-hidden="true"></i> Cleaning</a></li>
-        <li><a href="/#services"><i class="fa-solid fa-list fa-fw" aria-hidden="true"></i> {{ __('landing.footer_view_all') }}</a></li>
-      </ul>
-    </div>
-    <div>
-      <div class="f-title">{{ __('landing.footer_company') }}</div>
-      <ul class="f-links">
-        <li><a href="/about"><i class="fa-solid fa-circle-info fa-fw" aria-hidden="true"></i> {{ __('landing.footer_about') }}</a></li>
-        <li><a href="#how-it-works"><i class="fa-solid fa-list-ol fa-fw" aria-hidden="true"></i> {{ __('landing.how_it_works') }}</a></li>
-        <li><a href="/register?role=worker"><i class="fa-solid fa-hammer fa-fw" aria-hidden="true"></i> {{ __('landing.join_worker') }}</a></li>
-        <li><a href="#faq"><i class="fa-solid fa-circle-question fa-fw" aria-hidden="true"></i> {{ __('landing.faq') }}</a></li>
-        <li><a href="/contact"><i class="fa-solid fa-envelope fa-fw" aria-hidden="true"></i> {{ __('landing.footer_contact') }}</a></li>
-        <li><a href="/privacy"><i class="fa-solid fa-shield fa-fw" aria-hidden="true"></i> {{ __('landing.footer_privacy') }}</a></li>
-        <li><a href="/terms"><i class="fa-solid fa-file-lines fa-fw" aria-hidden="true"></i> {{ __('landing.footer_terms') }}</a></li>
-        <li><a href="/safety"><i class="fa-solid fa-shield-halved fa-fw" aria-hidden="true"></i> {{ __('landing.footer_safety') }}</a></li>
-      </ul>
-    </div>
-  </div>
-  <button class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
-  <div class="f-bottom">
-    <p>&copy; {{ date('Y') }} KaAyos &mdash; Capstone project by Salanguit, Formentos &amp; Briones &middot; Batangas State University ARASOF &ndash; Nasugbu Campus.</p>
-    <div class="socials">
-      <a href="https://facebook.com/kaayos" class="soc" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-      <a href="mailto:hello@kaayos.tech" class="soc" title="Email" aria-label="Email"><i class="fa-solid fa-envelope"></i></a>
-    </div>
-  </div>
-</footer>
 
 <!-- AI ASSISTANT FLOATING -->
 <div id="aiFab" class="ai-fab"><i class="fa-solid fa-robot"></i></div>
@@ -384,37 +327,16 @@
   </div>
 </div>
 
+@endsection
+
+@push('scripts')
 <script>
-function toggleMobileMenu() {
-  var open = document.getElementById('mobileDrawer').classList.toggle('open');
-  document.getElementById('mobileOverlay').classList.toggle('open');
-  document.getElementById('navToggle').classList.toggle('open');
-  document.body.style.overflow = open ? 'hidden' : '';
-}
-
-function closeMobileMenu() {
-  document.getElementById('mobileDrawer').classList.remove('open');
-  document.getElementById('mobileOverlay').classList.remove('open');
-  document.getElementById('navToggle').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
 function toggleFaq(el){
   var item = el.closest('.faq-item');
   var open = item.classList.contains('open');
   document.querySelectorAll('.faq-item.open').forEach(function(i){ i.classList.remove('open'); });
   if(!open) item.classList.add('open');
 }
-
-/* NAV SCROLL */
-(function(){
-  var nav = document.querySelector('.nav');
-  if(nav){
-    window.addEventListener('scroll',function(){
-      if(window.scrollY>40){nav.classList.add('scrolled');}else{nav.classList.remove('scrolled');}
-    });
-  }
-})();
 
 /* SCROLL ANIMATIONS */
 (function(){
@@ -450,6 +372,7 @@ function toggleFaq(el){
   }
 
   function animateCount(el){
+    el.textContent = '0';
     var target = parseFloat(el.dataset.count);
     var suffix = el.dataset.suffix || '';
     var dec = parseInt(el.dataset.decimal) || 0;
@@ -858,17 +781,6 @@ function refreshMapFromSection() {
   });
 })();
 
-/* JOIN CAROUSEL */
-(function(){
-  var slides = document.querySelectorAll('.join-slide');
-  if(slides.length < 2) return;
-  var i = 0;
-  setInterval(function(){
-    slides[i].classList.remove('active');
-    i = (i + 1) % slides.length;
-    slides[i].classList.add('active');
-  }, 3000);
-})();
+/* JOIN CAROUSEL REMOVED */
 </script>
-</body>
-</html>
+@endpush

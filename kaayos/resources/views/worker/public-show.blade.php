@@ -1,37 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ $worker->name }} — KaAyos</title>
-<link rel="icon" href="{{ asset('images/KaAyos_logo.jpeg') }}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
---b9:#042C53;--b8:#0C447C;--b7:#185FA5;--b6:#1A6FC4;--b4:#378ADD;--b2:#85B7EB;--b1:#B5D4F4;--b0:#E6F1FB;
---g9:#1B2430;--g7:#3D4A56;--g4:#8C97A4;--g1:#E8ECF0;--white:#fff;--off:#F7F8FA;
-}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',sans-serif;color:var(--g7);background:var(--off);line-height:1.6;font-size:16px}
-a{text-decoration:none;color:inherit}
+@extends('layouts.public')
 
-.nav{background:var(--b9);padding:0 5%;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
-.nav-logo{display:flex;align-items:center;gap:9px}
-.logo-box{width:50px;height:50px;background:var(--b6);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px}
-.logo-box img{width:100%;height:100%;object-fit:contain}
-.nav-logo span{font-size:1.4rem;font-weight:700;color:#fff;letter-spacing:.02em}
-.nav-links{display:flex;gap:26px;list-style:none}
-.nav-links a{font-size:.875rem;font-weight:500;color:rgba(255,255,255,.72);transition:color .18s}
-.nav-links a:hover{color:#fff}
-.nav-cta{display:flex;gap:9px}
-.btn{font-size:.875rem;font-weight:600;border-radius:7px;padding:8px 18px;cursor:pointer;border:none;transition:all .18s;white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
-.btn-ghost{background:transparent;color:rgba(255,255,255,.82);border:1.5px solid rgba(255,255,255,.3)}
-.btn-ghost:hover{border-color:rgba(255,255,255,.7);color:#fff}
-.btn-solid{background:var(--b6);color:#fff}
-.btn-solid:hover{background:var(--b7)}
+@section('title', $worker->name . ' — KaAyos')
+@section('meta_description', 'Book ' . $worker->name . ' in Tuy, Batangas. See ratings, portfolio, skills and availability for this verified KaAyos worker.')
+
+@push('styles')
+<style>
+
 .btn-outline{background:transparent;color:var(--b6);border:1.5px solid var(--b4);font-size:.875rem;font-weight:600;padding:8px 18px;border-radius:7px;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:7px}
 .btn-outline:hover{background:var(--b0)}
 
@@ -106,23 +80,6 @@ a{text-decoration:none;color:inherit}
 .works-item .thumb.sample{background:var(--b0);color:var(--b2);border-style:dashed}
 .works-caption{padding:6px 10px 10px;font-size:.8rem;color:var(--g7);line-height:1.4}
 
-.footer{background:var(--g9);padding:48px 5% 24px;margin-top:60px}
-.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:36px;margin-bottom:36px}
-.f-brand p{font-size:.84rem;color:rgba(255,255,255,.45);line-height:1.65;max-width:250px;margin-top:12px}
-.f-brand .brand{display:flex;align-items:center;gap:9px}
-.f-brand .brand span{font-size:1.3rem;font-weight:700;color:#fff}
-.f-brand .flogo{width:32px;height:32px;background:var(--b6);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
-.f-brand .flogo img{width:100%;height:100%;object-fit:contain;border-radius:6px}
-.f-title{font-size:.8rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;margin-bottom:12px}
-.f-links{list-style:none;display:flex;flex-direction:column;gap:8px}
-.f-links a{font-size:.84rem;color:rgba(255,255,255,.45);transition:color .18s;display:inline-flex;align-items:center;gap:6px}
-.f-links a:hover{color:var(--b2)}
-.f-bottom{border-top:1px solid rgba(255,255,255,.07);padding-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.f-bottom p{font-size:.76rem;color:rgba(255,255,255,.3)}
-.socials{display:flex;gap:10px}
-.soc{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:rgba(255,255,255,.45);cursor:pointer;transition:all .18s}
-.soc:hover{background:var(--b6);color:#fff}
-
 /* SIGN-IN MODAL */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;display:none;align-items:center;justify-content:center;animation:fadeIn .2s ease}
 .modal-overlay.active{display:flex}
@@ -140,55 +97,14 @@ a{text-decoration:none;color:inherit}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 
-.nav-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px}
-.nav-hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;transition:all .3s}
-.nav-hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
-.nav-hamburger.active span:nth-child(2){opacity:0}
-.nav-hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
-.mobile-nav{display:none;position:fixed;top:60px;left:0;right:0;background:var(--b9);z-index:99;padding:16px 5% 20px;box-shadow:0 4px 12px rgba(0,0,0,.2);flex-direction:column;gap:4px}
-.mobile-nav.open{display:flex}
-.mobile-nav a{display:block;padding:12px 16px;border-radius:8px;color:rgba(255,255,255,.72);font-size:.95rem;font-weight:500;transition:all .18s}
-.mobile-nav a:hover{background:rgba(255,255,255,.08);color:#fff}
 @media(max-width:768px){
 .profile-layout{flex-direction:column}
 .profile-card{flex:none!important;width:100%}
-.nav-links{display:none}
-.nav-hamburger{display:flex}
-.nav{padding:0 4%}
-.footer-grid{grid-template-columns:1fr 1fr}
-}
-@media(max-width:480px){
-.footer-grid{grid-template-columns:1fr}
 }
 </style>
-</head>
-<body>
+@endpush
 
-<nav class="nav">
-  <a href="{{ route('home') }}" class="nav-logo">
-    <div class="logo-box"><img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos Logo"></div>
-    <span>KaAyos</span>
-  </a>
-  <ul class="nav-links">
-    <li><a href="{{ route('home') }}#services">Services</a></li>
-    <li><a href="{{ route('home') }}#how-it-works">How It Works</a></li>
-    <li><a href="{{ route('home') }}#join">Join as Worker</a></li>
-    <li><a href="{{ route('home') }}#faq">FAQ</a></li>
-  </ul>
-  <div class="nav-cta">
-    <a href="{{ route('login') }}" class="btn btn-ghost"><i class="fa-regular fa-user" aria-hidden="true"></i> Log In</a>
-    <a href="{{ route('register') }}" class="btn btn-solid"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Sign Up Free</a>
-  </div>
-  <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
-    <span></span><span></span><span></span>
-  </button>
-</nav>
-<div class="mobile-nav" id="mobileNav">
-  <a href="{{ route('home') }}#services">Services</a>
-  <a href="{{ route('home') }}#how-it-works">How It Works</a>
-  <a href="{{ route('home') }}#join">Join as Worker</a>
-  <a href="{{ route('home') }}#faq">FAQ</a>
-</div>
+@section('content')
 
 <div class="back-bar">
   <a href="{{ route('home') }}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Home</a>
@@ -362,45 +278,7 @@ a{text-decoration:none;color:inherit}
   </div>
 </div>
 
-<footer class="footer">
-  <div class="footer-grid">
-    <div class="f-brand">
-      <div class="brand">
-        <div class="flogo"><img src="{{ asset('images/logo-gs-removebg-preview.png') }}" alt="KaAyos"></div>
-        <span>KaAyos</span>
-      </div>
-      <p>A web-based home service platform connecting homeowners with verified skilled workers in Tuy, Batangas — powered by AI matching.</p>
-    </div>
-    <div>
-      <div class="f-title">Services</div>
-      <ul class="f-links">
-        <li><a href="/?category=plumbing"><i class="fa-solid fa-wrench fa-fw" aria-hidden="true"></i> Plumbing</a></li>
-        <li><a href="/?category=electrical"><i class="fa-solid fa-bolt fa-fw" aria-hidden="true"></i> Electrical</a></li>
-        <li><a href="/?category=carpentry"><i class="fa-solid fa-screwdriver-wrench fa-fw" aria-hidden="true"></i> Carpentry</a></li>
-        <li><a href="/?category=cleaning"><i class="fa-solid fa-broom fa-fw" aria-hidden="true"></i> Cleaning</a></li>
-        <li><a href="/#services"><i class="fa-solid fa-grid-2 fa-fw" aria-hidden="true"></i> View all</a></li>
-      </ul>
-    </div>
-    <div>
-      <div class="f-title">Company</div>
-      <ul class="f-links">
-        <li><a href="/about"><i class="fa-solid fa-circle-info fa-fw" aria-hidden="true"></i> About KaAyos</a></li>
-        <li><a href="{{ route('home') }}#how-it-works"><i class="fa-solid fa-list-ol fa-fw" aria-hidden="true"></i> How It Works</a></li>
-        <li><a href="{{ route('register') }}?role=worker"><i class="fa-solid fa-hammer fa-fw" aria-hidden="true"></i> Join as Worker</a></li>
-        <li><a href="{{ route('home') }}#faq"><i class="fa-solid fa-circle-question fa-fw" aria-hidden="true"></i> FAQ</a></li>
-        <li><a href="/contact"><i class="fa-solid fa-envelope fa-fw" aria-hidden="true"></i> Contact</a></li>
-        <li><a href="/privacy"><i class="fa-solid fa-shield fa-fw" aria-hidden="true"></i> Privacy Policy</a></li>
-        <li><a href="/terms"><i class="fa-solid fa-file-lines fa-fw" aria-hidden="true"></i> Terms &amp; Guidelines</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="f-bottom">
-    <div class="socials">
-      <div class="soc" title="Facebook"><i class="fa-brands fa-facebook-f"></i></div>
-      <div class="soc" title="Email"><i class="fa-solid fa-envelope"></i></div>
-    </div>
-  </div>
-</footer>
+</div>
 
 <div id="photoLightbox" class="photo-lightbox" onclick="if(event.target===this)closeLightbox()" role="dialog" aria-modal="true" aria-label="Photo viewer">
   <button class="pl-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
@@ -500,11 +378,10 @@ $pubPhotos = $workerProfile && $workerProfile->portfolios
     : [];
 @endphp
 
+@endsection
+
+@push('scripts')
 <script>
-document.getElementById('navHamburger').addEventListener('click', function() {
-  this.classList.toggle('active');
-  document.getElementById('mobileNav').classList.toggle('open');
-});
 var pubPhotos = @json($pubPhotos);
 
 function openLightbox(index) {
@@ -630,5 +507,4 @@ function copyShareUrl() {
   }
 })();
 </script>
-</body>
-</html>
+@endpush

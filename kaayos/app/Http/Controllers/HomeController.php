@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\WorkerProfile;
+use App\Models\Booking;
 use App\Models\ServiceCategory;
 use App\Models\Testimonial;
+use App\Support\TuyBarangays;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -64,6 +67,13 @@ class HomeController extends Controller
 
         $testimonials = Testimonial::active()->approved()->ordered()->take(6)->get();
 
-        return view('home', compact('workers', 'categories', 'category', 'testimonials'));
+        $stats = [
+            'workers'   => User::where('role', 'worker')->active()->count(),
+            'jobs'      => Booking::completed()->count(),
+            'barangays' => count(TuyBarangays::allBarangays()),
+            'rating'    => round((float) (\App\Models\Review::avg('rating') ?? 0), 1),
+        ];
+
+        return view('home', compact('workers', 'categories', 'category', 'testimonials', 'stats'));
     }
 }

@@ -8,6 +8,7 @@ use App\Support\TuyBarangays;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class SearchController extends Controller
@@ -23,6 +24,19 @@ class SearchController extends Controller
         'Aircon'     => ['aircon', 'air conditioning'],
     ];
 
+    /**
+     * Natural-language intent cues (English + Filipino/Taglish) -> service categories.
+     * Matched with word-boundary regex against the free-text query.
+     */
+    private const INTENT_KEYWORDS = [
+        'Plumbing'   => ['plumbing', 'plumber', 'plumbers', 'gripo', 'tubero', 'leak', 'tumutulo', 'tulo', 'pipe', 'tubero', 'faucet', 'sink', 'lababo', 'toilet', 'inodoro', 'kubeta', 'shower', 'banyo'],
+        'Electrical' => ['electrical', 'electrician', 'electricians', 'kuryente', 'ilaw', 'bombilya', 'wiring', 'circuit', 'saksakan', 'outlet', 'switch', 'bisagra', 'latelectric'],
+        'Cleaning'   => ['cleaning', 'cleaner', 'cleaners', 'linis', 'maglilinis', 'walis', 'housekeeping', 'general clean', 'deep clean', 'burara'],
+        'Carpentry'  => ['carpentry', 'carpenter', 'carpenters', 'karpintero', 'wood', 'kahoy', 'furniture', 'muwebles', 'cabinet', 'gabineto', 'pinto', 'door'],
+        'Painting'   => ['painting', 'painter', 'painters', 'pintura', 'paint', 'kulyit', 'repaint'],
+        'Aircon'     => ['aircon', 'air con', 'air conditioning', 'ere', 'split type', 'window type', 'compressor'],
+    ];
+
     public function index(Request $request)
     {
         $validated = $request->validate([
@@ -30,10 +44,14 @@ class SearchController extends Controller
             'category' => ['nullable', 'string', 'max:255'],
             'location' => ['nullable', 'string', 'max:255'],
         ]);
-
         $query    = $validated['q'] ?? null;
         $category = $validated['category'] ?? null;
         $location = $validated['location'] ?? null;
+
+        // Natural-language location extraction: "plumber in Bolbok", "malapit sa Luna"
+        if (! $location && $query) {
+            $location = $this->extractLocationFromQuery($query);
+        }
 
         $workersQuery = User::where('role', 'worker')
             ->with(['workerProfile.portfolios'])
@@ -136,6 +154,20 @@ class SearchController extends Controller
         ));
     }
 
+    /**
+     * Restrict to workers with at least one active day in their availability
+     * JSON. Portable across MariaDB (no $[*] path wildcard support), MySQL,
+     * and SQLite. Availability is a fixed 7-entry array (Mon..Sun).
+     */
+    protected static function whereAvailable($q): void
+    {
+        $q->where(function ($w) {
+            for ($i = 0; $i < 7; $i++) {
+                $w->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(availability, ?)) = 'true'", ["\$[{$i}].active"]);
+            }
+        });
+    }
+
     protected function categoriesForKeyword(?string $query): array
     {
         if (!$query) {
@@ -152,7 +184,53 @@ class SearchController extends Controller
             }
         }
 
+        if (empty($matches)) {
+            $matches = $this->matchIntentKeywords($needle);
+        }
+
         return $matches;
+    }
+
+    /**
+     * Scan a free-text query (e.g. "my sink is leaking", "sira ang gripo")
+     * for intent keywords and return all matching service categories.
+     */
+    protected function matchIntentKeywords(string $needle): array
+    {
+        $matches = [];
+
+        foreach (self::INTENT_KEYWORDS as $category => $keywords) {
+            foreach ($keywords as $keyword) {
+                if (preg_match('/\b' . preg_quote($keyword, '/') . '\b/i', $needle)) {
+                    $matches[] = $category;
+                    break;
+                }
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
+     * Pull a barangay mention out of a natural-language query.
+     * Handles "plumber in Bolbok", "malapit sa Luna", "near Brgy. Talon",
+     * or a bare barangay mention anywhere in the text.
+     */
+    protected function extractLocationFromQuery(?string $query): ?string
+    {
+        if (!$query) {
+            return null;
+        }
+
+        if (preg_match('/\b(?:in|sa|near|malapit sa|barangay|brgy\.?)\s+([a-z][a-z\-\s]{1,30})/i', $query, $m)) {
+            $found = TuyBarangays::parseLocation(trim($m[1]));
+
+            if ($found !== null) {
+                return $found;
+            }
+        }
+
+        return TuyBarangays::parseLocation($query);
     }
 
     protected function formatWorker(User $u, ?float $distance): array
