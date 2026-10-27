@@ -4,13 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\WorkerProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
@@ -39,11 +36,13 @@ class SocialAuthController extends Controller
         $redirectUrl = config("services.{$provider}.redirect") ?: url("/auth/{$provider}/callback");
 
         try {
-            return Socialite::driver($provider)->stateless()->redirectUrl($redirectUrl)->redirect();
+            // Stateful OAuth flow restores session-based state validation.
+            return Socialite::driver($provider)->redirectUrl($redirectUrl)->redirect();
         } catch (\Throwable $e) {
             Log::warning("OAuth {$provider} redirect failed: " . $e->getMessage());
+
             return redirect()->route('login')->withErrors([
-                'oauth' => "Unable to connect to {$provider} login. Please ensure 'composer install' has been run on your machine.",
+                'oauth' => "Unable to connect to {$provider} login. Please try again later.",
             ]);
         }
     }
@@ -57,87 +56,42 @@ class SocialAuthController extends Controller
         $redirectUrl = config("services.{$provider}.redirect") ?: url("/auth/{$provider}/callback");
 
         try {
-            $socialUser = Socialite::driver($provider)->stateless()->redirectUrl($redirectUrl)->user();
+            // Stateful flow validates the OAuth state parameter automatically.
+            $socialUser = Socialite::driver($provider)->redirectUrl($redirectUrl)->user();
         } catch (\Throwable $e) {
-            Log::warning("OAuth {$provider} failed: " . get_class($e) . ' - ' . $e->getMessage(), [
+            Log::error("OAuth {$provider} failed: " . get_class($e) . ' - ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return redirect()->route('login')->withErrors([
                 'oauth' => "Unable to authenticate with {$provider}. Please try again or log in with email.",
             ]);
         }
 
-        $email = $socialUser->getEmail();
-        if (empty($email)) {
-            $email = "{$provider}_{$socialUser->getId()}@kaayos.app";
-        }
+        // Diagnostic inspection of Google's email_verified claim (set as verified_email by Socialite).
+        // We do not auto-verify accounts; this is logged for observability only.
+        $emailVerifiedClaim = $socialUser->verified_email ?? null;
 
-        // 1. Check if user already linked with this OAuth provider
+        Log::debug("OAuth {$provider} callback received", [
+            'email_verified_claim' => $emailVerifiedClaim,
+            'provider_id' => $socialUser->getId(),
+            'has_email' => !empty($socialUser->getEmail()),
+        ]);
+
+        // Only authenticate accounts explicitly linked to this Google identity.
+        // Do NOT fall back to matching by email (unsafe automatic linking).
         $user = User::where('oauth_provider', $provider)
             ->where('oauth_id', $socialUser->getId())
-            ->orWhere(function ($q) use ($provider, $socialUser) {
-                $q->where('provider', $provider)->where('provider_id', $socialUser->getId());
-            })
             ->first();
 
-        // 2. If not found by OAuth ID, check by email
         if (!$user) {
-            $user = User::where('email', $email)->first();
+            // Unregistered Google user or an existing email account without a Google link.
+            // Do not create a user record, do not link, do not log in, do not mark verified.
+            session()->forget('oauth_intended_role');
 
-            if ($user) {
-                $user->update([
-                    'oauth_provider'    => $provider,
-                    'oauth_id'          => $socialUser->getId(),
-                    'oauth_avatar'      => $socialUser->getAvatar(),
-                    'provider'          => $provider,
-                    'provider_id'       => $socialUser->getId(),
-                    'email_verified_at' => $user->email_verified_at ?? now(),
-                ]);
-            }
-        }
-
-        // 3. If user still does not exist, create a new account
-        if (!$user) {
-            $fullName = trim($socialUser->getName() ?? 'KaAyos User');
-            $parts = explode(' ', $fullName, 2);
-            $firstName = $parts[0] ?? 'KaAyos';
-            $lastName = $parts[1] ?? 'User';
-
-            $role = session()->pull('oauth_intended_role', session('social_role', 'client'));
-            if (!in_array($role, ['client', 'worker'])) {
-                $role = 'client';
-            }
-
-            $user = User::create([
-                'name'              => $fullName,
-                'first_name'        => $firstName,
-                'last_name'         => $lastName,
-                'email'             => $email,
-                'password'          => Hash::make(Str::random(32)),
-                'role'              => $role,
-                'client_type'       => 'homeowner',
-                'oauth_provider'    => $provider,
-                'oauth_id'          => $socialUser->getId(),
-                'oauth_avatar'      => $socialUser->getAvatar(),
-                'provider'          => $provider,
-                'provider_id'       => $socialUser->getId(),
-                'avatar'            => $socialUser->getAvatar(),
-                'email_verified_at' => now(),
-                'city'              => 'Tuy',
-                'province'          => 'Batangas',
+            return redirect()->route('register')->with([
+                'oauth' => 'This Google account is not linked to a KaAyos account. Please register first, then link your Google account.',
             ]);
-
-            if ($role === 'worker') {
-                WorkerProfile::create([
-                    'user_id'         => $user->id,
-                    'hourly_rate'     => 350.00,
-                    'service_radius'  => 15,
-                    'service_radius_km' => 15,
-                    'average_rating'  => 5.00,
-                    'skills'          => [],
-                    'tools_equipped'  => [],
-                ]);
-            }
         }
 
         if ($user->suspended_at) {
@@ -146,12 +100,10 @@ class SocialAuthController extends Controller
             ]);
         }
 
-        if (!$user->hasVerifiedEmail()) {
-            $user->markEmailAsVerified();
-        }
-
         Auth::login($user, remember: true);
         $request->session()->regenerate();
+
+        session()->forget('oauth_intended_role');
 
         if ($user->isAdmin()) {
             return redirect()->intended(route('admin.dashboard'));
@@ -164,4 +116,3 @@ class SocialAuthController extends Controller
         return redirect()->intended(route('client.dashboard'));
     }
 }
-
