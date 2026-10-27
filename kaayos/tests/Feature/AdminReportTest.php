@@ -114,13 +114,15 @@ class AdminReportTest extends TestCase
         $this->seedReportData();
         $completed = Booking::where('status', Booking::STATUS_COMPLETED)->firstOrFail();
 
-        BookingQuote::create([
-            'worker_id' => $completed->worker_id,
-            'booking_id' => $completed->id,
-            'total_amount' => 9999.00,
-            'tip_amount' => 50.00,
-            'paid_at' => now(),
-        ]);
+        BookingQuote::updateOrCreate(
+            ['booking_id' => $completed->id],
+            [
+                'worker_id' => $completed->worker_id,
+                'total_amount' => 9999.00,
+                'tip_amount' => 50.00,
+                'paid_at' => now(),
+            ]
+        );
 
         $result = app(ReportService::class)->build('revenue', '2000-01-01', now()->format('Y-m-d'));
         $summary = collect($result['summary'])->keyBy('label');

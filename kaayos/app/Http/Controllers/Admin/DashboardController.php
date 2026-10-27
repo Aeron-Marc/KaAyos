@@ -21,6 +21,7 @@ class DashboardController extends Controller
             'updatedAt' => $data['generated_at'],
             'deltas' => $this->deltas($data['kpis']),
             'queueSort' => $data['action_queue']['sort'],
+            'adminNav' => app(AdminDashboardMetrics::class)->navCounts(),
         ]);
     }
 

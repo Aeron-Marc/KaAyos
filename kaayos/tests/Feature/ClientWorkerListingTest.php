@@ -15,7 +15,7 @@ class ClientWorkerListingTest extends TestCase
     {
         $client = User::factory()->create(['role' => 'client']);
 
-        $active = User::factory()->create(['role' => 'worker', 'name' => 'Active Worker']);
+        $active = User::factory()->create(['role' => 'worker', 'first_name' => 'Active', 'last_name' => 'Worker']);
         WorkerProfile::create([
             'user_id' => $active->id,
             'availability' => [
@@ -23,7 +23,7 @@ class ClientWorkerListingTest extends TestCase
             ],
         ]);
 
-        $inactive = User::factory()->create(['role' => 'worker', 'name' => 'Inactive Worker']);
+        $inactive = User::factory()->create(['role' => 'worker', 'first_name' => 'Inactive', 'last_name' => 'Worker']);
         WorkerProfile::create([
             'user_id' => $inactive->id,
             'availability' => [
@@ -40,7 +40,7 @@ class ClientWorkerListingTest extends TestCase
 
     public function test_search_filters_by_active_availability_without_sql_errors(): void
     {
-        $active = User::factory()->create(['role' => 'worker', 'name' => 'Searchable Active']);
+        $active = User::factory()->create(['role' => 'worker', 'first_name' => 'Searchable', 'last_name' => 'Active']);
         WorkerProfile::create([
             'user_id' => $active->id,
             'availability' => [
@@ -48,7 +48,7 @@ class ClientWorkerListingTest extends TestCase
             ],
         ]);
 
-        $inactive = User::factory()->create(['role' => 'worker', 'name' => 'Searchable Inactive']);
+        $inactive = User::factory()->create(['role' => 'worker', 'first_name' => 'Searchable', 'last_name' => 'Inactive']);
         WorkerProfile::create([
             'user_id' => $inactive->id,
             'availability' => [
