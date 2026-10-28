@@ -640,6 +640,25 @@ class ClientController extends Controller
 
     public function storeBooking(Request $request, GeoTravelService $geoTravel): JsonResponse
     {
+        $user = auth()->user();
+
+        if ($user->role !== 'client') {
+            abort(403);
+        }
+
+        $enforced     = (bool) config('kaayos.client_identity.enforced');
+        $enforceFrom  = config('kaayos.client_identity.enforce_from');
+        $enforcementActive = $enforced && (!$enforceFrom || now()->gte($enforceFrom));
+
+        if ($enforcementActive && ! $user->isClientIdentityVerified()) {
+            return response()->json([
+                'success' => false,
+                'code' => 'identity_verification_required',
+                'message' => 'Verify your identity before creating a booking.',
+                'redirect' => route('client.account.identity'),
+            ], 422);
+        }
+
         $validated = $request->validate([
             'worker_id'        => ['required', 'exists:users,id'],
             'service_category' => ['required', 'string', 'max:255'],

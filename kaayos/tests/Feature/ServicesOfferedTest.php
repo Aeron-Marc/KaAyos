@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
+use App\Models\ClientIdentityVerification;
 use App\Models\ProviderService;
 use App\Models\Service;
 use App\Models\ServiceCategory;
@@ -31,6 +32,7 @@ class ServicesOfferedTest extends TestCase
         Event::fake();
 
         $this->client = User::factory()->create(['role' => 'client']);
+        $this->verifyClientIdentity();
         $this->worker = User::factory()->create(['role' => 'worker']);
         $this->createWorkerProfile($this->worker);
 
@@ -43,6 +45,23 @@ class ServicesOfferedTest extends TestCase
 
         $this->faucetReplacement = $this->makeService('Faucet Replacement', 'faucet-replacement', 450, 'fixed');
         $this->linkService($this->faucetReplacement);
+    }
+
+    protected function verifyClientIdentity(): void
+    {
+        $verification = ClientIdentityVerification::create([
+            'user_id'           => $this->client->id,
+            'id_type'           => 'philsys',
+            'id_document_path'  => 'clients/1/id.jpg',
+            'selfie_path'       => 'clients/1/selfie.jpg',
+            'submitted_at'      => now(),
+            'reviewed_at'       => now(),
+            'consent_at'        => now(),
+            'consent_version'   => '2026-10-28',
+            'age_attested_at'   => now(),
+        ]);
+        $verification->status = 'verified';
+        $verification->save();
     }
 
     protected function createWorkerProfile(User $worker, ?float $hourlyRate = 350): void

@@ -123,6 +123,22 @@ return [
             'handler' => NullHandler::class,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Client Identity Verification Audit Log
+        |--------------------------------------------------------------------------
+        |
+        | Dedicated channel for identity access/decision events. Logs contain IDs
+        | and document type only (no paths, no reasons, no PII).
+        */
+        'identity' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/identity.log'),
+            'level' => 'info',
+            'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],

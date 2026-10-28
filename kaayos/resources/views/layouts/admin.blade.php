@@ -54,6 +54,7 @@
         .status-pending{background:rgba(245,158,11,.1);color:var(--y8)}
         .status-approved,.status-verified{background:rgba(16,185,129,.1);color:var(--s8)}
         .status-rejected{background:rgba(239,68,68,.1);color:var(--d8)}
+        .status-resubmission_required{background:rgba(245,158,11,.1);color:var(--y8)}
         .status-under_review,.status-open{background:rgba(59,130,246,.1);color:#2563EB}
         .status-resolved{background:rgba(16,185,129,.1);color:var(--s8)}
         .status-in_progress{background:rgba(59,130,246,.1);color:#2563EB}
@@ -309,6 +310,15 @@
                     <a href="{{ route('admin.workers.index') }}" class="{{ request()->routeIs('admin.workers.*') ? 'active' : '' }}" @if(request()->routeIs('admin.workers.*')) aria-current="page" @endif>
                         <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
                         <span>{{ __('admin.nav.workers') }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.client-verifications.index') }}" class="{{ request()->routeIs('admin.client-verifications.*') ? 'active' : '' }}" @if(request()->routeIs('admin.client-verifications.*')) aria-current="page" @endif>
+                        <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+                        <span>{{ __('admin.nav.client_verifications') }}</span>
+                        @if(($adminNav['client_verifications'] ?? 0) > 0)
+                            <span class="sidebar-badge">{{ $adminNav['client_verifications'] }}</span>
+                        @endif
                     </a>
                 </li>
                 <li>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\ClientVerificationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DisputeController;
 use App\Http\Controllers\Admin\ProviderServiceController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Client\AddressController;
 use App\Http\Controllers\Client\ClientController;
+use App\Http\Controllers\Client\IdentityVerificationController;
 use App\Http\Controllers\Client\WorkerController as ClientWorkerController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocaleController;
@@ -52,7 +54,13 @@ Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'handlePro
 Route::get('/auth/google/register/redirect', [SocialAuthController::class, 'redirectToGoogleRegister'])->name('auth.google.register.redirect');
 Route::get('/auth/google/register/callback', [SocialAuthController::class, 'handleGoogleRegisterCallback'])->name('auth.google.register.callback');
 Route::get('/auth/google/register/form', [SocialAuthController::class, 'showGoogleRegistrationForm'])->name('auth.google.register.form');
-Route::post('/auth/google/register/complete', [SocialAuthController::class, 'completeGoogleRegistration'])->middleware('throttle:register')->name('auth.google.register.complete');
+Route::post('/auth/google/register/complete', [SocialAuthController::class, 'completeGoogleRegistration'])->middleware('throttle:google-register')->name('auth.google.register.complete');
+
+// Facebook Registration (separate from login flow)
+Route::get('/auth/facebook/register/redirect', [SocialAuthController::class, 'redirectToFacebookRegister'])->name('auth.facebook.register.redirect');
+Route::get('/auth/facebook/register/callback', [SocialAuthController::class, 'handleFacebookRegisterCallback'])->name('auth.facebook.register.callback');
+Route::get('/auth/facebook/register/form', [SocialAuthController::class, 'showFacebookRegistrationForm'])->name('auth.facebook.register.form');
+Route::post('/auth/facebook/register/complete', [SocialAuthController::class, 'completeFacebookRegistration'])->middleware('throttle:google-register')->name('auth.facebook.register.complete');
 
 Route::get('/workers/{worker}', [PublicWorkerController::class, 'show'])->name('workers.public.show');
 
@@ -115,6 +123,9 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::get('/testimonials', [TestimonialController::class, 'index'])->name('testimonials.index');
     Route::get('/testimonials/create', [TestimonialController::class, 'create'])->name('testimonials.create');
     Route::post('/testimonials', [TestimonialController::class, 'store'])->name('testimonials.store');
+
+    Route::get('/account/identity', [IdentityVerificationController::class, 'show'])->name('account.identity');
+    Route::post('/account/identity', [IdentityVerificationController::class, 'store'])->middleware('throttle:6,1')->name('account.identity.store');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -249,6 +260,14 @@ Route::middleware(['auth', 'verified', 'admin', 'no-cache'])->prefix('admin')->n
     Route::get('/verification/{verification}', [VerificationController::class, 'show'])->name('verification.show');
     Route::post('/verification/{verification}/approve', [VerificationController::class, 'approve'])->name('verification.approve');
     Route::post('/verification/{verification}/reject', [VerificationController::class, 'reject'])->name('verification.reject');
+
+    // Client Identity Verifications
+    Route::get('/client-verifications', [ClientVerificationController::class, 'index'])->name('client-verifications.index');
+    Route::get('/client-verifications/{verification}', [ClientVerificationController::class, 'show'])->name('client-verifications.show');
+    Route::post('/client-verifications/{verification}/approve', [ClientVerificationController::class, 'approve'])->name('client-verifications.approve');
+    Route::post('/client-verifications/{verification}/reject', [ClientVerificationController::class, 'reject'])->name('client-verifications.reject');
+    Route::post('/client-verifications/{verification}/request-resubmission', [ClientVerificationController::class, 'requestResubmission'])->name('client-verifications.request-resubmission');
+    Route::get('/client-verifications/{verification}/document/{document}', [ClientVerificationController::class, 'document'])->name('client-verifications.document');
 
     // Service Categories
     Route::get('/service-categories', [ServiceCategoryController::class, 'index'])->name('service-categories.index');

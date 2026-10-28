@@ -306,4 +306,30 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(ClientAddress::class);
     }
+
+    public function clientIdentityVerifications(): HasMany
+    {
+        return $this->hasMany(ClientIdentityVerification::class);
+    }
+
+    public function latestClientIdentityVerification(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ClientIdentityVerification::class)->latestOfMany('submitted_at');
+    }
+
+    public function clientIdentityStatus(): string
+    {
+        $latest = $this->latestClientIdentityVerification;
+
+        if (! $latest) {
+            return 'not_submitted';
+        }
+
+        return $latest->status;
+    }
+
+    public function isClientIdentityVerified(): bool
+    {
+        return $this->clientIdentityStatus() === ClientIdentityVerification::STATUS_VERIFIED;
+    }
 }

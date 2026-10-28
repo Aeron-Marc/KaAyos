@@ -60,6 +60,23 @@ return [
             'report' => false,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Client Identity Verification Disk
+        |--------------------------------------------------------------------------
+        |
+        | Private storage for client government-ID and selfie uploads.
+        | serve => false so files are never directly web-accessible; they are
+        | streamed through a controlled controller route with restrictive headers.
+        */
+        'identity' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/client-identity'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

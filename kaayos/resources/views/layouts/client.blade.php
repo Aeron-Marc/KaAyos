@@ -77,6 +77,18 @@
                 {{ __('nav.account') }}
             </a>
 
+            @php
+                $identityPending = auth()->user() ? (int) auth()->user()->clientIdentityVerifications()->pending()->count() : 0;
+            @endphp
+            <a href="{{ route('client.account.identity') }}"
+               class="nav-item {{ request()->routeIs('client.account.identity*') ? 'active' : '' }}">
+                <i class="fa-solid fa-id-card nav-icon" aria-hidden="true"></i>
+                {{ __('nav.identity_verification') }}
+                @if($identityPending > 0)
+                    <span class="nav-badge" style="background:var(--d10);color:#fff;border-radius:10px;padding:2px 7px;font-size:.72rem;font-weight:700;margin-left:6px;">{{ $identityPending }}</span>
+                @endif
+            </a>
+
             <a href="{{ route('terms') }}" target="_blank" rel="noopener" class="nav-item">
                 <i class="fa-solid fa-file-shield nav-icon" aria-hidden="true"></i>
                 Terms &amp; Guidelines

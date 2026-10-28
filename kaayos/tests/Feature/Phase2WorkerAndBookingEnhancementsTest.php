@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
+use App\Models\ClientIdentityVerification;
 use App\Models\User;
 use App\Models\WorkerProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +21,7 @@ class Phase2WorkerAndBookingEnhancementsTest extends TestCase
         parent::setUp();
 
         $this->client = User::factory()->create(['role' => 'client']);
+        $this->verifyClientIdentity();
         $this->worker = User::factory()->create(['role' => 'worker']);
 
         WorkerProfile::create([
@@ -35,6 +37,23 @@ class Phase2WorkerAndBookingEnhancementsTest extends TestCase
                 ['day' => 'Sunday', 'active' => true, 'start' => '08:00', 'end' => '17:00'],
             ],
         ]);
+    }
+
+    protected function verifyClientIdentity(): void
+    {
+        $verification = ClientIdentityVerification::create([
+            'user_id'           => $this->client->id,
+            'id_type'           => 'philsys',
+            'id_document_path'  => 'clients/1/id.jpg',
+            'selfie_path'       => 'clients/1/selfie.jpg',
+            'submitted_at'      => now(),
+            'reviewed_at'       => now(),
+            'consent_at'        => now(),
+            'consent_version'   => '2026-10-28',
+            'age_attested_at'   => now(),
+        ]);
+        $verification->status = 'verified';
+        $verification->save();
     }
 
     public function test_client_booking_stores_time_and_work_parameters_with_complexity_multiplier(): void

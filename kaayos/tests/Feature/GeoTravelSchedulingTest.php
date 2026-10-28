@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
+use App\Models\ClientIdentityVerification;
 use App\Models\User;
 use App\Models\WorkerProfile;
 use App\Services\GeoTravelService;
@@ -31,6 +32,7 @@ class GeoTravelSchedulingTest extends TestCase
             'latitude'  => 14.0192,
             'longitude' => 120.7353,
         ]);
+        $this->verifyClientIdentity();
 
         $this->worker = User::factory()->create([
             'role'      => 'worker',
@@ -52,6 +54,23 @@ class GeoTravelSchedulingTest extends TestCase
                 ['day' => 'Sunday', 'active' => true, 'start' => '07:00', 'end' => '19:00'],
             ],
         ]);
+    }
+
+    protected function verifyClientIdentity(): void
+    {
+        $verification = ClientIdentityVerification::create([
+            'user_id'           => $this->client->id,
+            'id_type'           => 'philsys',
+            'id_document_path'  => 'clients/1/id.jpg',
+            'selfie_path'       => 'clients/1/selfie.jpg',
+            'submitted_at'      => now(),
+            'reviewed_at'       => now(),
+            'consent_at'        => now(),
+            'consent_version'   => '2026-10-28',
+            'age_attested_at'   => now(),
+        ]);
+        $verification->status = 'verified';
+        $verification->save();
     }
 
     public function test_geotravel_service_calculates_distance_and_transit_time(): void

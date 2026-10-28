@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Booking;
 use App\Models\ClientAddress;
+use App\Models\ClientIdentityVerification;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\User;
@@ -28,6 +29,7 @@ class ClientAddressesTest extends TestCase
         Event::fake();
 
         $this->client = User::factory()->create(['role' => 'client']);
+        $this->verifyClientIdentity();
         $this->worker = User::factory()->create(['role' => 'worker']);
         WorkerProfile::create([
             'user_id'      => $this->worker->id,
@@ -80,6 +82,23 @@ class ClientAddressesTest extends TestCase
     }
 
     // ── CRUD + default handling ──────────────────────────────
+
+    protected function verifyClientIdentity(): void
+    {
+        $verification = ClientIdentityVerification::create([
+            'user_id'           => $this->client->id,
+            'id_type'           => 'philsys',
+            'id_document_path'  => 'clients/1/id.jpg',
+            'selfie_path'       => 'clients/1/selfie.jpg',
+            'submitted_at'      => now(),
+            'reviewed_at'       => now(),
+            'consent_at'        => now(),
+            'consent_version'   => '2026-10-28',
+            'age_attested_at'   => now(),
+        ]);
+        $verification->status = 'verified';
+        $verification->save();
+    }
 
     public function test_first_saved_address_becomes_default(): void
     {

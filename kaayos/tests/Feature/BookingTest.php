@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Events\BookingCreated;
 use App\Models\Booking;
+use App\Models\ClientIdentityVerification;
 use App\Models\User;
 use App\Models\WorkerProfile;
 use App\Notifications\BookingCancelled;
@@ -25,6 +26,25 @@ class BookingTest extends TestCase
 
         $this->client = User::factory()->create(['role' => 'client']);
         $this->worker = User::factory()->create(['role' => 'worker']);
+
+        $this->verifyClientIdentity();
+    }
+
+    protected function verifyClientIdentity(): void
+    {
+        $verification = ClientIdentityVerification::create([
+            'user_id'           => $this->client->id,
+            'id_type'           => 'philsys',
+            'id_document_path'  => 'clients/1/id.jpg',
+            'selfie_path'       => 'clients/1/selfie.jpg',
+            'submitted_at'      => now(),
+            'reviewed_at'       => now(),
+            'consent_at'        => now(),
+            'consent_version'   => '2026-10-28',
+            'age_attested_at'   => now(),
+        ]);
+        $verification->status = 'verified';
+        $verification->save();
     }
 
     protected function createWorkerWithAvailability(): void

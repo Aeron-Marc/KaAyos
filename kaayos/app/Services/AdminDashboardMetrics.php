@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Models\ClientIdentityVerification;
 use App\Models\Dispute;
 use App\Models\User;
 use App\Models\WorkerDocument;
@@ -93,8 +94,9 @@ class AdminDashboardMetrics
     private function buildNavCounts(): array
     {
         return [
-            'disputes' => (int) Dispute::whereIn('status', ['open', 'under_review'])->count(),
-            'verifications' => (int) WorkerDocument::pending()->distinct()->count('user_id'),
+            'disputes'             => (int) Dispute::whereIn('status', ['open', 'under_review'])->count(),
+            'verifications'        => (int) WorkerDocument::pending()->distinct()->count('user_id'),
+            'client_verifications' => (int) ClientIdentityVerification::pending()->count(),
         ];
     }
 

@@ -446,6 +446,15 @@
             <button type="button" class="modal-close" onclick="closeBookModal()">&times;</button>
         </div>
         <div class="modal-body">
+            @if(config('kaayos.client_identity.enforced') && !auth()->user()->isClientIdentityVerified())
+                <div class="info-banner info-banner-warning" style="margin-bottom:16px;padding:12px 14px;border-radius:8px;background:#fffbeb;border:1px solid #fde047;">
+                    <i class="fa-solid fa-id-circle" aria-hidden="true" style="margin-right:8px;"></i>
+                    <span style="font-size:.9rem;color:#713f12;">
+                        {{ __('client.identity.booking_gate_notice') }}
+                        <a href="{{ route('client.account.identity') }}" style="color:#b45309;text-decoration:underline;font-weight:600;margin-left:6px;">{{ __('client.identity.go_to_identity') }}</a>
+                    </span>
+                </div>
+            @endif
             <form id="book-form" onsubmit="submitBooking(event)">
                 @csrf
                 <input type="hidden" name="worker_id" value="{{ $worker->id }}">

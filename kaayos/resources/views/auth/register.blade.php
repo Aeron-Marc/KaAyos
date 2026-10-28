@@ -283,9 +283,19 @@ select{cursor:pointer;padding-right:38px}
       </div>
       @endif
 
-      <form id="registerForm" method="POST" action="{{ isset($google_registration) ? route('auth.google.register.complete') : route('register') }}" novalidate>
+      @if(isset($oauth_registration) && $oauth_provider === 'facebook')
+      <div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:flex-start;gap:10px">
+        <i class="fa-brands fa-facebook" style="color:#1877F2;margin-top:2px;flex-shrink:0"></i>
+        <div style="flex:1">
+          <div style="font-size:.85rem;font-weight:600;color:#1e3a8a;margin-bottom:6px">Signing up with Facebook</div>
+          <div style="font-size:.8rem;color:#1e3a8a;margin-bottom:0">{{ $oauth_registration['email'] }}</div>
+        </div>
+      </div>
+      @endif
+
+      <form id="registerForm" method="POST" action="{{ isset($oauth_registration) ? route('auth.'.$oauth_provider.'.register.complete') : route('register') }}" novalidate>
         @csrf
-        <input type="hidden" name="role" id="roleInput" value="{{ isset($google_role) ? $google_role : 'client' }}">
+        <input type="hidden" name="role" id="roleInput" value="{{ isset($oauth_role) ? $oauth_role : (isset($google_role) ? $google_role : 'client') }}">
         <input type="hidden" name="intended" id="intendedInput" value="">
 
         <!-- STEP 1: ROLE -->
@@ -309,26 +319,29 @@ select{cursor:pointer;padding-right:38px}
 
           <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line);">
             <div style="font-size:.82rem; font-weight:600; color:var(--slate); margin-bottom:10px; text-align:center;">
-              @if(isset($google_registration))
-              Completing Google registration
+              @if(isset($oauth_registration))
+              Completing {{ ucfirst($oauth_provider) }} registration
               @else
               Continue with
               @endif
             </div>:
             <div class="social-row">
-              @if(!isset($google_registration))
+              @if(!isset($oauth_registration))
               <a href="{{ route('auth.google.register.redirect', ['role' => 'client']) }}" id="socialGoogleRegister" class="social-btn google-btn">
                 <i class="fa-brands fa-google" style="color:#EA4335;"></i> Sign up with Google
               </a>
               <a href="{{ route('auth.social.redirect', 'google') }}" id="socialGoogleLogin" class="social-btn google-btn">
                 <i class="fa-brands fa-google" style="color:#EA4335;"></i> Sign in with Google
               </a>
+              <a href="{{ route('auth.facebook.register.redirect', ['role' => 'client']) }}" id="socialFacebookRegister" class="social-btn facebook-btn">
+                <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Sign up with Facebook
+              </a>
               <a href="{{ route('auth.social.redirect', 'facebook') }}" id="socialFacebook" class="social-btn facebook-btn">
                 <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Sign in with Facebook
               </a>
               @else
               <div style="padding:11px 16px;background:#fff;border:1.5px solid var(--line);border-radius:10px;font-size:.84rem;font-weight:600;color:var(--graphite)">
-                <i class="fa-brands fa-google" style="color:#EA4335;"></i> Google account selected
+                <i class="fa-brands fa-{{ $oauth_provider === 'google' ? 'google' : 'facebook' }}" style="color:{{ $oauth_provider === 'google' ? '#EA4335' : '#1877F2' }};"></i> {{ ucfirst($oauth_provider) }} account selected
               </div>
               @endif
             </div>
@@ -346,14 +359,14 @@ select{cursor:pointer;padding-right:38px}
               <label for="first_name">First name</label>
               <div class="input-wrap">
                 <i class="fa-solid fa-user icon"></i>
-                <input type="text" id="first_name" name="first_name" placeholder="Juan" required autocomplete="given-name" value="{{ old('first_name', $google_registration['first_name'] ?? '') }}">
+                <input type="text" id="first_name" name="first_name" placeholder="Juan" required autocomplete="given-name" value="{{ old('first_name', $oauth_registration['first_name'] ?? $google_registration['first_name'] ?? '') }}">
               </div>
             </div>
             <div class="field">
               <label for="last_name">Last name</label>
               <div class="input-wrap">
                 <i class="fa-solid fa-user icon"></i>
-                <input type="text" id="last_name" name="last_name" placeholder="dela Cruz" required autocomplete="family-name" value="{{ old('last_name', $google_registration['last_name'] ?? '') }}">
+                <input type="text" id="last_name" name="last_name" placeholder="dela Cruz" required autocomplete="family-name" value="{{ old('last_name', $oauth_registration['last_name'] ?? $google_registration['last_name'] ?? '') }}">
               </div>
             </div>
           </div>
@@ -362,7 +375,7 @@ select{cursor:pointer;padding-right:38px}
             <label for="email">Email address</label>
             <div class="input-wrap">
               <i class="fa-regular fa-envelope icon"></i>
-                <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" value="{{ old('email', $google_registration['email'] ?? '') }}">
+                <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" value="{{ old('email', $oauth_registration['email'] ?? $google_registration['email'] ?? '') }}">
             </div>
           </div>
 
@@ -543,7 +556,7 @@ function goToStep(n){
 
 var savedRole=document.getElementById('roleInput').value;
 if(savedRole==='worker'){setRole('worker')}
-@if(!isset($google_registration))
+@if(!isset($oauth_registration))
 updateSocialLinks(savedRole);
 @endif
 @if($errors->any())
@@ -565,9 +578,9 @@ if(urlRole==='worker'){
   goToStep(2);
 }
 
-@if(isset($google_registration) && $google_role)
-var googleRole = '{{ $google_role }}';
-if(googleRole === 'worker'){
+@if(isset($oauth_registration) && $oauth_role)
+var oauthRole = '{{ $oauth_role }}';
+if(oauthRole === 'worker'){
   setRole('worker');
   document.getElementById('roleClient').style.opacity='0.4';
   document.getElementById('roleClient').style.pointerEvents='none';

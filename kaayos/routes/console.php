@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('bookings:cancel-expired')->hourly();
+Schedule::command('identity:prune')->daily();
