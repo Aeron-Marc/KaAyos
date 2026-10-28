@@ -107,7 +107,7 @@
     <div class="dev-card">
       <div class="dev-photo {{ $dev['photo'] && $photoPath && file_exists($photoPath) ? '' : 'dev-photo-empty' }}">
         @if($dev['photo'] && $photoPath && file_exists($photoPath))
-          <img src="{{ asset('images/team/' . $dev['photo']) }}" alt="{{ $dev['name'] }}">
+          <img src="{{ asset('images/team/' . rawurlencode($dev['photo'])) }}" alt="{{ $dev['name'] }}">
         @else
           <i class="fa-solid fa-camera" aria-hidden="true"></i>
           <span>Photo coming soon</span>
