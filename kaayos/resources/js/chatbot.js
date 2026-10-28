@@ -129,6 +129,7 @@
 
     fetch('/api/chat', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': CSRF_TOKEN,
