@@ -645,6 +645,21 @@ class WorkerController extends Controller
         return view('worker.dashboard.notifications', $this->shared());
     }
 
+    public function markNotificationRead(Request $request, $id)
+    {
+        $notif = auth()->user()->notifications()->findOrFail($id);
+        $notif->markAsRead();
+
+        return back()->with('success', 'Notification marked as read.');
+    }
+
+    public function markAllNotificationsRead(Request $request)
+    {
+        auth()->user()->unreadNotifications->each->markAsRead();
+
+        return back()->with('success', 'All notifications marked as read.');
+    }
+
     public function jobs(Request $request): RedirectResponse
     {
         $query = $request->query('filter') ? ['filter' => $request->query('filter')] : [];

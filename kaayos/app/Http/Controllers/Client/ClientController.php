@@ -195,72 +195,52 @@ class ClientController extends Controller
     protected function getNotifications(): array
     {
         $user = auth()->user();
-        $list = [];
 
-        $latestNewBooking = $user->bookingsAsClient()
-            ->where('status', Booking::STATUS_NEW)
-            ->latest('created_at')
-            ->first();
-        if ($latestNewBooking) {
-            $count = $user->bookingsAsClient()->where('status', Booking::STATUS_NEW)->count();
-            $list[] = [
-                'type'   => 'booking',
-                'title'  => 'Pending bookings',
-                'desc'   => "You have {$count} booking request(s) waiting for worker response.",
-                'time'   => $latestNewBooking->created_at->diffForHumans(),
-                'unread' => true,
-                'url'    => route('client.bookings'),
-            ];
-        }
+        $notifications = $user->notifications()
+            ->latest()
+            ->get()
+            ->map(fn ($notif) => $this->mapNotification($notif))
+            ->values();
 
-        $latestUnreadMessage = Message::forUser($user->id)
-            ->unread()
-            ->latest('created_at')
-            ->first();
-        if ($latestUnreadMessage) {
-            $count = Message::forUser($user->id)->unread()->count();
-            $list[] = [
-                'type'   => 'message',
-                'title'  => 'Unread messages',
-                'desc'   => "You have {$count} unread message(s).",
-                'time'   => $latestUnreadMessage->created_at->diffForHumans(),
-                'unread' => true,
-                'url'    => route('client.messages'),
-            ];
-        }
-
-        $latestReviewPending = $user->bookingsAsClient()
-            ->where('status', Booking::STATUS_COMPLETED)
-            ->whereDoesntHave('review')
-            ->latest('completed_at')
-            ->first();
-        if ($latestReviewPending) {
-            $count = $user->bookingsAsClient()
-                ->where('status', Booking::STATUS_COMPLETED)
-                ->whereDoesntHave('review')
-                ->count();
-            $list[] = [
-                'type'   => 'review',
-                'title'  => 'Pending reviews',
-                'desc'   => "You have {$count} completed booking(s) waiting for your review.",
-                'time'   => $latestReviewPending->completed_at?->diffForHumans() ?? 'Just now',
-                'unread' => true,
-                'url'    => route('client.bookings'),
-            ];
-        }
-
-        if (count($list) === 0) {
-            $list[] = [
+        if ($notifications->isEmpty()) {
+            $notifications = collect([[
                 'type'   => 'system',
                 'title'  => 'Welcome to KaAyos!',
                 'desc'   => 'Browse workers and book a service to get started.',
                 'time'   => now()->subDay()->diffForHumans(),
                 'unread' => false,
                 'url'    => route('client.workers'),
-            ];
+            ]]);
         }
 
-        return $list;
+        return $notifications->all();
+    }
+
+    protected function mapNotification($notif): array
+    {
+        $data = $notif->data ?? [];
+        $type = $data['type'] ?? 'system';
+
+        return [
+            'type'           => $type,
+            'title'          => $data['title'] ?? 'Notification',
+            'desc'           => $data['message'] ?? $data['desc'] ?? '',
+            'time'           => $notif->created_at->diffForHumans(),
+            'unread'         => is_null($notif->read_at),
+            'url'            => $this->notificationUrl($type, $data),
+            'booking_id'     => $data['booking_id'] ?? null,
+            'conversation_id'=> $data['conversation_id'] ?? null,
+        ];
+    }
+
+    protected function notificationUrl(string $type, array $data): string
+    {
+        return match ($type) {
+            'message' => route('client.messages', isset($data['conversation_id']) ? ['conversation' => $data['conversation_id']] : []),
+            'review'  => route('client.bookings'),
+            'booking' => route('client.bookings'),
+            default   => route('client.dashboard'),
+        };
     }
 
     protected function getConversations(): array
@@ -391,6 +371,21 @@ class ClientController extends Controller
         return view('client.dashboard.notifications', $this->shared([
             'notifications',
         ]));
+    }
+
+    public function markNotificationRead(Request $request, $id)
+    {
+        $notif = auth()->user()->notifications()->findOrFail($id);
+        $notif->markAsRead();
+
+        return back()->with('success', 'Notification marked as read.');
+    }
+
+    public function markAllNotificationsRead(Request $request)
+    {
+        auth()->user()->unreadNotifications->each->markAsRead();
+
+        return back()->with('success', 'All notifications marked as read.');
     }
 
     public function bookings(): View

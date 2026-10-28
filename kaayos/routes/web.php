@@ -91,6 +91,8 @@ Route::post('/reset-password', [ResetPasswordController::class, 'store'])->name(
 Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('client.')->group(function () {
     Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [ClientController::class, 'notifications'])->name('dashboard.notifications');
+    Route::post('/notifications/{notification}/read', [ClientController::class, 'markNotificationRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [ClientController::class, 'markAllNotificationsRead'])->name('notifications.read-all');
     Route::get('/workers', [ClientWorkerController::class, 'index'])->name('workers');
     Route::get('/workers/{worker}', [ClientWorkerController::class, 'show'])->name('workers.show');
     Route::get('/workers/{worker}/check-schedule', [ClientController::class, 'checkScheduleConflict'])->name('workers.check-schedule');
@@ -155,6 +157,8 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
 
     Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/notifications', [WorkerController::class, 'notifications'])->name('dashboard.notifications');
+    Route::post('/notifications/{notification}/read', [WorkerController::class, 'markNotificationRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [WorkerController::class, 'markAllNotificationsRead'])->name('notifications.read-all');
     Route::get('/jobs', [WorkerController::class, 'jobs'])->name('jobs');
     Route::get('/schedule', [WorkerController::class, 'schedule'])->name('schedule');
     Route::get('/calendar/data', [WorkerController::class, 'calendarData'])->name('calendar.data');
