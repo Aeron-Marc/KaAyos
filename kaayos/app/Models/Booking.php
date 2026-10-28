@@ -24,6 +24,13 @@ class Booking extends Model
         'status',
         'price',
         'tip_amount',
+        'is_priority',
+        'is_broadcast_pool',
+        'broadcast_expires_at',
+        'warranty_days',
+        'warranty_expires_at',
+        'payment_channel',
+        'materials_total',
         'payment_scheme',
         'agreed_rate',
         'extras_total',
@@ -623,5 +630,15 @@ class Booking extends Model
     public function bookingWorkers(): HasMany
     {
         return $this->hasMany(BookingWorker::class);
+    }
+
+    public function materials(): HasMany
+    {
+        return $this->hasMany(BookingMaterial::class);
+    }
+
+    public function warrantyClaims(): HasMany
+    {
+        return $this->hasMany(WarrantyClaim::class);
     }
 }
