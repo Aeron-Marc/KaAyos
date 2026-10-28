@@ -48,6 +48,12 @@ Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('local
 Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirectToProvider'])->name('auth.social.redirect');
 Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'handleProviderCallback'])->name('social.callback');
 
+// Google Registration (separate from login flow)
+Route::get('/auth/google/register/redirect', [SocialAuthController::class, 'redirectToGoogleRegister'])->name('auth.google.register.redirect');
+Route::get('/auth/google/register/callback', [SocialAuthController::class, 'handleGoogleRegisterCallback'])->name('auth.google.register.callback');
+Route::get('/auth/google/register/form', [SocialAuthController::class, 'showGoogleRegistrationForm'])->name('auth.google.register.form');
+Route::post('/auth/google/register/complete', [SocialAuthController::class, 'completeGoogleRegistration'])->middleware('throttle:register')->name('auth.google.register.complete');
+
 Route::get('/workers/{worker}', [PublicWorkerController::class, 'show'])->name('workers.public.show');
 
 // Shareable worker profile link, e.g. /worker/ID-4K7QP

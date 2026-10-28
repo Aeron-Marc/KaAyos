@@ -273,9 +273,19 @@ select{cursor:pointer;padding-right:38px}
       <div class="alert"><i class="fa-solid fa-circle-exclamation"></i>{{ session('error') }}</div>
       @endif
 
-      <form id="registerForm" method="POST" action="{{ route('register') }}" novalidate>
+      @if(isset($google_registration))
+      <div style="background:var(--success-bg);border:1px solid #a3e0c0;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:flex-start;gap:10px">
+        <i class="fa-brands fa-google" style="color:#EA4335;margin-top:2px;flex-shrink:0"></i>
+        <div style="flex:1">
+          <div style="font-size:.85rem;font-weight:600;color:#1a6852;margin-bottom:6px">Signing up with Google</div>
+          <div style="font-size:.8rem;color:var(--success);margin-bottom:0">{{ $google_registration['email'] }}</div>
+        </div>
+      </div>
+      @endif
+
+      <form id="registerForm" method="POST" action="{{ isset($google_registration) ? route('auth.google.register.complete') : route('register') }}" novalidate>
         @csrf
-        <input type="hidden" name="role" id="roleInput" value="client">
+        <input type="hidden" name="role" id="roleInput" value="{{ isset($google_role) ? $google_role : 'client' }}">
         <input type="hidden" name="intended" id="intendedInput" value="">
 
         <!-- STEP 1: ROLE -->
@@ -298,14 +308,29 @@ select{cursor:pointer;padding-right:38px}
           </div>
 
           <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line);">
-            <div style="font-size:.82rem; font-weight:600; color:var(--slate); margin-bottom:10px; text-align:center;">{{ __('oauth.or_email') }}:</div>
+            <div style="font-size:.82rem; font-weight:600; color:var(--slate); margin-bottom:10px; text-align:center;">
+              @if(isset($google_registration))
+              Completing Google registration
+              @else
+              Continue with
+              @endif
+            </div>:
             <div class="social-row">
-              <a href="{{ route('auth.social.redirect', 'google') }}" id="socialGoogle" class="social-btn google-btn">
-                <i class="fa-brands fa-google" style="color:#EA4335;"></i> Google
+              @if(!isset($google_registration))
+              <a href="{{ route('auth.google.register.redirect', ['role' => 'client']) }}" id="socialGoogleRegister" class="social-btn google-btn">
+                <i class="fa-brands fa-google" style="color:#EA4335;"></i> Sign up with Google
+              </a>
+              <a href="{{ route('auth.social.redirect', 'google') }}" id="socialGoogleLogin" class="social-btn google-btn">
+                <i class="fa-brands fa-google" style="color:#EA4335;"></i> Sign in with Google
               </a>
               <a href="{{ route('auth.social.redirect', 'facebook') }}" id="socialFacebook" class="social-btn facebook-btn">
-                <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Facebook
+                <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Sign in with Facebook
               </a>
+              @else
+              <div style="padding:11px 16px;background:#fff;border:1.5px solid var(--line);border-radius:10px;font-size:.84rem;font-weight:600;color:var(--graphite)">
+                <i class="fa-brands fa-google" style="color:#EA4335;"></i> Google account selected
+              </div>
+              @endif
             </div>
           </div>
         </section>
@@ -321,14 +346,14 @@ select{cursor:pointer;padding-right:38px}
               <label for="first_name">First name</label>
               <div class="input-wrap">
                 <i class="fa-solid fa-user icon"></i>
-                <input type="text" id="first_name" name="first_name" placeholder="Juan" required autocomplete="given-name">
+                <input type="text" id="first_name" name="first_name" placeholder="Juan" required autocomplete="given-name" value="{{ old('first_name', $google_registration['first_name'] ?? '') }}">
               </div>
             </div>
             <div class="field">
               <label for="last_name">Last name</label>
               <div class="input-wrap">
                 <i class="fa-solid fa-user icon"></i>
-                <input type="text" id="last_name" name="last_name" placeholder="dela Cruz" required autocomplete="family-name">
+                <input type="text" id="last_name" name="last_name" placeholder="dela Cruz" required autocomplete="family-name" value="{{ old('last_name', $google_registration['last_name'] ?? '') }}">
               </div>
             </div>
           </div>
@@ -337,7 +362,7 @@ select{cursor:pointer;padding-right:38px}
             <label for="email">Email address</label>
             <div class="input-wrap">
               <i class="fa-regular fa-envelope icon"></i>
-              <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email">
+                <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" value="{{ old('email', $google_registration['email'] ?? '') }}">
             </div>
           </div>
 
@@ -480,11 +505,14 @@ function setRole(role){
 }
 
 function updateSocialLinks(role) {
-  var baseGoogle = '{{ route("auth.social.redirect", "google") }}';
+  var baseGoogleRegister = '{{ route("auth.google.register.redirect", ["role" => "client"]) }}';
+  var baseGoogleLogin = '{{ route("auth.social.redirect", "google") }}';
   var baseFacebook = '{{ route("auth.social.redirect", "facebook") }}';
-  var google = document.getElementById('socialGoogle');
+  var googleRegister = document.getElementById('socialGoogleRegister');
+  var googleLogin = document.getElementById('socialGoogleLogin');
   var facebook = document.getElementById('socialFacebook');
-  if (google) google.href = baseGoogle + '?role=' + role;
+  if (googleRegister) googleRegister.href = baseGoogleRegister + '&role=' + role;
+  if (googleLogin) googleLogin.href = baseGoogleLogin + '?role=' + role;
   if (facebook) facebook.href = baseFacebook + '?role=' + role;
 }
 
@@ -515,7 +543,9 @@ function goToStep(n){
 
 var savedRole=document.getElementById('roleInput').value;
 if(savedRole==='worker'){setRole('worker')}
+@if(!isset($google_registration))
 updateSocialLinks(savedRole);
+@endif
 @if($errors->any())
   var targetStep=1;
   @if($errors->has('first_name')||$errors->has('last_name')||$errors->has('email')||$errors->has('phone')||$errors->has('service_category')||$errors->has('barangay'))
@@ -534,6 +564,19 @@ if(urlRole==='worker'){
   document.getElementById('roleClient').style.cursor='default';
   goToStep(2);
 }
+
+@if(isset($google_registration) && $google_role)
+var googleRole = '{{ $google_role }}';
+if(googleRole === 'worker'){
+  setRole('worker');
+  document.getElementById('roleClient').style.opacity='0.4';
+  document.getElementById('roleClient').style.pointerEvents='none';
+  document.getElementById('roleClient').style.cursor='default';
+} else {
+  setRole('client');
+}
+goToStep(2);
+@endif
 
 function currentStepEl(){return document.querySelector('.step[data-step="'+currentStep+'"]');}
 function validateStep(){const inputs=currentStepEl().querySelectorAll('input:not([type=hidden]), select');for(const el of inputs){if(el.offsetParent!==null&&!el.checkValidity()){el.reportValidity();return false}}return true;}
