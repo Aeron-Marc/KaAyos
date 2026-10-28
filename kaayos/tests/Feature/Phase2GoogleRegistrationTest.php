@@ -702,4 +702,90 @@ class Phase2GoogleRegistrationTest extends TestCase
              ->assertRedirect(route('register'))
              ->assertSessionHasErrors('oauth');
     }
+
+    // ------------------------------------------------------------------
+    // Test: Missing verification claim rejected
+    // ------------------------------------------------------------------
+
+    public function test_google_registration_missing_verification_claim_rejected(): void
+    {
+        // Mock without verified_email key at all (Google returns no email_verified field)
+        $mock = Mockery::mock(SocialiteUser::class);
+        $mock->shouldReceive('getId')->andReturn('google_missing_claim_001');
+        $mock->shouldReceive('getEmail')->andReturn('missing.claim@gmail.com');
+        $mock->shouldReceive('getName')->andReturn('Missing Claim');
+        $mock->shouldReceive('getAvatar')->andReturn(null);
+        // offsetGet returns null for missing verified_email
+        $mock->shouldReceive('offsetGet')->with('verified_email')->andReturn(null);
+        $mock->shouldReceive('getRaw')->andReturn(['email' => 'missing.claim@gmail.com']);
+        $driver = Mockery::mock();
+        $driver->shouldReceive('redirectUrl')->andReturn($driver);
+        $driver->shouldReceive('redirect')->andReturn(new \Illuminate\Http\RedirectResponse('/'));
+        $driver->shouldReceive('user')->andReturn($mock);
+        Socialite::shouldReceive('driver')->andReturn($driver);
+
+        $this->withSession(['oauth_registration_flow' => true])
+             ->get(route('auth.google.register.callback'))
+             ->assertRedirect(route('register'))
+             ->assertSessionHasErrors('oauth');
+    }
+
+    // ------------------------------------------------------------------
+    // Test: Login callback with unverified email redirects to register
+    // ------------------------------------------------------------------
+
+    public function test_google_login_unverified_email_redirects_to_register(): void
+    {
+        $socialUser = $this->mockGoogleUser([
+            'oauth_id'      => 'google_login_unverified_001',
+            'email'         => 'unverified.login@gmail.com',
+            'name'          => 'Unverified Login',
+            'email_verified'=> false,
+        ]);
+        $this->mockSocialite($socialUser);
+
+        $response = $this->get(route('social.callback', ['provider' => 'google']));
+        $response->assertRedirect(route('register'));
+        $response->assertSessionHasErrors('oauth');
+    }
+
+    public function test_google_login_missing_verification_claim_redirects_to_register(): void
+    {
+        $mock = Mockery::mock(SocialiteUser::class);
+        $mock->shouldReceive('getId')->andReturn('google_login_missing_001');
+        $mock->shouldReceive('getEmail')->andReturn('missing.login@gmail.com');
+        $mock->shouldReceive('getName')->andReturn('Missing Login');
+        $mock->shouldReceive('getAvatar')->andReturn(null);
+        $mock->shouldReceive('offsetGet')->with('verified_email')->andReturn(null);
+        $mock->shouldReceive('getRaw')->andReturn(['email' => 'missing.login@gmail.com']);
+        $driver = Mockery::mock();
+        $driver->shouldReceive('redirectUrl')->andReturn($driver);
+        $driver->shouldReceive('redirect')->andReturn(new \Illuminate\Http\RedirectResponse('/'));
+        $driver->shouldReceive('user')->andReturn($mock);
+        Socialite::shouldReceive('driver')->andReturn($driver);
+
+        $response = $this->get(route('social.callback', ['provider' => 'google']));
+        $response->assertRedirect(route('register'));
+        $response->assertSessionHasErrors('oauth');
+    }
+
+    // ------------------------------------------------------------------
+    // Test: Verified email accepted through login callback registration flow
+    // ------------------------------------------------------------------
+
+    public function test_google_login_verified_email_enters_registration_flow(): void
+    {
+        $socialUser = $this->mockGoogleUser([
+            'oauth_id'      => 'google_login_verified_001',
+            'email'         => 'verified.login@gmail.com',
+            'name'          => 'Verified Login',
+            'email_verified'=> true,
+        ]);
+        $this->mockSocialite($socialUser);
+
+        $response = $this->get(route('social.callback', ['provider' => 'google']));
+        $response->assertRedirect(route('auth.google.register.form'));
+        $response->assertSessionHas('oauth_registration');
+        $this->assertTrue(session('oauth_registration.email_verified'));
+    }
 }

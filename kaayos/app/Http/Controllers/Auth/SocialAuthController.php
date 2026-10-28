@@ -73,9 +73,10 @@ class SocialAuthController extends Controller
         }
 
         Log::debug("OAuth {$provider} callback received", [
-            'email_verified_claim' => $socialUser->verified_email ?? null,
+            'email_verified_claim' => $this->getVerifiedEmailClaim($socialUser),
             'provider_id' => $socialUser->getId(),
             'has_email' => !empty($socialUser->getEmail()),
+            'raw_email_verified' => $socialUser->getRaw()['email_verified'] ?? null,
         ]);
 
         // Only authenticate accounts explicitly linked to this Google identity.
@@ -88,7 +89,7 @@ class SocialAuthController extends Controller
             // with the validated Google identity prefilled. Do NOT auto-create,
             // do NOT auto-link by email, do NOT log in.
             $email = $socialUser->getEmail();
-            $emailVerifiedClaim = $socialUser->verified_email ?? null;
+            $emailVerifiedClaim = $this->getVerifiedEmailClaim($socialUser);
 
             if (empty($email) || !$emailVerifiedClaim) {
                 session()->forget('oauth_intended_role');
@@ -217,11 +218,12 @@ class SocialAuthController extends Controller
         }
 
         // Require Google to have verified the email before trusting it as proof of ownership.
-        $emailVerifiedClaim = $socialUser->verified_email ?? null;
+        $emailVerifiedClaim = $this->getVerifiedEmailClaim($socialUser);
         if (!$emailVerifiedClaim) {
             Log::warning("OAuth {$provider} registration rejected: unverified email", [
                 'provider_id' => $socialUser->getId(),
                 'email_verified_claim' => $emailVerifiedClaim,
+                'raw_email_verified' => $socialUser->getRaw()['email_verified'] ?? null,
             ]);
 
             session()->forget('oauth_registration_flow');
@@ -481,5 +483,29 @@ class SocialAuthController extends Controller
 
         return redirect(route('client.dashboard'))
             ->with('success', 'Welcome to KaAyos! Your Google account is registered.');
+    }
+
+    /**
+     * Read Google's email_verified claim from the Socialite user object.
+     *
+     * Laravel Socialite's __get() only checks mapped attributes ($this->attributes),
+     * but the Google provider stores verified_email in the raw array ($this->user)
+     * without mapping it. offsetGet() reads from the raw array, so we use that.
+     * We also check 'email_verified' directly as a fallback since GoogleProvider
+     * sets both keys in the raw array during mapUserToObject().
+     *
+     * Never treats a missing claim as verified.
+     */
+    private function getVerifiedEmailClaim($socialUser): bool
+    {
+        // offsetGet reads from $this->user (raw array) where verified_email is stored
+        $claim = $socialUser->offsetGet('verified_email') ?? null;
+
+        // Fallback: check email_verified directly in raw array
+        if ($claim === null) {
+            $claim = $socialUser->getRaw()['email_verified'] ?? null;
+        }
+
+        return (bool) $claim;
     }
 }
