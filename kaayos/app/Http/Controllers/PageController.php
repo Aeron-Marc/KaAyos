@@ -33,13 +33,13 @@ class PageController extends Controller
             [
                 'name'     => 'Jan Emmanuel Formentos',
                 'role'     => 'System Analyst',
-                'photo'    => 'Janemmanuelformentos.jpg',
+                'photo'    => 'janemmanuelformentos.jpg',
                 'initials' => 'JF',
             ],
             [
                 'name'     => 'John Dave Briones',
                 'role'     => 'QA Tester',
-                'photo'    => 'Johndavebriones.jpg',
+                'photo'    => 'johndavebriones.jpg',
                 'initials' => 'JB',
             ],
             [
