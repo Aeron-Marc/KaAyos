@@ -43,11 +43,18 @@ class PageController extends Controller
                 'initials' => 'JB',
             ],
             [
-                'name'     => 'Master Benj Samonte',
-                'role'     => 'Software Engineer',
+                'name'     => 'Asst. Prof. Benjie R. Samonte',
+                'role'     => 'Adviser',
                 'photo'    => 'Master Benj Samonte.jpg',
                 'initials' => 'BS',
             ],
+            // Copy the block below to add a 4th member:
+            // [
+            //     'name'     => 'Member Name',
+            //     'role'     => 'Role / Position',
+            //     'photo'    => null,
+            //     'initials' => 'XX',
+            // ],
         ];
 
         $team = User::where('role', 'admin')->get()->map(fn ($u) => [
