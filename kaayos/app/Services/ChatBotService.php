@@ -24,6 +24,8 @@ class ChatBotService
 
     protected array $clientLocation = [];
 
+    protected string $currentMessage = '';
+
     public function __construct()
     {
         $this->provider = config('kaayos.chatbot_provider', 'openai');
@@ -35,6 +37,7 @@ class ChatBotService
     public function chat(string $message, array $history = [], ?User $user = null, array $context = []): array
     {
         $this->history = $this->normalizeHistory($history);
+        $this->currentMessage = $message;
         $this->user = $user;
         $this->tools->setUser($user);
         $this->clientLocation = $context['client'] ?? [];
@@ -88,7 +91,7 @@ class ChatBotService
             $city = $this->user->city ?? 'Tuy, Batangas';
             $userLocationBlock = "\nUser location: The current user is logged in and located in Brgy. {$this->user->barangay}, {$city}. When they ask for workers \"near me\", \"nearby\", \"close to me\", or any proximity-based request, use search_workers with their barangay to find and rank workers by distance. Mention their barangay in your reply so they know the search was personalized.\n";
         } else {
-            $userLocationBlock = "\nUser location: The user is not logged in (guest). If they ask about nearby workers, politely ask which barangay they are in (e.g., \"What barangay are you located in so I can find the closest workers?\") and then call search_workers with their barangay. Do NOT guess their location.\n";
+            $userLocationBlock = "\nUser location: No profile barangay is available. Use the default service area, Tuy, Batangas, for the first search instead of asking the user where they are located. Only ask for a barangay later if the user specifically requests a more precise distance comparison.\n";
         }
 
         $prompt = <<<PROMPT
@@ -108,11 +111,13 @@ Key facts about KaAyos:
 - Users can register as both client and worker with one account
 {$userLocationBlock}
 How to behave:
-- Be friendly, concise, and helpful. Respond in clear, professional English only.
+- Be friendly, concise, and helpful. Reply in the same language as the user's latest message: English, Filipino/Tagalog, or natural Taglish. Never force English when the user writes in Filipino or Taglish.
 - Keep responses under 3 paragraphs unless listing workers/services.
 - You MAY recommend, rank, compare, and give opinions about workers, services, pricing, and booking options. This is your core job — please do it confidently.
 - When a user asks you to recommend, find, rank, or compare workers or services, CALL the appropriate tool first (get_categories, search_workers, get_worker_detail, check_worker_bookings) and base your answer on the returned data.
 - When recommending workers, briefly explain why based on real tool data (rating, reviews, verified status, experience, skills, distance).
+- Recognize Filipino and Taglish service terms and map them to the database categories: tubero/tubig/pipe → Plumbing; kuryente/elektrisidad/electrician → Electrical; karpintero/carpintero → Carpentry; labandera/tagalinis/linis → Cleaning.
+- If a service request has no location, do not stop to ask for a barangay. Use the logged-in user's profile location when available, otherwise use Tuy, Batangas, and search workers immediately on the first message.
 - If a follow-up question refers to "him", "the first one", "that worker", or similar pronouns, use the conversation history to resolve who the user means and use get_worker_detail if you need more info.
 - Always suggest 3 relevant follow-up questions at the end.
 
@@ -432,7 +437,7 @@ PROMPT;
             'services' => ['ano-ano', 'anong serbisyo', 'ano ang serbisyo', 'what services', 'service categories', 'are available'],
             'greeting' => ['good morning', 'good afternoon', 'good evening', 'magandang umaga', 'magandang hapon'],
             'booking' => ['how do i book', 'how to book', 'how to hire', 'how does booking', 'paano mag-book'],
-            'areas' => ['what areas', 'where do you', 'saan kayo', 'what barangays', 'list of barangays', '22 barangays'],
+            'areas' => ['what areas', 'where do you', 'where are you located', 'where are you based', 'where is kaayos', 'where can i find you', 'saan kayo', 'nasaan kayo', 'saan matatagpuan', 'anong lokasyon', 'what barangays', 'list of barangays', '22 barangays'],
             'verify' => ['how are workers verified', 'how do you verify', 'document requirements', 'requirements to', 'paano mag-verify'],
             'contact' => ['contact support', 'customer support', 'technical support'],
         ];
@@ -634,14 +639,30 @@ PROMPT;
 
     protected function askAreas(): array
     {
+        if ($this->isFilipinoMessage($this->currentMessage)) {
+            return [
+                'reply' => "Ang KaAyos ay nasa <strong>Tuy, Batangas</strong> at kasalukuyang nagseserbisyo sa lahat ng 22 barangay nito. Makakahanap ka rito ng mga verified worker na malapit sa iyong lugar; sabihin mo lang kung anong serbisyo ang kailangan mo.",
+                'suggestions' => [
+                    'Anong serbisyo ang available?',
+                    'Maghanap ng worker na malapit sa akin',
+                    'Paano mag-book ng worker?',
+                ],
+            ];
+        }
+
         return [
-            'reply' => "KaAyos currently serves <strong>all 22 barangays of Tuy, Batangas</strong>. We're proudly partnered with <strong>PESO Tuy, Batangas</strong> (Public Employment Service Office) to bring verified workers to your doorstep.\n\nOur 22 barangays include: <em>Lumbangan, Tuy Proper, Bilan, Bolboc, Dalima, Dao, Guinhawa, Lumbangan East, Lumbangan West, Mabini, Palincaro, Putol, Sabang, San Jose, San Juan, San Pedro, Saral, Tuy East, Tuy West, and more.</em>\n\nWe plan to expand to neighboring municipalities in the future!",
+            'reply' => "KaAyos is based in <strong>Tuy, Batangas</strong> and currently serves all 22 barangays in the municipality. You can use KaAyos to find verified home-service workers near your area—just tell me what service you need.",
             'suggestions' => [
                 'What services are available?',
-                'How do I book a worker?',
                 'Find workers near me',
+                'How do I book a worker?',
             ],
         ];
+    }
+
+    protected function isFilipinoMessage(string $message): bool
+    {
+        return preg_match('/\b(ako|ang|ano|bahay|bakit|bilang|di|gusto|hanap|kailangan|kuryente|labandera|linis|lokasyon|lugar|magkano|malapit|mayroon|naghahanap|nasaan|paano|paki|saan|serbisyo|tagalinis|tubero|tulong|trabaho|karpintero|kayo)\b/i', $message) === 1;
     }
 
     protected function askVerification(): array

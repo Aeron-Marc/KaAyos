@@ -87,11 +87,11 @@ class SuggestionController extends Controller
         $lower = strtolower(trim($message));
 
         $catMap = [
-            'plumber' => 'Plumbing', 'plumbing' => 'Plumbing', 'tubig' => 'Plumbing', 'pipe' => 'Plumbing',
-            'electrician' => 'Electrical', 'electrical' => 'Electrical', 'kuryente' => 'Electrical',
-            'carpenter' => 'Carpentry', 'carpentry' => 'Carpentry', 'karpintero' => 'Carpentry',
+            'plumber' => 'Plumbing', 'plumbing' => 'Plumbing', 'tubero' => 'Plumbing', 'tubig' => 'Plumbing', 'pipe' => 'Plumbing',
+            'electrician' => 'Electrical', 'electrical' => 'Electrical', 'kuryente' => 'Electrical', 'elektrisidad' => 'Electrical',
+            'carpenter' => 'Carpentry', 'carpentry' => 'Carpentry', 'karpintero' => 'Carpentry', 'carpintero' => 'Carpentry',
             'painter' => 'Painting', 'painting' => 'Painting', 'pintor' => 'Painting',
-            'clean' => 'Cleaning', 'cleaning' => 'Cleaning', 'linis' => 'Cleaning',
+            'clean' => 'Cleaning', 'cleaning' => 'Cleaning', 'labandera' => 'Cleaning', 'tagalinis' => 'Cleaning', 'linis' => 'Cleaning',
             'garden' => 'Gardening', 'gardening' => 'Gardening', 'halaman' => 'Gardening',
             'welder' => 'Welding', 'welding' => 'Welding',
             'mason' => 'Masonry', 'masonry' => 'Masonry',
@@ -122,27 +122,44 @@ class SuggestionController extends Controller
 
     protected function contextualIntro(array $workers, string $userMessage): ?string
     {
-        try {
-            $chat = app(ChatBotService::class);
+        $category = strtolower((string) ($workers[0]['category'] ?? 'home service'));
+        $names = array_values(array_filter(array_map(
+            static fn (array $worker): string => trim((string) ($worker['name'] ?? '')),
+            array_slice($workers, 0, 3)
+        )));
+        $locations = array_values(array_unique(array_filter(array_map(
+            static fn (array $worker): string => trim((string) ($worker['distance'] ?? '')),
+            array_slice($workers, 0, 3)
+        ))));
 
-            $category = $workers[0]['category'] ?? 'workers';
-            $area = config('kaayos.default_location', 'Tuy, Batangas');
-
-            $prompt = <<<PROMPT
-The user said: "{$userMessage}"
-
-We found {$category} workers in {$area}. Explain in 1-2 short sentences — natural and conversational, like a real assistant talking to a neighbor. Refer to what they asked for but keep it varied and human. No lists, no details.
-
-Reply with just the explanation.
-PROMPT;
-
-            $result = $chat->chat($prompt);
-            $text = trim($result['reply'] ?? '');
-            return !empty($text) ? $text : null;
-        } catch (\Exception $e) {
-            Log::warning('Contextual intro failed: ' . $e->getMessage());
+        if (empty($names)) {
             return null;
         }
+
+        if ($this->isFilipinoMessage($userMessage)) {
+            $workerText = count($names) === 1
+                ? $names[0]
+                : implode(', ', array_slice($names, 0, -1)) . ' at ' . end($names);
+            $locationText = !empty($locations)
+                ? ' Nasa paligid sila ng ' . implode(' at ', array_slice($locations, 0, 2)) . '.'
+                : '';
+
+            return "Nakahanap ako ng " . count($workers) . " {$category} worker para sa kailangan mo: {$workerText}.{$locationText} Tingnan ang cards sa ibaba para ikumpara sila.";
+        }
+
+        $workerText = count($names) === 1
+            ? $names[0]
+            : implode(', ', array_slice($names, 0, -1)) . ' and ' . end($names);
+        $locationText = !empty($locations)
+            ? ' They are listed near ' . implode(' and ', array_slice($locations, 0, 2)) . '.'
+            : '';
+
+        return "I found " . count($workers) . " {$category} " . (count($workers) === 1 ? 'worker' : 'workers') . " that match your request: {$workerText}.{$locationText} Compare them using the cards below.";
+    }
+
+    protected function isFilipinoMessage(string $message): bool
+    {
+        return preg_match('/\b(ako|ang|ano|bahay|bakit|bilang|di|gusto|hanap|kailangan|kuryente|labandera|linis|lokasyon|lugar|magkano|malapit|mayroon|naghahanap|nasaan|paano|paki|saan|serbisyo|tagalinis|tubero|tulong|trabaho|karpintero|kayo)\b/i', $message) === 1;
     }
 
     protected function briefReply(string $reply): string

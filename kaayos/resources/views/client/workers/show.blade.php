@@ -3,12 +3,6 @@
 @section('title', $worker->name)
 @section('page_title', $worker->name)
 
-@section('topbar_actions')
-    <a href="{{ route('client.workers') }}" class="btn btn-outline">
-        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Search
-    </a>
-@endsection
-
 @section('skeleton')
     <div class="sp-sidebar-layout">
         <div>
@@ -48,10 +42,33 @@
 
 @section('content')
 
-<div class="worker-profile-layout">
+<div class="worker-profile-page">
+    <nav class="worker-profile-nav" aria-label="Worker profile navigation">
+        <a href="{{ route('client.workers') }}" class="worker-back-link">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Search
+        </a>
+        <span class="worker-profile-nav-label">Worker Profile</span>
+    </nav>
+
+<div class="worker-profile-layout worker-profile-single-column">
+    @php
+        $availDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+        $dayShort = ['Monday'=>'Mon','Tuesday'=>'Tue','Wednesday'=>'Wed','Thursday'=>'Thu','Friday'=>'Fri','Saturday'=>'Sat','Sunday'=>'Sun'];
+        $availMap = [];
+        $hasAnyActive = false;
+        if ($workerProfile && $workerProfile->availability) {
+            foreach ($workerProfile->availability as $availability) {
+                $availMap[$availability['day']] = $availability;
+                if ($availability['active'] ?? false) $hasAnyActive = true;
+            }
+        }
+        $hasAvailabilitySet = $workerProfile && $workerProfile->availability && count($workerProfile->availability) > 0;
+    @endphp
+
     {{-- Left: Profile Card --}}
-    <div class="card-panel" style="flex:0 0 340px;align-self:start;">
+    <div class="card-panel worker-hero-card" style="flex:0 0 340px;align-self:start;">
         <div style="text-align:center;padding:8px 0;">
+            <div class="worker-hero-identity">
             @if($worker->avatar_url)
                 <img src="{{ $worker->avatar_url }}" alt="{{ $worker->name }}"
                      style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--b2);">
@@ -94,23 +111,19 @@
                 @endif
             </div>
 
+            </div>
+            <div class="worker-hero-actions">
             <div style="margin-top:12px;">
                 <button type="button" class="btn btn-sm btn-outline" onclick="openShareModal()" style="width:100%;justify-content:center;font-size:.8rem;gap:6px;">
                     <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Share Profile & QR
                 </button>
             </div>
 
-            <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px;text-align:left;">
+            <div class="worker-hero-metrics">
                 @if($workerProfile && $workerProfile->hourly_rate)
                     <div style="display:flex;justify-content:space-between;font-size:.88rem;">
                         <span style="color:var(--g5);">Rate</span>
                         <span style="font-weight:600;">₱{{ number_format($workerProfile->hourly_rate) }}/hr</span>
-                    </div>
-                @endif
-                @if($workerProfile && $workerProfile->years_of_experience)
-                    <div style="display:flex;justify-content:space-between;font-size:.88rem;">
-                        <span style="color:var(--g5);">Experience</span>
-                        <span>{{ $workerProfile->years_of_experience }} years</span>
                     </div>
                 @endif
                 @if($worker->residence)
@@ -119,42 +132,6 @@
                         <span style="font-weight:500;">{{ $worker->residence }}</span>
                     </div>
                 @endif
-                @php
-                    $availDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-                    $dayShort = ['Monday'=>'Mon','Tuesday'=>'Tue','Wednesday'=>'Wed','Thursday'=>'Thu','Friday'=>'Fri','Saturday'=>'Sat','Sunday'=>'Sun'];
-                    $availMap = [];
-                    $hasAnyActive = false;
-                    if ($workerProfile && $workerProfile->availability) {
-                        foreach ($workerProfile->availability as $a) {
-                            $availMap[$a['day']] = $a;
-                            if ($a['active'] ?? false) $hasAnyActive = true;
-                        }
-                    }
-                    $hasAvailabilitySet = $workerProfile && $workerProfile->availability && count($workerProfile->availability) > 0;
-                @endphp
-                    <div style="font-size:.82rem;">
-                        <div style="color:var(--g5);font-weight:500;margin-bottom:6px;">Availability</div>
-                        @if($hasAvailabilitySet)
-                            @foreach($availDays as $day)
-                                @php
-                                    $a = $availMap[$day] ?? null;
-                                    $active = $a && ($a['active'] ?? false);
-                                @endphp
-                                <div style="display:flex;justify-content:space-between;padding:3px 0;{{ !$active ? 'opacity:.5;' : '' }}">
-                                    <span>{{ $dayShort[$day] ?? $day }}</span>
-                                    <span>
-                                        @if($active)
-                                            {{ \Carbon\Carbon::createFromFormat('H:i', $a['start'])->format('g:i A') }} – {{ \Carbon\Carbon::createFromFormat('H:i', $a['end'])->format('g:i A') }}
-                                        @else
-                                            <span style="color:var(--g4);">Unavailable</span>
-                                        @endif
-                                    </span>
-                                </div>
-                            @endforeach
-                        @else
-                            <div style="color:var(--g4);font-style:italic;padding:4px 0;">Not yet set</div>
-                        @endif
-                    </div>
                 @if($worker->phone)
                     <div style="display:flex;justify-content:space-between;font-size:.88rem;">
                         <span style="color:var(--g5);">Contact</span>
@@ -163,7 +140,7 @@
                 @endif
             </div>
 
-            <hr style="border:none;border-top:1px solid var(--g1);margin:16px 0 12px;">
+            <hr>
             @if($canMessage)
                 <a href="{{ route('client.messages.start', ['worker_id' => $worker->id]) }}" class="btn btn-outline" style="width:100%;justify-content:center;">
                     <i class="fa-regular fa-comment" aria-hidden="true"></i> Send Message
@@ -178,7 +155,39 @@
                 <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Not Available
             </button>
             @endif
+            </div>
         </div>
+    </div>
+
+    <div class="card-panel availability-card">
+        <div class="card-panel-header">
+            <h3 class="section-title"><i class="fa-regular fa-clock" aria-hidden="true"></i> Worker Availability</h3>
+            <span class="availability-status {{ $hasAnyActive ? 'is-available' : 'is-unavailable' }}">
+                {{ $hasAnyActive ? 'Available for booking' : 'Schedule not set' }}
+            </span>
+        </div>
+        @if($hasAvailabilitySet)
+            <div class="availability-grid">
+                @foreach($availDays as $day)
+                    @php
+                        $availability = $availMap[$day] ?? null;
+                        $active = $availability && ($availability['active'] ?? false);
+                    @endphp
+                    <div class="availability-day {{ $active ? '' : 'is-off' }}">
+                        <span>{{ $dayShort[$day] ?? $day }}</span>
+                        <strong>
+                            @if($active)
+                                {{ \Carbon\Carbon::createFromFormat('H:i', $availability['start'])->format('g:i A') }} – {{ \Carbon\Carbon::createFromFormat('H:i', $availability['end'])->format('g:i A') }}
+                            @else
+                                Unavailable
+                            @endif
+                        </strong>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <p class="availability-empty">This worker has not set their availability yet.</p>
+        @endif
     </div>
 
     {{-- Right: Details --}}
@@ -358,7 +367,7 @@
                 $hasReviews = $reviews->count() > 0;
             @endphp
 
-            <div class="card-panel tabs-card">
+            <div class="card-panel tabs-card portfolio-card">
                 <input type="radio" name="p-tabs" id="pt-posts"{{ $hasPortfolio ? ' checked' : '' }}>
                 <input type="radio" name="p-tabs" id="pt-reviews"{{ !$hasPortfolio ? ' checked' : '' }}>
 
@@ -370,16 +379,31 @@
 
                 <div class="tab-content" id="tc-posts">
                     @if($hasPortfolio)
-                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+                        <div class="portfolio-feed">
                             @foreach($workerProfile->portfolios as $item)
                                 @php $portfolioPhoto = \App\Support\PortfolioPhoto::url($item->photo_path, $item->id); @endphp
-                                <div class="works-item">
-                                    <div class="thumb" style="background-image:url('{{ $portfolioPhoto }}')">
+                                <article class="portfolio-post">
+                                    <header class="portfolio-post-header">
+                                        @if($worker->avatar_url)
+                                            <img src="{{ $worker->avatar_url }}" alt="" class="portfolio-post-avatar">
+                                        @else
+                                            <span class="portfolio-post-avatar portfolio-post-initials">
+                                                {{ strtoupper(substr($worker->first_name, 0, 1) . substr($worker->last_name, 0, 1)) }}
+                                            </span>
+                                        @endif
+                                        <div>
+                                            <strong>{{ $worker->name }}</strong>
+                                            <span>{{ $worker->residence ?: 'Tuy, Batangas' }}</span>
+                                        </div>
+                                        <time datetime="{{ optional($item->created_at)->toDateString() }}">{{ optional($item->created_at)->format('M d, Y') }}</time>
+                                    </header>
+                                    <div class="portfolio-post-image">
+                                        <img src="{{ $portfolioPhoto }}" alt="{{ $item->caption ?: $worker->name . ' work portfolio' }}">
                                     </div>
                                     @if($item->caption)
-                                        <div class="works-caption">{{ $item->caption }}</div>
+                                        <p class="portfolio-post-caption">{{ $item->caption }}</p>
                                     @endif
-                                </div>
+                                </article>
                             @endforeach
                         </div>
                     @else
@@ -1330,6 +1354,290 @@ document.addEventListener('DOMContentLoaded', function() {
 .works-item:hover{border-color:var(--b4);box-shadow:0 4px 12px rgba(0,0,0,.1)}
 .works-item .thumb{width:100%;aspect-ratio:1;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:var(--g4);font-size:1.3rem}
 .works-caption{padding:6px 10px 10px;font-size:.8rem;color:var(--g6);line-height:1.4}
+
+/* ── Single-column worker profile ── */
+.worker-profile-page {
+    width: min(100%, 960px);
+    margin: 0 auto;
+    padding: 8px 16px 32px;
+}
+.worker-profile-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+.worker-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #2563eb;
+    font-size: .86rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.worker-back-link:hover { color: #1d4ed8; }
+.worker-profile-nav-label {
+    color: #64748b;
+    font-size: .8rem;
+    font-weight: 600;
+}
+.worker-profile-single-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.worker-profile-single-column > .card-panel,
+.worker-profile-single-column > div {
+    width: 100%;
+    box-sizing: border-box;
+}
+.worker-profile-single-column > .card-panel:first-child {
+    border: 1px solid #eef2f7;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, .05);
+}
+.availability-card {
+    padding: 22px;
+    border: 1px solid #eef2f7;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, .05);
+}
+.availability-card .card-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: -22px -22px 18px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #eef2f7;
+}
+.availability-status {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 700;
+}
+.availability-status.is-available {
+    color: #047857;
+    background: #ecfdf5;
+}
+.availability-status.is-unavailable {
+    color: #64748b;
+    background: #f1f5f9;
+}
+.availability-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+}
+.availability-day {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 12px 8px;
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    background: #f8fbff;
+    color: #1e3a8a;
+    text-align: center;
+}
+.availability-day span {
+    font-size: .72rem;
+    font-weight: 700;
+}
+.availability-day strong {
+    font-size: .68rem;
+    line-height: 1.35;
+}
+.availability-day.is-off {
+    border-color: #e2e8f0;
+    background: #f8fafc;
+    color: #94a3b8;
+}
+.availability-empty {
+    margin: 0;
+    color: #64748b;
+    font-size: .86rem;
+}
+.worker-hero-card > div:first-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, .9fr);
+    gap: 20px;
+    align-items: start;
+    min-width: 0;
+}
+.worker-hero-identity {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center !important;
+    padding: 0 !important;
+    min-width: 0;
+    justify-content: center;
+}
+.worker-hero-identity > img,
+.worker-hero-identity > div:first-child {
+    margin: 0 auto 12px !important;
+}
+.worker-hero-identity h2 {
+    margin-top: 0 !important;
+    text-align: center;
+}
+.worker-hero-identity > div:nth-of-type(2) {
+    justify-content: center !important;
+    width: 100%;
+}
+.worker-hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 0 !important;
+    padding-left: 20px;
+    border-left: 1px solid #e2e8f0;
+    min-width: 0;
+}
+.worker-hero-actions > div:first-child,
+.worker-hero-actions > .worker-hero-metrics,
+.worker-hero-actions > hr,
+.worker-hero-actions > a,
+.worker-hero-actions > button {
+    width: 100% !important;
+    box-sizing: border-box;
+}
+.worker-hero-actions > div:first-child { margin-top: 0 !important; }
+.worker-hero-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+}
+.worker-hero-actions > hr {
+    margin: 2px 0 0;
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+}
+.worker-profile-single-column > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.portfolio-card {
+    padding: 24px;
+    border: 1px solid #eef2f7;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, .05);
+}
+.portfolio-card .tabs-bar {
+    max-width: 420px;
+    margin: 0 auto 24px;
+}
+.portfolio-feed {
+    width: min(100%, 680px);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+.portfolio-post {
+    overflow: hidden;
+    border: 1px solid #eef2f7;
+    border-radius: 14px;
+    background: #fff;
+}
+.portfolio-post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+}
+.portfolio-post-avatar {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #dbeafe;
+}
+.portfolio-post-initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: .75rem;
+    font-weight: 700;
+}
+.portfolio-post-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.portfolio-post-header strong {
+    color: #172b4d;
+    font-size: .86rem;
+}
+.portfolio-post-header span,
+.portfolio-post-header time {
+    color: #64748b;
+    font-size: .72rem;
+}
+.portfolio-post-header time {
+    margin-left: auto;
+    white-space: nowrap;
+}
+.portfolio-post-image {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #f8fafc;
+}
+.portfolio-post-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.portfolio-post-caption {
+    margin: 0;
+    padding: 14px 16px 18px;
+    color: #334155;
+    font-size: .88rem;
+    line-height: 1.65;
+}
+.worker-profile-single-column .btn-solid {
+    background: #0066ff;
+    border-color: #0066ff;
+}
+@media (max-width: 640px) {
+    .worker-profile-page { padding: 4px 0 24px; }
+    .worker-profile-nav { padding: 0 4px; }
+    .portfolio-card { padding: 18px 12px; }
+    .portfolio-post-header { padding: 12px; }
+}
+@media (max-width: 820px) {
+    .worker-hero-card > div:first-child {
+        display: flex;
+        flex-direction: column;
+    }
+    .worker-hero-identity,
+    .worker-hero-actions {
+        width: 100%;
+        box-sizing: border-box;
+        padding-left: 0;
+        border-left: 0;
+    }
+    .worker-hero-actions > a,
+    .worker-hero-actions > button {
+        width: 100% !important;
+        margin-top: 0 !important;
+    }
+    .availability-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .availability-card .card-panel-header { align-items: flex-start; }
+}
+
 .modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,.45); z-index: 1000;
