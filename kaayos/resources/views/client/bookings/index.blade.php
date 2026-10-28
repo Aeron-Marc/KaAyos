@@ -177,16 +177,28 @@
 </div>
 
 {{-- Booking Detail Modal --}}
-<div id="bookingModal" class="modal-overlay" style="display:none;" onclick="closeBookingModal(event)">
+<div id="bookingModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="bookingModalTitle" style="display:none;" onclick="closeBookingModal(event)">
     <div class="modal-box modal-wide" onclick="event.stopPropagation()">
         <div class="modal-header">
-            <h3 id="bookingModalTitle">Booking Details</h3>
-            <button type="button" class="modal-close" onclick="closeBookingModal()">&times;</button>
+            <div class="modal-header-left">
+                <span class="modal-eyebrow">BOOKING OVERVIEW</span>
+                <h3 id="bookingModalTitle">Booking Overview</h3>
+                <div id="bookingModalMeta" class="booking-modal-meta"></div>
+            </div>
+            <div class="modal-header-right">
+                <span id="bookingModalStatus" class="booking-modal-status"></span>
+                <span id="bookingModalComplexity" class="booking-modal-complexity"></span>
+            </div>
+            <button type="button" class="modal-close" aria-label="Close booking overview" onclick="closeBookingModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="booking-modal-layout">
-                <div class="booking-modal-details" id="bookingModalDetails"></div>
-                <div class="booking-modal-timeline" id="bookingModalTimeline"></div>
+            <div class="modal-content-layout">
+                <div class="modal-content-sidebar" id="bookingModalSidebar">
+                    <div class="booking-modal-timeline" id="bookingModalTimeline"></div>
+                </div>
+                <div class="modal-content-main">
+                    <div class="booking-modal-details" id="bookingModalDetails"></div>
+                </div>
             </div>
         </div>
         <div class="modal-footer" id="bookingModalFooter"></div>
@@ -432,105 +444,312 @@
 .schedule-day { font-size: 1.05rem; color: var(--b9); }
 
 /* ── Detail modal layout ── */
-.modal-wide { max-width: 640px !important; }
+.modal-wide { max-width: 680px !important; }
 
-.booking-modal-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+.modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 18px; font-weight: 600; font-size: 1.05rem;
+    background: #fff;
+    border-bottom: 1px solid #e8eef5;
+}
+.modal-header h3 { margin: 0; color: #172b4d; font-family: inherit; font-size: 1.4rem; letter-spacing: -.02em; }
+.modal-header-left { display: flex; flex-direction: column; gap: 4px; }
+.modal-header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 14px; }
+.modal-close {
+    background: none; border: none; font-size: 1.5rem; cursor: pointer;
+    color: var(--g4); line-height: 1;
+}
+.modal-close:hover { color: var(--g8); }
+
+/* ── Modal content layout ── */
+.modal-content-layout {
+    display: block; margin: 0;
+    width: 100%;
+}
+.modal-content-main { min-width: 0; }
+.modal-content-sidebar { width: 100%; }
+.booking-order-hero {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #eff6ff, #f8fbff);
+}
+.booking-service-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: #dbeafe;
+    color: #2563eb;
+    font-size: 1.1rem;
+}
+.booking-order-hero h4 { margin: 0 0 3px; color: #172b4d; font-size: 1rem; }
+.booking-order-hero p { margin: 0; color: #64748b; font-size: .78rem; }
+.booking-hero-amount { margin-left: auto; color: #172b4d; font-size: 1.08rem; font-weight: 700; }
+.booking-card-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 9px;
+}
+.booking-card-heading h4 {
+    margin: 0;
+    color: #475569;
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+.booking-info-card {
+    padding: 14px;
+    border: 1px solid #e5eaf0;
+    border-radius: 13px;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, .03);
+}
+.booking-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 9px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.booking-info-row:first-child { padding-top: 0; }
+.booking-info-row:last-child { padding-bottom: 0; border-bottom: 0; }
+.booking-info-icon {
+    width: 28px;
+    color: #64748b;
+    text-align: center;
+    font-size: .9rem;
+}
+.booking-info-label { display: block; color: #94a3b8; font-size: .7rem; }
+.booking-info-value { display: block; margin-top: 2px; color: #334155; font-size: .84rem; font-weight: 600; }
+.booking-worker-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+    background: #f8fbff;
+}
+.booking-worker-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    background: #dbeafe;
+    color: #0066ff;
+    font-size: 1rem;
+    font-weight: 800;
+}
+.booking-worker-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.booking-worker-copy { min-width: 0; }
+.booking-worker-copy strong { display: block; color: #172b4d; font-size: .92rem; }
+.booking-worker-copy span { display: block; margin-top: 2px; color: #64748b; font-size: .75rem; }
+.booking-worker-actions { display: flex; gap: 7px; margin-left: auto; }
+.booking-quick-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: #e0edff;
+    color: #0066ff;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .15s ease, background .15s ease;
+}
+.booking-quick-action:hover { background: #cfe2ff; }
+.booking-quick-action:active,
+.modal-footer .btn:active { transform: scale(.95); }
+.booking-location-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+.booking-location-card i { margin-top: 2px; color: #2563eb; }
+.booking-location-card strong { display: block; color: #334155; font-size: .82rem; }
+.booking-location-card span { display: block; margin-top: 2px; color: #64748b; font-size: .78rem; }
+.booking-payment-card {
+    padding: 14px;
+    margin-top: 12px;
+    border: 1px solid #e5eaf0;
+    border-radius: 13px;
+    background: #fff;
+}
+.booking-payment-row { display: flex; justify-content: space-between; gap: 10px; color: #64748b; font-size: .8rem; }
+.booking-payment-row + .booking-payment-row { margin-top: 8px; }
+.booking-payment-row.total {
+    padding-top: 10px;
+    margin-top: 10px;
+    border-top: 1px solid #e5eaf0;
+    color: #172b4d;
+    font-size: .95rem;
+    font-weight: 700;
 }
 
-/* ── Details grid ── */
-.detail-grid-compact {
-    display: grid;
-    grid-template-columns: 95px 1fr;
-    gap: 5px 12px;
-    font-size: .85rem;
+/* ── Modal footer ── */
+.modal-footer {
+    display: flex; align-items: center; gap: 10px; justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 12px 20px 20px;
+    border-top: 1px solid var(--g1);
 }
-.detail-label { color: var(--g5); font-weight: 500; }
-.detail-value { color: var(--b9); }
+.modal-footer-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.modal-footer-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.modal-footer-center { display: flex; justify-content: center; width: 100%; }
 
 /* ── Status timeline ── */
+.booking-modal-timeline {
+    padding: 14px 12px 12px;
+    margin: 0 0 16px;
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+    background: #f8fbff;
+    box-shadow: inset 0 1px 0 #fff;
+    overflow-x: auto;
+}
+.booking-modal-timeline::before {
+    content: 'ORDER STATUS';
+    display: block;
+    margin-bottom: 12px;
+    color: var(--g5);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+}
 .timeline {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0;
+    min-width: 520px;
+    padding: 2px 6px 4px;
 }
-
 .timeline-item {
+    position: relative;
     display: flex;
-    gap: 10px;
-    min-height: 32px;
-}
-
-.timeline-dot-col {
-    display: flex;
+    flex: 1;
     flex-direction: column;
     align-items: center;
-    width: 24px;
-    flex-shrink: 0;
+    gap: 6px;
+    min-width: 0;
+    padding: 0 4px;
 }
-
+.timeline-dot-col {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 20px;
+}
 .timeline-dot {
-    width: 18px; height: 18px;
+    position: relative;
+    z-index: 1;
+    width: 19px; height: 19px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: .55rem;
     flex-shrink: 0;
-    margin-top: 2px;
     line-height: 1;
 }
-
-.timeline-dot.past {
-    background: #16a34a;
-    color: #fff;
-}
-
-.timeline-dot.current {
-    background: var(--b6);
-    color: #fff;
-    box-shadow: 0 0 0 3px var(--b0);
-}
-
-.timeline-dot.future {
-    background: var(--g1);
-    color: var(--g4);
-}
-
+.timeline-dot.past { background: #0066ff; color: #fff; }
+.timeline-dot.current { background: #0066ff; color: #fff; box-shadow: 0 0 0 4px #bfdbfe; animation: statusPulse 1.8s ease-out infinite; }
+.timeline-dot.future { background: #fff; border: 2px solid #cbd5e1; color: #94a3b8; }
 .timeline-line {
-    width: 2px;
-    flex: 1;
-    background: var(--g1);
-    min-height: 10px;
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: #dbeafe;
 }
-
+.timeline-item.past .timeline-line { background: #0066ff;
+}
 .timeline-content {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    padding-bottom: 2px;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    gap: 3px;
+    padding: 0;
 }
-
 .timeline-status {
-    font-size: .82rem;
+    font-size: .7rem;
     font-weight: 500;
     color: var(--g7);
+    text-align: center;
+    white-space: normal;
+    line-height: 1.25;
 }
-
-.timeline-item.past .timeline-status { color: #16a34a; }
-.timeline-item.current .timeline-status { color: var(--b6); font-weight: 600; }
+.timeline-item.past .timeline-status { color: #0066ff; }
+.timeline-item.current .timeline-status { color: #0066ff; font-weight: 700; }
 .timeline-item.future .timeline-status { color: var(--g4); }
-
 .timeline-time {
-    font-size: .75rem;
-    color: var(--g4);
-    margin-left: auto;
+    display: block;
+    margin: 0;
+    color: #94a3b8;
+    font-size: .68rem;
+    line-height: 1.2;
     white-space: nowrap;
 }
-
-.timeline-item.future .timeline-time { display: none; }
+.timeline-item.current .timeline-time,
+.timeline-item.past .timeline-time { color: #64748b; }
+@keyframes statusPulse {
+    0%, 100% { box-shadow: 0 0 0 3px #bfdbfe; }
+    50% { box-shadow: 0 0 0 7px rgba(191, 219, 254, .25); }
+}
+.booking-modal-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-family: inherit;
+    font-size: .75rem;
+    font-weight: 600;
+}
+.booking-modal-status.status-active {
+    background: var(--b0);
+    color: var(--b7);
+}
+.booking-modal-status.status-pending {
+    background: #fef3d0;
+    color: #a07b10;
+}
+.booking-modal-status.status-cancelled {
+    background: #fde0de;
+    color: #a32d2d;
+}
+.booking-modal-status.status-done {
+    background: #d6f5e8;
+    color: #1a6852;
+    animation: badgePulse 1.8s ease-out 1;
+}
+@keyframes badgePulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 102, 255, .35); }
+    100% { box-shadow: 0 0 0 9px rgba(0, 102, 255, 0); }
+}
 
 /* ── Modals ── */
 .modal-overlay {
@@ -541,10 +760,45 @@
 .modal-box {
     background: #fff; border-radius: 14px; width: 90%; max-width: 520px;
     box-shadow: 0 20px 60px rgba(0,0,0,.2); animation: modalIn .2s ease;
+    overflow: hidden;
+    font-family: inherit;
+}
+#bookingModal.modal-overlay { align-items: flex-end; }
+#bookingModal .modal-box {
+    border-radius: 24px;
+    width: calc(100% - 32px);
+    max-width: 640px !important;
+    max-height: calc(100vh - 60px);
+    margin-bottom: 10px;
+    animation: modalIn .35s ease-out;
+    display: flex;
+    flex-direction: column;
+}
+#bookingModal .modal-box::before {
+    content: '';
+    display: block;
+    width: 38px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: 99px;
+    background: #cbd5e1;
 }
 @keyframes modalIn {
-    from { opacity: 0; transform: scale(.95) translateY(10px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
+    from { opacity: 0; transform: translateY(100%); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+#bookingModal .modal-header {
+    padding: 12px 16px 0;
+}
+#bookingModal .modal-body {
+    min-height: 0;
+    max-height: none;
+    padding: 12px 16px;
+    overflow-y: auto;
+}
+#bookingModal .modal-footer {
+    flex-shrink: 0;
+    padding: 10px 16px 14px;
 }
 .modal-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -555,11 +809,35 @@
     color: var(--g4); line-height: 1;
 }
 .modal-close:hover { color: var(--g8); }
-.modal-body { padding: 14px 20px; max-height: 70vh; overflow-y: auto; }
+.modal-body { padding: 16px 20px; max-height: 76vh; overflow-y: auto; }
 .modal-footer {
-    display: flex; gap: 10px; justify-content: flex-end;
-    padding: 0 20px 16px;
+    display: flex; align-items: center; gap: 10px; justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 12px 20px 20px;
+    border-top: 1px solid var(--g1);
 }
+.modal-footer-left,
+.modal-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.modal-footer .btn-solid { order: 0; }
+.modal-footer .btn-primary-action {
+    min-height: 40px;
+    padding-inline: 16px;
+    background: #0066ff;
+    border-color: #0066ff;
+    box-shadow: 0 3px 8px rgba(0,102,255,.2);
+}
+.modal-footer .btn-report {
+    padding-inline: 2px;
+    border-color: transparent !important;
+    background: transparent;
+    color: #b91c1c !important;
+}
+.modal-footer .btn-outline { min-height: 38px; }
 
 /* ── Tip chips ── */
 .tip-chips {
@@ -671,12 +949,26 @@
 }
 
 @media (max-width: 640px) {
-    .booking-modal-layout { grid-template-columns: 1fr; gap: 14px; }
+    .modal-content-layout { flex-direction: column; }
+    .modal-content-sidebar { width: 100%; order: 0; margin-top: 0; }
+    #bookingModal .modal-wide { width: calc(100% - 20px) !important; }
+    .modal-header { padding: 16px; align-items: flex-start; }
+    .modal-header-left { min-width: 0; }
+    .modal-header-right { margin: 0 8px 0 auto; }
+    .modal-header h3 { font-size: 1.15rem; }
+    .modal-body { padding: 14px 16px; }
+    .booking-order-hero { padding: 12px; }
+    .booking-hero-amount { font-size: .95rem; }
+    .booking-modal-timeline { padding: 14px; }
+    .modal-footer { padding: 12px 16px 16px; }
+    .modal-footer-left, .modal-footer-right { flex: 1 1 100%; justify-content: center; }
+    .modal-footer-center { width: 100%; justify-content: center; }
     .booking-card { padding: 10px 14px; gap: 10px; }
-    .schedule-date-box {     width: 40px; height: 40px;  }
+    .schedule-date-box { width: 40px; height: 40px; }
     .schedule-day { font-size: .9rem; }
     .schedule-month { font-size: .55rem; }
     .booking-card-time { margin-left: 0; width: 100%; }
+    .modal-content-main { padding-right: 0; }
 }
 </style>
 @endpush
@@ -795,11 +1087,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+// ── Booking Detail Modal Helper Functions ──
+function primaryBtn(label, className, onclick, icon = '') {
+    return '<button type="button" class="btn ' + className + '" ' + (onclick ? 'onclick="' + onclick + '"' : '') + '>' + (icon ? '<i class="fa-' + icon + '"></i> ' : '') + label + '</button>';
+}
+
+function secondaryBtn(label, className, onclick, icon = '') {
+    return '<button type="button" class="btn ' + className + '" ' + (onclick ? 'onclick="' + onclick + '"' : '') + '>' + (icon ? '<i class="fa-' + icon + '"></i> ' : '') + label + '</button>';
+}
+
+function linkBtn(label, href, className, icon = '') {
+    return '<a href="' + href + '" class="btn ' + (className || '') + '"' + (icon ? '<i class="fa-' + icon + '"></i> ' : '') + label + '</a>';
+}
+
 // ── Booking Detail Modal ──
 function openBookingModal(index) {
     var b = bookings[index];
     if (!b) return;
 
+    var status = b.raw_status || 'new';
     var statusFlow = ['new', 'accepted', 'en_route', 'in_progress', 'completed'];
     var currentIdx = statusFlow.indexOf(b.raw_status);
 
@@ -934,39 +1240,68 @@ function openBookingModal(index) {
         '</div>';
     }
 
-    document.getElementById('bookingModalTitle').textContent = 'Booking Details';
+    var statusClassMap = {
+        'new': 'status-pending',
+        'accepted': 'status-active',
+        'en_route': 'status-active',
+        'in_progress': 'status-active',
+        'completed': 'status-done',
+        'cancelled': 'status-cancelled'
+    };
+    var statusClass = statusClassMap[b.raw_status] || 'status-cancelled';
+    var displayService = b.service ? b.service.charAt(0).toUpperCase() + b.service.slice(1) : 'Booking';
+    var scheduleParts = String(b.date || '').split(' · ');
+    var scheduleHtml = '<span>' + scheduleParts[0] + '</span>' +
+        (scheduleParts[1] ? '<span class="booking-schedule-time">' + scheduleParts[1] + '</span>' : '');
+    var workerName = b.worker || 'KaAyos worker';
+    var workerInitials = workerName.split(/\s+/).filter(Boolean).slice(0, 2).map(function (part) {
+        return part.charAt(0).toUpperCase();
+    }).join('');
+    var workerAvatar = b.worker_avatar
+        ? '<img src="' + b.worker_avatar + '" alt="' + workerName + ' profile picture">'
+        : workerInitials;
+    var workerPhone = b.worker_phone || b.phone || '';
+    var workerActions = '<a class="booking-quick-action" href="tel:' + workerPhone + '" aria-label="Call ' + workerName + '" title="Call worker"><i class="fa-solid fa-phone" aria-hidden="true"></i></a>' +
+        '<a class="booking-quick-action" href="{{ route('client.messages.start') }}?worker_id=' + b.worker_id + '" aria-label="Message ' + workerName + '" title="Message worker"><i class="fa-regular fa-comment" aria-hidden="true"></i></a>';
+    document.getElementById('bookingModalTitle').textContent = displayService;
+    document.getElementById('bookingModalStatus').textContent = statusLabelMap[b.raw_status] || b.raw_status;
+    document.getElementById('bookingModalStatus').className = 'booking-modal-status status-badge ' + statusClass;
+    // Set complexity tag in header right
+    var complexityLevel = b.complexity_level || 'standard';
+    var complexityLabels = {
+        'standard': '<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:99px;font-size:.72rem;">Standard (1.0x)</span>',
+        'complex': '<span class="badge" style="background:#fef3c7;color:#b45309;padding:2px 8px;border-radius:99px;font-size:.72rem;">Complex (1.2x)</span>',
+        'hazardous': '<span class="badge" style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:99px;font-size:.72rem;">Hazardous (1.5x)</span>'
+    };
+    document.getElementById('bookingModalComplexity').innerHTML = complexityLabels[complexityLevel] || complexityLabels.standard;
+    document.getElementById('bookingModalMeta').innerHTML =
+        '<span><strong>Reference</strong> ' + (b.booking_ref || 'BK-' + String(b.id).padStart(5,'0')) + '</span>';
     document.getElementById('bookingModalDetails').innerHTML =
         enRouteBanner +
-        '<div class="detail-grid-compact">' +
-            '<span class="detail-label">Reference</span>' +
-            '<span class="detail-value">' + (b.booking_ref || 'BK-' + String(b.id).padStart(5,'0')) + '</span>' +
-            '<span class="detail-label">Worker</span>' +
-            '<span class="detail-value">' + b.worker + '</span>' +
-            '<span class="detail-label">Property</span>' +
-            '<span class="detail-value">' + propType + '</span>' +
-            '<span class="detail-label">Billing</span>' +
-            '<span class="detail-value">' + pricingType + '</span>' +
-            '<span class="detail-label">Complexity</span>' +
-            '<span class="detail-value">' + complexityHtml + '</span>' +
-            '<span class="detail-label">Service</span>' +
-            '<span class="detail-value">' + b.service + '</span>' +
-            '<span class="detail-label">Schedule</span>' +
-            '<span class="detail-value">' + b.date + '</span>' +
-            '<span class="detail-label">Location</span>' +
-            '<span class="detail-value">' + b.location + '</span>' +
-            '<span class="detail-label">Amount</span>' +
-            '<span class="detail-value" style="font-weight:600;">₱' + Number(b.price).toLocaleString() + '</span>' +
-            (Number(b.tip_amount) > 0
-                ? '<span class="detail-label">Tip</span>' +
-                  '<span class="detail-value" style="color:#16a34a;font-weight:600;">₱' + Number(b.tip_amount).toLocaleString() + '</span>' +
-                  '<span class="detail-label">Total</span>' +
-                  '<span class="detail-value" style="font-weight:700;">₱' + (Number(b.price) + Number(b.tip_amount)).toLocaleString() + '</span>'
-                : '') +
-            '<span class="detail-label">Notes</span>' +
-            '<span class="detail-value">' + notes + '</span>' +
-            (cancelledAt ? '<span class="detail-label">Cancelled At</span><span class="detail-value">' + cancelledAt + '</span>' : '') +
-            (cancelReason ? '<span class="detail-label">Cancel Reason</span><span class="detail-value">' + cancelReason + '</span>' : '') +
+        '<div class="booking-worker-card">' +
+            '<div class="booking-worker-avatar">' + workerAvatar + '</div>' +
+            '<div class="booking-worker-copy"><strong>' + workerName + '</strong><span>Your worker</span></div>' +
+            '<div class="booking-worker-actions">' + workerActions + '</div>' +
         '</div>' +
+        '<div class="booking-order-hero">' +
+            '<span class="booking-service-icon"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i></span>' +
+            '<div><h4>' + displayService + '</h4><p>KaAyos service booking</p></div>' +
+            '<strong class="booking-hero-amount">₱' + Number(b.price).toLocaleString() + '</strong>' +
+        '</div>' +
+        '<div class="booking-card-heading"><h4>Booking details</h4></div>' +
+        '<div class="booking-info-card">' +
+            '<div class="booking-info-row"><span class="booking-info-icon"><i class="fa-regular fa-calendar" aria-hidden="true"></i></span><div><span class="booking-info-label">Scheduled for</span><span class="booking-info-value">' + scheduleHtml + '</span></div></div>' +
+            '<div class="booking-info-row"><span class="booking-info-icon"><i class="fa-solid fa-house" aria-hidden="true"></i></span><div><span class="booking-info-label">Property type</span><span class="booking-info-value">' + propType + '</span></div></div>' +
+            '<div class="booking-info-row"><span class="booking-info-icon"><i class="fa-solid fa-receipt" aria-hidden="true"></i></span><div><span class="booking-info-label">Payment</span><span class="booking-info-value">' + pricingType + '</span></div></div>' +
+            '<div class="booking-info-row"><span class="booking-info-icon"><i class="fa-regular fa-note-sticky" aria-hidden="true"></i></span><div><span class="booking-info-label">Job notes</span><span class="booking-info-value">' + notes + '</span></div></div>' +
+        '</div>' +
+        '<div class="booking-location-card"><i class="fa-solid fa-location-dot" aria-hidden="true"></i><div><strong>Service location</strong><span>' + b.location + '</span></div></div>' +
+        '<div class="booking-payment-card"><div class="booking-card-heading"><h4>Payment summary</h4></div>' +
+            '<div class="booking-payment-row"><span>Service fee</span><strong>₱' + Number(b.price).toLocaleString() + '</strong></div>' +
+            (Number(b.tip_amount) > 0 ? '<div class="booking-payment-row"><span>Tip</span><strong style="color:#16a34a;">₱' + Number(b.tip_amount).toLocaleString() + '</strong></div>' : '') +
+            '<div class="booking-payment-row total"><span>Total</span><strong>₱' + (Number(b.price) + Number(b.tip_amount || 0)).toLocaleString() + '</strong></div>' +
+        '</div>' +
+        (cancelledAt ? '<div class="booking-location-card"><i class="fa-solid fa-circle-xmark" style="color:#dc2626;" aria-hidden="true"></i><div><strong>Cancelled</strong><span>' + cancelledAt + (cancelReason ? ' · ' + cancelReason : '') + '</span></div></div>' : '') +
         timerSection +
         scopeCard +
         teamCard;
@@ -974,8 +1309,8 @@ function openBookingModal(index) {
     // Timeline
     var timelineHtml = '<div class="timeline">';
     for (var si = 0; si < statusFlow.length; si++) {
-        var status = statusFlow[si];
-        var ts = b.status_history ? b.status_history[status] : null;
+        var timelineStatus = statusFlow[si];
+        var ts = b.status_history ? b.status_history[timelineStatus] : null;
         var isPast = si < currentIdx;
         var isCurrent = si === currentIdx;
         var isFuture = si > currentIdx;
@@ -988,7 +1323,7 @@ function openBookingModal(index) {
         if (si < statusFlow.length - 1) timelineHtml += '<div class="timeline-line"></div>';
         timelineHtml +=   '</div>';
         timelineHtml +=   '<div class="timeline-content">';
-        timelineHtml +=     '<span class="timeline-status">' + statusLabelMap[status] + '</span>';
+        timelineHtml +=     '<span class="timeline-status">' + statusLabelMap[timelineStatus] + '</span>';
         timelineHtml +=     timeHtml;
         timelineHtml +=   '</div>';
         timelineHtml += '</div>';
@@ -1014,18 +1349,29 @@ function openBookingModal(index) {
 
     // Footer
     var footer = document.getElementById('bookingModalFooter');
-    if (b.raw_status === 'cancelled' || b.raw_status === 'completed') {
-        var extra = '';
-        if (b.raw_status === 'completed') {
-            extra = '<a href="{{ route('client.reviews') }}" class="btn btn-outline"><i class="fa-regular fa-star" aria-hidden="true"></i> Leave Review</a>' +
-                    '<a href="{{ route('client.testimonials.create') }}" class="btn btn-outline"><i class="fa-solid fa-quote-left" aria-hidden="true"></i> Share a Testimonial</a>' +
-                    '<button type="button" class="btn btn-outline btn-report" onclick="showReportModal(' + index + ')"><i class="fa-solid fa-flag"></i> Report Worker</button>';
-        }
-        footer.innerHTML = extra + '<button type="button" class="btn btn-outline" onclick="closeBookingModal()">Close</button>';
-    } else if (b.raw_status === 'in_progress') {
-        // Show completion workflow buttons
+    if (status === 'cancelled') {
+        footer.innerHTML = '<div class="modal-footer-center">' +
+            '<button type="button" class="btn btn-outline" onclick="closeBookingModal()">Close</button>' +
+        '</div>';
+        document.getElementById('bookingModal').style.display = 'flex';
+        return;
+    }
+
+    if (status === 'completed') {
+        footer.innerHTML = '<div class="modal-footer-left">' +
+            secondaryBtn('<i class="fa-solid fa-flag"></i> Report Worker', 'btn-outline', 'showReportModal(' + index + ')') +
+        '</div>' +
+        '<div class="modal-footer-right">' +
+            linkBtn('<i class="fa-regular fa-star" aria-hidden="true"></i> Leave Review', '{{ route('client.reviews') }}', 'btn-solid btn-primary-action') +
+            linkBtn('<i class="fa-solid fa-quote-left"></i> Share a Testimonial', '{{ route('client.testimonials.create') }}', 'btn-outline', 'quote-left') +
+        '</div>';
+        document.getElementById('bookingModal').style.display = 'flex';
+        return;
+    }
+
+    if (status === 'in_progress') {
         var completionHtml = '';
-        
+
         if (b.completion_status.is_pending) {
             // Completion is pending - show appropriate message and button
             if (b.confirmed_by_client_at) {
@@ -1047,18 +1393,38 @@ function openBookingModal(index) {
                 '<button type="button" class="btn btn-solid" onclick="markJobComplete(' + index + ')"><i class="fa-regular fa-circle-check"></i> Mark Complete</button>' +
                 '</div>';
         }
-        
-        footer.innerHTML = completionHtml;
-    } else {
-        var trackBtn = (b.raw_status === 'en_route')
-            ? '<button type="button" class="btn btn-solid" style="background:#2563eb;" onclick="closeBookingModal(); openLiveTrackingModal(' + b.id + ')"><i class="fa-solid fa-location-crosshairs"></i> Track Live</button>'
-            : '';
-        footer.innerHTML =
-            '<button type="button" class="btn btn-outline" onclick="closeBookingModal(); showCancelModal(' + index + ')">Cancel Booking</button>' +
-            '<a href="{{ route('client.messages.start') }}?worker_id=' + b.worker_id + '" class="btn btn-outline"><i class="fa-regular fa-comment" aria-hidden="true"></i> Message</a>' +
-            trackBtn;
+
+        footer.innerHTML = '<div class="modal-footer-left"></div>' +
+            '<div class="modal-footer-right">' + completionHtml + '</div>';
+        document.getElementById('bookingModal').style.display = 'flex';
+        return;
     }
 
+    // New, Accepted, En Route statuses
+    var footerHtml = '<div class="modal-footer-left">';
+    // Primary action depends on status
+    if (status === 'en_route') {
+        footerHtml += primaryBtn('<i class="fa-solid fa-location-crosshairs"></i> Track Live', 'btn-solid', 'closeBookingModal(); openLiveTrackingModal(' + b.id + ')');
+    } else if (status === 'new' || status === 'accepted') {
+        footerHtml += primaryBtn('<i class="fa-regular fa-circle-check"></i> Mark Complete', 'btn-solid', 'markJobComplete(' + index + ')');
+    }
+    footerHtml += '</div>';
+
+    footerHtml += '<div class="modal-footer-right">';
+    // Secondary actions - always show Message and Cancel
+    footerHtml += '<a href="{{ route('client.messages.start') }}?worker_id=' + b.worker_id + '" class="btn btn-outline"><i class="fa-regular fa-comment"></i> Message</a>';
+    footerHtml += '<button type="button" class="btn btn-outline" onclick="closeBookingModal()">Close</button>';
+
+    // Status-specific secondary actions
+    if (status === 'en_route') {
+        // Track Live button already in primary, add nothing extra
+    } else if (status === 'new' || status === 'accepted') {
+        // Already have Cancel and Message
+    }
+
+    footerHtml += '</div>';
+
+    document.getElementById('bookingModalFooter').innerHTML = footerHtml;
     document.getElementById('bookingModal').style.display = 'flex';
 }
 
