@@ -74,7 +74,7 @@ class RegisterController extends Controller
 
         Log::info('New account created', ['user_id' => $user->id, 'email' => $user->email, 'role' => $user->role]);
 
-        if (config('mail.mailers.smtp.username')) {
+        if (config('mail.default') !== 'log') {
             try {
                 event(new Registered($user));
             } catch (\Throwable $e) {
