@@ -144,6 +144,20 @@
         </div>
 
         <div class="form-section">
+            <h3 class="form-section-title">{{ __('client.identity.id_type') }}</h3>
+            <div class="field-group">
+                <select name="id_type" id="id_type" required {{ $isPending ? 'disabled' : '' }}>
+                    @foreach($idTypes as $key => $label)
+                        <option value="{{ $key }}" {{ old('id_type') == $key ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('id_type')
+                    <span class="field-error">{{ $message }}</span>
+                @enderror
+            </div>
+        </div>
+
+        <div class="form-section">
             <h3 class="form-section-title">{{ __('client.identity.attestation') }}</h3>
 
             <div class="attestation-list">
@@ -294,6 +308,10 @@
 .preview-item img{width:100%;height:110px;object-fit:cover;background:#fff;}
 .preview-remove{position:absolute;top:8px;right:8px;width:24px;height:24px;border:none;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center;z-index:2;}
 .preview-name{font-size:.7rem;color:var(--g5);padding:6px 8px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.field-group{margin-top:8px;}
+.field-group select{width:100%;padding:10px 12px;font-size:.9rem;border:1px solid var(--g1);border-radius:var(--radius-sm);background:var(--white);color:var(--g9);}
+.field-error{font-size:.8rem;color:var(--red-dark);margin-top:6px;display:block;}
 
 /* Attestation */
 .attestation-list{display:flex;flex-direction:column;gap:10px;}
