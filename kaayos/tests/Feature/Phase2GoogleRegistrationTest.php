@@ -136,6 +136,16 @@ class Phase2GoogleRegistrationTest extends TestCase
             'oauth_id'      => 'google_worker_001',
             'email'         => 'worker.new@gmail.com',
             'oauth_intended_role' => 'worker',
+            'oauth_registration' => [
+                'provider'      => 'google',
+                'oauth_id'      => 'google_worker_001',
+                'email'         => 'worker.new@gmail.com',
+                'first_name'    => 'Worker',
+                'last_name'     => 'New',
+                'avatar'        => null,
+                'email_verified'=> true,
+                'expires_at'    => now()->addMinutes(15)->timestamp,
+            ],
         ]))->post(route('auth.google.register.complete'), [
             'first_name'       => 'Worker',
             'last_name'        => 'New',
@@ -279,8 +289,18 @@ class Phase2GoogleRegistrationTest extends TestCase
         $this->mockSocialite($socialUser);
 
         $session = $this->sessionWithGoogleRegistration([
-            'oauth_id' => 'google_dup_001',
-            'email'    => 'dup.new@gmail.com',
+            'oauth_id'      => 'google_dup_001',
+            'email'         => 'dup.new@gmail.com',
+            'oauth_registration' => [
+                'provider'      => 'google',
+                'oauth_id'      => 'google_dup_001',
+                'email'         => 'dup.new@gmail.com',
+                'first_name'    => 'Dup',
+                'last_name'     => 'New',
+                'avatar'        => null,
+                'email_verified'=> true,
+                'expires_at'    => now()->addMinutes(15)->timestamp,
+            ],
         ]);
 
         // First submission succeeds
@@ -374,6 +394,16 @@ class Phase2GoogleRegistrationTest extends TestCase
             'oauth_id'      => 'google_wp_001',
             'email'         => 'workerprofile.new@gmail.com',
             'oauth_intended_role' => 'worker',
+            'oauth_registration' => [
+                'provider'      => 'google',
+                'oauth_id'      => 'google_wp_001',
+                'email'         => 'workerprofile.new@gmail.com',
+                'first_name'    => 'Worker',
+                'last_name'     => 'Profile',
+                'avatar'        => null,
+                'email_verified'=> true,
+                'expires_at'    => now()->addMinutes(15)->timestamp,
+            ],
         ]);
 
         $this->withSession($session)
@@ -411,6 +441,16 @@ class Phase2GoogleRegistrationTest extends TestCase
         $session = $this->sessionWithGoogleRegistration([
             'oauth_id'      => 'google_verified_001',
             'email'         => 'verified.new@gmail.com',
+            'oauth_registration' => [
+                'provider'      => 'google',
+                'oauth_id'      => 'google_verified_001',
+                'email'         => 'verified.new@gmail.com',
+                'first_name'    => 'Verified',
+                'last_name'     => 'New',
+                'avatar'        => null,
+                'email_verified'=> true,
+                'expires_at'    => now()->addMinutes(15)->timestamp,
+            ],
         ]);
 
         $this->withSession($session)
@@ -441,8 +481,8 @@ class Phase2GoogleRegistrationTest extends TestCase
         $this->mockSocialite($socialUser);
 
         $response = $this->get(route('social.callback', ['provider' => 'google']));
-        $response->assertRedirect(route('register'));
-        $response->assertSessionHas('oauth');
+        $response->assertRedirect(route('auth.google.register.form'));
+        $response->assertSessionHas('oauth_registration');
     }
 
     public function test_google_login_authenticates_existing_linked_user(): void
@@ -465,5 +505,201 @@ class Phase2GoogleRegistrationTest extends TestCase
         $response = $this->get(route('social.callback', ['provider' => 'google']));
         $response->assertRedirect(route('client.dashboard'));
         $this->assertAuthenticatedAs($existingUser);
+    }
+
+    // ------------------------------------------------------------------
+    // Test: Unregistered Google login redirects into registration flow
+    // ------------------------------------------------------------------
+
+    public function test_google_login_unregistered_redirects_to_registration_flow(): void
+    {
+        $socialUser = $this->mockGoogleUser([
+            'oauth_id'      => 'google_unreg_login_001',
+            'email'         => 'unreg.login@gmail.com',
+            'name'          => 'Unreg Login',
+            'email_verified'=> true,
+        ]);
+        $this->mockSocialite($socialUser);
+
+        // Login flow: no account linked → redirect to Google registration form
+        $response = $this->withSession(['oauth_intended_role' => 'client'])
+             ->get(route('social.callback', ['provider' => 'google']))
+             ->assertRedirect(route('auth.google.register.form'));
+
+        // Session should contain the validated Google identity
+        $this->assertTrue(session()->has('oauth_registration'));
+        $this->assertTrue(session()->has('oauth_registration_flow'));
+        $this->assertEquals('unreg.login@gmail.com', session('oauth_registration.email'));
+        $this->assertEquals('google_unreg_login_001', session('oauth_registration.oauth_id'));
+        $this->assertTrue(session('oauth_registration.email_verified'));
+    }
+
+    public function test_google_registration_form_prefills_google_data(): void
+    {
+        $socialUser = $this->mockGoogleUser([
+            'oauth_id'      => 'google_prefill_001',
+            'email'         => 'prefill.login@gmail.com',
+            'name'          => 'Prefill Name',
+            'email_verified'=> true,
+        ]);
+        $this->mockSocialite($socialUser);
+
+        // Login flow → registration form with prefilled Google data
+        $this->withSession(['oauth_intended_role' => 'client'])
+             ->get(route('social.callback', ['provider' => 'google']));
+
+        // Display form: should prefill Google email and name
+        $session = $this->sessionWithGoogleRegistration([
+            'oauth_id'      => 'google_prefill_001',
+            'email'         => 'prefill.login@gmail.com',
+            'first_name'    => 'Prefill',
+            'last_name'     => 'Name',
+            'oauth_registration' => [
+                'provider'      => 'google',
+                'oauth_id'      => 'google_prefill_001',
+                'email'         => 'prefill.login@gmail.com',
+                'first_name'    => 'Prefill',
+                'last_name'     => 'Name',
+                'avatar'        => null,
+                'email_verified'=> true,
+                'expires_at'    => now()->addMinutes(15)->timestamp,
+            ],
+        ]);
+
+        $this->withSession($session)
+             ->get(route('auth.google.register.form'))
+             ->assertStatus(200)
+             ->assertSee('prefill.login@gmail.com')
+             ->assertSee('Prefill')
+             ->assertSee('Name');
+    }
+
+    // ------------------------------------------------------------------
+    // Test: Browser-submitted email cannot override server-validated identity
+    // ------------------------------------------------------------------
+
+    public function test_google_registration_cannot_override_email_from_browser(): void
+    {
+        // Session says email is a@b.com from Google
+        $session = $this->sessionWithGoogleRegistration([
+            'oauth_id'      => 'google_override_001',
+            'email'         => 'google.validated@gmail.com',
+        ]);
+
+        // Browser tries to submit a different email
+        $this->withSession($session)
+             ->post(route('auth.google.register.complete'), [
+                 'first_name' => 'Google',
+                 'last_name'  => 'User',
+                 'email'      => 'browser.tampered@gmail.com', // attempts override
+                 'role'       => 'client',
+                 'terms'      => 'on',
+             ])
+             ->assertSessionHasErrors('email'); // validation fails: email differs from expected
+    }
+
+    // ------------------------------------------------------------------
+    // Test: Expired or missing handoff rejected
+    // ------------------------------------------------------------------
+
+    public function test_google_registration_missing_handoff_is_rejected(): void
+    {
+        // No oauth_registration in session
+        $this->post(route('auth.google.register.complete'), [
+            'first_name' => 'No',
+            'last_name'  => 'Handoff',
+            'email'      => 'no.handoff@gmail.com',
+            'role'       => 'client',
+            'terms'      => 'on',
+        ])->assertRedirect(route('register'))
+         ->assertSessionHasErrors('oauth');
+    }
+
+    public function test_google_registration_expired_handoff_is_rejected(): void
+    {
+        $this->withSession(array_merge($this->sessionWithGoogleRegistration(), [
+            'oauth_registration' => array_merge(
+                $this->sessionWithGoogleRegistration()['oauth_registration'],
+                ['expires_at' => now()->subMinutes(10)->timestamp]
+            ),
+        ]))->post(route('auth.google.register.complete'), [
+            'first_name' => 'Expired',
+            'last_name'  => 'Handoff',
+            'email'      => 'expired.handoff@gmail.com',
+            'role'       => 'client',
+            'terms'      => 'on',
+        ])->assertRedirect(route('register'))
+         ->assertSessionHasErrors('oauth');
+    }
+
+    // ------------------------------------------------------------------
+    // Test: Existing account linking protections remain intact
+    // ------------------------------------------------------------------
+
+    public function test_google_login_existing_email_without_google_link_no_auto_link(): void
+    {
+        // Existing email/password account without Google link
+        User::factory()->create([
+            'email'              => 'existing.email@gmail.com',
+            'oauth_provider'     => null,
+            'oauth_id'           => null,
+            'role'               => 'client',
+            'email_verified_at'  => now(),
+        ]);
+
+        $socialUser = $this->mockGoogleUser([
+            'oauth_id' => 'google_existing_001',
+            'email'    => 'existing.email@gmail.com',
+            'name'     => 'Existing Email',
+        ]);
+        $this->mockSocialite($socialUser);
+
+        // Login callback: should NOT auto-link or log in → redirect to login with error
+        $response = $this->withSession(['oauth_registration_flow' => true])
+             ->get(route('social.callback', ['provider' => 'google']))
+             ->assertRedirect(route('login'))
+             ->assertSessionHasErrors('oauth');
+
+        // The existing user should NOT be logged in
+        $this->assertGuest();
+    }
+
+    public function test_google_registration_existing_email_without_link_rejected(): void
+    {
+        User::factory()->create([
+            'email'              => 'existing.email@gmail.com',
+            'oauth_provider'     => null,
+            'oauth_id'           => null,
+            'role'               => 'client',
+            'email_verified_at'  => now(),
+        ]);
+
+        $socialUser = $this->mockGoogleUser([
+            'oauth_id' => 'google_existing_001',
+            'email'    => 'existing.email@gmail.com',
+            'name'     => 'Existing Email',
+        ]);
+        $this->mockSocialite($socialUser);
+
+        $this->withSession(['oauth_registration_flow' => true])
+             ->get(route('auth.google.register.callback'))
+             ->assertRedirect(route('login'))
+             ->assertSessionHasErrors('oauth');
+    }
+
+    public function test_google_registration_unverified_email_rejected(): void
+    {
+        $socialUser = $this->mockGoogleUser([
+            'oauth_id'      => 'google_unverified_002',
+            'email'         => 'unverified.new@gmail.com',
+            'name'          => 'Unverified User',
+            'email_verified'=> false,
+        ]);
+        $this->mockSocialite($socialUser);
+
+        $this->withSession(['oauth_registration_flow' => true])
+             ->get(route('auth.google.register.callback'))
+             ->assertRedirect(route('register'))
+             ->assertSessionHasErrors('oauth');
     }
 }

@@ -84,11 +84,48 @@ class SocialAuthController extends Controller
             ->first();
 
         if (!$user) {
-            session()->forget('oauth_intended_role');
+            // Unregistered Google user: redirect into the secure registration flow
+            // with the validated Google identity prefilled. Do NOT auto-create,
+            // do NOT auto-link by email, do NOT log in.
+            $email = $socialUser->getEmail();
+            $emailVerifiedClaim = $socialUser->verified_email ?? null;
 
-            return redirect()->route('register')->with([
-                'oauth' => 'This Google account is not linked to a KaAyos account. Please register first, then link your Google account.',
+            if (empty($email) || !$emailVerifiedClaim) {
+                session()->forget('oauth_intended_role');
+
+                return redirect()->route('register')->withErrors([
+                    'oauth' => 'Google account is not verified. Please sign up with email instead.',
+                ]);
+            }
+
+            // Do NOT auto-link an existing email account without explicit linking.
+            $existingEmailUser = User::where('email', $email)->first();
+            if ($existingEmailUser) {
+                session()->forget('oauth_intended_role');
+
+                return redirect()->route('login')->withErrors([
+                    'oauth' => 'An account with this email already exists. Please sign in instead.',
+                ]);
+            }
+
+            // Store validated Google identity for the registration form (reuses Phase 2 handoff).
+            session([
+                'oauth_registration' => [
+                    'provider'      => $provider,
+                    'oauth_id'      => $socialUser->getId(),
+                    'email'         => $email,
+                    'name'          => $socialUser->getName() ?? null,
+                    'first_name'    => explode(' ', trim($socialUser->getName() ?? ''), 2)[0] ?? null,
+                    'last_name'     => explode(' ', trim($socialUser->getName() ?? ''), 2)[1] ?? null,
+                    'avatar'        => $socialUser->getAvatar() ?? null,
+                    'email_verified'=> true,
+                    'expires_at'    => now()->addMinutes(15)->timestamp,
+                ],
+                'oauth_registration_flow' => true,
+                'oauth_intended_role' => session('oauth_intended_role', null),
             ]);
+
+            return redirect()->route('auth.google.register.form');
         }
 
         if ($user->suspended_at) {
@@ -338,6 +375,17 @@ class SocialAuthController extends Controller
         }
 
         $validated = $request->validate($rules);
+
+        // Never trust browser-submitted email: must match the server-validated Google identity.
+        if ($validated['email'] !== $registration['email']) {
+            Log::warning('Google registration: browser email tampering attempt', [
+                'submitted_email' => $validated['email'],
+                'google_email' => $registration['email'],
+            ]);
+
+            return back()->withInput()
+                ->withErrors(['email' => 'Email does not match the verified Google identity. Please use the prefilled email.']);
+        }
 
         // Double-check no duplicate account was created between OAuth callback and now.
         $duplicate = User::where('email', $validated['email'])->first();
