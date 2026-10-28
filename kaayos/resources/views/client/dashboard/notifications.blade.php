@@ -96,6 +96,10 @@
 
 @section('content')
 
+@php
+    $readAllRoute = \Illuminate\Support\Facades\Route::has('client.notifications.read-all') ? route('client.notifications.read-all') : '#';
+@endphp
+
 <div class="filter-pills">
     <button type="button" class="filter-pill active">All</button>
     <button type="button" class="filter-pill">Bookings</button>
@@ -110,7 +114,7 @@
             <div class="eyebrow">Inbox</div>
             <h2 class="section-title">Notifications</h2>
         </div>
-        <form method="POST" action="{{ route('client.notifications.read-all') }}" style="display:inline;margin:0;">
+        <form method="POST" action="{{ $readAllRoute }}" style="display:inline;margin:0;">
             @csrf
             <button type="submit" class="btn btn-ghost" style="font-size:.82rem;">
                 <i class="fa-solid fa-check-double" aria-hidden="true"></i> Mark all read
