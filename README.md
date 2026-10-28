@@ -33,7 +33,7 @@ KaAyos/
 │   │   │   ├── Middleware/         # Role checks, cache headers
 │   │   │   └── Requests/          # Form request validation
 │   │   ├── Mail/                  # OTP & email-change mails
-│   │   ├── Models/                # 17 Eloquent models
+│   │   ├── Models/                # 23 Eloquent models
 │   │   ├── Notifications/         # 13 notification classes
 │   │   ├── Providers/             # Service providers
 │   │   ├── Services/              # ReportService, ChatBotService, MLService, XlsxWriter
@@ -43,7 +43,7 @@ KaAyos/
 │   ├── database/
 │   │   ├── backups/               # SQL backups (kaayos_db.sql)
 │   │   ├── factories/
-│   │   ├── migrations/            # 49 migration files
+│   │   ├── migrations/            # 70 migration files
 │   │   └── seeders/
 │   ├── public/
 │   │   ├── build/                 # Vite compiled assets

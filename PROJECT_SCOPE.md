@@ -64,7 +64,6 @@ Configurable percentage (default: 10%) deducted from worker earnings.
 
 - Mobile apps (native iOS/Android)
 - Payment gateway integration (cash-on-service only)
-- Third-party OAuth/social login
 - Multi-language i18n beyond Filipino/English
 - Public API for external developers
 - Automated worker scheduling/assignment

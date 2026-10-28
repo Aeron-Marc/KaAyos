@@ -6,7 +6,55 @@ Rate limits are enforced on OTP endpoints to prevent abuse.
 
 ---
 
-## 1. Password Change — Send OTP
+## 0. Authentication (api.php — Sanctum)
+
+The following endpoints are defined in `routes/api.php` (auto-prefixed with `/api` by Laravel). They use the `auth:sanctum` guard where noted.
+
+### Login
+
+**`POST /api/login`**
+
+Rate limit: 5/min per email+IP.
+
+### Request
+
+```json
+{
+  "email": "user@example.com",
+  "password": "password"
+}
+```
+
+### Success Response (200)
+
+```json
+{
+  "token": "1|abc123...",
+  "user": { "id": 1, "name": "Juan Dela Cruz", "email": "user@example.com", "role": "client" }
+}
+```
+
+### Register
+
+**`POST /api/register`**
+
+Rate limit: 3/hr per IP.
+
+### Current User
+
+**`GET /api/user`**
+
+Requires `auth:sanctum`. Returns the currently authenticated user.
+
+### Logout
+
+**`POST /api/logout`**
+
+Requires `auth:sanctum`. Revokes the current Sanctum token.
+
+---
+
+## 2. Password Change — Send OTP
 
 Sends a 6-digit OTP to the authenticated user's email after validating the current password.
 
@@ -37,7 +85,7 @@ Sends a 6-digit OTP to the authenticated user's email after validating the curre
 
 ---
 
-## 2. Password Change — Verify OTP & Update
+## 3. Password Change — Verify OTP & Update
 
 Verifies the OTP and updates the password. Requires current password re-confirmation.
 
@@ -79,7 +127,7 @@ Verifies the OTP and updates the password. Requires current password re-confirma
 
 ---
 
-## 3. Email Change — Send OTP
+## 4. Email Change — Send OTP
 
 Sends a 6-digit OTP to the **new email** address. Validates current password and checks the 30-day cooldown.
 
@@ -115,7 +163,7 @@ Sends a 6-digit OTP to the **new email** address. Validates current password and
 
 ---
 
-## 4. Email Change — Verify OTP & Update
+## 5. Email Change — Verify OTP & Update
 
 Verifies the OTP and finalizes the email update. Sends a notification to the old email.
 
@@ -147,7 +195,7 @@ Verifies the OTP and finalizes the email update. Sends a notification to the old
 
 ---
 
-## 5. Update Profile
+## 6. Update Profile
 
 Updates the user's full name, phone number, and address (barangay).
 
@@ -185,7 +233,7 @@ Updates the user's full name, phone number, and address (barangay).
 
 ---
 
-## 6. Update Preferences
+## 7. Update Preferences
 
 Updates notification and language preferences.
 
@@ -222,7 +270,7 @@ Updates notification and language preferences.
 
 ---
 
-## 7. Upload Avatar
+## 8. Upload Avatar
 
 Uploads a profile avatar image.
 
@@ -247,7 +295,7 @@ The previous avatar (if any) is automatically deleted.
 
 ---
 
-## 8. Reverse Geocode
+## 9. Reverse Geocode
 
 Converts latitude/longitude coordinates to the nearest barangay in Tuy, Batangas.
 
@@ -284,7 +332,7 @@ Converts latitude/longitude coordinates to the nearest barangay in Tuy, Batangas
 
 ---
 
-## 9. Save Location
+## 10. Save Location
 
 Saves the user's location (GPS or manual). Updates both the user record and worker profile if applicable.
 
@@ -336,7 +384,7 @@ Saves the user's location (GPS or manual). Updates both the user record and work
 
 ---
 
-## 10. AI Chatbot
+## 11. AI Chatbot
 
 Sends a message to the AI chatbot and receives a reply with suggestions. Works for both guests and authenticated users.
 
@@ -373,7 +421,7 @@ Sends a message to the AI chatbot and receives a reply with suggestions. Works f
 
 ---
 
-## 11. AI Worker Suggestions
+## 12. AI Worker Suggestions
 
 Sends a message to the AI with the user's location context and returns matched worker recommendations. Requires authentication.
 
