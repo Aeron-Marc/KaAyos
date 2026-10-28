@@ -19,6 +19,41 @@
     </a>
 @endsection
 
+@push('styles')
+<style>
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.filter-pill{padding:6px 14px;border:1px solid var(--g1);border-radius:999px;background:var(--white);color:var(--g7);font-size:.82rem;cursor:pointer;transition:all .2s;}
+.filter-pill:hover{border-color:var(--b6);color:var(--b6);}
+.filter-pill.active{border-color:var(--b4);background:var(--b4);color:#fff;}
+.card-panel{background:var(--white);border:1px solid var(--g1);border-radius:var(--radius);overflow:hidden;}
+.card-panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--g1);}
+.card-panel-header .eyebrow{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--g5);margin-bottom:2px;}
+.card-panel-header h2.section-title{font-size:1.05rem;color:var(--b9);margin:0;font-weight:700;}
+.notif-list{display:flex;flex-direction:column;}
+.notif-item{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--g1);text-decoration:none;color:inherit;transition:background .15s;}
+.notif-item:last-child{border-bottom:none;}
+.notif-item.unread{background:#f4f9ff;}
+.notif-item:hover{background:var(--off);}
+.notif-icon{flex-shrink:0;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:#fff;}
+.notif-icon.booking{background:var(--b4);}
+.notif-icon.message{background:var(--g6);}
+.notif-icon.review{background:var(--orange);}
+.notif-icon.earnings{background:var(--green);}
+.notif-icon.system{background:var(--b9);}
+.notif-icon .fa-bell{color:var(--g5);}
+.notif-body{flex:1;min-width:0;}
+.notif-title{font-size:.9rem;color:var(--g9);font-weight:700;display:block;}
+.notif-desc{font-size:.8rem;color:var(--g6);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.notif-time{font-size:.72rem;color:var(--g5);white-space:nowrap;margin-left:auto;}
+.notif-unread-dot{flex-shrink:0;width:8px;height:8px;background:var(--b4);border-radius:50%;}
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 20px;color:var(--g6);}
+.empty-state i{font-size:2.5rem;color:var(--g3);}
+.empty-state h3{margin:0;font-size:1rem;color:var(--g9);font-weight:700;}
+.empty-state p{margin:4px 0 0;font-size:.85rem;}
+@media(max-width:640px){.card-panel-header{flex-direction:column;align-items:flex-start;gap:8px;}.notif-time{font-size:.7rem;}}
+</style>
+@endsection
+
 @section('skeleton')
     <div class="skeleton skeleton-title" style="width:160px;margin-bottom:20px;"></div>
     <div class="sp-tabs">

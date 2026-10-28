@@ -197,40 +197,53 @@ class ClientController extends Controller
         $user = auth()->user();
         $list = [];
 
-        $unreadBookings = $user->bookingsAsClient()->where('status', Booking::STATUS_NEW)->count();
-        if ($unreadBookings > 0) {
+        $latestNewBooking = $user->bookingsAsClient()
+            ->where('status', Booking::STATUS_NEW)
+            ->latest('created_at')
+            ->first();
+        if ($latestNewBooking) {
+            $count = $user->bookingsAsClient()->where('status', Booking::STATUS_NEW)->count();
             $list[] = [
                 'type'   => 'booking',
                 'title'  => 'Pending bookings',
-                'desc'   => "You have {$unreadBookings} booking request(s) waiting for worker response.",
-                'time'   => 'Just now',
+                'desc'   => "You have {$count} booking request(s) waiting for worker response.",
+                'time'   => $latestNewBooking->created_at->diffForHumans(),
                 'unread' => true,
                 'url'    => route('client.bookings'),
             ];
         }
 
-        $unreadMessages = Message::forUser($user->id)->unread()->count();
-        if ($unreadMessages > 0) {
+        $latestUnreadMessage = Message::forUser($user->id)
+            ->unread()
+            ->latest('created_at')
+            ->first();
+        if ($latestUnreadMessage) {
+            $count = Message::forUser($user->id)->unread()->count();
             $list[] = [
                 'type'   => 'message',
                 'title'  => 'Unread messages',
-                'desc'   => "You have {$unreadMessages} unread message(s).",
-                'time'   => 'Just now',
+                'desc'   => "You have {$count} unread message(s).",
+                'time'   => $latestUnreadMessage->created_at->diffForHumans(),
                 'unread' => true,
                 'url'    => route('client.messages'),
             ];
         }
 
-        $pendingReview = $user->bookingsAsClient()
+        $latestReviewPending = $user->bookingsAsClient()
             ->where('status', Booking::STATUS_COMPLETED)
             ->whereDoesntHave('review')
-            ->count();
-        if ($pendingReview > 0) {
+            ->latest('completed_at')
+            ->first();
+        if ($latestReviewPending) {
+            $count = $user->bookingsAsClient()
+                ->where('status', Booking::STATUS_COMPLETED)
+                ->whereDoesntHave('review')
+                ->count();
             $list[] = [
                 'type'   => 'review',
                 'title'  => 'Pending reviews',
-                'desc'   => "You have {$pendingReview} completed booking(s) waiting for your review.",
-                'time'   => 'Just now',
+                'desc'   => "You have {$count} completed booking(s) waiting for your review.",
+                'time'   => $latestReviewPending->completed_at?->diffForHumans() ?? 'Just now',
                 'unread' => true,
                 'url'    => route('client.bookings'),
             ];
@@ -241,7 +254,7 @@ class ClientController extends Controller
                 'type'   => 'system',
                 'title'  => 'Welcome to KaAyos!',
                 'desc'   => 'Browse workers and book a service to get started.',
-                'time'   => '1 day ago',
+                'time'   => now()->subDay()->diffForHumans(),
                 'unread' => false,
                 'url'    => route('client.workers'),
             ];
@@ -1026,17 +1039,23 @@ class ClientController extends Controller
             ? $request->file('photo')->store('review-photos', 'public')
             : null;
 
-        $review = Review::updateOrCreate(
-            ['booking_id' => $booking->id],
-            [
-                'client_id'  => auth()->id(),
-                'worker_id'  => $booking->worker_id,
-                'rating'     => $validated['rating'],
-                'comment'    => $validated['comment'] ?? null,
-                'photo_path' => $photoPath,
-                'is_anonymous' => $request->boolean('is_anonymous'),
-            ]
-        );
+        $existingReview = Review::where('booking_id', $booking->id)->first();
+        if ($existingReview) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You already submitted a review for this booking. Reviews cannot be edited after submission.',
+            ], 422);
+        }
+
+        $review = Review::create([
+            'booking_id'  => $booking->id,
+            'client_id'   => auth()->id(),
+            'worker_id'   => $booking->worker_id,
+            'rating'      => $validated['rating'],
+            'comment'     => $validated['comment'] ?? null,
+            'photo_path'  => $photoPath,
+            'is_anonymous'=> $request->boolean('is_anonymous'),
+        ]);
 
         $review->load('client');
 
