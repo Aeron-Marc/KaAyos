@@ -178,6 +178,7 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::delete('/profile/portfolio/{id}', [WorkerController::class, 'deletePortfolio'])->name('profile.portfolio.delete');
     Route::post('/profile/document', [WorkerController::class, 'uploadDocument'])->name('profile.document');
     Route::get('/documents', [WorkerController::class, 'documents'])->name('documents');
+    Route::post('/profile/availability', [WorkerController::class, 'toggleAvailability'])->name('profile.availability');
 
     // My Services (manage offered services, prices, availability)
     Route::get('/services', [MyServicesController::class, 'index'])->name('services.index');
@@ -201,6 +202,7 @@ Route::middleware(['auth', 'verified', 'worker', 'no-cache'])->prefix('worker')-
     Route::post('/jobs/{booking}/request-scope-amendment', [WorkerDashboardController::class, 'requestScopeAmendment'])->name('jobs.request-scope-amendment');
     Route::post('/jobs/{booking}/suggest-team', [WorkerDashboardController::class, 'suggestTeam'])->name('jobs.suggest-team');
     Route::post('/jobs/{booking}/respond-peer-invite', [WorkerDashboardController::class, 'respondPeerInvitation'])->name('jobs.respond-peer-invite');
+    Route::post('/disputes/{dispute}/evidence', [WorkerDashboardController::class, 'uploadDisputeEvidence'])->name('disputes.evidence');
     Route::post('/jobs/{booking}/location-ping', [WorkerController::class, 'updateLiveLocation'])->name('jobs.location-ping');
     Route::put('/location', [WorkerDashboardController::class, 'updateLocation'])->name('location.update');
 

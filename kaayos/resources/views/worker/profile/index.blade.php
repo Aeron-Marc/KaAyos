@@ -390,7 +390,7 @@
                         <label for="service_category">Primary Category</label>
                         <select id="service_category" name="service_category">
                             <option value="">Select category</option>
-                            @foreach(['Plumbing', 'Electrical', 'Cleaning', 'Carpentry', 'Painting', 'Aircon', 'Landscaping', 'General Repair'] as $cat)
+                            @foreach(['Plumbing', 'Electrical', 'Cleaning', 'Carpentry', 'Painting', 'Aircon Services', 'Landscaping', 'General Repair'] as $cat)
                                 <option value="{{ $cat }}" {{ old('service_category', auth()->user()->service_category) === $cat ? 'selected' : '' }}>{{ $cat }}</option>
                             @endforeach
                         </select>
@@ -452,6 +452,12 @@
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:16px;">
                             <input type="checkbox" name="emergency_available" value="1" {{ old('emergency_available', $workerProfile->emergency_available) ? 'checked' : '' }} style="width:18px;height:18px;accent-color:#2563eb;">
                             <span style="font-size:.88rem;font-weight:600;color:var(--b9);">Available for Emergency / Urgent Dispatch</span>
+                        </label>
+                    </div>
+                    <div class="form-group" style="display:flex;flex-direction:column;justify-content:center;margin-top:8px;">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                            <input type="checkbox" name="is_available" value="1" {{ old('is_available', $workerProfile->is_available ?? true) ? 'checked' : '' }} style="width:18px;height:18px;accent-color:#2563eb;">
+                            <span style="font-size:.88rem;font-weight:600;color:var(--b9);">Accept New Bookings</span>
                         </label>
                     </div>
                 </div>

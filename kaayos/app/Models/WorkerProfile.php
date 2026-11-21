@@ -33,6 +33,7 @@ class WorkerProfile extends Model
         'barangay_clearance_verified',
         'min_notice_hours',
         'emergency_available',
+        'is_available',
         'government_id_verified',
         'average_rating',
         'current_latitude',
@@ -59,6 +60,7 @@ class WorkerProfile extends Model
         'tesda_certified'       => 'boolean',
         'barangay_clearance_verified' => 'boolean',
         'emergency_available'   => 'boolean',
+        'is_available'          => 'boolean',
         'average_rating'        => 'decimal:2',
         'current_latitude'      => 'decimal:7',
         'current_longitude'     => 'decimal:7',
@@ -129,5 +131,11 @@ class WorkerProfile extends Model
     {
         return is_array($this->availability)
             && collect($this->availability)->contains('active', true);
+    }
+
+    public function toggleAvailability(): bool
+    {
+        $this->is_available = !$this->is_available;
+        return $this->save();
     }
 }
