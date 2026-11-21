@@ -12,7 +12,7 @@ class ClientSampleData
             ['id' => 'cleaning', 'name' => 'Cleaning', 'icon' => 'fa-broom', 'color' => 'ic-g'],
             ['id' => 'carpentry', 'name' => 'Carpentry', 'icon' => 'fa-screwdriver-wrench', 'color' => 'ic-o'],
             ['id' => 'painting', 'name' => 'Painting', 'icon' => 'fa-paint-roller', 'color' => 'ic-p'],
-            ['id' => 'aircon', 'name' => 'Aircon', 'icon' => 'fa-snowflake', 'color' => 'ic-t'],
+            ['id' => 'aircon-services', 'name' => 'Aircon Services', 'icon' => 'fa-snowflake', 'color' => 'ic-t'],
         ];
     }
 

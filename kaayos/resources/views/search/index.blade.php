@@ -257,7 +257,7 @@
   var prompts = [
     'Try: "I need a plumber"',
     'Try: "My sink is leaking"',
-    'Try: "Aircon cleaning in Bolbok"',
+    'Try: "Aircon Services cleaning in Bolbok"',
     'Try: "Electrician near Luna"'
   ];
   var i = 0;

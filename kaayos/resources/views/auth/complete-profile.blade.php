@@ -113,7 +113,7 @@ select{cursor:pointer;padding-right:38px}
           <option value="electrical" {{ old('service_category') === 'electrical' ? 'selected' : '' }}>Electrical</option>
           <option value="carpentry" {{ old('service_category') === 'carpentry' ? 'selected' : '' }}>Carpentry</option>
           <option value="painting" {{ old('service_category') === 'painting' ? 'selected' : '' }}>Painting</option>
-          <option value="aircon" {{ old('service_category') === 'aircon' ? 'selected' : '' }}>Aircon Services</option>
+          <option value="aircon-services" {{ old('service_category') === 'aircon-services' ? 'selected' : '' }}>Aircon Services</option>
           <option value="cleaning" {{ old('service_category') === 'cleaning' ? 'selected' : '' }}>Cleaning</option>
           <option value="roofing" {{ old('service_category') === 'roofing' ? 'selected' : '' }}>Roofing</option>
           <option value="welding" {{ old('service_category') === 'welding' ? 'selected' : '' }}>Welding</option>

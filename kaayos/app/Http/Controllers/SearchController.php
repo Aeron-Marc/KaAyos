@@ -21,7 +21,7 @@ class SearchController extends Controller
         'Cleaning'   => ['cleaner', 'cleaners', 'house cleaning'],
         'Carpentry'  => ['carpenter', 'carpenters', 'wood'],
         'Painting'   => ['painter', 'painters'],
-        'Aircon'     => ['aircon', 'air conditioning'],
+        'Aircon Services' => ['aircon', 'air conditioning'],
     ];
 
     /**
@@ -34,7 +34,7 @@ class SearchController extends Controller
         'Cleaning'   => ['cleaning', 'cleaner', 'cleaners', 'linis', 'maglilinis', 'walis', 'housekeeping', 'general clean', 'deep clean', 'burara'],
         'Carpentry'  => ['carpentry', 'carpenter', 'carpenters', 'karpintero', 'wood', 'kahoy', 'furniture', 'muwebles', 'cabinet', 'gabineto', 'pinto', 'door'],
         'Painting'   => ['painting', 'painter', 'painters', 'pintura', 'paint', 'kulyit', 'repaint'],
-        'Aircon'     => ['aircon', 'air con', 'air conditioning', 'ere', 'split type', 'window type', 'compressor'],
+        'Aircon Services' => ['aircon', 'air con', 'air conditioning', 'ere', 'split type', 'window type', 'compressor'],
     ];
 
     public function index(Request $request)
