@@ -25,14 +25,14 @@ class ServiceController extends Controller
         }
 
         $services = $query->latest()->paginate(20)->withQueryString();
-        $categories = ServiceCategory::active()->get();
+        $categories = ServiceCategory::active()->orderBy('name')->get();
 
         return view('admin.services.index', compact('services', 'categories'));
     }
 
     public function create()
     {
-        $categories = ServiceCategory::active()->get();
+        $categories = ServiceCategory::active()->orderBy('name')->get();
         return view('admin.services.create', compact('categories'));
     }
 
@@ -53,7 +53,7 @@ class ServiceController extends Controller
 
     public function edit(Service $service)
     {
-        $categories = ServiceCategory::active()->get();
+        $categories = ServiceCategory::active()->orderBy('name')->get();
         return view('admin.services.edit', compact('service', 'categories'));
     }
 
