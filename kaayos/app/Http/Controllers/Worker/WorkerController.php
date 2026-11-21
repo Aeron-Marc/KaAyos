@@ -12,6 +12,7 @@ use App\Events\MessageSent;
 use App\Notifications\NewMessage;
 use App\Support\WorkerDocuments;
 use App\Services\GeoTravelService;
+use App\Services\ProfanityFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -152,7 +153,7 @@ class WorkerController extends Controller
                 Booking::STATUS_IN_PROGRESS,
             ])
             ->with('client')
-            ->orderBy('scheduled_at')
+            ->orderBy('scheduled_at', 'desc')
             ->take(20)
             ->get()
             ->map(function ($booking) {
@@ -211,7 +212,7 @@ class WorkerController extends Controller
         $bookings = auth()->user()->bookingsAsWorker()
             ->with('client')
             ->whereBetween('scheduled_at', [$start, $end])
-            ->orderBy('scheduled_at')
+            ->orderBy('scheduled_at', 'desc')
             ->get();
 
         $labelMap = [
@@ -276,7 +277,7 @@ class WorkerController extends Controller
             ->with('client')
             ->whereDate('scheduled_at', $targetDate)
             ->whereNotIn('status', [Booking::STATUS_CANCELLED, Booking::STATUS_DECLINED])
-            ->orderBy('scheduled_at')
+            ->orderBy('scheduled_at', 'desc')
             ->get();
 
         $itinerary = $geoTravel->buildDailyRoute($bookings, auth()->user());
@@ -297,7 +298,7 @@ class WorkerController extends Controller
             ->with('client')
             ->whereDate('scheduled_at', $targetDate)
             ->whereNotIn('status', [Booking::STATUS_CANCELLED, Booking::STATUS_DECLINED])
-            ->orderBy('scheduled_at')
+            ->orderBy('scheduled_at', 'desc')
             ->get();
 
         $optimization = $geoTravel->suggestOptimizedStopOrder($bookings, auth()->user());
@@ -728,7 +729,7 @@ class WorkerController extends Controller
             'booking_id'      => $latestBooking?->id,
             'sender_id'       => auth()->id(),
             'receiver_id'     => $conversation->client_id,
-            'message'         => $validated['message'],
+            'message'         => app(ProfanityFilter::class)->filter($validated['message']),
         ]);
 
         $conversation->update(['last_message_at' => now()]);
@@ -873,6 +874,7 @@ class WorkerController extends Controller
             'barangay_clearance_verified' => ['nullable', 'boolean'],
             'min_notice_hours'   => ['nullable', 'integer', 'min:1', 'max:72'],
             'emergency_available'=> ['nullable', 'boolean'],
+            'is_available'       => ['nullable', 'boolean'],
         ]);
 
         $updates = [
@@ -936,6 +938,7 @@ class WorkerController extends Controller
             'barangay_clearance_verified' => $request->boolean('barangay_clearance_verified'),
             'min_notice_hours'   => $data['min_notice_hours'] ?? 2,
             'emergency_available'=> $request->boolean('emergency_available'),
+            'is_available'       => $request->boolean('is_available'),
         ]);
 
         $profile->save();
@@ -1009,6 +1012,18 @@ class WorkerController extends Controller
         return redirect()
             ->route('worker.profile')
             ->with('success', 'Portfolio photo removed.');
+    }
+
+    public function toggleAvailability(): RedirectResponse
+    {
+        $profile = auth()->user()->workerProfile;
+        if (!$profile) {
+            return back()->with('error', 'Worker profile not found.');
+        }
+
+        $profile->toggleAvailability();
+
+        return back()->with('success', 'Availability is now ' . ($profile->is_available ? 'ON' : 'OFF') . '.');
     }
 
     public function uploadDocument(Request $request): RedirectResponse
