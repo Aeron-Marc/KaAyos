@@ -61,7 +61,9 @@
         'total_bookings' => true,
         'completion_rate' => true,
         'cancellation_rate' => false,
-        'gross_collected' => true,
+        'platform_fees' => true,
+        'total_transaction_value' => true,
+        'platform_revenue' => true,
     ];
     $deltaClass = function (string $key) use ($deltas, $deltaGoodUp) {
         $delta = $deltas[$key] ?? null;
@@ -442,23 +444,72 @@
                     <span class="perf-icon" aria-hidden="true"><i class="fa-solid fa-sack-dollar"></i></span>
                     <span class="target-chip is-neutral">{{ __('admin.dash.kpi.no_target') }}</span>
                 </div>
-                <div class="perf-label">{{ __('admin.dash.kpi.gross_collected') }}</div>
+                <div class="perf-label">{{ __('admin.dash.kpi.total_transaction_value') }}</div>
                 <div class="perf-value-row">
-                    <x-money class="perf-value perf-money" :value="$kpi['gross_collected']['value']" />
-                    @if($deltas['gross_collected'] ?? null)
-                        <span class="dash-delta {{ $deltaClass('gross_collected') }}">
-                            <i class="fa-solid {{ $deltaIcon('gross_collected') }}" aria-hidden="true"></i>{{ $deltas['gross_collected']['text'] }}
+                    <x-money class="perf-value perf-money" :value="$kpi['total_transaction_value']['value']" />
+                    @if($deltas['total_transaction_value'] ?? null)
+                        <span class="dash-delta {{ $deltaClass('total_transaction_value') }}">
+                            <i class="fa-solid {{ $deltaIcon('total_transaction_value') }}" aria-hidden="true"></i>{{ $deltas['total_transaction_value']['text'] }}
                         </span>
                     @endif
                 </div>
                 <div class="perf-meta">
                     {{ __('admin.dash.performance.gross_note', [
-                        'count' => number_format($kpi['revenue']['basis']),
+                        'count' => number_format($kpi['platform_fees']['basis']),
                         'tips' => number_format($kpi['tips']['value'], 2),
                     ]) }}
                 </div>
                 <div class="perf-footer">
-                    <span>{{ __('admin.dash.kpi.gross_formula') }}</span>
+                    <span>{{ __('admin.dash.kpi.total_transaction_value_formula') }}</span>
+                    <span class="perf-link">{{ __('admin.dash.kpi.view_records') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+                </div>
+            </a>
+
+            <a class="perf-card tone-green" href="{{ $outcomeUrl(['status' => 'completed']) }}">
+                <div class="perf-card-top">
+                    <span class="perf-icon" aria-hidden="true"><i class="fa-solid fa-percent"></i></span>
+                    <span class="target-chip is-neutral">{{ __('admin.dash.kpi.platform_fee_chip', ['percent' => $kpi['platform_fees']['percent']]) }}</span>
+                </div>
+                <div class="perf-label">{{ __('admin.dash.kpi.platform_fees') }}</div>
+                <div class="perf-value-row">
+                    <x-money class="perf-value perf-money" :value="$kpi['platform_fees']['value']" />
+                    @if($deltas['platform_fees'] ?? null)
+                        <span class="dash-delta {{ $deltaClass('platform_fees') }}">
+                            <i class="fa-solid {{ $deltaIcon('platform_fees') }}" aria-hidden="true"></i>{{ $deltas['platform_fees']['text'] }}
+                        </span>
+                    @endif
+                </div>
+                <div class="perf-meta">
+                    {{ __('admin.dash.kpi.platform_fees_note', [
+                        'percent' => $kpi['platform_fees']['percent'],
+                        'count' => number_format($kpi['platform_fees']['basis']),
+                    ]) }}
+                </div>
+                <div class="perf-footer">
+                    <span>{{ __('admin.dash.kpi.platform_fees_formula') }}</span>
+                    <span class="perf-link">{{ __('admin.dash.kpi.view_records') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+                </div>
+            </a>
+
+            <a class="perf-card tone-purple" href="{{ $outcomeUrl(['status' => 'completed']) }}">
+                <div class="perf-card-top">
+                    <span class="perf-icon" aria-hidden="true"><i class="fa-solid fa-building-columns"></i></span>
+                    <span class="target-chip is-neutral">{{ __('admin.dash.kpi.no_target') }}</span>
+                </div>
+                <div class="perf-label">{{ __('admin.dash.kpi.platform_revenue') }}</div>
+                <div class="perf-value-row">
+                    <x-money class="perf-value perf-money" :value="$kpi['platform_revenue']['value']" />
+                    @if($deltas['platform_revenue'] ?? null)
+                        <span class="dash-delta {{ $deltaClass('platform_revenue') }}">
+                            <i class="fa-solid {{ $deltaIcon('platform_revenue') }}" aria-hidden="true"></i>{{ $deltas['platform_revenue']['text'] }}
+                        </span>
+                    @endif
+                </div>
+                <div class="perf-meta">
+                    {{ __('admin.dash.kpi.platform_revenue_note') }}
+                </div>
+                <div class="perf-footer">
+                    <span>{{ __('admin.dash.kpi.platform_revenue_formula') }}</span>
                     <span class="perf-link">{{ __('admin.dash.kpi.view_records') }} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
                 </div>
             </a>
@@ -569,28 +620,12 @@
                     <span class="support-sub">{{ __('admin.dash.supporting.clients', ['count' => $kpi['users']['clients']]) }} &middot; {{ __('admin.dash.supporting.workers', ['count' => $kpi['users']['workers']]) }}</span>
                 </span>
             </a>
-            <a class="support-item" href="{{ $outcomeUrl(['status' => 'completed']) }}">
-                <span class="support-icon tone-purple" aria-hidden="true"><i class="fa-solid fa-chart-simple"></i></span>
-                <span class="support-body">
-                    <x-money class="support-value" :value="$kpi['avg_value']['value']" />
-                    <span class="support-label">{{ __('admin.dash.supporting.avg_value') }}</span>
-                    <span class="support-sub">{{ __('admin.dash.supporting.avg_value_sub') }}</span>
-                </span>
-            </a>
             <a class="support-item" href="{{ route('admin.reports.index', ['preset' => 'this_month']) }}">
                 <span class="support-icon tone-orange" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span>
                 <span class="support-body">
-                    <x-money class="support-value" :value="$metrics['revenue_this_month']" />
-                    <span class="support-label">{{ __('admin.dash.supporting.month_revenue') }}</span>
-                    <span class="support-sub">{{ __('admin.dash.supporting.month_revenue_sub') }}</span>
-                </span>
-            </a>
-            <a class="support-item" href="{{ route('admin.reports.index', ['preset' => 'all']) }}">
-                <span class="support-icon tone-green" aria-hidden="true"><i class="fa-solid fa-sack-dollar"></i></span>
-                <span class="support-body">
-                    <x-money class="support-value" :value="$kpi['all_time_revenue'] + $kpi['all_time_tips']" />
-                    <span class="support-label">{{ __('admin.dash.supporting.all_time_gross') }}</span>
-                    <span class="support-sub">{{ __('admin.dash.supporting.all_time_gross_sub') }}</span>
+                    <x-money class="support-value" :value="$metrics['platform_fees_this_month']" />
+                    <span class="support-label">{{ __('admin.dash.supporting.month_platform_fees') }}</span>
+                    <span class="support-sub">{{ __('admin.dash.supporting.month_platform_fees_sub') }}</span>
                 </span>
             </a>
         </div>
@@ -616,7 +651,6 @@
                                 <th scope="col">{{ __('admin.dash.table.worker') }}</th>
                                 <th scope="col">{{ __('admin.dash.table.category') }}</th>
                                 <th scope="col">{{ __('admin.dash.table.status') }}</th>
-                                <th scope="col" class="th-price">{{ __('admin.dash.table.price') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -633,7 +667,6 @@
                                     <td class="text-sm">{{ $booking->worker->name ?? __('admin.common.not_available') }}</td>
                                     <td class="text-sm cat-cell" title="{{ $booking->service_category }}">{{ $booking->service_category ?: __('admin.dash.categories.uncategorized') }}</td>
                                     <td><x-status-badge :status="$booking->status" /></td>
-                                    <td class="td-price"><x-money :value="$booking->price" /></td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -774,7 +807,7 @@
     .section-link:hover{text-decoration:underline}
     .section-link i{font-size:.65rem}
 
-    .perf-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .perf-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     .perf-card{display:flex;flex-direction:column;background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:15px;padding:16px 16px 14px;text-decoration:none;color:var(--g9);box-shadow:0 4px 14px rgba(0,0,0,.05);transition:all .18s;min-width:0;position:relative;overflow:hidden}
     .perf-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--b6)}
     .perf-card.tone-green::before{background:#10B981}
@@ -852,7 +885,6 @@
     .recent-table td{padding:10px 8px;border-bottom:1px solid var(--g1);font-size:.78rem;color:var(--g9);vertical-align:middle}
     .recent-table tbody tr:last-child td{border-bottom:0}
     .recent-table tbody tr:hover{background:rgba(26,111,196,.025)}
-    .th-price,.td-price{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
     .cat-cell{max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--g4)}
     .dash-booking-link{display:flex;flex-direction:column;gap:1px;text-decoration:none;color:inherit}
     .dash-booking-link:hover .booking-id{color:var(--b6);text-decoration:underline}

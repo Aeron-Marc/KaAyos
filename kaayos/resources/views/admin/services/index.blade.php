@@ -36,7 +36,6 @@
                 <tr>
                     <th scope="col">Name</th>
                     <th scope="col">Category</th>
-                    <th scope="col">Base Price</th>
                     <th scope="col">Billing</th>
                     <th scope="col">Status</th>
                     <th scope="col" style="text-align:center;">Actions</th>
@@ -47,7 +46,6 @@
                 <tr>
                     <td class="fw-600">{{ $service->name }}</td>
                     <td><span class="status-badge" style="background:var(--b0);color:var(--b7)">{{ $service->category->name ?? 'N/A' }}</span></td>
-                    <td class="table-col-price">@if($service->base_price) ₱{{ number_format((float)$service->base_price, 2) }} @else <span class="text-muted">—</span> @endif</td>
                     <td><span class="status-badge" style="background:var(--b0);color:var(--b7)">{{ ['fixed' => 'Fixed', 'hourly' => 'Hourly', 'either' => 'Either'][$service->billing_type ?? 'either'] ?? 'Either' }}</span></td>
                     <td>
                         @if($service->is_active)

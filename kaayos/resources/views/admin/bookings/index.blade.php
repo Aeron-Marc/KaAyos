@@ -77,7 +77,6 @@
                     <th scope="col">{{ __('admin.bookings.worker') }}</th>
                     <th scope="col">{{ __('admin.bookings.service') }}</th>
                     <th scope="col">{{ __('admin.bookings.schedule') }}</th>
-                    <th scope="col" class="table-col-price">{{ __('admin.bookings.price') }}</th>
                     <th scope="col">{{ __('admin.bookings.status') }}</th>
                     <th scope="col" style="text-align:center;">{{ __('admin.bookings.actions') }}</th>
                 </tr>
@@ -90,7 +89,6 @@
                         <td class="text-sm">{{ $booking->worker->name ?? __('admin.common.not_available') }}</td>
                         <td class="text-sm">{{ $booking->service_category ?: __('admin.dash.categories.uncategorized') }}</td>
                         <td class="text-sm text-muted"><x-datetime :value="$booking->scheduled_at" format="M j, Y g:i A" /></td>
-                        <td class="table-col-price"><x-money :value="$booking->price" /></td>
                         <td><x-status-badge :status="$booking->status" /></td>
                         <td style="text-align:center;">
                             <a href="{{ route('admin.bookings.show', $booking) }}" class="btn btn-primary btn-sm">

@@ -45,7 +45,7 @@
             <table>
                 <caption class="visually-hidden">{{ __('admin.common.table_caption') }}</caption>
                 <thead>
-                    <tr><th scope="col">ID</th><th scope="col">With</th><th scope="col">Status</th><th scope="col">Price</th><th scope="col">Date</th></tr>
+                    <tr><th scope="col">ID</th><th scope="col">With</th><th scope="col">Status</th><th scope="col">Date</th></tr>
                 </thead>
                 <tbody>
                     @foreach($bookings as $b)
@@ -53,7 +53,6 @@
                         <td>#{{ $b->id }}</td>
                         <td class="text-sm">{{ $user->role === 'client' ? $b->worker->name : $b->client->name }}</td>
                         <td><span class="status-badge status-{{ $b->status }}">{{ str_replace('_', ' ', ucfirst($b->status)) }}</span></td>
-                        <td class="table-col-price">₱{{ number_format((float)$b->price, 2) }}</td>
                         <td class="text-sm text-muted">{{ $b->created_at->format('M d, Y') }}</td>
                     </tr>
                     @endforeach

@@ -20,7 +20,6 @@
                 <thead>
                     <tr>
                         <th scope="col">Extra Name</th>
-                        <th scope="col">Suggested Cost</th>
                         <th scope="col">Status</th>
                         <th scope="col" style="text-align:center;">Actions</th>
                     </tr>
@@ -29,7 +28,6 @@
                     @foreach($extras as $extra)
                     <tr>
                         <td class="fw-600">{{ $extra->name }}</td>
-                        <td class="table-col-price">₱{{ number_format((float)$extra->suggested_cost, 2) }}</td>
                         <td>
                             @if($extra->is_active)
                                 <span class="status-badge status-active"><i class="fa-solid fa-check-circle"></i> Active</span>
@@ -66,10 +64,6 @@
             <div class="form-group" style="margin-bottom: 14px;">
                 <label for="name" style="display: block; font-weight: 500; font-size: .85rem; margin-bottom: 5px;">Extra Name / Material</label>
                 <input type="text" name="name" id="name" required placeholder="e.g. PVC pipe 3m, Extra wire" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;">
-            </div>
-            <div class="form-group" style="margin-bottom: 14px;">
-                <label for="suggested_cost" style="display: block; font-weight: 500; font-size: .85rem; margin-bottom: 5px;">Suggested Cost (₱)</label>
-                <input type="number" step="0.01" min="0" name="suggested_cost" id="suggested_cost" required placeholder="0.00" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;">
             </div>
             <div class="form-group" style="margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
                 <input type="checkbox" name="is_active" id="is_active" value="1" checked>

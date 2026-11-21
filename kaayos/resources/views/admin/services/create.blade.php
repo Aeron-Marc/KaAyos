@@ -41,11 +41,6 @@
             @error('description') <div class="error">{{ $message }}</div> @enderror
         </div>
         <div class="form-group">
-            <label for="base_price">Minimum Base Rate / Floor (₱) <span style="color:var(--d10)">*</span></label>
-            <input type="number" name="base_price" id="base_price" value="{{ old('base_price', '0.00') }}" step="0.01" min="0" placeholder="0.00" required>
-            @error('base_price') <div class="error">{{ $message }}</div> @enderror
-        </div>
-        <div class="form-group">
             <label for="billing_type">Billing Type</label>
             <select name="billing_type" id="billing_type">
                 <option value="either" {{ old('billing_type', 'either') == 'either' ? 'selected' : '' }}>Fixed or hourly (client chooses)</option>

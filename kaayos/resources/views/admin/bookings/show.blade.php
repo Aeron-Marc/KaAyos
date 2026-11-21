@@ -22,7 +22,7 @@
             <div class="detail-row"><span class="detail-label">Service</span><span class="detail-value">{{ $booking->service_category }}</span></div>
             <div class="detail-row"><span class="detail-label">Scheduled At</span><span class="detail-value">{{ $booking->scheduled_at?->format('F d, Y \a\t g:i A') ?? 'N/A' }}</span></div>
             <div class="detail-row"><span class="detail-label">Location</span><span class="detail-value" style="text-align:right;max-width:60%">{{ $booking->address }}</span></div>
-            <div class="detail-row"><span class="detail-label">Price</span><span class="detail-value">₱{{ number_format((float)$booking->price, 2) }}</span></div>
+
         </div>
         <div class="detail-section">
             <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">{{ str_replace('_', ' ', ucfirst($booking->status)) }}</span></div>

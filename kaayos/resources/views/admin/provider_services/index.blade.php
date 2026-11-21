@@ -34,7 +34,6 @@
                     <th scope="col">Provider</th>
                     <th scope="col">Service</th>
                     <th scope="col">Category</th>
-                    <th scope="col">Custom Price</th>
                     <th scope="col">Available</th>
                 </tr>
             </thead>
@@ -52,13 +51,6 @@
                     </td>
                     <td class="fw-600">{{ $ps->service->name ?? 'N/A' }}</td>
                     <td><span class="status-badge" style="background:var(--b0);color:var(--b7)">{{ $ps->service->category->name ?? 'N/A' }}</span></td>
-                    <td class="table-col-price">
-                        @if($ps->custom_price)
-                            ₱{{ number_format((float)$ps->custom_price, 2) }}
-                        @else
-                            <span class="text-muted">Default</span>
-                        @endif
-                    </td>
                     <td>
                         @if($ps->is_available)
                             <span class="status-badge status-active"><i class="fa-solid fa-check-circle"></i> Yes</span>
