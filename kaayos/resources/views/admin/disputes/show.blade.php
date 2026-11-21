@@ -63,6 +63,28 @@
             <div class="detail-row"><span class="detail-label">Reason</span></div>
             <p style="margin-top:8px;font-size:.95rem;color:var(--g9);line-height:1.6">{{ $dispute->reason }}</p>
         </div>
+        @if($dispute->evidences->count() > 0)
+        <div class="detail-section">
+            <div class="detail-row"><span class="detail-label">Supporting Evidence</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                @foreach($dispute->evidences as $evidence)
+                <div class="evidence-item" style="position:relative;display:inline-block;margin:4px;">
+                    @if($evidence->is_image)
+                        <img src="{{ $evidence->url }}" alt="{{ $evidence->original_name }}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--g2);">
+                    @else
+                        <div style="width:120px;height:120px;background:var(--b0);border:1px solid var(--g2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--g5);">
+                            <i class="fa-solid fa-file-image" style="font-size:2rem;margin-bottom:4px;"></i>
+                            <div>{{ $evidence->original_name }}</div>
+                        </div>
+                    @endif
+                    <div style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;" title="{{ $evidence->uploader->name ?? 'Unknown' }} · {{ $evidence->original_name }}">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
         @if($dispute->resolution_notes)
         <div class="detail-section">
             <div class="detail-row"><span class="detail-label">Resolution Notes</span></div>
@@ -120,7 +142,6 @@
         <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">{{ str_replace('_', ' ', ucfirst($dispute->booking->status)) }}</span></div>
         <div class="detail-row"><span class="detail-label">Client</span><span class="detail-value">{{ $dispute->booking->client->name ?? 'N/A' }}</span></div>
         <div class="detail-row"><span class="detail-label">Worker</span><span class="detail-value">{{ $dispute->booking->worker->name ?? 'N/A' }}</span></div>
-        <div class="detail-row"><span class="detail-label">Price</span><span class="detail-value">₱{{ number_format((float)$dispute->booking->price, 2) }}</span></div>
     </div>
 </div>
 @endif

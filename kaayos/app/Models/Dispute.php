@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Dispute extends Model
 {
@@ -41,6 +42,11 @@ class Dispute extends Model
     public function reportedWorker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reported_worker_id');
+    }
+
+    public function evidences(): HasMany
+    {
+        return $this->hasMany(DisputeEvidence::class);
     }
 
     public function scopeOpen($query)

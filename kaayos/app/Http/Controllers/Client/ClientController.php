@@ -15,6 +15,7 @@ use App\Models\ServiceExtra;
 use App\Models\WorkerProfile;
 use App\Models\BookingHistory;
 use App\Models\Dispute;
+use App\Models\DisputeEvidence;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Events\BookingCreated;
@@ -23,6 +24,7 @@ use App\Events\JobCompletionStatusUpdated;
 use App\Events\MessageSent;
 use App\Services\BookingMessageService;
 use App\Services\GeoTravelService;
+use App\Services\ProfanityFilter;
 use App\Support\TuyBarangays;
 use Carbon\Carbon;
 use App\Notifications\BookingCancelled;
@@ -97,6 +99,7 @@ class ClientController extends Controller
             ->with('workerProfile.portfolios')
             ->withCount('reviewsReceived')
             ->active()
+            ->orderBy('name')
             ->take(50)
             ->get()
             ->map(fn ($u) => [
@@ -555,7 +558,7 @@ class ClientController extends Controller
             'booking_id'      => $latestBooking?->id,
             'sender_id'       => auth()->id(),
             'receiver_id'     => $conversation->worker_id,
-            'message'         => $validated['message'],
+            'message'         => app(ProfanityFilter::class)->filter($validated['message']),
         ]);
 
         $conversation->update(['last_message_at' => now()]);
@@ -613,7 +616,9 @@ class ClientController extends Controller
         }
 
         $validated = $request->validate([
-            'reason' => ['required', 'string', 'min:10', 'max:5000'],
+            'reason'  => ['required', 'string', 'min:10', 'max:5000'],
+            'evidence' => ['nullable', 'array', 'max:5'],
+            'evidence.*' => ['file', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ]);
 
         $exists = Dispute::where('type', 'worker_report')
@@ -636,6 +641,21 @@ class ClientController extends Controller
             'status'            => 'open',
             'reason'            => $validated['reason'],
         ]);
+
+        // Store evidence files
+        if ($request->hasFile('evidence')) {
+            foreach ($request->file('evidence') as $file) {
+                $path = $file->store('dispute-evidences', 'public');
+                DisputeEvidence::create([
+                    'dispute_id'   => $dispute->id,
+                    'uploaded_by'  => auth()->id(),
+                    'file_path'    => $path,
+                    'original_name'=> $file->getClientOriginalName(),
+                    'mime_type'    => $file->getMimeType(),
+                    'size'         => $file->getSize(),
+                ]);
+            }
+        }
 
         auth()->user()->notify(new ReportReceived($dispute));
 
@@ -1047,7 +1067,7 @@ class ClientController extends Controller
             'client_id'   => auth()->id(),
             'worker_id'   => $booking->worker_id,
             'rating'      => $validated['rating'],
-            'comment'     => $validated['comment'] ?? null,
+            'comment'     => app(ProfanityFilter::class)->filter($validated['comment'] ?? null),
             'photo_path'  => $photoPath,
             'is_anonymous'=> $request->boolean('is_anonymous'),
         ]);
