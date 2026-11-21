@@ -186,7 +186,6 @@ class ReportService
                 'Declined' => ['type' => 'number', 'total' => true, 'align' => 'right'],
                 'Completion Rate' => ['type' => 'percent', 'align' => 'right'],
                 'Avg Rating' => ['type' => 'decimal', 'align' => 'right'],
-                'Gross Revenue' => ['type' => 'money', 'total' => true, 'align' => 'right'],
             ],
             'verifications' => [
                 'Provider' => ['type' => 'text'],
@@ -387,9 +386,6 @@ class ReportService
                 'bookingsAsWorker as declined_bookings' => fn ($q) => $q->where('status', 'declined')->where('declined_at', '>=', $start)->where('declined_at', '<', $end),
                 'reviewsReceived as review_count' => fn ($q) => $q->where('created_at', '>=', $start)->where('created_at', '<', $end),
             ])
-            ->withSum([
-                'bookingsAsWorker as gross_revenue' => fn ($q) => $q->where('status', 'completed')->where('completed_at', '>=', $start)->where('completed_at', '<', $end),
-            ], 'price')
             ->withAvg([
                 'reviewsReceived as avg_rating' => fn ($q) => $q->where('created_at', '>=', $start)->where('created_at', '<', $end),
             ], 'rating')
@@ -402,7 +398,6 @@ class ReportService
         $totalCancelled = (int) $all->sum('cancelled_bookings');
         $totalDeclined = (int) $all->sum('declined_bookings');
         $totalTerminal = $totalCompleted + $totalCancelled + $totalDeclined;
-        $totalRevenue = (float) $all->sum('gross_revenue');
         $avgRating = $all->avg('avg_rating');
 
         $rows = $all->map(function (User $w) {
@@ -418,7 +413,6 @@ class ReportService
                 'Declined' => (int) $w->declined_bookings,
                 'Completion Rate' => $this->percentage((int) $w->completed_bookings, $terminal),
                 'Avg Rating' => $w->avg_rating !== null ? round((float) $w->avg_rating, 1) : null,
-                'Gross Revenue' => (float) $w->gross_revenue,
             ];
         })->values()->all();
 
@@ -433,7 +427,6 @@ class ReportService
                 $this->kpi('Bookings Created', $totalCreated, 'fa-calendar-check', 'purple'),
                 $this->kpi('Completed', $totalCompleted, 'fa-circle-check', 'green'),
                 $this->kpi('Avg Rating', $avgRating !== null ? number_format($avgRating, 1) : 'N/A', 'fa-star', 'orange'),
-                $this->kpi('Gross Revenue', $totalRevenue, 'fa-coins', 'green', true),
             ],
             'chart' => [
                 'type' => 'bar',
@@ -450,7 +443,6 @@ class ReportService
                 'Cancelled' => $totalCancelled,
                 'Declined' => $totalDeclined,
                 'Completion Rate' => $this->percentage($totalCompleted, $totalTerminal),
-                'Gross Revenue' => $totalRevenue,
             ],
             'rows' => $rows,
             'total_rows' => $totalWorkers,

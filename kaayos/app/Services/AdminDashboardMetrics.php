@@ -21,7 +21,8 @@ use Illuminate\Support\Facades\DB;
  *  - Completion / cancellation / decline rates use terminal outcomes in the
  *    period (completed_at, cancelled_at, declined_at). The denominator is the
  *    number of terminal outcomes, so the three rates reconcile to 100%.
- *  - Revenue and tips use completed_at in the period.
+ *  - Platform service fees, total transaction value and tips use completed_at
+ *    in the period.
  *  - Active, awaiting acceptance, stuck and unassigned bookings are current
  *    workload stocks and intentionally ignore the selected period.
  *  - Unresolved disputes and pending verifications are current stocks.
@@ -144,7 +145,7 @@ class AdminDashboardMetrics
             'top_categories' => $this->topCategories($range['from'], $range['to'], $statusCounts['total']),
             'recent_bookings' => [],
             'recent_total' => $this->recentTotal($range['from'], $range['to']),
-            'revenue_this_month' => $this->calendarMonthRevenue(),
+            'platform_fees_this_month' => $this->calendarMonthPlatformFees(),
             'generated_at' => now()->toIso8601String(),
         ];
     }
@@ -261,6 +262,7 @@ class AdminDashboardMetrics
         $completion = $this->rate((int) $outcomes['completed'], $basis);
         $cancellation = $this->rate((int) $outcomes['cancelled'], $basis);
         $decline = $this->rate((int) $outcomes['declined'], $basis);
+        $feePercent = $this->platformFeePercent();
 
         return [
             'total_bookings' => $statusCounts['total'],
@@ -295,27 +297,24 @@ class AdminDashboardMetrics
                 'declined' => (int) $outcomes['declined'],
                 'basis' => $basis,
             ],
-            'revenue' => [
-                'value' => (float) $outcomes['revenue'],
-                'previous' => $previousOutcomes ? (float) $previousOutcomes['revenue'] : null,
+            'platform_fees' => [
+                'value' => (float) $outcomes['platform_fees'],
+                'previous' => $previousOutcomes ? (float) $previousOutcomes['platform_fees'] : null,
                 'basis' => (int) $outcomes['completed'],
+                'percent' => $feePercent,
             ],
             'tips' => [
                 'value' => (float) $outcomes['tips'],
                 'previous' => $previousOutcomes ? (float) $previousOutcomes['tips'] : null,
             ],
-            'gross_collected' => [
+            'total_transaction_value' => [
                 'value' => (float) $outcomes['revenue'] + (float) $outcomes['tips'],
                 'previous' => $previousOutcomes ? (float) $previousOutcomes['revenue'] + (float) $previousOutcomes['tips'] : null,
             ],
-            'avg_value' => [
-                'value' => (int) $outcomes['completed'] > 0
-                    ? (float) $outcomes['revenue'] / (int) $outcomes['completed']
-                    : null,
-                'completed' => (int) $outcomes['completed'],
+            'platform_revenue' => [
+                'value' => (float) $outcomes['platform_fees'],
+                'previous' => $previousOutcomes ? (float) $previousOutcomes['platform_fees'] : null,
             ],
-            'all_time_revenue' => (float) $allTimeOutcomes['revenue'],
-            'all_time_tips' => (float) $allTimeOutcomes['tips'],
             'users' => $users,
         ];
     }
@@ -640,7 +639,7 @@ class AdminDashboardMetrics
     }
 
     /**
-     * @return array{completed: int, cancelled: int, declined: int, revenue: float, tips: float}
+     * @return array{completed: int, cancelled: int, declined: int, revenue: float, platform_fees: float, tips: float}
      */
     private function outcomeCounts(?Carbon $from, ?Carbon $to): array
     {
@@ -665,18 +664,27 @@ class AdminDashboardMetrics
             array_merge($bindings, $bindings, $bindings, $bindings, $bindings)
         )->first();
 
+        $revenue = (float) ($row->revenue ?? 0);
+        $platformFees = round($revenue * $this->platformFeePercent() / 100, 2);
+
         return [
             'completed' => (int) ($row->completed ?? 0),
             'cancelled' => (int) ($row->cancelled ?? 0),
             'declined' => (int) ($row->declined ?? 0),
-            'revenue' => (float) ($row->revenue ?? 0),
+            'revenue' => $revenue,
+            'platform_fees' => $platformFees,
             'tips' => (float) ($row->tips ?? 0),
         ];
     }
 
-    public function calendarMonthRevenue(): float
+    public function calendarMonthPlatformFees(): float
     {
-        return (float) $this->outcomeCounts(now()->startOfMonth(), now())['revenue'];
+        return (float) $this->outcomeCounts(now()->startOfMonth(), now())['platform_fees'];
+    }
+
+    private function platformFeePercent(): float
+    {
+        return max(0, min(100, (float) config('kaayos.platform_fee_percent', 0)));
     }
 
     /**
@@ -844,6 +852,7 @@ class AdminDashboardMetrics
     private function recentBookings(?Carbon $from, ?Carbon $to): Collection
     {
         return Booking::with(['client', 'worker'])
+            ->select(['id', 'client_id', 'worker_id', 'service_category', 'status', 'created_at'])
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
             ->latest()

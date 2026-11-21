@@ -93,13 +93,19 @@ class DashboardController extends Controller
                 $abs > 0 ? '+' : ($abs < 0 ? '-' : ''),
                 (int) round(abs($abs))
             ),
-            'revenue' => fn (float $abs) => sprintf(
+            'platform_fees' => fn (float $abs) => sprintf(
                 '%s%s%s',
                 $abs > 0 ? '+' : ($abs < 0 ? '-' : ''),
                 "\u{20B1}",
                 number_format(abs($abs), 2)
             ),
-            'gross_collected' => fn (float $abs) => sprintf(
+            'total_transaction_value' => fn (float $abs) => sprintf(
+                '%s%s%s',
+                $abs > 0 ? '+' : ($abs < 0 ? '-' : ''),
+                "\u{20B1}",
+                number_format(abs($abs), 2)
+            ),
+            'platform_revenue' => fn (float $abs) => sprintf(
                 '%s%s%s',
                 $abs > 0 ? '+' : ($abs < 0 ? '-' : ''),
                 "\u{20B1}",
