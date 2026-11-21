@@ -6,7 +6,7 @@
 @push('styles')
 <style>
 .unread-badge {
-    background: var(--b6); color: #fff; border-radius: 100px;
+    background: #ef4444; color: #fff; border-radius: 100px;
     padding: 1px 7px; font-size: .7rem; font-weight: 700;
 }
 .convo-item { cursor: pointer; }

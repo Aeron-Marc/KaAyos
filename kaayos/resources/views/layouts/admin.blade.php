@@ -179,7 +179,7 @@
         .mt-1{margin-top:4px}
         .w-auto{width:auto}
         .table-col-price{text-align:right;font-variant-numeric:tabular-nums}
-        .badge-dot{width:8px;height:8px;border-radius:50%;background:var(--d10);display:inline-block}
+        .badge-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block}
         .admin-topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:var(--b9);z-index:200;align-items:center;padding:0 16px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 
         /* ── Admin Skeleton Page ── */
