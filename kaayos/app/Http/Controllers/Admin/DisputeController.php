@@ -41,7 +41,7 @@ class DisputeController extends Controller
 
     public function show(Dispute $dispute)
     {
-        $dispute->load(['booking.client', 'booking.worker', 'raisedBy', 'resolvedBy', 'reportedWorker']);
+        $dispute->load(['booking.client', 'booking.worker', 'raisedBy', 'resolvedBy', 'reportedWorker', 'evidences.uploader']);
 
         return view('admin.disputes.show', compact('dispute'));
     }

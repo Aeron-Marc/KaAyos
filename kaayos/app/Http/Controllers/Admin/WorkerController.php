@@ -12,7 +12,12 @@ class WorkerController extends Controller
     public function index(Request $request)
     {
         $query = User::where('role', 'worker')
-            ->with(['workerProfile', 'providerServices.service.category']);
+            ->with([
+                'workerProfile' => fn ($q) => $q->select('id', 'user_id', 'preferred_payment_scheme'),
+                'providerServices' => fn ($q) => $q->select('id', 'user_id', 'service_id'),
+                'providerServices.service' => fn ($q) => $q->select('id', 'category_id', 'name'),
+                'providerServices.service.category' => fn ($q) => $q->select('id', 'name'),
+            ]);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {

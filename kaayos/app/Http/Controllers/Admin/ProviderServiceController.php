@@ -12,7 +12,8 @@ class ProviderServiceController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ProviderService::with(['user', 'service.category']);
+        $query = ProviderService::with(['user', 'service.category'])
+            ->select(['id', 'user_id', 'service_id', 'is_available', 'created_at']);
 
         if ($search = $request->input('search')) {
             $query->whereHas('user', function ($q) use ($search) {

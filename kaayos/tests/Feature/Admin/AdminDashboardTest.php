@@ -27,6 +27,7 @@ class AdminDashboardTest extends TestCase
         parent::setUp();
 
         Carbon::setTestNow('2026-10-21 12:00:00');
+        config(['kaayos.platform_fee_percent' => 10]);
         Cache::flush();
 
         $this->admin = User::factory()->create(['role' => 'admin']);
@@ -79,7 +80,7 @@ class AdminDashboardTest extends TestCase
         $this->assertSame(1, $response->viewData('adminNav')['verifications']);
     }
 
-    public function test_rates_reconcile_and_revenue_separates_tips(): void
+    public function test_rates_reconcile_and_financial_kpis_separate_tips(): void
     {
         $this->booking(Booking::STATUS_COMPLETED, ['price' => 100, 'tip_amount' => 10]);
         $this->booking(Booking::STATUS_COMPLETED, ['price' => 150, 'tip_amount' => 10]);
@@ -101,9 +102,82 @@ class AdminDashboardTest extends TestCase
         $this->assertSame(25, $kpis['decline_rate']['value']);
         $this->assertSame(4, $kpis['completion_rate']['basis']);
         $this->assertSame(4, $kpis['completion_rate']['completed'] + $kpis['cancellation_rate']['cancelled'] + $kpis['decline_rate']['declined']);
-        $this->assertSame(250.0, $kpis['revenue']['value']);
+        $this->assertSame(25.0, $kpis['platform_fees']['value']);
+        $this->assertSame(10.0, $kpis['platform_fees']['percent']);
+        $this->assertSame(2, $kpis['platform_fees']['basis']);
         $this->assertSame(20.0, $kpis['tips']['value']);
-        $this->assertSame(270.0, $kpis['gross_collected']['value']);
+        $this->assertSame(270.0, $kpis['total_transaction_value']['value']);
+        $this->assertSame(25.0, $kpis['platform_revenue']['value']);
+    }
+
+    public function test_zero_bookings_return_zero_financial_kpis_without_errors(): void
+    {
+        $kpis = app(AdminDashboardMetrics::class)->forPeriod('all_time')['kpis'];
+
+        $this->assertSame(0.0, $kpis['platform_fees']['value']);
+        $this->assertSame(0.0, $kpis['tips']['value']);
+        $this->assertSame(0.0, $kpis['total_transaction_value']['value']);
+        $this->assertSame(0.0, $kpis['platform_revenue']['value']);
+        $this->assertSame(0, $kpis['platform_fees']['basis']);
+    }
+
+    public function test_financial_kpis_use_configured_fee_percentage(): void
+    {
+        config(['kaayos.platform_fee_percent' => 7.5]);
+
+        $this->booking(Booking::STATUS_COMPLETED, ['price' => 200, 'tip_amount' => 20]);
+
+        $kpis = app(AdminDashboardMetrics::class)->forPeriod('all_time')['kpis'];
+
+        $this->assertSame(15.0, $kpis['platform_fees']['value']);
+        $this->assertSame(7.5, $kpis['platform_fees']['percent']);
+        $this->assertSame(220.0, $kpis['total_transaction_value']['value']);
+        $this->assertSame(15.0, $kpis['platform_revenue']['value']);
+    }
+
+    public function test_previous_period_deltas_cover_financial_kpis(): void
+    {
+        $this->booking(Booking::STATUS_COMPLETED, [
+            'price' => 200,
+            'tip_amount' => 20,
+            'completed_at' => now()->subDays(2),
+        ]);
+        $this->booking(Booking::STATUS_COMPLETED, [
+            'price' => 100,
+            'tip_amount' => 10,
+            'completed_at' => now()->subDays(9),
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.dashboard', ['period' => '7d']))
+            ->assertOk();
+
+        $deltas = $response->viewData('deltas');
+
+        $this->assertSame('up', $deltas['platform_fees']['dir']);
+        $this->assertStringContainsString('10.00', $deltas['platform_fees']['text']);
+        $this->assertSame('up', $deltas['total_transaction_value']['dir']);
+        $this->assertStringContainsString('110.00', $deltas['total_transaction_value']['text']);
+        $this->assertSame('up', $deltas['platform_revenue']['dir']);
+        $this->assertStringContainsString('10.00', $deltas['platform_revenue']['text']);
+    }
+
+    public function test_dashboard_removes_per_booking_price_and_legacy_financial_keys(): void
+    {
+        $this->booking(Booking::STATUS_COMPLETED, ['price' => 100]);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk();
+
+        $kpis = $response->viewData('metrics')['kpis'];
+
+        foreach (['revenue', 'gross_collected', 'avg_value', 'all_time_revenue', 'all_time_tips'] as $legacyKey) {
+            $this->assertArrayNotHasKey($legacyKey, $kpis);
+        }
+
+        $response->assertDontSee('th-price', false);
+        $response->assertDontSee('td-price', false);
     }
 
     public function test_period_outcomes_use_terminal_timestamps_not_created_at(): void
@@ -124,7 +198,9 @@ class AdminDashboardTest extends TestCase
 
         $this->assertSame(1, $kpis['completed']);
         $this->assertSame(1, $kpis['total_bookings']);
-        $this->assertSame(500.0, $kpis['revenue']['value']);
+        $this->assertSame(50.0, $kpis['platform_fees']['value']);
+        $this->assertSame(500.0, $kpis['total_transaction_value']['value']);
+        $this->assertSame(50.0, $kpis['platform_revenue']['value']);
     }
 
     public function test_unresolved_dispute_filter_matches_dashboard_attention_count(): void

@@ -17,7 +17,7 @@ The dashboard is not a decorative analytics page. Every visible element must sup
 | --- | --- |
 | Admin / operations | Which disputes, verifications, stuck bookings, and unassigned bookings must be handled first? |
 | Admin / operations | Are completion and cancellation rates inside target for the selected period? |
-| Admin / finance | How much completed booking value and tips were collected? |
+| Admin / finance | How much platform service fees, total transaction value, and platform revenue were generated? |
 | Admin / operations | Is current workload growing or clearing? |
 | Admin / operations | Which booking, dispute, or verification record explains a number? |
 
@@ -41,10 +41,11 @@ These are live workload counts. They are **not** filtered by the performance per
 - Completion counts use `completed_at`.
 - Cancellation counts use `cancelled_at`.
 - Decline counts use `declined_at`.
-- Gross booking value uses `price` on completed bookings, counted by `completed_at`.
+- Platform service fees use `price` on completed bookings multiplied by the configured `kaayos.platform_fee_percent`, counted by `completed_at`.
 - Tips use `tip_amount` on completed bookings, counted by `completed_at`.
-- Gross collected is gross booking value plus tips.
-- Average booking value is gross booking value divided by completed booking count.
+- Total transaction value is completed booking value plus tips.
+- Platform revenue is equal to platform service fees.
+- Individual worker service prices and earnings are intentionally excluded from the dashboard.
 - Current active workload and awaiting acceptance are current stocks and are presented in the supporting measures, not as period performance.
 
 ## Formulas
@@ -53,8 +54,9 @@ These are live workload counts. They are **not** filtered by the performance per
 completion_rate = completed outcomes / (completed + cancelled + declined outcomes) * 100
 cancellation_rate = cancelled outcomes / (completed + cancelled + declined outcomes) * 100
 decline_rate = declined outcomes / (completed + cancelled + declined outcomes) * 100
-gross_collected = SUM(price of completed bookings) + SUM(tips of completed bookings)
-average_booking_value = SUM(price of completed bookings) / completed booking count
+platform_service_fees = SUM(price of completed bookings) * platform_fee_percent / 100
+total_transaction_value = SUM(price of completed bookings) + SUM(tips of completed bookings)
+platform_revenue = platform_service_fees
 ```
 
 Rates are rounded to the nearest whole percentage point for display. Rates must not be calculated against bookings created in the period; that would mix two date bases.
@@ -85,7 +87,8 @@ Targets are shown as text next to the number. Colour is supplementary, never the
 
 ### Level 2: Performance
 
-- Four primary KPIs only: completion rate, cancellation rate, bookings created, gross collected.
+- Six primary KPIs only: completion rate, cancellation rate, bookings created, platform service fees, total transaction value, platform revenue.
+- Financial KPIs must not expose individual worker prices or earnings.
 - Each KPI shows its value, period scope, target where applicable, and previous-period comparison.
 - Completion and cancellation drill-downs use terminal-outcome dates, not creation dates.
 - Trend chart shows bookings created (count) and completed value (currency) with explicit units.
@@ -108,7 +111,7 @@ Targets are shown as text next to the number. Colour is supplementary, never the
 | Pending verification | Verification detail | Current |
 | Completion KPI | Completed bookings | Outcome date |
 | Cancellation KPI | Cancelled bookings | Outcome date |
-| Gross collected KPI | Completed bookings | Outcome date |
+| Platform service fees / total transaction value / platform revenue KPI | Completed bookings | Outcome date |
 | Bookings created KPI | Booking list | Creation date |
 | Status row | Booking list filtered by status | Creation date |
 | Recent booking | Booking detail | Creation date |
@@ -122,7 +125,10 @@ The existing `/admin/reports` page is the detailed report view. It already suppo
 ## Limitations
 
 - The dashboard reflects the application database, not external payment settlement.
-- Gross collected is completed booking value plus tips; it is not a payout or profit figure.
+- Platform service fees are derived from the configured percentage of completed booking value; they are not a stored per-booking charge.
+- Total transaction value is completed booking value plus tips; it is not a payout or profit figure.
+- Platform revenue equals platform service fees; it is not a separate settlement ledger.
+- Individual worker prices and earnings are not exposed on the dashboard, worker list, worker detail, provider-services page, or worker-performance report.
 - Free-text booking categories are normalised through `BookingCategoryResolver`; some legacy values may fall into `Uncategorized`.
 - Current workload is a live snapshot and can change between page loads.
 - The needs-action queue shows the oldest configured number of items, not every open record; links and export state the displayed count.
@@ -135,6 +141,7 @@ The existing `/admin/reports` page is the detailed report view. It already suppo
 - [ ] Completion and cancellation KPI drill-downs return counts on the same date basis.
 - [ ] Target status is visible as text, not only colour.
 - [ ] All five status colours remain consistent between badges, bars, and charts.
+- [ ] Dashboard financial cards show only platform service fees, total transaction value, and platform revenue; no individual worker price or earnings column is visible.
 - [ ] Queue sorting and CSV export use the same visible rows.
 - [ ] Empty states are useful and do not invent data.
 - [ ] Dashboard is usable at 1366x768 with normal vertical scrolling.

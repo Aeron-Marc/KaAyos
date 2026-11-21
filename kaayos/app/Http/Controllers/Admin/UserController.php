@@ -48,7 +48,10 @@ class UserController extends Controller
         $bookings = Booking::where(function ($q) use ($user) {
             $q->where('client_id', $user->id)
               ->orWhere('worker_id', $user->id);
-        })->with(['client', 'worker'])->latest()->paginate(10);
+        })->with(['client', 'worker'])
+            ->select(['id', 'client_id', 'worker_id', 'status', 'created_at'])
+            ->latest()
+            ->paginate(10);
 
         return view('admin.users.show', compact('user', 'bookings'));
     }
