@@ -8,6 +8,8 @@ use App\Exceptions\BookingStateException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BookingQuote;
+use App\Models\Dispute;
+use App\Models\DisputeEvidence;
 use App\Models\Earning;
 use App\Notifications\BookingCancelled;
 use App\Notifications\BookingStatusChanged;
@@ -53,6 +55,14 @@ class WorkerDashboardController extends Controller
 
     public function updateJobStatus(Request $request, Booking $booking): JsonResponse|RedirectResponse
     {
+        if (! config('kaayos.job_tracking_enabled', true)) {
+            $msg = 'Job status tracking is disabled.';
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $msg], 403);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
         $user = auth()->user();
 
         if ($booking->worker_id !== $user->id) {
@@ -673,6 +683,36 @@ class WorkerDashboardController extends Controller
             'success' => true,
             'message' => 'You have ' . $newStatus . ' the crew invitation.',
             'status'  => $newStatus,
+        ]);
+    }
+
+    public function uploadDisputeEvidence(Request $request, Dispute $dispute): JsonResponse
+    {
+        $booking = $dispute->booking;
+        if (! $booking || $booking->worker_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'evidence' => ['required', 'array', 'max:5'],
+            'evidence.*' => ['file', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+        ]);
+
+        foreach ($request->file('evidence') as $file) {
+            $path = $file->store('dispute-evidences', 'public');
+            DisputeEvidence::create([
+                'dispute_id'   => $dispute->id,
+                'uploaded_by'  => auth()->id(),
+                'file_path'    => $path,
+                'original_name'=> $file->getClientOriginalName(),
+                'mime_type'    => $file->getMimeType(),
+                'size'         => $file->getSize(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Evidence uploaded successfully.',
         ]);
     }
 }

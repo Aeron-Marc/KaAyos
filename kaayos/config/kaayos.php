@@ -1,12 +1,24 @@
 <?php
 
 return [
-    // KaAyos is a display-only marketplace with off-platform settlements (no platform fees)
-    'platform_fee_percent'   => env('KAAYOS_PLATFORM_FEE_PERCENT', 0),
+    // Platform service fee tracked by the admin dashboard. Settlements still happen off-platform.
+    'platform_fee_percent'   => env('KAAYOS_PLATFORM_FEE_PERCENT', 10),
     'booking_expiry_hours'   => env('KAAYOS_BOOKING_EXPIRY_HOURS', 24),
     'max_concurrent_jobs'    => env('KAAYOS_MAX_CONCURRENT_JOBS', 3),
     'no_show_minutes'        => env('KAAYOS_NO_SHOW_MINUTES', 60),
     'default_location'       => env('KAAYOS_DEFAULT_LOCATION', 'Tuy, Batangas'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job Tracking Toggle
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, workers can advance jobs through status stages
+    | (New → Accepted → En Route → In Progress → Completed) and clients
+    | can see real-time status updates. When disabled, only basic booking
+    | flow is available and status transition UI is hidden.
+    */
+    'job_tracking_enabled' => env('KAAYOS_JOB_TRACKING_ENABLED', true),
 
     /*
     | Registration rate limiting (attempts per hour)

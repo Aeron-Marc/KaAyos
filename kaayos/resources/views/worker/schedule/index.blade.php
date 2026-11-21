@@ -979,11 +979,17 @@ function openJobModal(index) {
                 '<button type="button" class="btn btn-solid" style="background:#16a34a;" onclick="closeJobModal(); showConfirmModal(' + index + ')"><i class="fa-regular fa-circle-check"></i> Confirm Completion</button>';
         }
     } else {
+        @if(config('kaayos.job_tracking_enabled', true))
         var nextLabels = { 'new':'Accept', 'accepted':'Mark En Route', 'en_route':'Start Job', 'in_progress':'Complete' };
         var nextLabel = nextLabels[job.raw_status] || 'Next';
         footer.innerHTML =
             '<button type="button" class="btn btn-outline" onclick="closeJobModal(); showCancelModal(' + index + ')">Cancel Job</button>' +
             '<button type="button" class="btn btn-solid" onclick="closeJobModal(); showConfirmModal(' + index + ')">' + nextLabel + '</button>';
+        @else
+        footer.innerHTML =
+            '<button type="button" class="btn btn-outline" onclick="closeJobModal(); showCancelModal(' + index + ')">Cancel Job</button>' +
+            '<button type="button" class="btn btn-outline" disabled style="opacity:.5;cursor:not-allowed;">Status Tracking Disabled</button>';
+        @endif
     }
 
     document.getElementById('jobModal').style.display = 'flex';
@@ -1316,6 +1322,10 @@ function submitTeamSuggestion() {
 }
 
 function showConfirmModal(index) {
+    @if(!config('kaayos.job_tracking_enabled', true))
+    window.showToast?.('Job status tracking is disabled.', 'info');
+    return;
+    @endif
     var job = jobs[index];
     if (!job) return;
     var step = { 'new':{a:'accepted',l:'Accept',v:'accepting'}, 'accepted':{a:'en_route',l:'Mark as En Route',v:'marking as en route'}, 'en_route':{a:'in_progress',l:'Start',v:'starting'}, 'in_progress':{a:'completed',l:'Complete',v:'completing'} }[job.raw_status];
