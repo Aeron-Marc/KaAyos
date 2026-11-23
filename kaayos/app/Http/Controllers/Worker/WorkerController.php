@@ -137,6 +137,11 @@ class WorkerController extends Controller
                     'is_completion_pending' => $booking->isCompletionPending(),
                     'completion_requested_by' => $booking->completion_requested_by,
                     'confirmed_by_worker_at' => $booking->confirmed_by_worker_at?->format('M d, Y · g:i A'),
+                    'payment_status'  => $booking->payment_status,
+                    'down_payment_amount' => $booking->down_payment_amount,
+                    'down_payment_paid' => $booking->isDownPaymentPaid(),
+                    'balance_remaining' => $booking->balance_remaining,
+                    'has_down_payment' => $booking->hasDownPayment(),
                     'confirmed_by_client_at' => $booking->confirmed_by_client_at?->format('M d, Y · g:i A'),
                 ];
             })

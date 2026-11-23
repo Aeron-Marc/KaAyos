@@ -191,6 +191,13 @@ class ClientController extends Controller
                     'confirmed_by_worker_at' => $b->confirmed_by_worker_at?->toIso8601String(),
                     'confirmed_by_client_at' => $b->confirmed_by_client_at?->toIso8601String(),
                     'completion_status' => $b->getCompletionStatus(),
+                    'payment_status'  => $b->payment_status,
+                    'down_payment_amount' => $b->down_payment_amount,
+                    'down_payment_paid_at' => $b->down_payment_paid_at?->toIso8601String(),
+                    'balance_remaining' => $b->balance_remaining,
+                    'has_down_payment' => $b->hasDownPayment(),
+                    'down_payment_paid' => $b->isDownPaymentPaid(),
+                    'minimum_down_payment' => $b->getMinimumDownPayment(),
                 ];
             })->toArray();
     }
@@ -701,14 +708,15 @@ class ClientController extends Controller
             'estimated_duration_hours' => ['nullable', 'numeric', 'min:0.5', 'max:24'],
             'complexity_level' => ['nullable', 'string', 'in:standard,moderate,complex,high_hazard,hazardous'],
             'notes'            => ['nullable', 'string', 'max:2000'],
-            'price'            => ['nullable', 'numeric', 'min:0'],
+            'price'            => ['nullable', 'numeric', 'min:1', 'max:100000'],
+            'down_payment'     => ['nullable', 'numeric', 'min:1', 'max:100000'],
             'service_id'       => ['nullable', 'integer', 'exists:services,id'],
             'latitude'         => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'        => ['nullable', 'numeric', 'between:-180,180'],
             'extras'           => ['nullable', 'array'],
             'extras.*.service_extra_id' => ['nullable', 'exists:service_extras,id'],
             'extras.*.name'    => ['required_with:extras', 'string', 'max:255'],
-            'extras.*.cost'    => ['required_with:extras', 'numeric', 'min:0'],
+            'extras.*.cost'    => ['required_with:extras', 'numeric', 'min:1', 'max:10000'],
             'extras.*.source'  => ['nullable', 'in:catalog,custom'],
         ]);
 
@@ -903,6 +911,23 @@ class ClientController extends Controller
         $address = $validated['house_no'] . ', ' . $validated['barangay'] . ', ' . config('kaayos.default_location');
 
         $booking = DB::transaction(function () use ($validated, $address, $worker, $serviceCategory, $selectedServiceId, $selectedServiceName, $finalPrice, $pricingType, $paymentScheme, $agreedRate, $extrasTotal, $extrasList, $durationHours, $complexityLevel, $complexityMultiplier, $clientLat, $clientLng, $travelMetrics) {
+            $downPaymentAmount = null;
+            $paymentStatus = 'pending';
+
+            if (!empty($validated['down_payment']) && (float) $validated['down_payment'] > 0) {
+                $downPaymentAmount = round((float) $validated['down_payment'], 2);
+
+                if ($downPaymentAmount > $finalPrice) {
+                    $downPaymentAmount = $finalPrice;
+                }
+
+                $paymentStatus = 'down_payment_pending';
+            }
+
+            $balanceRemaining = $downPaymentAmount !== null
+                ? round($finalPrice - $downPaymentAmount, 2)
+                : null;
+
             $booking = Booking::create([
                 'client_id'                    => auth()->id(),
                 'worker_id'                    => $validated['worker_id'],
@@ -919,7 +944,9 @@ class ClientController extends Controller
                 'agreed_rate'                  => $agreedRate,
                 'extras_total'                 => $extrasTotal,
                 'payment_method'               => $validated['payment_method'] ?? 'cash',
-                'payment_status'               => 'pending',
+                'payment_status'               => $paymentStatus,
+                'down_payment_amount'          => $downPaymentAmount,
+                'balance_remaining'            => $balanceRemaining,
                 'estimated_duration_hours'     => $durationHours,
                 'complexity_level'             => $complexityLevel,
                 'complexity_multiplier'        => $complexityMultiplier,
@@ -1216,13 +1243,45 @@ class ClientController extends Controller
         }
     }
 
+    public function payDownPayment(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->client_id !== auth()->id()) {
+            abort(403, 'This booking does not belong to you.');
+        }
+
+        if (! $booking->hasDownPayment()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This booking has no down payment to settle.',
+            ], 422);
+        }
+
+        if ($booking->isDownPaymentPaid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Down payment has already been marked as paid.',
+            ], 422);
+        }
+
+        $booking->update([
+            'down_payment_paid_at' => now(),
+            'payment_status'       => 'down_payment_paid',
+        ]);
+
+        $booking->load('worker');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Down payment marked as paid. Balance remaining: ₱' . number_format((float) ($booking->balance_remaining ?? 0), 2),
+            'booking' => $booking,
+        ]);
+    }
+
     public function trackLiveLocation(Booking $booking, GeoTravelService $geoTravel): JsonResponse
     {
         if ($booking->client_id !== auth()->id()) {
             abort(403, 'Unauthorized');
         }
-
-        $booking->load(['worker.workerProfile']);
 
         // If job is already in progress or completed, worker has arrived
         if (in_array($booking->status, [Booking::STATUS_IN_PROGRESS, Booking::STATUS_COMPLETED])) {

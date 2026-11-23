@@ -14,12 +14,16 @@ class Service extends Model
         'slug',
         'description',
         'base_price',
+        'price_min',
+        'price_max',
         'billing_type',
         'is_active',
     ];
 
     protected $casts = [
         'base_price' => 'decimal:2',
+        'price_min'  => 'decimal:2',
+        'price_max'  => 'decimal:2',
         'is_active'  => 'boolean',
     ];
 
@@ -48,5 +52,19 @@ class Service extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Get the realistic price range [min, max] for this service,
+     * falling back to config guardrails when not explicitly set.
+     */
+    public function priceRange(): array
+    {
+        $config = config('kaayos.price_guardrails', ['min' => 50.00, 'max' => 50000.00]);
+
+        return [
+            'min' => (float) ($this->price_min ?? $config['min']),
+            'max' => (float) ($this->price_max ?? $config['max']),
+        ];
     }
 }

@@ -3,6 +3,32 @@
 return [
     // Platform service fee tracked by the admin dashboard. Settlements still happen off-platform.
     'platform_fee_percent'   => env('KAAYOS_PLATFORM_FEE_PERCENT', 10),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Price guardrails for service pricing
+    |--------------------------------------------------------------------------
+    |
+    | Default minimum and maximum prices applied when a service does not have
+    | explicit price_min / price_max values set. These prevent unrealistic
+    | pricing such as $0.00 listings or extreme outliers.
+    */
+    'price_guardrails' => [
+        'min' => env('KAAYOS_PRICE_GUARDRAIL_MIN', 50.00),
+        'max' => env('KAAYOS_PRICE_GUARDRAIL_MAX', 50000.00),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Down payment configuration
+    |--------------------------------------------------------------------------
+    |
+    | Controls the optional down payment / partial payment flow for bookings.
+    | The min percent is the recommended minimum down payment as a percentage
+    | of the total booking price. Enforcement is opt-in per deployment.
+    */
+    'down_payment_min_percent' => env('KAAYOS_DOWNPAYMENT_MIN_PERCENT', 50),
+    'down_payment_enforced'    => env('KAAYOS_DOWNPAYMENT_ENFORCED', false),
     'booking_expiry_hours'   => env('KAAYOS_BOOKING_EXPIRY_HOURS', 24),
     'max_concurrent_jobs'    => env('KAAYOS_MAX_CONCURRENT_JOBS', 3),
     'no_show_minutes'        => env('KAAYOS_NO_SHOW_MINUTES', 60),

@@ -46,8 +46,14 @@ class MyServicesController extends Controller
 
     public function updatePrice(Request $request, Service $service)
     {
+        $range = $service->priceRange();
+
         $validated = $request->validate([
-            'custom_price' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'custom_price' => [
+                'nullable', 'numeric',
+                'min:' . $range['min'],
+                'max:' . $range['max'],
+            ],
         ]);
 
         $link = auth()->user()->providerServices()->where('service_id', $service->id)->firstOrFail();

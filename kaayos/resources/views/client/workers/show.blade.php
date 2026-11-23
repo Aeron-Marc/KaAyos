@@ -622,6 +622,20 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="down_payment">Down Payment <small>(optional)</small></label>
+                    <div class="input-with-prefix">
+                        <span class="input-prefix">₱</span>
+                        <input type="number" step="0.01" min="1" max="100000"
+                               id="down_payment" name="down_payment" class="form-control"
+                               placeholder="0.00" oninput="updateDownPaymentBreakdown()">
+                    </div>
+                    <div id="down-payment-hint" style="display:none;margin-top:6px;font-size:.78rem;padding:6px 8px;border-radius:6px;background:#eef6ff;border:1px solid #b3d9ff;color:#1a4d8f;">
+                        <i class="fa-solid fa-circle-info" style="margin-right:4px;" aria-hidden="true"></i>
+                        <span id="down-payment-hint-text"></span>
+                    </div>
+                </div>
+
                 @if($worker->workerProfile && $worker->workerProfile->hourly_rate)
                     <div id="rate-display" style="font-size:.85rem;color:var(--g5);margin-bottom:12px;">
                         Rate: <strong>₱{{ number_format($worker->workerProfile->hourly_rate) }}/hr</strong>
@@ -634,7 +648,9 @@
                         <span><strong>Service:</strong> <span id="agree-service">{{ $worker->service_category ?? '—' }}</span></span>
                         <span><strong>Date:</strong> <span id="agree-date">—</span></span>
                         <span><strong>Location:</strong> <span id="agree-location">—</span></span>
-                        <span><strong>Price:</strong> <span id="agree-price">—</span></span>
+                        <span><strong>Total Price:</strong> <span id="agree-price">—</span></span>
+                        <span id="agree-down-payment-row" style="display:none;"><strong>Down Payment:</strong> <span id="agree-down-payment">—</span></span>
+                        <span id="agree-balance-row" style="display:none;"><strong>Balance:</strong> <span id="agree-balance">—</span></span>
                     </div>
                     <label class="agreement-check">
                         <input type="checkbox" id="agree-terms" required>
@@ -1152,6 +1168,43 @@ function updateAgreementSummary() {
     document.getElementById('agree-location').textContent = addr;
     document.getElementById('agree-price').innerHTML      = '\u20B1' + Number(finalEstimate).toLocaleString() +
         ' <small style="font-weight:normal;color:#64748b;">(' + (pricingType === 'hourly' ? hours + ' hrs @ ₱' + hourlyRate + '/hr' : (svc ? svc.name : 'Fixed Task')) + (multiplier > 1.0 ? ' &times; ' + multiplier + 'x diff.' : '') + ')</small>';
+
+    updateDownPaymentBreakdown();
+}
+
+function updateDownPaymentBreakdown() {
+    const dpInput = document.getElementById('down_payment');
+    const dpHint = document.getElementById('down-payment-hint');
+    const dpHintText = document.getElementById('down-payment-hint-text');
+    const dpRow = document.getElementById('agree-down-payment-row');
+    const dpSpan = document.getElementById('agree-down-payment');
+    const balanceRow = document.getElementById('agree-balance-row');
+    const balanceSpan = document.getElementById('agree-balance');
+    const priceSpan = document.getElementById('agree-price');
+
+    if (!dpInput || !dpHint) return;
+
+    const dp = parseFloat(dpInput.value) || 0;
+    const priceText = priceSpan ? priceSpan.textContent.trim() : '';
+    const totalPrice = parseFloat(priceText.replace(/[^\d.]/g, '')) || 0;
+
+    if (dp > 0) {
+        const balance = Math.max(0, totalPrice - dp);
+        const minPercent = {{ (int) config('kaayos.down_payment_min_percent', 50) }};
+        const minAmount = Math.round(totalPrice * (minPercent / 100));
+
+        dpHint.style.display = 'block';
+        dpHintText.innerHTML = 'Recommended minimum: ₱' + minAmount.toLocaleString() + ' (' + minPercent + '% of total)';
+
+        dpRow.style.display = 'block';
+        dpSpan.textContent = '₱' + dp.toLocaleString();
+        balanceRow.style.display = 'block';
+        balanceSpan.textContent = '₱' + balance.toLocaleString();
+    } else {
+        dpHint.style.display = 'none';
+        dpRow.style.display = 'none';
+        balanceRow.style.display = 'none';
+    }
 }
 
 function openShareModal() {

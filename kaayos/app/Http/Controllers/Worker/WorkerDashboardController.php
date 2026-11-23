@@ -101,6 +101,17 @@ class WorkerDashboardController extends Controller
 
                 return redirect()->back()->with('error', $msg);
             }
+
+            if (config('kaayos.down_payment_enforced', false)
+                && $booking->hasDownPayment()
+                && ! $booking->isDownPaymentPaid()) {
+                $msg = 'This booking requires the down payment to be settled before you can accept it.';
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => $msg], 422);
+                }
+
+                return redirect()->back()->with('error', $msg);
+            }
         }
 
         $oldStatus = $booking->status;
@@ -585,7 +596,7 @@ class WorkerDashboardController extends Controller
         }
 
         $validated = $request->validate([
-            'amendment_price' => ['required', 'numeric', 'min:0'],
+            'amendment_price' => ['required', 'numeric', 'min:1', 'max:100000'],
             'notes'           => ['required', 'string', 'max:2000'],
         ]);
 

@@ -37,6 +37,9 @@ class Booking extends Model
         'payment_method',
         'payment_status',
         'payment_settled_at',
+        'down_payment_amount',
+        'down_payment_paid_at',
+        'balance_remaining',
         'completed_at',
         'cancelled_at',
         'cancellation_reason',
@@ -185,6 +188,9 @@ class Booking extends Model
         'agreed_rate' => 'decimal:2',
         'extras_total' => 'decimal:2',
         'payment_settled_at' => 'datetime',
+        'down_payment_amount' => 'decimal:2',
+        'down_payment_paid_at' => 'datetime',
+        'balance_remaining' => 'decimal:2',
         'scope_amendment_price' => 'decimal:2',
         'scope_amendment_requested_at' => 'datetime',
         'team_suggested_at' => 'datetime',
@@ -341,6 +347,60 @@ class Booking extends Model
     }
 
     // ── Helpers ────────────────────────────────────────────────
+
+    /**
+     * Check whether this booking has a down payment recorded.
+     */
+    public function hasDownPayment(): bool
+    {
+        return $this->down_payment_amount !== null && (float) $this->down_payment_amount > 0;
+    }
+
+    /**
+     * Check whether the down payment has been paid.
+     */
+    public function isDownPaymentPaid(): bool
+    {
+        return $this->down_payment_paid_at !== null;
+    }
+
+    /**
+     * Check whether the booking is fully paid (either no down payment needed, or balance settled).
+     */
+    public function isFullyPaid(): bool
+    {
+        if ($this->payment_status === 'fully_paid') {
+            return true;
+        }
+
+        return $this->payment_status === 'paid'
+            || ($this->hasDownPayment() && $this->balance_remaining !== null && (float) $this->balance_remaining <= 0);
+    }
+
+    /**
+     * Get a human-readable label for the current payment status.
+     */
+    public function getPaymentStatusLabel(): string
+    {
+        return match ($this->payment_status) {
+            'pending' => 'Pending',
+            'down_payment_pending' => 'Down Payment Pending',
+            'down_payment_paid' => 'Down Payment Paid',
+            'fully_paid', 'paid' => 'Fully Paid',
+            default => ucfirst($this->payment_status ?? 'Pending'),
+        };
+    }
+
+    /**
+     * Calculate the minimum recommended down payment based on config percentage.
+     */
+    public function getMinimumDownPayment(): float
+    {
+        $percent = (float) config('kaayos.down_payment_min_percent', 50);
+        $total = (float) ($this->price ?? 0);
+
+        return round($total * ($percent / 100), 2);
+    }
 
     public function isNew(): bool
     {

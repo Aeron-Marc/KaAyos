@@ -177,7 +177,22 @@
                         @endphp
                         <span class="status-badge {{ $statusClass }}">{{ $job['status'] }}</span>
                     </td>
-                    <td>₱{{ number_format($job['price']) }}</td>
+                    <td>
+                        ₱{{ number_format($job['price']) }}
+                        @if(!empty($job['down_payment_amount']))
+                            @php
+                                $dpColor = $job['down_payment_paid'] ? '#166534' : '#92400e';
+                                $dpBg   = $job['down_payment_paid'] ? '#dcfce7' : '#fef3c7';
+                                $dpLabel = $job['down_payment_paid'] ? 'Down payment received' : 'Down payment pending';
+                            @endphp
+                            <div style="margin-top:4px;font-size:.72rem;font-weight:600;color:{{ $dpColor }};background:{{ $dpBg }};padding:2px 8px;border-radius:99px;display:inline-block;">
+                                <i class="fa-solid {{ $job['down_payment_paid'] ? 'fa-circle-check' : 'fa-clock' }}"></i> {{ $dpLabel }}
+                                @if(!$job['down_payment_paid'])
+                                    · ₱{{ number_format($job['down_payment_amount']) }}
+                                @endif
+                            </div>
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>

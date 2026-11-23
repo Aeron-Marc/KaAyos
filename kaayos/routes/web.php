@@ -108,6 +108,7 @@ Route::middleware(['auth', 'verified', 'no-cache'])->prefix('client')->name('cli
     Route::post('/bookings/{booking}/respond-team-suggestion', [ClientController::class, 'respondTeamSuggestion'])->name('bookings.respond-team-suggestion');
     Route::post('/bookings/{booking}/mark-complete', [ClientController::class, 'markJobComplete'])->name('bookings.mark-complete');
     Route::post('/bookings/{booking}/confirm-complete', [ClientController::class, 'confirmJobCompletion'])->name('bookings.confirm-complete');
+    Route::post('/bookings/{booking}/pay-down-payment', [ClientController::class, 'payDownPayment'])->name('bookings.pay-down-payment');
     Route::get('/messages', [ClientController::class, 'messages'])->name('messages');
     Route::get('/messages/start', [ClientController::class, 'startConversation'])->name('messages.start');
     Route::get('/messages/poll/{conversation}', [ClientController::class, 'pollMessages'])->middleware('throttle:30,1')->name('messages.poll');

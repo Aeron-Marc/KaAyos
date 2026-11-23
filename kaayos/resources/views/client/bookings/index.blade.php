@@ -153,6 +153,27 @@
                         @if(($booking['team_status'] ?? '') === 'suggested')
                             <span class="badge" style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:600;"><i class="fa-solid fa-users"></i> Team Proposal</span>
                         @endif
+                        @if(!empty($booking['down_payment_amount']))
+                            @php
+                                $dpStatus = $booking['payment_status'] ?? 'pending';
+                                $dpBadgeColor = match($dpStatus) {
+                                    'down_payment_paid' => 'background:#dcfce7;color:#166534;',
+                                    'fully_paid' => 'background:#dcfce7;color:#166534;',
+                                    default => 'background:#fef3c7;color:#92400e;',
+                                };
+                                $dpBadgeIcon = match($dpStatus) {
+                                    'down_payment_paid' => 'fa-circle-check',
+                                    'fully_paid' => 'fa-circle-check',
+                                    default => 'fa-clock',
+                                };
+                                $dpBadgeText = match($dpStatus) {
+                                    'down_payment_paid' => 'Down Payment Paid',
+                                    'fully_paid' => 'Fully Paid',
+                                    default => 'Down Payment Pending',
+                                };
+                            @endphp
+                            <span class="badge" style="{{ $dpBadgeColor }}padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:600;"><i class="fa-solid {{ $dpBadgeIcon }}"></i> {{ $dpBadgeText }}</span>
+                        @endif
                     </div>
                     <div class="booking-card-bottom">
                         <span><i class="fa-regular fa-user" aria-hidden="true"></i> {{ $booking['worker'] }}</span>
