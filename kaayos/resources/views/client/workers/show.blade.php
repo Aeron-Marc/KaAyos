@@ -489,7 +489,13 @@
                     <select name="service_id" id="service-select" class="form-control" onchange="onServiceChange()">
                         <optgroup label="General Service">
                             @php
-                                $generalService = $workerServices->firstWhere('service.billing_type', 'either');
+                                $generalService = null;
+                                foreach ($workerServices as $ps) {
+                                    if (str_starts_with($ps->service->slug ?? '', 'general-')) {
+                                        $generalService = $ps;
+                                        break;
+                                    }
+                                }
                                 $generalPrice = $generalService ? ($generalService->custom_price ?? $generalService->service->base_price ?? 0) : 0;
                             @endphp
                             @if($generalService)
@@ -513,7 +519,7 @@
                         <optgroup label="Pre-selected Services">
                             @foreach($workerServices as $ps)
                                 @php
-                                    $isGeneral = $ps->service->billing_type === 'either';
+                                    $isGeneral = str_starts_with($ps->service->slug ?? '', 'general-');
                                     $svcPrice = $ps->custom_price ?? $ps->service->base_price;
                                 @endphp
                                 @if(!$isGeneral)
