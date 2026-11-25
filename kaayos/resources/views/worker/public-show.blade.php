@@ -357,15 +357,6 @@
         <i class="fa-regular fa-copy" aria-hidden="true"></i>
       </button>
     </div>
-
-    <div style="display:flex;gap:10px;justify-content:center;">
-      <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($worker->share_url) }}" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
-        <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Facebook
-      </a>
-      <a href="https://api.whatsapp.com/send?text={{ urlencode('Check out ' . $worker->name . ' on KaAyos: ' . $worker->share_url) }}" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
-        <i class="fa-brands fa-whatsapp" style="color:#22c55e;"></i> WhatsApp
-      </a>
-    </div>
   </div>
 </div>
 
