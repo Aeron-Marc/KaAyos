@@ -764,19 +764,11 @@
             <div style="background:#f8fafc;padding:16px;border-radius:12px;display:inline-block;border:1px solid #e2e8f0;margin-bottom:16px;">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($worker->share_url) }}" alt="Worker QR Code" style="width:160px;height:160px;border-radius:6px;display:block;">
             </div>
-            <div style="display:flex;gap:6px;margin-bottom:16px;">
-                <input type="text" id="shareProfileUrl" value="{{ $worker->share_url }}" readonly class="form-control" style="font-size:.82rem;">
-                <button type="button" class="btn btn-solid" onclick="copyShareUrl()" id="copyShareBtn">
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
+                <input type="text" id="shareProfileUrl" value="{{ $worker->share_url }}" readonly class="form-control" style="flex:1;max-width:240px;font-size:.82rem;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:var(--g7,#3D4A56);">
+                <button type="button" class="btn btn-solid" onclick="copyShareUrl()" id="copyShareBtn" style="padding:10px 16px;">
                     <i class="fa-regular fa-copy"></i>
                 </button>
-            </div>
-            <div style="display:flex;gap:10px;justify-content:center;">
-                <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($worker->share_url) }}" target="_blank" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
-                    <i class="fa-brands fa-facebook" style="color:#1877F2;"></i> Facebook
-                </a>
-                <a href="https://api.whatsapp.com/send?text={{ urlencode('Book ' . $worker->name . ' on KaAyos: ' . $worker->share_url) }}" target="_blank" class="btn btn-outline" style="font-size:.82rem;gap:6px;">
-                    <i class="fa-brands fa-whatsapp" style="color:#22c55e;"></i> WhatsApp
-                </a>
             </div>
         </div>
     </div>

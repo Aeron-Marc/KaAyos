@@ -335,7 +335,7 @@
 </div>
 
 <div id="shareModal" class="modal-overlay" onclick="if(event.target===this)hideShareModal()">
-  <div class="modal-box" style="max-width:420px;">
+  <div class="modal-box" style="max-width:420px;text-align:center;">
     <button class="modal-close" onclick="hideShareModal()" aria-label="Close">&times;</button>
     <div class="modal-icon"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></div>
     <h2>Share {{ $worker->name }}'s Profile</h2>
@@ -347,13 +347,13 @@
       </div>
     @endif
 
-    <div style="background:#f8fafc;padding:14px;border-radius:12px;display:inline-block;border:1px solid #e2e8f0;margin-bottom:14px;">
+    <div style="background:#f8fafc;padding:16px;border-radius:12px;display:inline-block;border:1px solid #e2e8f0;margin-bottom:16px;">
       <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($worker->share_url) }}" alt="QR code for {{ $worker->name }}'s profile" style="width:160px;height:160px;border-radius:6px;display:block;">
     </div>
 
-    <div style="display:flex;gap:6px;margin-bottom:14px;">
-      <input type="text" id="shareWorkerUrl" value="{{ $worker->share_url }}" readonly style="flex:1;min-width:0;font-size:.8rem;padding:9px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:var(--g7,#3D4A56);">
-      <button type="button" class="btn btn-solid" onclick="copyShareUrl()" id="copyShareBtn" style="padding:9px 14px;">
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
+      <input type="text" id="shareWorkerUrl" value="{{ $worker->share_url }}" readonly style="flex:1;max-width:240px;font-size:.82rem;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:var(--g7,#3D4A56);">
+      <button type="button" class="btn btn-solid" onclick="copyShareUrl()" id="copyShareBtn" style="padding:10px 16px;">
         <i class="fa-regular fa-copy" aria-hidden="true"></i>
       </button>
     </div>
