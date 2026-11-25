@@ -341,15 +341,15 @@
     <h2 style="text-align:center;margin-bottom:8px;">Share {{ $worker->name }}'s Profile</h2>
     <p style="text-align:center;margin-bottom:16px;">Scan the QR code or share this link to open the profile from any device.</p>
 
+    <div style="background:#f8fafc;padding:16px;border-radius:12px;display:inline-block;border:1px solid #e2e8f0;margin-bottom:12px;">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($worker->share_url) }}" alt="QR code for {{ $worker->name }}'s profile" style="width:160px;height:160px;border-radius:6px;display:block;margin:0 auto;">
+    </div>
+
     @if($worker->share_code)
       <div style="display:inline-block;background:var(--b0,#E6F1FB);color:var(--b7,#185FA5);border:1px dashed var(--b4,#378ADD);border-radius:8px;padding:6px 14px;font-weight:700;letter-spacing:.06em;font-size:.9rem;margin-bottom:16px;">
         {{ $worker->share_code }}
       </div>
     @endif
-
-    <div style="background:#f8fafc;padding:16px;border-radius:12px;display:inline-block;border:1px solid #e2e8f0;margin-bottom:16px;">
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($worker->share_url) }}" alt="QR code for {{ $worker->name }}'s profile" style="width:160px;height:160px;border-radius:6px;display:block;margin:0 auto;">
-    </div>
 
     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
       <input type="text" id="shareWorkerUrl" value="{{ $worker->share_url }}" readonly style="flex:1;max-width:260px;font-size:.82rem;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:var(--g7,#3D4A56);">
