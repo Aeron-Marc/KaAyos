@@ -200,7 +200,7 @@
             if (!el) return;
             el.addEventListener('click', function(e) {
                 e.preventDefault();
-                fetch('{{ route('notifications.read-all') }}', {
+                fetch('{{ route('worker.notifications.read-all') }}', {
                     method: 'POST',
                     headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content}
                 }).then(function() {
