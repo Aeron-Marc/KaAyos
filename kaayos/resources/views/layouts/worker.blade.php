@@ -41,7 +41,7 @@
                 {{ __('nav.my_schedule') }}
             </a>
 
-            <a href="{{ route('worker.messages') }}"
+            <a id="nav-messages" href="{{ route('worker.messages') }}"
                class="nav-item {{ request()->routeIs('worker.messages*') ? 'active' : '' }}">
                 <i class="fa-solid fa-comment-dots nav-icon" aria-hidden="true"></i>
                 {{ __('nav.messages') }}
@@ -193,6 +193,20 @@
                     try { sessionStorage.setItem('sk_' + window.location.pathname, '1'); } catch(e) {}
                 }, 450);
             }, delay);
+        })();
+
+        (function() {
+            var el = document.getElementById('nav-messages');
+            if (!el) return;
+            el.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch('{{ route('notifications.read-all') }}', {
+                    method: 'POST',
+                    headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content}
+                }).then(function() {
+                    window.location.href = el.href;
+                });
+            });
         })();
         </script>
         @endpush
