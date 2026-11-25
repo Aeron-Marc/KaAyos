@@ -263,6 +263,7 @@
                 <div class="schedule-date-box">
                     <span class="schedule-month">{{ $job['month'] }}</span>
                     <span class="schedule-day">{{ $job['day'] }}</span>
+                    <span class="schedule-year">{{ $job['year'] }}</span>
                 </div>
                 <div class="job-card-body">
                     <div class="job-card-top">
@@ -493,6 +494,7 @@
 }
 .schedule-month { font-size: .6rem; text-transform: uppercase; color: var(--b4); }
 .schedule-day { font-size: 1.05rem; color: var(--b9); }
+.schedule-year { font-size: .55rem; color: var(--b6); margin-top: 2px; }
 
 /* ── Job detail modal layout ── */
 .modal-wide { max-width: 640px !important; }

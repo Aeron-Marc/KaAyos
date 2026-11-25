@@ -99,6 +99,7 @@ class WorkerController extends Controller
                     'date'           => $booking->scheduled_at->format('M d, Y · h:i A'),
                     'month'          => $booking->scheduled_at->format('M'),
                     'day'            => $booking->scheduled_at->format('d'),
+                    'year'           => $booking->scheduled_at->format('Y'),
                     'time'           => $booking->scheduled_at->format('g:i A'),
                     'location'       => $booking->address,
                     'barangay'       => $booking->barangay,
