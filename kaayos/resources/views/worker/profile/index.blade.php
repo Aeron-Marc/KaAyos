@@ -1510,6 +1510,12 @@ document.querySelectorAll('.tag-input-wrap').forEach(initTagInput);
         });
         serializeAvailability();
     });
+
+    // Serialize availability on form submit so the latest state is posted
+    const form = grid.closest('form');
+    if (form) {
+        form.addEventListener('submit', serializeAvailability);
+    }
     })();
 
     // ── Portfolio Delete Modal ──

@@ -929,7 +929,7 @@ class WorkerController extends Controller
             'preferred_payment_scheme' => $data['preferred_payment_scheme'] ?? 'task',
             'available_days'     => $data['available_days'] ?? null,
             'preferred_hours'    => $data['preferred_hours'] ?? null,
-            'availability'       => isset($data['availability']) ? json_decode($data['availability'], true) : null,
+            'availability'       => !empty($data['availability']) ? json_decode($data['availability'], true) : ($profile->availability ?? null),
             'service_areas'      => isset($data['service_areas']) ? array_values(array_filter(array_map('trim', explode(',', $data['service_areas'])))) : null,
             'years_of_experience'=> $data['years_of_experience'] ?? null,
             'service_radius'     => $data['service_radius'] ?? null,
