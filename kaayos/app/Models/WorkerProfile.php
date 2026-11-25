@@ -124,7 +124,10 @@ class WorkerProfile extends Model
 
     public function scopeWithActiveAvailability(Builder $query): Builder
     {
-        return $query->whereRaw("JSON_CONTAINS(JSON_EXTRACT(availability, '$[*].active'), 'true') = 1");
+        return $query->where(function ($q) {
+            $q->whereNull('availability')
+              ->orWhereRaw("JSON_CONTAINS(JSON_EXTRACT(availability, '$[*].active'), 'true') = 1");
+        });
     }
 
     public function hasActiveAvailability(): bool
