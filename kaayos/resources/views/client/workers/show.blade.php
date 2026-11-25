@@ -1893,5 +1893,21 @@ document.addEventListener('DOMContentLoaded', function() {
     color: var(--b6);
     text-decoration: underline;
 }
+.input-with-prefix {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.input-prefix {
+    font-size: 1rem;
+    color: var(--b6);
+    font-weight: 600;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+.input-with-prefix .form-control {
+    flex: 1 1 auto;
+    width: auto;
+}
 </style>
 @endpush
