@@ -404,18 +404,21 @@
                 <div class="form-row" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <div class="form-group">
                         <label for="hourly_rate">Hourly Rate (₱/hr)</label>
-                        <input type="number" id="hourly_rate" name="hourly_rate" min="0" step="0.01"
+                        <input type="number" id="hourly_rate" name="hourly_rate" min="{{ config('kaayos.price_guardrails.min', 50) }}" max="{{ config('kaayos.price_guardrails.max', 50000) }}" step="0.01"
                                value="{{ old('hourly_rate', $workerProfile->hourly_rate) }}" placeholder="e.g. 150">
+                        <span style="font-size:.72rem;color:var(--g4);margin-top:4px;display:block;">Rate per hour when a client chooses hourly billing. Range: ₱{{ config('kaayos.price_guardrails.min', 50) }} – ₱{{ config('kaayos.price_guardrails.max', 50000) }}.</span>
                     </div>
                     <div class="form-group">
                         <label for="daily_rate">Daily Wage Rate (₱/day)</label>
-                        <input type="number" id="daily_rate" name="daily_rate" min="0" step="0.01"
+                        <input type="number" id="daily_rate" name="daily_rate" min="{{ config('kaayos.price_guardrails.min', 50) }}" max="{{ config('kaayos.price_guardrails.max', 50000) }}" step="0.01"
                                value="{{ old('daily_rate', $workerProfile->daily_rate) }}" placeholder="e.g. 600">
+                        <span style="font-size:.72rem;color:var(--g4);margin-top:4px;display:block;">Rate per day (typically 8 hrs) for full-day jobs. Range: ₱{{ config('kaayos.price_guardrails.min', 50) }} – ₱{{ config('kaayos.price_guardrails.max', 50000) }}.</span>
                     </div>
                     <div class="form-group">
                         <label for="task_base_rate">Standard Task Rate (₱/job)</label>
-                        <input type="number" id="task_base_rate" name="task_base_rate" min="0" step="0.01"
+                        <input type="number" id="task_base_rate" name="task_base_rate" min="{{ config('kaayos.price_guardrails.min', 50) }}" max="{{ config('kaayos.price_guardrails.max', 50000) }}" step="0.01"
                                value="{{ old('task_base_rate', $workerProfile->task_base_rate) }}" placeholder="e.g. 450">
+                        <span style="font-size:.72rem;color:var(--g4);margin-top:4px;display:block;">Flat rate per completed job, regardless of hours. Used for pre-selected fixed services. Range: ₱{{ config('kaayos.price_guardrails.min', 50) }} – ₱{{ config('kaayos.price_guardrails.max', 50000) }}.</span>
                     </div>
                     <div class="form-group">
                         <label for="preferred_payment_scheme">Preferred Compensation Scheme</label>
@@ -424,6 +427,7 @@
                             <option value="daily" {{ old('preferred_payment_scheme', $workerProfile->preferred_payment_scheme) === 'daily' ? 'selected' : '' }}>Daily Wage (8 hrs)</option>
                             <option value="hourly" {{ old('preferred_payment_scheme', $workerProfile->preferred_payment_scheme) === 'hourly' ? 'selected' : '' }}>Hourly Rate</option>
                         </select>
+                        <span style="font-size:.72rem;color:var(--g4);margin-top:4px;display:block;">Your default billing preference. Clients can still choose Fixed or Hourly for General Service bookings.</span>
                     </div>
                 </div>
             </div>

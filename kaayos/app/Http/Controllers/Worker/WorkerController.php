@@ -844,6 +844,10 @@ class WorkerController extends Controller
     {
         $user = $request->user();
 
+        $guardrails = config('kaayos.price_guardrails', ['min' => 50.00, 'max' => 50000.00]);
+        $rateMin  = (float) $guardrails['min'];
+        $rateMax  = (float) $guardrails['max'];
+
         $data = $request->validate([
             'first_name'         => ['required', 'string', 'max:100'],
             'last_name'          => ['required', 'string', 'max:100'],
@@ -854,9 +858,9 @@ class WorkerController extends Controller
             'bio'                => ['nullable', 'string', 'max:2000'],
             'skills'             => ['nullable', 'string'],
             'spoken_languages'   => ['nullable', 'string'],
-            'hourly_rate'        => ['nullable', 'numeric', 'min:0'],
-            'daily_rate'         => ['nullable', 'numeric', 'min:0'],
-            'task_base_rate'     => ['nullable', 'numeric', 'min:0'],
+            'hourly_rate'        => ['nullable', 'numeric', 'min:' . $rateMin, 'max:' . $rateMax],
+            'daily_rate'         => ['nullable', 'numeric', 'min:' . $rateMin, 'max:' . $rateMax],
+            'task_base_rate'     => ['nullable', 'numeric', 'min:' . $rateMin, 'max:' . $rateMax],
             'preferred_payment_scheme' => ['nullable', 'in:hourly,daily,task'],
             'available_days'     => ['nullable', 'string', 'max:255'],
             'preferred_hours'    => ['nullable', 'string', 'max:255'],
