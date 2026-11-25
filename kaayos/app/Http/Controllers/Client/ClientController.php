@@ -773,7 +773,11 @@ class ClientController extends Controller
 
             $selectedServiceId = $providerService->service_id;
             $selectedServiceName = $providerService->service->name;
-            $price = $providerService->custom_price ?? $providerService->service->base_price ?? 0;
+            // General Service (billing_type='either'): keep client-sent price from JS calculation
+            // Pre-selected services (billing_type='fixed'): use configured service price
+            if ($providerService->service->billing_type !== 'either') {
+                $price = $providerService->custom_price ?? $providerService->service->base_price ?? 0;
+            }
         }
 
         // Pricing, Duration, and Complexity Calculations

@@ -171,6 +171,44 @@ class DatabaseSeeder extends Seeder
                 );
             }
         }
+
+        // Add "General {Category} Service" for each category — allows Fixed OR Hourly pricing
+        $categoryServiceMap = [
+            'plumbing'         => 'General Plumbing Service',
+            'electrical'       => 'General Electrical Service',
+            'cleaning'         => 'General Cleaning Service',
+            'carpentry'        => 'General Carpentry Service',
+            'painting'         => 'General Painting Service',
+            'aircon-services'  => 'General Aircon Service',
+            'landscaping'      => 'General Landscaping Service',
+            'laundry'          => 'General Laundry Service',
+            'pest-control'     => 'General Pest Control Service',
+            'appliance-repair' => 'General Appliance Repair Service',
+            'masonry'          => 'General Masonry Service',
+            'personal-care'    => 'General Personal Care Service',
+            'moving-services'  => 'General Moving Service',
+        ];
+
+        foreach ($categoryServiceMap as $catSlug => $generalName) {
+            $category = ServiceCategory::where('slug', $catSlug)->first();
+            if (! $category) {
+                continue;
+            }
+            Service::updateOrCreate(
+                ['slug' => 'general-' . $catSlug],
+                [
+                    'name'        => $generalName,
+                    'slug'        => 'general-' . $catSlug,
+                    'description' => $generalName . ' with flexible pricing (fixed or hourly rate).',
+                    'base_price'  => 0,
+                    'price_min'   => 50.00,
+                    'price_max'   => 50000.00,
+                    'billing_type'=> 'either',
+                    'is_active'   => true,
+                    'category_id' => $category->id,
+                ]
+            );
+        }
         $log('services', Service::count());
 
         // ═════════════════════════════════════════════════════════════

@@ -487,18 +487,51 @@
                 <div class="form-group">
                     <label for="service-select">Service</label>
                     <select name="service_id" id="service-select" class="form-control" onchange="onServiceChange()">
-                        <option value="">General / {{ $worker->service_category ?? 'General' }}</option>
-                        @foreach($workerServices as $ps)
-                            @php $svcPrice = $ps->custom_price ?? $ps->service->base_price; @endphp
-                            <option value="{{ $ps->service_id }}"
-                                    data-name="{{ $ps->service->name }}"
-                                    data-price="{{ $svcPrice }}"
-                                    data-billing="{{ $ps->service->billing_type ?? 'either' }}">
-                                {{ $ps->service->name }} — ₱{{ number_format((float) $svcPrice, 2) }}
-                            </option>
-                        @endforeach
+                        <optgroup label="General Service">
+                            @php
+                                $generalService = $workerServices->firstWhere('service.billing_type', 'either');
+                                $generalPrice = $generalService ? ($generalService->custom_price ?? $generalService->service->base_price ?? 0) : 0;
+                            @endphp
+                            @if($generalService)
+                                <option value="{{ $generalService->service_id }}"
+                                        data-name="{{ $generalService->service->name }}"
+                                        data-price="{{ $generalPrice }}"
+                                        data-billing="either"
+                                        data-service-type="general">
+                                    {{ $generalService->service->name }} — ₱{{ number_format((float) $generalPrice, 2) }}
+                                </option>
+                            @else
+                                <option value=""
+                                        data-name="{{ $worker->service_category ?? 'General' }} Service"
+                                        data-price="0"
+                                        data-billing="either"
+                                        data-service-type="general">
+                                    General {{ $worker->service_category ?? 'General' }} Service — ₱0.00
+                                </option>
+                            @endif
+                        </optgroup>
+                        <optgroup label="Pre-selected Services">
+                            @foreach($workerServices as $ps)
+                                @php
+                                    $isGeneral = $ps->service->billing_type === 'either';
+                                    $svcPrice = $ps->custom_price ?? $ps->service->base_price;
+                                @endphp
+                                @if(!$isGeneral)
+                                    <option value="{{ $ps->service_id }}"
+                                            data-name="{{ $ps->service->name }}"
+                                            data-price="{{ $svcPrice }}"
+                                            data-billing="{{ $ps->service->billing_type ?? 'fixed' }}"
+                                            data-service-type="preset">
+                                        {{ $ps->service->name }} — ₱{{ number_format((float) $svcPrice, 2) }}
+                                    </option>
+                                @endif
+                            @endforeach
+                        </optgroup>
                     </select>
                     <input type="hidden" name="service_category" value="{{ $worker->service_category ?? 'General' }}">
+                    <span class="form-hint" style="font-size:.78rem;color:var(--g4);margin-top:4px;display:block;">
+                        General Service: choose Fixed or Hourly rate · Pre-selected services: fixed rate only
+                    </span>
                 </div>
 
                 <div class="form-group">
@@ -1126,7 +1159,8 @@ function getSelectedService() {
         id: opt.value,
         name: opt.dataset.name || '',
         price: parseFloat(opt.dataset.price) || 0,
-        billing: opt.dataset.billing || 'either'
+        billing: opt.dataset.billing || 'either',
+        serviceType: opt.dataset.serviceType || null
     };
 }
 
@@ -1163,7 +1197,8 @@ function updateAgreementSummary() {
 
     const dt   = document.querySelector('[name="scheduled_at"]')?.value || '—';
     const addr = [document.querySelector('[name="house_no"]')?.value, document.querySelector('[name="street"]')?.value, document.querySelector('[name="barangay"]')?.value].filter(Boolean).join(', ') || '—';
-    document.getElementById('agree-service').textContent  = svc ? svc.name : category;
+    const svcLabel = svc ? (svc.serviceType === 'general' ? 'General Service — ' : 'Pre-selected — ') + svc.name : category;
+    document.getElementById('agree-service').textContent  = svcLabel;
     document.getElementById('agree-date').textContent     = dt ? new Date(dt).toLocaleString('en-PH',{dateStyle:'long',timeStyle:'short'}) : '—';
     document.getElementById('agree-location').textContent = addr;
     document.getElementById('agree-price').innerHTML      = '\u20B1' + Number(finalEstimate).toLocaleString() +
@@ -1233,20 +1268,27 @@ function onServiceChange() {
     const hint = document.getElementById('billing-lock-hint');
     const hintText = document.getElementById('billing-lock-hint-text');
     const duration = document.getElementById('duration_group');
+    const serviceType = svc ? svc.serviceType : null;
 
     const billing = svc ? svc.billing : 'either';
 
-    // Always allow both Fixed and Hourly; user chooses billing mode per booking.
-    if (optFixed) optFixed.disabled = false;
-    if (optHourly) optHourly.disabled = false;
-    if (hint) hint.style.display = 'none';
-    if (duration) duration.style.display = '';
-
-    // Optional hint: note the service's default billing type without locking.
-    if (hint && hintText && svc && svc.billing && svc.billing !== 'either') {
-        const label = svc.billing === 'fixed' ? 'Fixed price' : 'Hourly rate';
-        hintText.textContent = svc.name + ' defaults to ' + label + '.';
-        hint.style.display = '';
+    // General Service: allow both Fixed and Hourly
+    // Pre-selected services: Fixed rate only
+    if (serviceType === 'general') {
+        if (optFixed) optFixed.disabled = false;
+        if (optHourly) optHourly.disabled = false;
+        if (hint) hint.style.display = 'none';
+        if (duration) duration.style.display = '';
+    } else {
+        // Pre-selected: Fixed only
+        if (optFixed) optFixed.disabled = false;
+        if (optHourly) optHourly.disabled = true;
+        if (pricing) pricing.value = 'fixed';
+        if (hint) {
+            hint.style.display = '';
+            if (hintText) hintText.textContent = svc.name + ' is a fixed-rate service. Hourly billing is not available.';
+        }
+        if (duration) duration.style.display = 'none';
     }
 
     document.querySelectorAll('[id^="svc-tile-"]').forEach(el => el.classList.remove('selected'));
