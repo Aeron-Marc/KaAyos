@@ -35,8 +35,8 @@
         .sidebar-menu li a:hover{background:rgba(255,255,255,.08);color:#fff;border-left-color:var(--b4)}
         .sidebar-menu li a.active{background:var(--b6);color:#fff;border-left-color:var(--b4)}
         .sidebar-menu li a i{font-size:1.1rem;width:20px;text-align:center}
-        .sidebar-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;font-size:.68rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
-        .sidebar-menu li a.active .sidebar-badge{background:rgba(255,255,255,.25)}
+        .sidebar-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#ef4444;color:#fff;font-size:.68rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+        .sidebar-menu li a.active .sidebar-badge{background:#fca5a5}
         .sidebar-footer{margin-top:auto;padding-top:24px;border-top:1px solid rgba(255,255,255,.1)}
         .sidebar-footer a,.sidebar-logout{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:8px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.95rem;font-weight:500;transition:all .18s}
         .sidebar-footer a:hover,.sidebar-logout:hover{background:rgba(255,255,255,.08);color:#fff}
