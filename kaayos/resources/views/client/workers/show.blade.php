@@ -1236,26 +1236,17 @@ function onServiceChange() {
 
     const billing = svc ? svc.billing : 'either';
 
-    // Lock the billing mode to what the service is designed for.
-    if (billing === 'fixed' && pricing && optHourly) {
-        optHourly.disabled = true;
-        if (optFixed) optFixed.disabled = false;
-        pricing.value = 'fixed';
-        if (hint) hint.style.display = '';
-        if (hintText) hintText.textContent = svc.name + ' has a fixed price — hourly billing isn\'t available.';
-        if (duration) duration.style.display = 'none';
-    } else if (billing === 'hourly' && pricing && optFixed) {
-        optFixed.disabled = true;
-        if (optHourly) optHourly.disabled = false;
-        pricing.value = 'hourly';
-        if (hint) hint.style.display = '';
-        if (hintText) hintText.textContent = svc.name + ' is billed hourly.';
-        if (duration) duration.style.display = '';
-    } else {
-        if (optFixed) optFixed.disabled = false;
-        if (optHourly) optHourly.disabled = false;
-        if (hint) hint.style.display = 'none';
-        if (duration) duration.style.display = '';
+    // Always allow both Fixed and Hourly; user chooses billing mode per booking.
+    if (optFixed) optFixed.disabled = false;
+    if (optHourly) optHourly.disabled = false;
+    if (hint) hint.style.display = 'none';
+    if (duration) duration.style.display = '';
+
+    // Optional hint: note the service's default billing type without locking.
+    if (hint && hintText && svc && svc.billing && svc.billing !== 'either') {
+        const label = svc.billing === 'fixed' ? 'Fixed price' : 'Hourly rate';
+        hintText.textContent = svc.name + ' defaults to ' + label + '.';
+        hint.style.display = '';
     }
 
     document.querySelectorAll('[id^="svc-tile-"]').forEach(el => el.classList.remove('selected'));
@@ -1697,7 +1688,7 @@ document.addEventListener('DOMContentLoaded', function() {
     display: flex; align-items: center; justify-content: center;
 }
 .modal-box {
-    background: #fff; border-radius: 14px; width: 90%; max-width: 520px;
+    background: #fff; border-radius: 14px; width: 90%; max-width: 720px;
     box-shadow: 0 20px 60px rgba(0,0,0,.2); animation: modalIn .2s ease;
 }
 @keyframes modalIn {
