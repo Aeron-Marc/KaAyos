@@ -45,6 +45,12 @@
                class="nav-item {{ request()->routeIs('worker.messages*') ? 'active' : '' }}">
                 <i class="fa-solid fa-comment-dots nav-icon" aria-hidden="true"></i>
                 {{ __('nav.messages') }}
+                @php
+                    $unreadMessages = collect($notifications ?? [])->where('unread', true)->count();
+                @endphp
+                @if($unreadMessages > 0)
+                    <span class="nav-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:2px 7px;font-size:.72rem;font-weight:700;margin-left:6px;">{{ $unreadMessages }}</span>
+                @endif
             </a>
 
             <a href="{{ route('worker.earnings') }}"
